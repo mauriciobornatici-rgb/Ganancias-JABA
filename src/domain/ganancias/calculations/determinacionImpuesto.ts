@@ -322,6 +322,13 @@ export function calculateTaxReturn(
     personalAssetsFinalTotal = personalAssetsFinalTotal.add(a.valueFinal);
   });
 
+  let bankAccountsInitialTotal = new Decimal(0);
+  let bankAccountsFinalTotal = new Decimal(0);
+  input.bankAccounts.forEach(b => {
+    bankAccountsInitialTotal = bankAccountsInitialTotal.add(b.nominalInitial.mul(b.tcInitial ?? 1));
+    bankAccountsFinalTotal = bankAccountsFinalTotal.add(b.nominalFinal.mul(b.tcFinal ?? 1));
+  });
+
   let personalLiabilitiesInitialTotal = new Decimal(0);
   let personalLiabilitiesFinalTotal = new Decimal(0);
   input.personalLiabilities.forEach(l => {
@@ -329,8 +336,12 @@ export function calculateTaxReturn(
     personalLiabilitiesFinalTotal = personalLiabilitiesFinalTotal.add(l.valueFinal);
   });
 
-  const patrimonioInicioTotal = personalAssetsInitialTotal.sub(personalLiabilitiesInitialTotal);
-  const patrimonioCierreTotal = personalAssetsFinalTotal.sub(personalLiabilitiesFinalTotal);
+  const patrimonioInicioTotal = personalAssetsInitialTotal
+    .add(bankAccountsInitialTotal)
+    .sub(personalLiabilitiesInitialTotal);
+  const patrimonioCierreTotal = personalAssetsFinalTotal
+    .add(bankAccountsFinalTotal)
+    .sub(personalLiabilitiesFinalTotal);
 
   // JVP Column Balance
   let colII = patrimonioInicioTotal.add(resultadoComercialNeto.isPositive() ? resultadoComercialNeto : 0)

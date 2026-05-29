@@ -102,6 +102,7 @@ export default function WizardPage() {
   const [modalLoading, setModalLoading] = useState(true);
   
   const [step1Error, setStep1Error] = useState<string | null>(null);
+  const [isLiveBarOpen, setIsLiveBarOpen] = useState(true);
   
   // Searchable contribuyente dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -647,6 +648,125 @@ export default function WizardPage() {
   };
 
   // ==========================================
+  // ESTADOS Y HANDLERS PARA OPERACIONES MASIVAS (BULK) Y TECLADO
+  // ==========================================
+  const [selectedSales, setSelectedSales] = useState<number[]>([]);
+  const [selectedPurchases, setSelectedPurchases] = useState<number[]>([]);
+
+  const handleSelectSale = (index: number) => {
+    setSelectedSales(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
+  };
+
+  const handleSelectAllSales = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedSales(sales.map((_, i) => i));
+    } else {
+      setSelectedSales([]);
+    }
+  };
+
+  const applyBulkSalesAction = (action: 'exempt' | 'taxable' | 'delete') => {
+    if (selectedSales.length === 0) return;
+    
+    if (action === 'delete') {
+      const confirmDelete = window.confirm(`¿Está seguro de eliminar los ${selectedSales.length} registros seleccionados?`);
+      if (!confirmDelete) return;
+      setSales(sales.filter((_, i) => !selectedSales.includes(i)));
+    } else {
+      const isExempt = action === 'exempt';
+      setSales(sales.map((s, i) => selectedSales.includes(i) ? { ...s, isExempt } : s));
+    }
+    setSelectedSales([]);
+  };
+
+  const handleSelectPurchase = (index: number) => {
+    setSelectedPurchases(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
+  };
+
+  const handleSelectAllPurchases = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedPurchases(purchases.map((_, i) => i));
+    } else {
+      setSelectedPurchases([]);
+    }
+  };
+
+  const applyBulkPurchasesAction = (action: 'deductible' | 'nondeductible' | 'exempt' | 'delete' | string) => {
+    if (selectedPurchases.length === 0) return;
+    
+    if (action === 'delete') {
+      const confirmDelete = window.confirm(`¿Está seguro de eliminar los ${selectedPurchases.length} registros seleccionados?`);
+      if (!confirmDelete) return;
+      setPurchases(purchases.filter((_, i) => !selectedPurchases.includes(i)));
+    } else if (action === 'deductible') {
+      setPurchases(purchases.map((p, i) => selectedPurchases.includes(i) ? { ...p, isDeductible: true, isExempt: false } : p));
+    } else if (action === 'nondeductible') {
+      setPurchases(purchases.map((p, i) => selectedPurchases.includes(i) ? { ...p, isDeductible: false, isExempt: false } : p));
+    } else if (action === 'exempt') {
+      setPurchases(purchases.map((p, i) => selectedPurchases.includes(i) ? { ...p, isDeductible: false, isExempt: true } : p));
+    } else if (action.startsWith('type:')) {
+      const expenseType = action.replace('type:', '');
+      setPurchases(purchases.map((p, i) => selectedPurchases.includes(i) ? { ...p, expenseType } : p));
+    }
+    setSelectedPurchases([]);
+  };
+
+  // Keyboard navigation handlers
+  const handleSalesKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number, field: 'date' | 'amount') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (field === 'date') {
+        document.getElementById(`sales-amount-${index}`)?.focus();
+      } else if (field === 'amount') {
+        if (index === sales.length - 1) {
+          addRow('sales');
+          setTimeout(() => {
+            document.getElementById(`sales-date-${index + 1}`)?.focus();
+          }, 50);
+        } else {
+          document.getElementById(`sales-date-${index + 1}`)?.focus();
+        }
+      }
+    }
+  };
+
+  const handlePurchasesKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number, field: 'date' | 'amount') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (field === 'date') {
+        document.getElementById(`purchases-amount-${index}`)?.focus();
+      } else if (field === 'amount') {
+        if (index === purchases.length - 1) {
+          addRow('purchases');
+          setTimeout(() => {
+            document.getElementById(`purchases-date-${index + 1}`)?.focus();
+          }, 50);
+        } else {
+          document.getElementById(`purchases-date-${index + 1}`)?.focus();
+        }
+      }
+    }
+  };
+
+  const handleAssetsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number, field: 'name' | 'cost') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (field === 'name') {
+        document.getElementById(`assets-cost-${index}`)?.focus();
+      } else if (field === 'cost') {
+        if (index === fixedAssets.length - 1) {
+          addRow('assets');
+          setTimeout(() => {
+            document.getElementById(`assets-name-${index + 1}`)?.focus();
+          }, 50);
+        } else {
+          document.getElementById(`assets-name-${index + 1}`)?.focus();
+        }
+      }
+    }
+  };
+
+  // ==========================================
   // PROCEDIMIENTO DE CARGA MANUAL (ADD/DELETE ROWS)
   // ==========================================
   const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'axiDynamic') => {
@@ -926,7 +1046,7 @@ export default function WizardPage() {
     return calculateTaxReturn(calculationInput);
   };
 
-  const calculationResult = currentStep === 10 ? executeCalculation() : null;
+  const calculationResult = (clientName.trim() !== '' && cuit.trim() !== '') ? executeCalculation() : null;
 
   // Buscar si el cliente actual (según el CUIT ingresado) tiene una DDJJ anterior cerrada en la BD o mock
   const clientObj = dbClients.find(c => c.cuit === cuit) || mockClients.find(c => c.cuit === cuit);
@@ -935,9 +1055,31 @@ export default function WizardPage() {
        mockTaxReturns.find(r => r.clientId === clientObj.id && r.year === fiscalYear - 1 && r.status === 'Cerrada'))
     : null;
 
+  const formatDecimal = (val: any) => {
+    if (!val) return '$0';
+    const num = typeof val.toNumber === 'function' ? val.toNumber() : Number(val);
+    return isNaN(num) ? '$0' : '$' + num.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200">
       
+      <style dangerouslySetInnerHTML={{__html: `
+        .custom-wizard-scrollbar::-webkit-scrollbar {
+          height: 5px;
+        }
+        .custom-wizard-scrollbar::-webkit-scrollbar-track {
+          background: #121216;
+        }
+        .custom-wizard-scrollbar::-webkit-scrollbar-thumb {
+          background: #27272a;
+          border-radius: 4px;
+        }
+        .custom-wizard-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #14b8a6;
+        }
+      `}} />
+
       {isLoadingData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#09090b]/80 backdrop-blur-md transition-all">
           <div className="bg-[#121216] border border-zinc-800 rounded-xl p-8 max-w-sm w-full text-center space-y-4 shadow-2xl relative overflow-hidden">
@@ -973,51 +1115,57 @@ export default function WizardPage() {
       </header>
 
       {/* BARRA DE PROGRESO DE 10 PASOS (STITCH UI PROGRESS LINE) */}
-      <div className="bg-[#121216] border-b border-zinc-850 py-3 overflow-x-auto scrollbar-none">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between min-w-[900px] gap-2">
-          {[
-            'Identificación', 'Perfil Impositivo', 'Ventas', 'Compras',
-            'Existencias', 'Bienes de Uso', 'Disponibilidades',
-            'Deducciones Gral', 'Retenciones', 'Cierre y Consolidación'
-          ].map((stepName, index) => {
-            const stepNum = index + 1;
-            const isActive = currentStep === stepNum;
-            const hasData = checkIfStepHasData(stepNum);
-            const isVisited = stepNum < maxVisitedStep;
-            
-            return (
-              <button 
-                key={stepNum}
-                onClick={() => changeStep(stepNum)}
-                className="flex items-center gap-2 text-left focus:outline-none transition-all group"
-              >
-                <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all ${
-                  isActive ? 'bg-teal-500 text-[#09090b] border-teal-500 shadow-lg shadow-teal-500/10' :
-                  hasData ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' :
-                  isVisited ? 'bg-amber-500/10 text-amber-450 border-amber-500/25' :
-                  'bg-zinc-900 text-zinc-500 border-zinc-800'
-                }`}>
-                  {isActive ? stepNum : (hasData ? <Check className="h-3 w-3 stroke-[3]" /> : (isVisited ? <span className="text-[10px] font-extrabold">-</span> : stepNum))}
-                </div>
-                <div className="flex flex-col">
-                  <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${
-                    isActive ? 'text-teal-400' : 
-                    hasData ? 'text-zinc-300' : 
-                    isVisited ? 'text-amber-400/80' : 
-                    'text-zinc-500 group-hover:text-zinc-400'
+      <div className="relative">
+        {/* Degradados laterales de desvanecimiento (Fade mask) para indicar desplazamiento */}
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#121216] to-transparent pointer-events-none z-10 md:block hidden"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#121216] to-transparent pointer-events-none z-10 md:block hidden"></div>
+
+        <div className="bg-[#121216] border-b border-zinc-850 py-3 overflow-x-auto custom-wizard-scrollbar">
+          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between min-w-[1000px] gap-4">
+            {[
+              'Identificación', 'Perfil Impositivo', 'Ventas', 'Compras',
+              'Existencias', 'Bienes de Uso', 'Disponibilidades',
+              'Deducciones Gral', 'Retenciones', 'Cierre y Consolidación'
+            ].map((stepName, index) => {
+              const stepNum = index + 1;
+              const isActive = currentStep === stepNum;
+              const hasData = checkIfStepHasData(stepNum);
+              const isVisited = stepNum < maxVisitedStep;
+              
+              return (
+                <button 
+                  key={stepNum}
+                  onClick={() => changeStep(stepNum)}
+                  className="flex items-center gap-2 text-left focus:outline-none transition-all group shrink-0"
+                >
+                  <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all ${
+                    isActive ? 'bg-teal-500 text-[#09090b] border-teal-500 shadow-lg shadow-teal-500/10' :
+                    hasData ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' :
+                    isVisited ? 'bg-amber-500/10 text-amber-450 border-amber-500/25' :
+                    'bg-zinc-900 text-zinc-500 border-zinc-800'
                   }`}>
-                    {stepName}
-                  </span>
-                  {!isActive && isVisited && !hasData && (
-                    <span className="text-[9px] text-amber-550/80 font-bold tracking-tight leading-none mt-0.5">
-                      Sin datos
+                    {isActive ? stepNum : (hasData ? <Check className="h-3 w-3 stroke-[3]" /> : (isVisited ? <span className="text-[10px] font-extrabold">-</span> : stepNum))}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${
+                      isActive ? 'text-teal-400' : 
+                      hasData ? 'text-zinc-300' : 
+                      isVisited ? 'text-amber-400/80' : 
+                      'text-zinc-500 group-hover:text-zinc-400'
+                    }`}>
+                      {stepName}
                     </span>
-                  )}
-                </div>
-                {stepNum < 10 && <div className="h-[1px] w-4 bg-zinc-800"></div>}
-              </button>
-            );
-          })}
+                    {!isActive && isVisited && !hasData && (
+                      <span className="text-[9px] text-amber-550/80 font-bold tracking-tight leading-none mt-0.5">
+                        Sin datos
+                      </span>
+                    )}
+                  </div>
+                  {stepNum < 10 && <div className="h-[1px] w-6 bg-zinc-800"></div>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1052,7 +1200,7 @@ export default function WizardPage() {
                   <div className="relative">
                     <input 
                       type="text" 
-                      value={clientName}
+                      value={clientName || ''}
                       onChange={(e) => {
                         setClientName(e.target.value);
                         setIsDropdownOpen(true);
@@ -1110,7 +1258,7 @@ export default function WizardPage() {
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">CUIT (Formato Oficial)</label>
                   <input 
                     type="text" 
-                    value={cuit}
+                    value={cuit || ''}
                     onChange={(e) => setCuit(formatCuit(e.target.value))}
                     onBlur={() => loadClientHistory(cuit, clientName, fiscalYear)}
                     className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
@@ -1274,7 +1422,7 @@ export default function WizardPage() {
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Activo Total al Inicio ($)</label>
                     <input 
                       type="number" 
-                      value={activoTotalInicio}
+                      value={activoTotalInicio ?? ''}
                       onChange={(e) => setActivoTotalInicio(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                       placeholder="Activo Inicial"
@@ -1285,7 +1433,7 @@ export default function WizardPage() {
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Pasivo Total al Inicio ($)</label>
                     <input 
                       type="number" 
-                      value={pasivoTotalInicio}
+                      value={pasivoTotalInicio ?? ''}
                       onChange={(e) => setPasivoTotalInicio(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                       placeholder="Pasivo Inicial"
@@ -1296,7 +1444,7 @@ export default function WizardPage() {
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Bienes No Computables al Inicio ($)</label>
                     <input 
                       type="number" 
-                      value={bienesNoComputablesInicio}
+                      value={bienesNoComputablesInicio ?? ''}
                       onChange={(e) => setBienesNoComputablesInicio(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                       placeholder="Bienes No Computables"
@@ -1346,7 +1494,7 @@ export default function WizardPage() {
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Cantidad de Hijos a cargo</label>
                   <input 
                     type="number"
-                    value={personalDeductions.cantidadHijos}
+                    value={personalDeductions.cantidadHijos ?? 0}
                     onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijos: Math.max(0, parseInt(e.target.value) || 0)})}
                     className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                   />
@@ -1356,7 +1504,7 @@ export default function WizardPage() {
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Hijos Incapacitados para el Trabajo</label>
                   <input 
                     type="number"
-                    value={personalDeductions.cantidadHijosIncapacitados}
+                    value={personalDeductions.cantidadHijosIncapacitados ?? 0}
                     onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijosIncapacitados: Math.max(0, parseInt(e.target.value) || 0)})}
                     className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                   />
@@ -1428,11 +1576,48 @@ export default function WizardPage() {
                 </div>
               )}
 
+              {/* ACCIONES MASIVAS - BULK ACTIONS PANEL */}
+              {selectedSales.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg bg-teal-500/10 border border-teal-500/25 mb-4 animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-teal-300">{selectedSales.length} Ventas seleccionadas</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => applyBulkSalesAction('taxable')}
+                      className="px-3 h-8 rounded bg-zinc-900 border border-zinc-800 hover:border-teal-500/30 text-[10px] font-bold text-teal-400 uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Marcar Gravado
+                    </button>
+                    <button
+                      onClick={() => applyBulkSalesAction('exempt')}
+                      className="px-3 h-8 rounded bg-zinc-900 border border-zinc-800 hover:border-teal-500/30 text-[10px] font-bold text-teal-400 uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Marcar Exento
+                    </button>
+                    <button
+                      onClick={() => applyBulkSalesAction('delete')}
+                      className="px-3 h-8 rounded bg-red-950/20 border border-red-500/20 text-[10px] font-bold text-red-400 hover:border-red-500/40 uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* GRILLA INTERACTIVA EDITABLE (STITCH INTERACTIVE TABLE) */}
               <div className="border border-zinc-800 rounded-lg overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                      <th className="px-4 py-3 w-10 text-center">
+                        <input 
+                          type="checkbox"
+                          checked={sales.length > 0 && selectedSales.length === sales.length}
+                          onChange={handleSelectAllSales}
+                          className="h-4 w-4 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
+                        />
+                      </th>
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3 text-right">Importe Neto ($)</th>
                       <th className="px-4 py-3 text-center">Tipo de Ingreso</th>
@@ -1441,20 +1626,32 @@ export default function WizardPage() {
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
                     {sales.map((sale, index) => (
-                      <tr key={index} className="hover:bg-zinc-800/10">
+                      <tr key={index} className={`hover:bg-zinc-800/10 transition-colors ${selectedSales.includes(index) ? 'bg-teal-500/5' : ''}`}>
+                        <td className="px-4 py-2 text-center">
+                          <input 
+                            type="checkbox"
+                            checked={selectedSales.includes(index)}
+                            onChange={() => handleSelectSale(index)}
+                            className="h-4 w-4 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
+                          />
+                        </td>
                         <td className="px-4 py-2">
                           <input 
                             type="date"
-                            value={sale.date}
+                            id={`sales-date-${index}`}
+                            value={sale.date || ''}
                             onChange={(e) => handleCellChange(index, 'date', e.target.value, 'sales')}
+                            onKeyDown={(e) => handleSalesKeyDown(e, index, 'date')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
                           />
                         </td>
                         <td className="px-4 py-2 text-right">
                           <input 
                             type="number"
-                            value={sale.netAmount}
+                            id={`sales-amount-${index}`}
+                            value={sale.netAmount ?? ''}
                             onChange={(e) => handleCellChange(index, 'netAmount', e.target.value, 'sales')}
+                            onKeyDown={(e) => handleSalesKeyDown(e, index, 'amount')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                           />
                         </td>
@@ -1534,10 +1731,63 @@ export default function WizardPage() {
                 </div>
               </div>
 
+              {/* ACCIONES MASIVAS - BULK ACTIONS PANEL */}
+              {selectedPurchases.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg bg-teal-500/10 border border-teal-500/25 mb-4 animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-teal-300">{selectedPurchases.length} Compras seleccionadas</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => applyBulkPurchasesAction('deductible')}
+                      className="px-3 h-8 rounded bg-zinc-900 border border-zinc-800 hover:border-teal-500/30 text-[10px] font-bold text-teal-400 uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Deducible
+                    </button>
+                    <button
+                      onClick={() => applyBulkPurchasesAction('nondeductible')}
+                      className="px-3 h-8 rounded bg-zinc-900 border border-zinc-800 hover:border-teal-500/30 text-[10px] font-bold text-teal-400 uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      No Deducible
+                    </button>
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          applyBulkPurchasesAction(e.target.value);
+                          e.target.value = '';
+                        }
+                      }}
+                      className="bg-[#09090b] border border-zinc-800 rounded px-2 h-8 text-[10px] text-zinc-300 font-bold uppercase tracking-wider focus:outline-none cursor-pointer"
+                    >
+                      <option value="">Tipo de Gasto...</option>
+                      <option value="type:GastosGenerales">Gastos Generales</option>
+                      <option value="type:MateriaPrima">Materia Prima</option>
+                      <option value="type:Servicios">Servicios Básicos</option>
+                      <option value="type:Impuestos">Impuestos / Tasas</option>
+                      <option value="type:Amortizaciones">Amortizaciones</option>
+                    </select>
+                    <button
+                      onClick={() => applyBulkPurchasesAction('delete')}
+                      className="px-3 h-8 rounded bg-red-950/20 border border-red-500/20 text-[10px] font-bold text-red-400 hover:border-red-500/40 uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="border border-zinc-800 rounded-lg overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                      <th className="px-4 py-3 w-10 text-center">
+                        <input 
+                          type="checkbox"
+                          checked={purchases.length > 0 && selectedPurchases.length === purchases.length}
+                          onChange={handleSelectAllPurchases}
+                          className="h-4 w-4 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
+                        />
+                      </th>
                       <th className="px-4 py-3">Fecha</th>
                       <th className="px-4 py-3 text-right">Importe Neto ($)</th>
                       <th className="px-4 py-3 text-center">Tratamiento</th>
@@ -1547,20 +1797,32 @@ export default function WizardPage() {
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
                     {purchases.map((purchase, index) => (
-                      <tr key={index} className="hover:bg-zinc-800/10">
+                      <tr key={index} className={`hover:bg-zinc-800/10 transition-colors ${selectedPurchases.includes(index) ? 'bg-teal-500/5' : ''}`}>
+                        <td className="px-4 py-2 text-center">
+                          <input 
+                            type="checkbox"
+                            checked={selectedPurchases.includes(index)}
+                            onChange={() => handleSelectPurchase(index)}
+                            className="h-4 w-4 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
+                          />
+                        </td>
                         <td className="px-4 py-2">
                           <input 
                             type="date"
-                            value={purchase.date}
+                            id={`purchases-date-${index}`}
+                            value={purchase.date || ''}
                             onChange={(e) => handleCellChange(index, 'date', e.target.value, 'purchases')}
+                            onKeyDown={(e) => handlePurchasesKeyDown(e, index, 'date')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
                           />
                         </td>
                         <td className="px-4 py-2 text-right">
                           <input 
                             type="number"
-                            value={purchase.netAmount}
+                            id={`purchases-amount-${index}`}
+                            value={purchase.netAmount ?? ''}
                             onChange={(e) => handleCellChange(index, 'netAmount', e.target.value, 'purchases')}
+                            onKeyDown={(e) => handlePurchasesKeyDown(e, index, 'amount')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                           />
                         </td>
@@ -1625,7 +1887,7 @@ export default function WizardPage() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
                     <input 
                       type="number" 
-                      value={initialStock}
+                      value={initialStock ?? ''}
                       onChange={(e) => setInitialStock(e.target.value)}
                       className="w-full h-11 pl-8 pr-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                     />
@@ -1638,7 +1900,7 @@ export default function WizardPage() {
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
                     <input 
                       type="number" 
-                      value={finalStock}
+                      value={finalStock ?? ''}
                       onChange={(e) => setFinalStock(e.target.value)}
                       className="w-full h-11 pl-8 pr-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                     />
@@ -1675,14 +1937,16 @@ export default function WizardPage() {
                         <td className="px-4 py-2">
                           <input 
                             type="text"
-                            value={asset.name}
+                            id={`assets-name-${index}`}
+                            value={asset.name || ''}
                             onChange={(e) => handleCellChange(index, 'name', e.target.value, 'assets')}
+                            onKeyDown={(e) => handleAssetsKeyDown(e, index, 'name')}
                             className="bg-transparent border-0 text-white text-xs focus:ring-0 focus:outline-none w-full"
                           />
                         </td>
                         <td className="px-4 py-2 text-center">
                           <select
-                            value={asset.type}
+                            value={asset.type || 'Otro'}
                             onChange={(e) => handleCellChange(index, 'type', e.target.value, 'assets')}
                             className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
                           >
@@ -1695,15 +1959,17 @@ export default function WizardPage() {
                         <td className="px-4 py-2 text-right">
                           <input 
                             type="number"
-                            value={asset.originalCost}
+                            id={`assets-cost-${index}`}
+                            value={asset.originalCost ?? ''}
                             onChange={(e) => handleCellChange(index, 'originalCost', e.target.value, 'assets')}
+                            onKeyDown={(e) => handleAssetsKeyDown(e, index, 'cost')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                           />
                         </td>
                         <td className="px-4 py-2 text-center">
                           <input 
                             type="number"
-                            value={asset.usefulLife}
+                            value={asset.usefulLife ?? ''}
                             onChange={(e) => handleCellChange(index, 'usefulLife', e.target.value, 'assets')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-16 text-center focus:border-b focus:border-teal-500"
                           />
@@ -1711,7 +1977,7 @@ export default function WizardPage() {
                         <td className="px-4 py-2 text-center">
                           <input 
                             type="number"
-                            value={asset.yearsElapsed}
+                            value={asset.yearsElapsed ?? ''}
                             onChange={(e) => handleCellChange(index, 'yearsElapsed', e.target.value, 'assets')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-16 text-center focus:border-b focus:border-teal-500"
                           />
@@ -1719,7 +1985,7 @@ export default function WizardPage() {
                         <td className="px-4 py-2 text-right">
                           <input 
                             type="text"
-                            value={asset.customReexpIndex}
+                            value={asset.customReexpIndex ?? ''}
                             onChange={(e) => handleCellChange(index, 'customReexpIndex', e.target.value, 'assets')}
                             className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-20 text-right"
                           />
@@ -1775,7 +2041,7 @@ export default function WizardPage() {
                         <td className="px-4 py-2">
                           <input 
                             type="text"
-                            value={bank.name}
+                            value={bank.name || ''}
                             onChange={(e) => handleCellChange(index, 'name', e.target.value, 'bankAccounts')}
                             className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
                             placeholder="Nombre del Banco"
@@ -1784,7 +2050,7 @@ export default function WizardPage() {
                         <td className="px-4 py-2">
                           <input 
                             type="text"
-                            value={bank.accountNumber}
+                            value={bank.accountNumber || ''}
                             onChange={(e) => handleCellChange(index, 'accountNumber', e.target.value, 'bankAccounts')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
                             placeholder="Nº de Cuenta"
@@ -1804,7 +2070,7 @@ export default function WizardPage() {
                           <div className="space-y-1.5">
                             <input 
                               type="number"
-                              value={bank.nominalInitial}
+                              value={bank.nominalInitial ?? ''}
                               onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'bankAccounts')}
                               className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
                             />
@@ -1815,7 +2081,7 @@ export default function WizardPage() {
                                   <input 
                                     type="number" 
                                     step="0.01"
-                                    value={bank.tcInitial || '1'}
+                                    value={bank.tcInitial ?? '1'}
                                     onChange={(e) => handleCellChange(index, 'tcInitial', e.target.value, 'bankAccounts')}
                                     className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                   />
@@ -1831,7 +2097,7 @@ export default function WizardPage() {
                           <div className="space-y-1.5">
                             <input 
                               type="number"
-                              value={bank.nominalFinal}
+                              value={bank.nominalFinal ?? ''}
                               onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'bankAccounts')}
                               className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                             />
@@ -1842,7 +2108,7 @@ export default function WizardPage() {
                                   <input 
                                     type="number" 
                                     step="0.01"
-                                    value={bank.tcFinal || '1'}
+                                    value={bank.tcFinal ?? '1'}
                                     onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'bankAccounts')}
                                     className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                   />
@@ -1857,7 +2123,7 @@ export default function WizardPage() {
                         <td className="px-4 py-2 text-right">
                           <input 
                             type="number"
-                            value={bank.interests}
+                            value={bank.interests ?? ''}
                             onChange={(e) => handleCellChange(index, 'interests', e.target.value, 'bankAccounts')}
                             className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                           />
@@ -1907,7 +2173,7 @@ export default function WizardPage() {
                           <td className="px-4 py-2">
                             <input 
                               type="text"
-                              value={liab.description}
+                              value={liab.description || ''}
                               onChange={(e) => handleCellChange(index, 'description', e.target.value, 'personalLiabilities')}
                               className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
                               placeholder="Ej: Préstamo Banco Nación, Acreedor Hipotecario..."
@@ -1916,7 +2182,7 @@ export default function WizardPage() {
                           <td className="px-4 py-2 text-right">
                             <input 
                               type="number"
-                              value={liab.valueInitial}
+                              value={liab.valueInitial ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueInitial', e.target.value, 'personalLiabilities')}
                               className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
                             />
@@ -1924,7 +2190,7 @@ export default function WizardPage() {
                           <td className="px-4 py-2 text-right">
                             <input 
                               type="number"
-                              value={liab.valueFinal}
+                              value={liab.valueFinal ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueFinal', e.target.value, 'personalLiabilities')}
                               className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                             />
@@ -1958,6 +2224,53 @@ export default function WizardPage() {
                   Añadir Pasivo / Deuda
                 </button>
               </div>
+
+              {/* PILAR 4: PRE-CONCILIACIÓN PATRIMONIAL EN PASO 7 */}
+              {(() => {
+                const banksIni = bankAccounts.reduce((sum, b) => sum.add(new Decimal(b.nominalInitial || 0).mul(new Decimal(b.tcInitial || 1))), new Decimal(0));
+                const banksFin = bankAccounts.reduce((sum, b) => sum.add(new Decimal(b.nominalFinal || 0).mul(new Decimal(b.tcFinal || 1))), new Decimal(0));
+                
+                const assetsIni = personalAssets.reduce((sum, a) => sum.add(new Decimal(a.valueInitial || 0)), new Decimal(0));
+                const assetsFin = personalAssets.reduce((sum, a) => sum.add(new Decimal(a.valueFinal || 0)), new Decimal(0));
+                
+                const liabIni = personalLiabilities.reduce((sum, l) => sum.add(new Decimal(l.valueInitial || 0)), new Decimal(0));
+                const liabFin = personalLiabilities.reduce((sum, l) => sum.add(new Decimal(l.valueFinal || 0)), new Decimal(0));
+                
+                const totalIni = banksIni.add(assetsIni).sub(liabIni);
+                const totalFin = banksFin.add(assetsFin).sub(liabFin);
+                const variacion = totalFin.sub(totalIni);
+                const hasValues = totalIni.abs().gt(0) || totalFin.abs().gt(0);
+                
+                if (!hasValues) return null;
+                
+                return (
+                  <div className="mt-8 p-5 rounded-xl bg-gradient-to-br from-[#181820] to-[#121216] border border-zinc-800 shadow-xl animate-fadeIn space-y-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400">
+                        <DollarSign className="h-3.5 w-3.5" />
+                      </div>
+                      <h3 className="text-xs font-bold text-white uppercase tracking-wider">Pre-Conciliación Patrimonial (Variación Neta)</h3>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
+                      <div className="p-3.5 rounded-lg bg-[#09090b]/80 border border-zinc-850">
+                        <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Patrimonio Neto Inicial</span>
+                        <span className="text-base font-bold text-zinc-200">{formatDecimal(totalIni)}</span>
+                      </div>
+                      <div className="p-3.5 rounded-lg bg-[#09090b]/80 border border-zinc-850">
+                        <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Patrimonio Neto Cierre</span>
+                        <span className="text-base font-bold text-zinc-200">{formatDecimal(totalFin)}</span>
+                      </div>
+                      <div className={`p-3.5 rounded-lg bg-[#09090b]/80 border ${variacion.toNumber() >= 0 ? 'border-emerald-500/20' : 'border-amber-500/20'}`}>
+                        <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Variación Neta Ejercicio</span>
+                        <span className={`text-base font-extrabold block ${variacion.toNumber() >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                          {formatDecimal(variacion)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -1988,7 +2301,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Aportes Autónomos</label>
                       <input 
                         type="number"
-                        value={generalDeductions.autonomos}
+                        value={generalDeductions.autonomos ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, autonomos: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -1998,7 +2311,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Servicio Doméstico (Tope: {getTope('topeServicioDomestico', '$4.507.505,52')})</label>
                       <input 
                         type="number"
-                        value={generalDeductions.servicioDomestico}
+                        value={generalDeductions.servicioDomestico ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, servicioDomestico: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2008,7 +2321,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Vida (Tope: {getTope('topeSeguroVida', '$573.817,13')})</label>
                       <input 
                         type="number"
-                        value={generalDeductions.seguroVida}
+                        value={generalDeductions.seguroVida ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, seguroVida: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2018,7 +2331,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Retiro (Tope: {getTope('topeSeguroRetiro', '$573.817,13')})</label>
                       <input 
                         type="number"
-                        value={generalDeductions.seguroRetiro}
+                        value={generalDeductions.seguroRetiro ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, seguroRetiro: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2028,7 +2341,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Gastos de Sepelio (Tope: {getTope('topeGastosSepelio', '$996,23')})</label>
                       <input 
                         type="number"
-                        value={generalDeductions.gastosSepelio}
+                        value={generalDeductions.gastosSepelio ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, gastosSepelio: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2038,7 +2351,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Intereses Créditos Hipotecarios (Tope: {getTope('topeInteresHipoteca', '$20.000,00')})</label>
                       <input 
                         type="number"
-                        value={generalDeductions.interesesHipoteca}
+                        value={generalDeductions.interesesHipoteca ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, interesesHipoteca: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2048,7 +2361,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Gastos Educativos (Tope: {getTope('topeGastosEducativos', '$1.803.002,21')})</label>
                       <input 
                         type="number"
-                        value={generalDeductions.gastosEducativos}
+                        value={generalDeductions.gastosEducativos ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, gastosEducativos: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2058,7 +2371,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Alquiler Casa Habitación (Deducible: 40%)</label>
                       <input 
                         type="number"
-                        value={generalDeductions.alquilerCasaHabitacion}
+                        value={generalDeductions.alquilerCasaHabitacion ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, alquilerCasaHabitacion: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2068,7 +2381,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Donaciones (Tope: 5% Ganancia Neta)</label>
                       <input 
                         type="number"
-                        value={generalDeductions.donaciones}
+                        value={generalDeductions.donaciones ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, donaciones: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2078,7 +2391,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Prepagas / Cobertura Médica (Tope: 5% Ganancia Neta)</label>
                       <input 
                         type="number"
-                        value={generalDeductions.medicosAsistencial}
+                        value={generalDeductions.medicosAsistencial ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, medicosAsistencial: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2088,7 +2401,7 @@ export default function WizardPage() {
                       <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Honorarios Médicos Facturados (Deducible: 40%)</label>
                       <input 
                         type="number"
-                        value={generalDeductions.honorariosMedicos}
+                        value={generalDeductions.honorariosMedicos ?? ''}
                         onChange={(e) => setGeneralDeductions({...generalDeductions, honorariosMedicos: e.target.value})}
                         className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       />
@@ -2166,7 +2479,7 @@ export default function WizardPage() {
                         <td className="px-4 py-2 text-right">
                           <input 
                             type="number"
-                            value={withholding.amount}
+                            value={withholding.amount ?? ''}
                             onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'withholdings')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                           />
@@ -2206,7 +2519,7 @@ export default function WizardPage() {
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Saldo a Favor del Período Anterior ($)</label>
                     <input 
                       type="number"
-                      value={saldoAFavorAnterior}
+                      value={saldoAFavorAnterior ?? ''}
                       onChange={(e) => setSaldoAFavorAnterior(e.target.value)}
                       className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       placeholder="Ej: 0.00"
@@ -2217,7 +2530,7 @@ export default function WizardPage() {
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Quebrantos de Períodos Anteriores a Compensar ($)</label>
                     <input 
                       type="number"
-                      value={quebrantosAnteriores}
+                      value={quebrantosAnteriores ?? ''}
                       onChange={(e) => setQuebrantosAnteriores(e.target.value)}
                       className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       placeholder="Ej: 0.00"
@@ -2248,7 +2561,7 @@ export default function WizardPage() {
                           <td className="px-4 py-2 w-40">
                             <input 
                               type="date"
-                              value={item.date}
+                              value={item.date || ''}
                               onChange={(e) => handleCellChange(index, 'date', e.target.value, 'axiDynamic')}
                               className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none w-full"
                             />
@@ -2256,7 +2569,7 @@ export default function WizardPage() {
                           <td className="px-4 py-2">
                             <input 
                               type="text"
-                              value={item.concept}
+                              value={item.concept || ''}
                               onChange={(e) => handleCellChange(index, 'concept', e.target.value, 'axiDynamic')}
                               className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
                               placeholder="Ej: Aporte Socio X, Retiro de Efectivo..."
@@ -2276,7 +2589,7 @@ export default function WizardPage() {
                           <td className="px-4 py-2 text-right w-40">
                             <input 
                               type="number"
-                              value={item.amount}
+                              value={item.amount ?? ''}
                               onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'axiDynamic')}
                               className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                             />
@@ -2541,6 +2854,80 @@ export default function WizardPage() {
             )}
           </div>
         </div>
+      )}
+
+      {/* PANEL FLOTANTE DE IMPACTO FISCAL (LIVE TAX BAR) */}
+      {currentStep > 1 && currentStep < 10 && calculationResult && (
+        <>
+          {isLiveBarOpen ? (
+            <div className="fixed top-24 right-6 z-40 w-80 bg-[#121216]/95 border border-zinc-800 rounded-xl p-5 shadow-2xl backdrop-blur-md transition-all duration-300 animate-fadeIn font-sans">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-t-xl"></div>
+              
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400">
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-xs font-bold text-white tracking-wide">Consola Impositiva (En vivo)</span>
+                </div>
+                <button 
+                  onClick={() => setIsLiveBarOpen(false)}
+                  className="text-zinc-500 hover:text-zinc-300 text-xs font-semibold focus:outline-none px-1.5 py-0.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+                  title="Minimizar panel"
+                >
+                  Ocultar
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Resultado Comercial */}
+                <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
+                  <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Resultado Neto 3ra Cat.</span>
+                  <span className="text-lg font-black font-mono text-zinc-200">
+                    {formatDecimal(calculationResult.resultadoComercialNeto)}
+                  </span>
+                </div>
+
+                {/* Impuesto Neto */}
+                <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
+                  <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Impuesto Neto / Saldo DDJJ</span>
+                  <span className={`text-xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.toNumber() > 0 ? 'text-red-400' : 'text-teal-400'}`}>
+                    {formatDecimal(calculationResult.impuestoAPagarOARCA)}
+                  </span>
+                </div>
+
+                {/* Consumo Diferencia (JVP) */}
+                <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
+                  <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Consumo Proyectado (JVP)</span>
+                  <span className="text-lg font-black font-mono text-zinc-350 block mb-2">
+                    {formatDecimal(calculationResult.consumoDiferencial)}
+                  </span>
+                  
+                  {/* Alerta de Descuadre Patrimonial / Consumo Negativo */}
+                  {calculationResult.consumoDiferencial.toNumber() < 0 ? (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase animate-pulse">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                      Consumo Negativo / Descuadre
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase">
+                      <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+                      Patrimonio Consistente
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button 
+              onClick={() => setIsLiveBarOpen(true)}
+              className="fixed top-24 right-6 z-40 h-10 w-10 rounded-full bg-teal-500 hover:bg-teal-400 flex items-center justify-center shadow-lg shadow-teal-500/20 text-[#09090b] hover:scale-105 active:scale-95 transition-all focus:outline-none cursor-pointer"
+              title="Mostrar panel impositivo"
+            >
+              <Sparkles className="h-5 w-5 animate-pulse" />
+            </button>
+          )}
+        </>
       )}
 
       {/* FOOTER */}

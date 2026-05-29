@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: ganancias-jaba-db
+    restart: always
+    environment:
+      MYSQL_DATABASE: ganancias_jaba
+      MYSQL_USER: jaba
+      MYSQL_PASSWORD: jaba_secure_pass
+      MYSQL_ROOT_PASSWORD: root_secure_pass
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:

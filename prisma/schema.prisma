@@ -1,0 +1,546 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ==========================================
+// 1. SEGURIDAD Y MULTIUSUARIOS
+// ==========================================
+
+model User {
+  id            String             @id @default(uuid())
+  email         String             @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  isActive      Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  
+  // Relaciones
+  roleId        String
+  role          Role               @relation(fields: [roleId], references: [id])
+  clientAccess  ClientUserAccess[]
+  auditLogs     AuditLog[]
+}
+
+model Role {
+  id          String       @id @default(uuid())
+  name        String       @unique // owner, admin, contador, revisor, carga_datos, solo_lectura
+  description String?
+  
+  // Relaciones
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  code        String           @unique // e.g., "CLIENT_CREATE", "RETURN_CLOSE", "PARAM_EDIT"
+  description String?
+  
+  // Relaciones
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model ClientUserAccess {
+  clientId  String
+  userId    String
+  canEdit   Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([clientId, userId])
+}
+
+// ==========================================
+// 2. CLIENTES (MAESTRO DE CONTRIBUYENTES)
+// ==========================================
+
+model Client {
+  id             String             @id @default(uuid())
+  cuit           String             @unique // Formato: XX-XXXXXXXX-X
+  name           String             // Razón Social / Nombre
+  type           String             // Persona Humana, Sucesión Indivisa, Sociedad
+  fiscalCondition String            // Responsable Inscripto, etc.
+  mainActivity   String             // CABA, Buenos Aires, Convenio Multilateral
+  responsibleName String?           // Responsable interno asignado
+  status         String             @default("Activo") // Activo, Suspendido, Inactivo
+  notes          String?            @db.Text
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  // Relaciones
+  userAccess     ClientUserAccess[]
+  taxReturns     TaxReturn[]
+}
+
+// ==========================================
+// 3. PARÁMETROS NORMATIVOS Y AÑOS FISCALES
+// ==========================================
+
+model FiscalYear {
+  id            String             @id @default(uuid())
+  year          Int                @unique // e.g., 2024, 2025, 2026
+  isEnabled     Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  // Relaciones
+  taxReturns       TaxReturn[]
+  parameterSets    TaxParameterSet[]
+  indices          UpdateIndex[]
+  art94Brackets    TaxArt94Bracket[]
+}
+
+model TaxParameterSet {
+  id                  String     @id @default(uuid())
+  fiscalYearId        String
+  fiscalYear          FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  
+  // Deducciones Art 30
+  minimoNoImponible   Decimal    @db.Decimal(18, 4)
+  conyuge             Decimal    @db.Decimal(18, 4)
+  hijo                Decimal    @db.Decimal(18, 4)
+  hijoIncapacitado    Decimal    @db.Decimal(18, 4)
+  
+  // Deducciones Especiales Art 30 Inc C
+  especialAutonomo    Decimal    @db.Decimal(18, 4)
+  especialEmprendedor Decimal    @db.Decimal(18, 4)
+  especialDependiente Decimal    @db.Decimal(18, 4)
+  
+  // Topes Deducciones Generales
+  topeServicioDomestico Decimal  @db.Decimal(18, 4)
+  topeSeguroVida        Decimal  @db.Decimal(18, 4)
+  topeSeguroRetiro      Decimal  @db.Decimal(18, 4)
+  topeGastosSepelio     Decimal  @db.Decimal(18, 4)
+  topeInteresHipoteca   Decimal  @db.Decimal(18, 4)
+  topeGastosEducativos  Decimal  @db.Decimal(18, 4)
+
+  status              String     @default("borrador") // borrador, validado, reemplazado
+  sourceLaw           String?    // Fuente legal de referencia
+  version             Int        @default(1)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  art94Brackets       TaxArt94Bracket[]
+  taxReturns          TaxReturn[]
+
+  @@unique([fiscalYearId, version])
+}
+
+model TaxArt94Bracket {
+  id                String           @id @default(uuid())
+  fiscalYearId      String
+  fiscalYear        FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  
+  taxParameterSetId String?
+  taxParameterSet   TaxParameterSet? @relation(fields: [taxParameterSetId], references: [id], onDelete: Cascade)
+  
+  fromAmount        Decimal          @db.Decimal(18, 4)
+  toAmount          Decimal?         @db.Decimal(18, 4) // nulo si es el tramo "en adelante"
+  fixedAmount       Decimal          @db.Decimal(18, 4)
+  percentage        Decimal          @db.Decimal(6, 4)  // e.g., 0.05 a 0.35
+  excessOf          Decimal          @db.Decimal(18, 4)
+
+  @@index([fiscalYearId])
+  @@index([taxParameterSetId])
+}
+
+model UpdateIndex {
+  id            String     @id @default(uuid())
+  fiscalYearId  String
+  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  
+  monthIndex    Int        // 1 to 12
+  monthName     String     // Enero, Febrero...
+  ipcValue      Decimal    @db.Decimal(18, 6)
+  
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@unique([fiscalYearId, monthIndex])
+}
+
+// ==========================================
+// 4. DECLARACIÓN JURADA (CABECERA)
+// ==========================================
+
+model TaxReturn {
+  id                String           @id @default(uuid())
+  clientId          String
+  fiscalYearId      String
+  taxParameterSetId String?
+  status            String           @default("Borrador") // Borrador, En_Revision, Observada, Lista_Presentar, Presentada, Cerrada, Rectificada
+  version           Int              @default(0)          // 0 = Original, 1 = Rectificativa 1...
+  notes             String?          @db.Text
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  client            Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  fiscalYear        FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  taxParameterSet   TaxParameterSet? @relation(fields: [taxParameterSetId], references: [id])
+
+  // Relaciones transaccionales de la liquidación
+  sales         SalesInvoice[]
+  purchases     PurchaseInvoice[]
+  fixedAssets   FixedAsset[]
+  inventory     InventoryValue[]
+  bankAccounts  BankAccountBalance[]
+  cashHoldings  CashHolding[]
+  receivables   ReceivableDebt[]
+  liabilities   PayableDebt[]
+  withholdings  TaxWithholding[]
+  personalAssets PersonalAsset[]
+  personalLiabilities PersonalLiability[]
+  justifications  PatrimonialJustification[]
+  axiStaticItems  AxiStaticItem[]
+  axiDynamicItems AxiDynamicItem[]
+  calculations   CalculationRun[]
+  attachments    Attachment[]
+  rectificationLinksAsOriginal RectificationLink[] @relation("OriginalReturn")
+  rectificationLinksAsRectified RectificationLink[] @relation("RectifiedReturn")
+
+  @@unique([clientId, fiscalYearId, version])
+  @@index([clientId])
+  @@index([fiscalYearId])
+}
+
+model RectificationLink {
+  id               String    @id @default(uuid())
+  originalId       String
+  rectifiedId      String
+  reason           String?   @db.Text
+  createdAt        DateTime  @default(now())
+
+  originalReturn   TaxReturn @relation("OriginalReturn", fields: [originalId], references: [id], onDelete: Cascade)
+  rectifiedReturn  TaxReturn @relation("RectifiedReturn", fields: [rectifiedId], references: [id], onDelete: Cascade)
+
+  @@unique([originalId, rectifiedId])
+}
+
+// ==========================================
+// 5. PAPELES DE TRABAJO Y TRANSACCIONES
+// ==========================================
+
+model SalesInvoice {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  date          DateTime
+  invoiceType   String    // Factura A, Factura B, Factura C...
+  invoiceNumber String
+  customerName  String
+  netAmount     Decimal   @db.Decimal(18, 2)
+  ivaAmount     Decimal   @db.Decimal(18, 2)
+  totalAmount   Decimal   @db.Decimal(18, 2)
+  isExempt      Boolean   @default(false) // Soporte para Ingresos Exentos (Monotributo/Exenciones)
+  
+  @@index([taxReturnId])
+}
+
+model PurchaseInvoice {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  date          DateTime
+  invoiceType   String
+  invoiceNumber String
+  vendorName    String
+  netAmount     Decimal   @db.Decimal(18, 2)
+  ivaAmount     Decimal   @db.Decimal(18, 2)
+  totalAmount   Decimal   @db.Decimal(18, 2)
+  isDeductible  Boolean   @default(true)  // Indica si es deducible en ganancias
+  isExempt      Boolean   @default(false) // Gastos exentos / no gravados
+  expenseType   String?   // Combustibles, Alquileres, Papelería, etc.
+
+  @@index([taxReturnId])
+}
+
+model FixedAsset {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  name          String    // e.g., "Automotor 1", "Inmueble Calle X"
+  type          String    // Rodado, Inmueble, Equipamiento, etc.
+  purchaseDate  DateTime
+  originalCost  Decimal   @db.Decimal(18, 2)
+  usefulLife    Int       // Vida útil total en años (e.g., 5, 50)
+  yearsElapsed  Int       // Años transcurridos al cierre actual
+  originalIva   Decimal   @db.Decimal(18, 2) @default(0)
+  customReexpIndex Decimal @db.Decimal(12, 6) @default(1.0) // Coeficiente IPC correspondiente
+
+  // Datos de Amortización Calculada (se almacenan para auditoría y persistencia)
+  annualDepreciationHist Decimal @db.Decimal(18, 2)
+  annualDepreciationAdj  Decimal @db.Decimal(18, 2)
+  residualValueHist      Decimal @db.Decimal(18, 2)
+  residualValueAdj       Decimal @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+model InventoryValue {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  concept       String    // Bienes de Cambio, Materia Prima, etc.
+  initialStock  Decimal   @db.Decimal(18, 2) // Valuación al inicio (Período anterior)
+  finalStock    Decimal   @db.Decimal(18, 2) // Valuación impositiva al cierre
+  
+  @@index([taxReturnId])
+}
+
+model BankAccountBalance {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  bankName      String
+  cuitBank      String?
+  accountNumber String
+  accountType   String    // Caja de Ahorro, Cuenta Corriente, etc.
+  currency      String    @default("ARS") // ARS, USD, EUR
+  nominalBalanceInitial Decimal @db.Decimal(18, 2)
+  nominalBalanceFinal   Decimal @db.Decimal(18, 2)
+  tcInitial     Decimal   @db.Decimal(12, 4) @default(1.0) // Tipo de Cambio compra BNA al inicio
+  tcFinal       Decimal   @db.Decimal(12, 4) @default(1.0) // Tipo de Cambio compra BNA al cierre
+  balanceInitialArs     Decimal @db.Decimal(18, 2)
+  balanceFinalArs       Decimal @db.Decimal(18, 2)
+  interests     Decimal   @db.Decimal(18, 2) @default(0) // Intereses devengados
+
+  @@index([taxReturnId])
+}
+
+model CashHolding {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  currency      String    @default("ARS")
+  nominalInitial Decimal  @db.Decimal(18, 2)
+  nominalFinal   Decimal  @db.Decimal(18, 2)
+  tcFinal        Decimal  @db.Decimal(12, 4) @default(1.0)
+  totalInitialArs Decimal @db.Decimal(18, 2)
+  totalFinalArs   Decimal @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+model ReceivableDebt {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  type          String    // Comercial (Clientes), Fiscal (Saldos Técnicos), Financiero (Préstamos)
+  description   String    // e.g., "Clientes de Gestión", "IVA Saldo Técnico", "Retención Impuesto"
+  balanceInitial Decimal @db.Decimal(18, 2)
+  balanceFinal   Decimal @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+model PayableDebt {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  type          String    // Proveedores, Acreedores Varios, Préstamos, Tarjetas
+  description   String
+  balanceInitial Decimal @db.Decimal(18, 2)
+  balanceFinal   Decimal @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+model TaxWithholding {
+  id             String    @id @default(uuid())
+  taxReturnId    String
+  taxReturn      TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  cuitAgent      String?
+  agentName      String
+  taxCode        String    // Ganancias, IVA, Bienes Personales...
+  taxDescription String
+  regimeCode     String?
+  regimeDescription String?
+  date           DateTime
+  certificateNumber String
+  operationDescription String?
+  amount         Decimal   @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+// ==========================================
+// 6. PATRIMONIO PERSONAL Y JUSTIFICACIÓN (JVP)
+// ==========================================
+
+model PersonalAsset {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  description   String    // e.g., "Inmueble 1", "Rodado Automotor", "Dinero en Efectivo Personal"
+  type          String    // Inmueble, Rodado, Depósitos, Efectivo, Acciones
+  valueInitial  Decimal   @db.Decimal(18, 2)
+  valueFinal    Decimal   @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+model PersonalLiability {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  description   String    // e.g., "Préstamo Hipotecario Personal", "Tarjetas de Crédito"
+  valueInitial  Decimal   @db.Decimal(18, 2)
+  valueFinal    Decimal   @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+model PatrimonialJustification {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  concept       String    // e.g., "Ganancia exenta", "Amortización de bienes de uso", "Herencia"
+  column        Int       // 1 = Columna I (Erogaciones/PN final), 2 = Columna II (PN inicial/Justifica)
+  amount        Decimal   @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+// ==========================================
+// 7. AJUSTE POR INFLACIÓN IMPOSITIVO (AXI)
+// ==========================================
+
+model AxiStaticItem {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  concept       String    // e.g., "Activo Total de Inicio", "Inmuebles y Obras en Curso", "Retenciones y Anticipos"
+  section       String    // ACTIVO_TOTAL, BIEN_NO_COMPUTABLE, AJUSTE_ACTIVO, PASIVO_TOTAL
+  amount        Decimal   @db.Decimal(18, 2)
+  isComputable  Boolean   @default(false)
+  
+  @@index([taxReturnId])
+}
+
+model AxiDynamicItem {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  concept       String    // e.g., "Retiro de socios", "Dividendos", "Aumentos de capital"
+  type          String    // AJUSTE_POSITIVO, AJUSTE_NEGATIVO
+  date          DateTime?
+  amount        Decimal   @db.Decimal(18, 2)
+  coef          Decimal   @db.Decimal(12, 6)
+  factor        Decimal   @db.Decimal(6, 4) // e.g., -1 o 1 para la fórmula
+  computedAxi   Decimal   @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+// ==========================================
+// 8. RESULTADOS INTERMEDIOS Y EJECUCIONES DEL MOTOR
+// ==========================================
+
+model CalculationRun {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  
+  runDate       DateTime  @default(now())
+  executorId    String?
+  
+  // Resultados Consolidados de Liquidación
+  resultThirdCategory   Decimal   @db.Decimal(18, 2) // Resultado de Tercera Categoría
+  resultTotalNet        Decimal   @db.Decimal(18, 2) // Total Ganancia Bruta (todas las cat)
+  totalGeneralDeductions Decimal @db.Decimal(18, 2)
+  impositiveResultBeforeQuebrantos Decimal @db.Decimal(18, 2)
+  quebrantosApplied     Decimal   @db.Decimal(18, 2)
+  impositiveResultNet   Decimal   @db.Decimal(18, 2)
+  totalPersonalDeductions Decimal @db.Decimal(18, 2)
+  taxableIncome         Decimal   @db.Decimal(18, 2) // Ganancia Neta Sujeta a Impuesto
+  taxDetermined         Decimal   @db.Decimal(18, 2) // Impuesto Determinado (Art 94)
+  totalPaymentsOnAccount Decimal  @db.Decimal(18, 2) // Retenciones + Percepciones + Anticipos
+  finalBalance          Decimal   @db.Decimal(18, 2) // Impuesto a pagar o saldo a favor
+  
+  // Justificación Patrimonial (Conciliación)
+  computedConsumo       Decimal   @db.Decimal(18, 2) // Consumo obtenido por diferencia
+  justificationDiff     Decimal   @db.Decimal(18, 2) @default(0) // Diferencia de cuadre (debe ser 0)
+  
+  // Ajuste por Inflación
+  axiStaticResult       Decimal   @db.Decimal(18, 2)
+  axiDynamicResult      Decimal   @db.Decimal(18, 2)
+  axiNetAdjustment      Decimal   @db.Decimal(18, 2) // Sumatoria AXI neto imputado en el ejercicio
+  
+  // Datos Técnicos / Auditoría
+  variablesSnapshot     String?   @db.LongText // Almacenamiento JSON con las variables intermedias
+  hasErrors             Boolean   @default(false)
+  errorMessages         String?   @db.Text
+
+  @@index([taxReturnId])
+}
+
+model Attachment {
+  id            String    @id @default(uuid())
+  taxReturnId   String
+  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  
+  fileName      String
+  fileSize      Int
+  fileExtension String
+  mimeType      String
+  securePath    String    // Ruta lógica protegida en el servidor
+  fileHash      String    // MD5/SHA256 para validación de integridad
+  uploadedById  String
+  createdAt     DateTime  @default(now())
+
+  @@index([taxReturnId])
+}
+
+model AuditLog {
+  id            String    @id @default(uuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  action        String    // CREATE, UPDATE, DELETE, CLOSE, REOPEN, RECTIFY
+  entityType    String    // TaxReturn, SalesInvoice, FixedAsset, etc.
+  entityId      String?
+  clientCuit    String?
+  clientName    String?
+  fiscalYear    Int?
+  details       String?   @db.Text
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}

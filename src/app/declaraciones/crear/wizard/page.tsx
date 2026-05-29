@@ -1115,57 +1115,61 @@ export default function WizardPage() {
       </header>
 
       {/* BARRA DE PROGRESO DE 10 PASOS (STITCH UI PROGRESS LINE) */}
-      <div className="relative">
-        {/* Degradados laterales de desvanecimiento (Fade mask) para indicar desplazamiento */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#121216] to-transparent pointer-events-none z-10 md:block hidden"></div>
-        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#121216] to-transparent pointer-events-none z-10 md:block hidden"></div>
-
-        <div className="bg-[#121216] border-b border-zinc-850 py-3 overflow-x-auto custom-wizard-scrollbar">
-          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between min-w-[1000px] gap-4">
-            {[
-              'Identificación', 'Perfil Impositivo', 'Ventas', 'Compras',
-              'Existencias', 'Bienes de Uso', 'Disponibilidades',
-              'Deducciones Gral', 'Retenciones', 'Cierre y Consolidación'
-            ].map((stepName, index) => {
-              const stepNum = index + 1;
-              const isActive = currentStep === stepNum;
-              const hasData = checkIfStepHasData(stepNum);
-              const isVisited = stepNum < maxVisitedStep;
-              
-              return (
-                <button 
-                  key={stepNum}
-                  onClick={() => changeStep(stepNum)}
-                  className="flex items-center gap-2 text-left focus:outline-none transition-all group shrink-0"
-                >
-                  <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all ${
-                    isActive ? 'bg-teal-500 text-[#09090b] border-teal-500 shadow-lg shadow-teal-500/10' :
-                    hasData ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' :
-                    isVisited ? 'bg-amber-500/10 text-amber-450 border-amber-500/25' :
-                    'bg-zinc-900 text-zinc-500 border-zinc-800'
-                  }`}>
-                    {isActive ? stepNum : (hasData ? <Check className="h-3 w-3 stroke-[3]" /> : (isVisited ? <span className="text-[10px] font-extrabold">-</span> : stepNum))}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={`text-xs font-semibold whitespace-nowrap transition-colors ${
-                      isActive ? 'text-teal-400' : 
-                      hasData ? 'text-zinc-300' : 
-                      isVisited ? 'text-amber-400/80' : 
-                      'text-zinc-500 group-hover:text-zinc-400'
-                    }`}>
-                      {stepName}
+      <div className="bg-[#121216] border-b border-zinc-850 py-4 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+          {[
+            'Identificación', 'Perfil Impositivo', 'Ventas', 'Compras',
+            'Existencias', 'Bienes de Uso', 'Disponibilidades',
+            'Deducciones Gral', 'Retenciones', 'Cierre y Consolidación'
+          ].map((stepName, index) => {
+            const stepNum = index + 1;
+            const isActive = currentStep === stepNum;
+            const hasData = checkIfStepHasData(stepNum);
+            const isVisited = stepNum < maxVisitedStep;
+            
+            return (
+              <button 
+                key={stepNum}
+                onClick={() => changeStep(stepNum)}
+                className={`flex items-center gap-2 p-2 rounded-lg border transition-all duration-200 text-left focus:outline-none w-full relative ${
+                  isActive ? 'bg-teal-500/10 border-teal-500/50 shadow-md shadow-teal-500/5' :
+                  hasData ? 'bg-[#09090b] border-zinc-800/80 hover:border-teal-500/30' :
+                  isVisited ? 'bg-[#09090b] border-zinc-800/80 hover:border-amber-500/30' :
+                  'bg-zinc-950/20 border-zinc-900/50 opacity-60 hover:opacity-100 hover:border-zinc-800'
+                }`}
+              >
+                {/* Indicador de barra de progreso superior activo */}
+                {isActive && (
+                  <div className="absolute top-0 left-2 right-2 h-[2px] bg-teal-500 rounded-b"></div>
+                )}
+                
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border transition-all shrink-0 ${
+                  isActive ? 'bg-teal-500 text-[#09090b] border-teal-500 shadow-md shadow-teal-500/20' :
+                  hasData ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' :
+                  isVisited ? 'bg-amber-500/10 text-amber-450 border-amber-500/25' :
+                  'bg-zinc-900 text-zinc-500 border-zinc-800'
+                }`}>
+                  {isActive ? stepNum : (hasData ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : (isVisited ? <span className="text-[9px] font-extrabold">-</span> : stepNum))}
+                </div>
+                
+                <div className="flex flex-col min-w-0">
+                  <span className={`text-[10px] font-bold leading-tight truncate transition-colors ${
+                    isActive ? 'text-teal-400 font-extrabold' : 
+                    hasData ? 'text-zinc-300' : 
+                    isVisited ? 'text-amber-450/80' : 
+                    'text-zinc-500 group-hover:text-zinc-400'
+                  }`} title={stepName}>
+                    {stepName}
+                  </span>
+                  {!isActive && isVisited && !hasData && (
+                    <span className="text-[8px] text-amber-550/90 font-black tracking-tight leading-none mt-0.5 uppercase">
+                      Sin datos
                     </span>
-                    {!isActive && isVisited && !hasData && (
-                      <span className="text-[9px] text-amber-550/80 font-bold tracking-tight leading-none mt-0.5">
-                        Sin datos
-                      </span>
-                    )}
-                  </div>
-                  {stepNum < 10 && <div className="h-[1px] w-6 bg-zinc-800"></div>}
-                </button>
-              );
-            })}
-          </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 

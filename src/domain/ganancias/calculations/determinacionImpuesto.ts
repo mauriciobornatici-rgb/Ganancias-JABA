@@ -336,12 +336,32 @@ export function calculateTaxReturn(
     personalLiabilitiesFinalTotal = personalLiabilitiesFinalTotal.add(l.valueFinal);
   });
 
+  const patrimonioComercialInicio = new Decimal(input.axiStatic.activoTotalInicio || 0)
+    .sub(input.axiStatic.pasivoTotalInicio || 0);
+
+  let totalRetiros = new Decimal(0);
+  let totalAportes = new Decimal(0);
+  (input.axiDynamic || []).forEach(a => {
+    if (a.type === 'RetiroSocio') {
+      totalRetiros = totalRetiros.add(a.amount || 0);
+    } else if (a.type === 'AporteCapital') {
+      totalAportes = totalAportes.add(a.amount || 0);
+    }
+  });
+
+  const patrimonioComercialCierre = patrimonioComercialInicio
+    .add(resultadoComercialNeto)
+    .sub(totalRetiros)
+    .add(totalAportes);
+
   const patrimonioInicioTotal = personalAssetsInitialTotal
     .add(bankAccountsInitialTotal)
-    .sub(personalLiabilitiesInitialTotal);
+    .sub(personalLiabilitiesInitialTotal)
+    .add(patrimonioComercialInicio);
   const patrimonioCierreTotal = personalAssetsFinalTotal
     .add(bankAccountsFinalTotal)
-    .sub(personalLiabilitiesFinalTotal);
+    .sub(personalLiabilitiesFinalTotal)
+    .add(patrimonioComercialCierre);
 
   // JVP Column Balance
   let colII = patrimonioInicioTotal.add(resultadoComercialNeto.isPositive() ? resultadoComercialNeto : 0)

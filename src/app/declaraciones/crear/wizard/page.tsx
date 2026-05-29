@@ -2154,6 +2154,94 @@ export default function WizardPage() {
                 Añadir Cuenta Bancaria
               </button>
 
+              {/* SECCIÓN: BIENES Y ACTIVOS PERSONALES (NO AFECTADOS AL NEGOCIO) */}
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                <div>
+                  <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Activos y Bienes Personales (No afectados al negocio)</h3>
+                  <p className="text-zinc-400 text-[11px] mt-1">Declare sus bienes de uso particular (ej: automóvil personal, casa de habitación, fondos personales). Estos bienes <strong>no generan deducciones</strong> ni amortizaciones en la liquidación comercial, pero son <strong>esenciales</strong> para conciliar el Consumo en la Variación Patrimonial Anual.</p>
+                </div>
+
+                <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                        <th className="px-4 py-3">Descripción del Bien Personal</th>
+                        <th className="px-4 py-3 text-center">Tipo de Activo</th>
+                        <th className="px-4 py-3 text-right">Valor Inicial ($)</th>
+                        <th className="px-4 py-3 text-right">Valor Cierre ($)</th>
+                        <th className="px-4 py-3 text-right">Eliminar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-850/50">
+                      {personalAssets.map((asset, index) => (
+                        <tr key={index} className="hover:bg-zinc-800/10">
+                          <td className="px-4 py-2">
+                            <input 
+                              type="text"
+                              value={asset.description || ''}
+                              onChange={(e) => handleCellChange(index, 'description', e.target.value, 'personalAssets')}
+                              className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
+                              placeholder="Ej: Automóvil Particular Ford Focus, Casa Habitación..."
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <select
+                              value={asset.type || 'Otros'}
+                              onChange={(e) => handleCellChange(index, 'type', e.target.value, 'personalAssets')}
+                              className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
+                            >
+                              <option value="Vehiculo">Automóvil / Vehículo Particular</option>
+                              <option value="Inmueble">Inmueble Particular / Vivienda</option>
+                              <option value="Efectivo">Tenencia de Dinero en Efectivo</option>
+                              <option value="Otros">Otros Bienes / Créditos Personales</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <input 
+                              type="number"
+                              value={asset.valueInitial ?? ''}
+                              onChange={(e) => handleCellChange(index, 'valueInitial', e.target.value, 'personalAssets')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <input 
+                              type="number"
+                              value={asset.valueFinal ?? ''}
+                              onChange={(e) => handleCellChange(index, 'valueFinal', e.target.value, 'personalAssets')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button 
+                              onClick={() => deleteRow(index, 'personalAssets')}
+                              className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {personalAssets.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                            Sin bienes personales declarados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button 
+                  onClick={() => addRow('personalAssets')}
+                  className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 stroke-[3.5]" />
+                  Añadir Activo / Bien Personal
+                </button>
+              </div>
+
               {/* SECCIÓN: DEUDAS Y PASIVOS PERSONALES */}
               <div className="pt-6 border-t border-zinc-800 space-y-4">
                 <div>

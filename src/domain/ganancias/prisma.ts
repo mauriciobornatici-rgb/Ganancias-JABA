@@ -1,10 +1,12 @@
 import { PrismaClient } from '@/generated/client/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
-let prismaInstance: PrismaClient | null = null;
+declare global {
+  var prismaGlobal: PrismaClient | undefined;
+}
 
 export const getPrisma = (): PrismaClient => {
-  if (!prismaInstance) {
+  if (!globalThis.prismaGlobal) {
     const parseConnectionString = (url: string) => {
       const regex = /^(?:mysql|mariadb):\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/;
       const match = url.match(regex);
@@ -36,12 +38,12 @@ export const getPrisma = (): PrismaClient => {
     const adapter = new PrismaMariaDb(connConfig);
 
     // 3. Create the PrismaClient utilizing the driver adapter
-    prismaInstance = new PrismaClient({
+    globalThis.prismaGlobal = new PrismaClient({
       adapter,
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     });
   }
-  return prismaInstance;
+  return globalThis.prismaGlobal;
 };
 
 export const prisma = new Proxy({} as PrismaClient, {

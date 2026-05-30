@@ -286,6 +286,7 @@ export default function WizardPage() {
       generalDeductions,
       personalDeductions,
       personalAssets,
+      personalLiabilities,
       activoTotalInicio,
       pasivoTotalInicio,
       bienesNoComputablesInicio,
@@ -354,6 +355,7 @@ export default function WizardPage() {
       generalDeductions,
       personalDeductions,
       personalAssets,
+      personalLiabilities,
       activoTotalInicio,
       pasivoTotalInicio,
       bienesNoComputablesInicio,
@@ -473,6 +475,9 @@ export default function WizardPage() {
               if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
               if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
               if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
+              if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
+              if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
+              if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
             } else {
               loadFromLocalStorage();
             }
@@ -509,9 +514,13 @@ export default function WizardPage() {
         generalDeductions,
         personalDeductions,
         personalAssets,
+        personalLiabilities,
         activoTotalInicio,
         pasivoTotalInicio,
-        bienesNoComputablesInicio
+        bienesNoComputablesInicio,
+        saldoAFavorAnterior,
+        quebrantosAnteriores,
+        axiDynamic
       };
       
       const saveKey = id || `new_${cuit}`;
@@ -553,7 +562,8 @@ export default function WizardPage() {
     id, cuit, clientName, fiscalYear, currentStep, taxParameterSetId,
     sales, purchases, fixedAssets, initialStock, finalStock,
     bankAccounts, withholdings, generalDeductions, personalDeductions,
-    personalAssets, activoTotalInicio, pasivoTotalInicio, bienesNoComputablesInicio
+    personalAssets, personalLiabilities, activoTotalInicio, pasivoTotalInicio,
+    bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic
   ]);
 
   // Hook 3: Limpiar los campos si se cambia el contribuyente para evitar contaminación de datos
@@ -597,6 +607,8 @@ export default function WizardPage() {
       esJubiladoOchoHaberes: false,
     });
     setPersonalAssets([]);
+    setPersonalLiabilities([]);
+    setAxiDynamic([]);
   }, [cuit, clientName]);
 
   // Hook 4: Buscar resoluciones para el año seleccionado
@@ -952,7 +964,10 @@ export default function WizardPage() {
         deduccionesArt30: ded30,
         topesDeduccionesGenerales: caps,
         escalaArt94: escala94,
-        indicesIPC: [],
+        indicesIPC: (activeParams?.indices || []).map((i: any) => ({
+          monthIndex: i.monthIndex,
+          ipcValue: new Decimal(i.ipcValue),
+        })),
       },
       sales: sales.map(s => ({
         date: new Date(s.date),
@@ -2328,8 +2343,11 @@ export default function WizardPage() {
                 const liabIni = personalLiabilities.reduce((sum, l) => sum.add(new Decimal(l.valueInitial || 0)), new Decimal(0));
                 const liabFin = personalLiabilities.reduce((sum, l) => sum.add(new Decimal(l.valueFinal || 0)), new Decimal(0));
                 
-                const totalIni = banksIni.add(assetsIni).sub(liabIni);
-                const totalFin = banksFin.add(assetsFin).sub(liabFin);
+                const totalIni = banksIni.add(assetsIni).sub(liabIni)
+                  .add(new Decimal(activoTotalInicio || 0).sub(new Decimal(pasivoTotalInicio || 0)));
+                const totalFin = banksFin.add(assetsFin).sub(liabFin)
+                  .add(new Decimal(activoTotalInicio || 0).sub(new Decimal(pasivoTotalInicio || 0))
+                    .add(calculationResult ? calculationResult.resultadoComercialNeto.toNumber() : 0));
                 const variacion = totalFin.sub(totalIni);
                 const hasValues = totalIni.abs().gt(0) || totalFin.abs().gt(0);
                 
@@ -2797,8 +2815,20 @@ export default function WizardPage() {
                       <span className="font-mono text-zinc-300">-${calculationResult.costoVentas.toNumber().toLocaleString('es-AR')}</span>
                     </div>
                     <div className="flex justify-between">
+                      <span className="text-zinc-500">Gastos Deducibles:</span>
+                      <span className="font-mono text-zinc-300">-${calculationResult.gastosDeducibles.toNumber().toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-zinc-500">Amortizaciones Bienes de Uso (reexpresada):</span>
                       <span className="font-mono text-zinc-300">-${calculationResult.amortizacionesBienesDeUso.toNumber().toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">Gastos No Deducibles:</span>
+                      <span className="font-mono text-amber-400">${calculationResult.gastosNoDeducibles.toNumber().toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-zinc-500">Ajuste por Inflación Impositivo (AXI):</span>
+                      <span className={`font-mono ${calculationResult.resultadoAjustePorInflacion.toNumber() >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>${calculationResult.resultadoAjustePorInflacion.toNumber().toLocaleString('es-AR')}</span>
                     </div>
                     <div className="flex justify-between border-t border-zinc-800 pt-2 font-bold">
                       <span className="text-white">Resultado Comercial de 3ra:</span>
@@ -2822,7 +2852,7 @@ export default function WizardPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Cargas de Familia:</span>
-                      <span className="font-mono text-zinc-300">-${calculationResult.deduccionesPersonales.conyuge.add(calculationResult.deduccionesPersonales.hijos).toNumber().toLocaleString('es-AR')}</span>
+                      <span className="font-mono text-zinc-300">-${calculationResult.deduccionesPersonales.conyuge.add(calculationResult.deduccionesPersonales.hijos).add(calculationResult.deduccionesPersonales.hijosIncapacitados).toNumber().toLocaleString('es-AR')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Deducción Especial Admitida:</span>
@@ -2840,7 +2870,7 @@ export default function WizardPage() {
               <div className="p-6 rounded-xl bg-zinc-900/10 border border-zinc-805 space-y-4">
                 <h4 className="text-xs uppercase font-bold text-teal-400 tracking-wider flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4 stroke-[2.5]" />
-                  Proyección de Cinco Anticipos impositivos - Período Fiscal 2026
+                  Proyección de Cinco Anticipos impositivos - Período Fiscal {fiscalYear + 1}
                 </h4>
                 
                 <p className="text-zinc-500 text-xs">
@@ -2852,7 +2882,7 @@ export default function WizardPage() {
                     <div key={idx} className="p-3.5 rounded-lg bg-[#09090b] border border-zinc-800 relative">
                       <span className="text-[10px] text-zinc-500 font-bold block mb-1">CUOTA {idx + 1}</span>
                       <span className="font-mono font-bold text-white text-sm">${anticipo.toNumber().toLocaleString('es-AR')}</span>
-                      <span className="text-[8px] tracking-wider text-teal-400 font-semibold block mt-0.5">VENCE 2026</span>
+                      <span className="text-[8px] tracking-wider text-teal-400 font-semibold block mt-0.5">VENCE {fiscalYear + 1}</span>
                     </div>
                   ))}
                 </div>

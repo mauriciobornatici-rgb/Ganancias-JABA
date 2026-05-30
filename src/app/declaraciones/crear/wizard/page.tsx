@@ -103,6 +103,7 @@ export default function WizardPage() {
   
   const [step1Error, setStep1Error] = useState<string | null>(null);
   const [isLiveBarOpen, setIsLiveBarOpen] = useState(true);
+  const [showAllDeductions, setShowAllDeductions] = useState(false);
   
   // Searchable contribuyente dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -111,26 +112,26 @@ export default function WizardPage() {
   const [dbDeclaraciones, setDbDeclaraciones] = useState<any[]>([]);
 
   const checkIfStepHasData = (step: number): boolean => {
-    if (step === 1) return clientName.trim() !== '' && cuit.trim() !== '';
-    if (step === 2) {
+    if (step === 1) {
       return (
-        personalDeductions.tieneConyuge ||
-        personalDeductions.cantidadHijos > 0 ||
-        personalDeductions.cantidadHijosIncapacitados > 0 ||
-        personalDeductions.tipoDeduccionEspecial !== 'Ninguna' ||
-        personalDeductions.esJubiladoOchoHaberes
+        clientName.trim() !== '' && 
+        cuit.trim() !== '' && 
+        (
+          personalDeductions.tieneConyuge ||
+          personalDeductions.cantidadHijos > 0 ||
+          personalDeductions.cantidadHijosIncapacitados > 0 ||
+          personalDeductions.tipoDeduccionEspecial !== 'Ninguna' ||
+          personalDeductions.esJubiladoOchoHaberes ||
+          activoTotalInicio !== '0' ||
+          pasivoTotalInicio !== '0'
+        )
       );
     }
-    if (step === 3) return sales.length > 0;
-    if (step === 4) return purchases.length > 0;
-    if (step === 5) return (initialStock !== '0' && initialStock !== '') || (finalStock !== '0' && finalStock !== '');
-    if (step === 6) return fixedAssets.length > 0;
-    if (step === 7) return bankAccounts.length > 0 || personalAssets.length > 0 || personalLiabilities.length > 0;
-    if (step === 8) {
-      return Object.values(generalDeductions).some(val => val !== '0' && val !== '');
-    }
-    if (step === 9) return withholdings.length > 0 || axiDynamic.length > 0;
-    if (step === 10) return true;
+    if (step === 2) return sales.length > 0;
+    if (step === 3) return purchases.length > 0 || (initialStock !== '0' && initialStock !== '') || (finalStock !== '0' && finalStock !== '');
+    if (step === 4) return fixedAssets.length > 0 || bankAccounts.length > 0 || personalAssets.length > 0 || personalLiabilities.length > 0;
+    if (step === 5) return Object.values(generalDeductions).some(val => val !== '0' && val !== '') || withholdings.length > 0 || axiDynamic.length > 0;
+    if (step === 6) return true;
     return false;
   };
 
@@ -186,7 +187,7 @@ export default function WizardPage() {
         if (data.clientName) setClientName(data.clientName);
         if (data.fiscalYear) setFiscalYear(data.fiscalYear);
         if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-        if (data.currentStep) setCurrentStep(data.currentStep);
+        if (data.currentStep) setCurrentStep(Math.min(6, data.currentStep));
         if (data.sales) setSales(data.sales);
         if (data.purchases) setPurchases(data.purchases);
         if (data.fixedAssets) setFixedAssets(data.fixedAssets);
@@ -261,7 +262,7 @@ export default function WizardPage() {
         setClientName(targetReturn.clientName);
         setFiscalYear(targetReturn.year);
         if (targetReturn.currentStep) {
-          setCurrentStep(targetReturn.currentStep);
+          setCurrentStep(Math.min(6, targetReturn.currentStep));
         }
       }
     }
@@ -460,7 +461,7 @@ export default function WizardPage() {
               if (data.clientName) setClientName(data.clientName);
               if (data.fiscalYear) setFiscalYear(data.fiscalYear);
               if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-              if (data.currentStep) setCurrentStep(data.currentStep);
+              if (data.currentStep) setCurrentStep(Math.min(6, data.currentStep));
               if (data.sales) setSales(data.sales);
               if (data.purchases) setPurchases(data.purchases);
               if (data.fixedAssets) setFixedAssets(data.fixedAssets);
@@ -1124,18 +1125,17 @@ export default function WizardPage() {
           </div>
 
           <div className="text-xs text-zinc-500 font-semibold">
-            Paso {currentStep} de 10
+            Paso {currentStep} de 6
           </div>
         </div>
       </header>
 
-      {/* BARRA DE PROGRESO DE 10 PASOS (STITCH UI PROGRESS LINE) */}
+      {/* BARRA DE PROGRESO DE 6 PASOS (STITCH UI PROGRESS LINE) */}
       <div className="bg-[#121216] border-b border-zinc-850 py-4 px-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           {[
-            'Identificación', 'Perfil Impositivo', 'Ventas', 'Compras',
-            'Existencias', 'Bienes de Uso', 'Disponibilidades',
-            'Deducciones Gral', 'Retenciones', 'Cierre y Consolidación'
+            'Contribuyente y Perfil', 'Ingresos y Ventas', 'Gastos y Existencias',
+            'Patrimonio y Bienes', 'Deducciones y Ajustes', 'Liquidación y Cierre'
           ].map((stepName, index) => {
             const stepNum = index + 1;
             const isActive = currentStep === stepNum;
@@ -1322,6 +1322,79 @@ export default function WizardPage() {
                 </div>
               </div>
 
+              {/* SECCIÓN: PERFIL IMPOSITIVO Y FISCAL */}
+              <div className="border-t border-zinc-800 pt-6 mt-8 space-y-4">
+                <div className="flex items-center gap-2 text-sm font-bold text-teal-400 uppercase tracking-wider">
+                  <Sparkles className="h-4.5 w-4.5" />
+                  Perfil Impositivo y Cargas de Familia
+                </div>
+                <p className="text-xs text-zinc-400 leading-normal">
+                  Configure las deducciones personales correspondientes a las cargas de familia y tipo de deducción especial del contribuyente.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-[#09090b] border border-zinc-850">
+                    <div>
+                      <span className="text-sm font-semibold text-white block">Cónyuge o Conviviente a cargo</span>
+                      <span className="text-[10px] text-zinc-500">Debe poseer ingresos menores al MNI impositivo.</span>
+                    </div>
+                    <input 
+                      type="checkbox"
+                      checked={personalDeductions.tieneConyuge}
+                      onChange={(e) => setPersonalDeductions({...personalDeductions, tieneConyuge: e.target.checked})}
+                      className="h-5 w-5 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-[#09090b] border border-zinc-850">
+                    <div>
+                      <span className="text-sm font-semibold text-white block">Jubilado con 8+ Haberes Mínimos</span>
+                      <span className="text-[10px] text-zinc-500">Deducción específica de 8 haberes (reemplaza MNI y ded. especial).</span>
+                    </div>
+                    <input 
+                      type="checkbox"
+                      checked={personalDeductions.esJubiladoOchoHaberes}
+                      onChange={(e) => setPersonalDeductions({...personalDeductions, esJubiladoOchoHaberes: e.target.checked})}
+                      className="h-5 w-5 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Cantidad de Hijos a cargo</label>
+                    <input 
+                      type="number"
+                      value={personalDeductions.cantidadHijos ?? 0}
+                      onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijos: Math.max(0, parseInt(e.target.value) || 0)})}
+                      className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs uppercase font-bold text-zinc-550 tracking-wider">Hijos Incapacitados para el Trabajo</label>
+                    <input 
+                      type="number"
+                      value={personalDeductions.cantidadHijosIncapacitados ?? 0}
+                      onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijosIncapacitados: Math.max(0, parseInt(e.target.value) || 0)})}
+                      className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Tipo de Deducción Especial (Art. 30)</label>
+                    <select 
+                      value={personalDeductions.tipoDeduccionEspecial}
+                      onChange={(e) => setPersonalDeductions({...personalDeductions, tipoDeduccionEspecial: e.target.value as any})}
+                      className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
+                    >
+                      <option value="Autonomo">Autónomos General (1.5x MNI)</option>
+                      <option value="Emprendedor">Nuevas Profesiones / Emprendedores (2x MNI)</option>
+                      <option value="Dependiente">Trabajadores en Relación de Dependencia / Jubilados (3.8x MNI)</option>
+                      <option value="Ninguna">Ninguna</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               {/* SECCIÓN: ESTADO DE RESULTADOS / SALDOS ANTERIORES */}
               <div className="border-t border-zinc-800 pt-6 mt-8 space-y-4">
                 <div className="flex items-center gap-2 text-sm font-bold text-teal-400 uppercase tracking-wider">
@@ -1474,84 +1547,12 @@ export default function WizardPage() {
             </div>
           )}
 
-          {/* PASO 2: PERFIL IMPOSITIVO */}
+          {/* PASO 2: INGRESOS Y VENTAS */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Paso 2: Perfil Impositivo y Fiscal</h2>
-                <p className="text-zinc-400 text-xs mt-1">Configure las deducciones personales correspondientes a las cargas de familia y tipo de deducción especial.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                <div className="flex items-center justify-between p-4 rounded-lg bg-[#09090b] border border-zinc-805">
-                  <div>
-                    <span className="text-sm font-semibold text-white block">Cónyuge o Conviviente a cargo</span>
-                    <span className="text-[10px] text-zinc-500">Debe poseer ingresos menores al MNI impositivo.</span>
-                  </div>
-                  <input 
-                    type="checkbox"
-                    checked={personalDeductions.tieneConyuge}
-                    onChange={(e) => setPersonalDeductions({...personalDeductions, tieneConyuge: e.target.checked})}
-                    className="h-5 w-5 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 rounded-lg bg-[#09090b] border border-zinc-805">
-                  <div>
-                    <span className="text-sm font-semibold text-white block">Jubilado con 8+ Haberes Mínimos</span>
-                    <span className="text-[10px] text-zinc-500">Deducción específica de 8 haberes (reemplaza MNI y ded. especial).</span>
-                  </div>
-                  <input 
-                    type="checkbox"
-                    checked={personalDeductions.esJubiladoOchoHaberes}
-                    onChange={(e) => setPersonalDeductions({...personalDeductions, esJubiladoOchoHaberes: e.target.checked})}
-                    className="h-5 w-5 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Cantidad de Hijos a cargo</label>
-                  <input 
-                    type="number"
-                    value={personalDeductions.cantidadHijos ?? 0}
-                    onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijos: Math.max(0, parseInt(e.target.value) || 0)})}
-                    className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Hijos Incapacitados para el Trabajo</label>
-                  <input 
-                    type="number"
-                    value={personalDeductions.cantidadHijosIncapacitados ?? 0}
-                    onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijosIncapacitados: Math.max(0, parseInt(e.target.value) || 0)})}
-                    className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Tipo de Deducción Especial (Art. 30)</label>
-                  <select 
-                    value={personalDeductions.tipoDeduccionEspecial}
-                    onChange={(e) => setPersonalDeductions({...personalDeductions, tipoDeduccionEspecial: e.target.value as any})}
-                    className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
-                  >
-                    <option value="Autonomo">Autónomos General (1.5x MNI)</option>
-                    <option value="Emprendedor">Nuevas Profesiones / Emprendedores (2x MNI)</option>
-                    <option value="Dependiente">Trabajadores en Relación de Dependencia / Jubilados (3.8x MNI)</option>
-                    <option value="Ninguna">Ninguna</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PASO 3: CARGA DE VENTAS (WITH MANUAL + AFIP IMPORT PREVIEW) */}
-          {currentStep === 3 && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 3: Ventas e Ingresos Comerciales</h2>
+                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 2: Ventas e Ingresos Comerciales</h2>
                   <p className="text-zinc-400 text-xs mt-1">Cargue el detalle de facturación emitida. Puede subir el Excel de AFIP directamente.</p>
                 </div>
 
@@ -1708,13 +1709,13 @@ export default function WizardPage() {
             </div>
           )}
 
-          {/* PASO 4: CARGA DE COMPRAS Y GASTOS (MANUAL + AFIP IMPORT PREVIEW) */}
-          {currentStep === 4 && (
+          {/* PASO 3: CARGA DE COMPRAS Y GASTOS CON CMV */}
+          {currentStep === 3 && (
             <div className="space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 4: Compras y Gastos Comerciales</h2>
-                  <p className="text-zinc-400 text-xs mt-1">Cargue el detalle de compras impositivas. Puede subir el Excel de AFIP directamente.</p>
+                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 3: Gastos Comerciales y Existencias</h2>
+                  <p className="text-zinc-400 text-xs mt-1">Cargue el detalle de compras impositivas y declare los bienes de cambio para el cálculo automático de CMV en vivo.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
@@ -1742,7 +1743,7 @@ export default function WizardPage() {
                       className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={isUploading}
                     />
-                    <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors">
+                    <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors cursor-pointer">
                       <Upload className="h-4 w-4" />
                       {isUploading ? 'Procesando...' : 'Importar Excel AFIP'}
                     </button>
@@ -1870,286 +1871,6 @@ export default function WizardPage() {
                         <td className="px-4 py-2 text-right">
                           <button 
                             onClick={() => deleteRow(index, 'purchases')}
-                            className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <button 
-                onClick={() => addRow('purchases')}
-                className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider"
-              >
-                <Plus className="h-4 w-4 stroke-[3.5]" />
-                Añadir Fila Manual
-              </button>
-            </div>
-          )}
-
-          {/* PASO 5: VALUACIÓN DE EXISTENCIAS (BIENES DE CAMBIO) */}
-          {currentStep === 5 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Paso 5: Valuación Impositiva de Bienes de Cambio</h2>
-                <p className="text-zinc-400 text-xs mt-1">Declare los inventarios de mercaderías al inicio y al cierre del ejercicio impositivo.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                <div className="space-y-2">
-                  <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Existencia Inicial (al 01/01/2025)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                    <input 
-                      type="number" 
-                      value={initialStock ?? ''}
-                      onChange={(e) => setInitialStock(e.target.value)}
-                      className="w-full h-11 pl-8 pr-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Existencia Final (al 31/12/2025)</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                    <input 
-                      type="number" 
-                      value={finalStock ?? ''}
-                      onChange={(e) => setFinalStock(e.target.value)}
-                      className="w-full h-11 pl-8 pr-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PASO 6: BIENES DE USO (EVITAR DIV DE CERO) */}
-          {currentStep === 6 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Paso 6: Gestión impositiva de Bienes de Uso (Activos Fijos)</h2>
-                <p className="text-zinc-400 text-xs mt-1">Cargue los bienes de uso para el cálculo automatizado de amortizaciones impositivas y actualización de valor residual impositivo.</p>
-              </div>
-
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
-                      <th className="px-4 py-3">Nombre del Bien</th>
-                      <th className="px-4 py-3 text-center">Tipo</th>
-                      <th className="px-4 py-3 text-right">Valor Origen ($)</th>
-                      <th className="px-4 py-3 text-center">Vida Útil (Años)</th>
-                      <th className="px-4 py-3 text-center">Años Transcurridos</th>
-                      <th className="px-4 py-3 text-right">Coef. Reexp.</th>
-                      <th className="px-4 py-3 text-right">Eliminar</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-850/50">
-                    {fixedAssets.map((asset, index) => (
-                      <tr key={index} className="hover:bg-zinc-800/10">
-                        <td className="px-4 py-2">
-                          <input 
-                            type="text"
-                            id={`assets-name-${index}`}
-                            value={asset.name || ''}
-                            onChange={(e) => handleCellChange(index, 'name', e.target.value, 'assets')}
-                            onKeyDown={(e) => handleAssetsKeyDown(e, index, 'name')}
-                            className="bg-transparent border-0 text-white text-xs focus:ring-0 focus:outline-none w-full"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <select
-                            value={asset.type || 'Otro'}
-                            onChange={(e) => handleCellChange(index, 'type', e.target.value, 'assets')}
-                            className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
-                          >
-                            <option value="Rodado">Rodado (5 años)</option>
-                            <option value="Inmueble">Inmueble (50 años)</option>
-                            <option value="Equipamiento">Equipamiento (10 años)</option>
-                            <option value="Otro">Otro</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <input 
-                            type="number"
-                            id={`assets-cost-${index}`}
-                            value={asset.originalCost ?? ''}
-                            onChange={(e) => handleCellChange(index, 'originalCost', e.target.value, 'assets')}
-                            onKeyDown={(e) => handleAssetsKeyDown(e, index, 'cost')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <input 
-                            type="number"
-                            value={asset.usefulLife ?? ''}
-                            onChange={(e) => handleCellChange(index, 'usefulLife', e.target.value, 'assets')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-16 text-center focus:border-b focus:border-teal-500"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <input 
-                            type="number"
-                            value={asset.yearsElapsed ?? ''}
-                            onChange={(e) => handleCellChange(index, 'yearsElapsed', e.target.value, 'assets')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-16 text-center focus:border-b focus:border-teal-500"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <input 
-                            type="text"
-                            value={asset.customReexpIndex ?? ''}
-                            onChange={(e) => handleCellChange(index, 'customReexpIndex', e.target.value, 'assets')}
-                            className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-20 text-right"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <button 
-                            onClick={() => deleteRow(index, 'assets')}
-                            className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <button 
-                onClick={() => addRow('assets')}
-                className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider"
-              >
-                <Plus className="h-4 w-4 stroke-[3.5]" />
-                Añadir Bien de Uso Manual
-              </button>
-            </div>
-          )}
-
-          {/* PASO 7: DISPONIBILIDADES Y CRÉDITOS */}
-          {currentStep === 7 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Paso 7: Disponibilidades y Saldos Bancarios</h2>
-                <p className="text-zinc-400 text-xs mt-1">Declare las cuentas bancarias del negocio impositivo y sus respectivos saldos al inicio y al cierre.</p>
-              </div>
-
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
-                      <th className="px-4 py-3">Entidad Financiera</th>
-                      <th className="px-4 py-3">N° Cuenta</th>
-                      <th className="px-4 py-3 text-center">Moneda</th>
-                      <th className="px-4 py-3 text-right">Saldo Inicial</th>
-                      <th className="px-4 py-3 text-right">Saldo Cierre</th>
-                      <th className="px-4 py-3 text-right">Intereses ($)</th>
-                      <th className="px-4 py-3 text-right">Eliminar</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-850/50">
-                    {bankAccounts.map((bank, index) => (
-                      <tr key={index} className="hover:bg-zinc-800/10">
-                        <td className="px-4 py-2">
-                          <input 
-                            type="text"
-                            value={bank.name || ''}
-                            onChange={(e) => handleCellChange(index, 'name', e.target.value, 'bankAccounts')}
-                            className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
-                            placeholder="Nombre del Banco"
-                          />
-                        </td>
-                        <td className="px-4 py-2">
-                          <input 
-                            type="text"
-                            value={bank.accountNumber || ''}
-                            onChange={(e) => handleCellChange(index, 'accountNumber', e.target.value, 'bankAccounts')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
-                            placeholder="Nº de Cuenta"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-center">
-                          <select
-                            value={bank.currency || 'ARS'}
-                            onChange={(e) => handleCellChange(index, 'currency', e.target.value, 'bankAccounts')}
-                            className="bg-zinc-900 text-white text-xs font-bold rounded border border-zinc-800 focus:outline-none focus:ring-1 focus:ring-teal-500 py-1 px-2 cursor-pointer"
-                          >
-                            <option value="ARS">ARS</option>
-                            <option value="USD">USD</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <div className="space-y-1.5">
-                            <input 
-                              type="number"
-                              value={bank.nominalInitial ?? ''}
-                              onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'bankAccounts')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
-                            />
-                            {bank.currency === 'USD' && (
-                              <div className="flex flex-col items-end space-y-1">
-                                <div className="flex items-center gap-1 text-[9px] text-zinc-500">
-                                  <span>TC Inicial:</span>
-                                  <input 
-                                    type="number" 
-                                    step="0.01"
-                                    value={bank.tcInitial ?? '1'}
-                                    onChange={(e) => handleCellChange(index, 'tcInitial', e.target.value, 'bankAccounts')}
-                                    className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                  />
-                                </div>
-                                <span className="text-[10px] font-bold text-teal-400 font-mono">
-                                  ${(parseFloat(bank.nominalInitial || 0) * parseFloat(bank.tcInitial || 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <div className="space-y-1.5">
-                            <input 
-                              type="number"
-                              value={bank.nominalFinal ?? ''}
-                              onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'bankAccounts')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
-                            />
-                            {bank.currency === 'USD' && (
-                              <div className="flex flex-col items-end space-y-1">
-                                <div className="flex items-center gap-1 text-[9px] text-zinc-500">
-                                  <span>TC Cierre:</span>
-                                  <input 
-                                    type="number" 
-                                    step="0.01"
-                                    value={bank.tcFinal ?? '1'}
-                                    onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'bankAccounts')}
-                                    className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
-                                  />
-                                </div>
-                                <span className="text-[10px] font-bold text-teal-400 font-mono">
-                                  ${(parseFloat(bank.nominalFinal || 0) * parseFloat(bank.tcFinal || 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <input 
-                            type="number"
-                            value={bank.interests ?? ''}
-                            onChange={(e) => handleCellChange(index, 'interests', e.target.value, 'bankAccounts')}
-                            className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <button 
-                            onClick={() => deleteRow(index, 'bankAccounts')}
                             className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -2162,18 +1883,332 @@ export default function WizardPage() {
               </div>
 
               <button 
-                onClick={() => addRow('bankAccounts')}
-                className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider"
+                onClick={() => addRow('purchases')}
+                className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
               >
                 <Plus className="h-4 w-4 stroke-[3.5]" />
-                Añadir Cuenta Bancaria
+                Añadir Fila Manual
               </button>
 
-              {/* SECCIÓN: BIENES Y ACTIVOS PERSONALES (NO AFECTADOS AL NEGOCIO) */}
+              {/* SECCIÓN: EXISTENCIAS Y CÁLCULO DE COSTO DE VENTAS (CMV) */}
+              <div className="border-t border-zinc-800 pt-6 mt-6 space-y-4">
+                <div>
+                  <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Valuación Impositiva de Bienes de Cambio</h3>
+                  <p className="text-zinc-400 text-[11px] mt-1">Declare los inventarios de mercaderías al inicio y al cierre del ejercicio impositivo para determinar el CMV.</p>
+                </div>
+
+                {(() => {
+                  const comprasTotal = purchases.reduce((sum, p) => sum.add(new Decimal(p.netAmount || 0)), new Decimal(0));
+                  const ei = new Decimal(initialStock || 0);
+                  const ef = new Decimal(finalStock || 0);
+                  const cmvCalculated = ei.add(comprasTotal).sub(ef);
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 p-5 rounded-xl bg-[#09090b] border border-zinc-850 items-center">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Existencia Inicial (al 01/01/{fiscalYear})</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                          <input 
+                            type="number" 
+                            value={initialStock ?? ''}
+                            onChange={(e) => setInitialStock(e.target.value)}
+                            className="w-full h-10 pl-7 pr-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Existencia Final (al 31/12/{fiscalYear})</label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
+                          <input 
+                            type="number" 
+                            value={finalStock ?? ''}
+                            onChange={(e) => setFinalStock(e.target.value)}
+                            className="w-full h-10 pl-7 pr-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2 p-4 rounded-xl bg-teal-500/5 border border-teal-500/25 text-right space-y-1">
+                        <span className="text-[9px] uppercase font-extrabold tracking-wider text-teal-400 block">Costo de Mercaderías Vendidas (CMV) en Vivo</span>
+                        <div className="text-lg font-black font-mono text-white">
+                          ${cmvCalculated.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </div>
+                        <span className="text-[9px] font-bold text-zinc-400 block">
+                          CMV = EI (${ei.toNumber().toLocaleString('es-AR')}) + Compras (${comprasTotal.toNumber().toLocaleString('es-AR')}) - EF (${ef.toNumber().toLocaleString('es-AR')})
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {/* PASO 4: PATRIMONIO Y ACTIVOS FIJOS */}
+          {currentStep === 4 && (
+            <div className="space-y-8 animate-fadeIn">
+              <div>
+                <h2 className="text-xl font-bold text-white tracking-tight">Paso 4: Patrimonio y Activos Fijos</h2>
+                <p className="text-zinc-400 text-xs mt-1">Configure los bienes afectados comercialmente, cuentas bancarias, activos de uso particular y pasivos personales para la Justificación Patrimonial Anual.</p>
+              </div>
+
+              {/* SECCIÓN 1: BIENES DE USO (ACTIVOS FIJOS Afectados al negocio) */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Bienes de Uso Afectados (Activos Fijos)</h3>
+                  <span className="text-[10px] text-zinc-450 italic">Generan amortizaciones deducibles comercialmente</span>
+                </div>
+
+                <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                        <th className="px-4 py-3">Nombre del Bien</th>
+                        <th className="px-4 py-3 text-center">Tipo</th>
+                        <th className="px-4 py-3 text-right">Valor Origen ($)</th>
+                        <th className="px-4 py-3 text-center">Vida Útil (Años)</th>
+                        <th className="px-4 py-3 text-center">Años Transcurridos</th>
+                        <th className="px-4 py-3 text-right">Coef. Reexp.</th>
+                        <th className="px-4 py-3 text-right">Eliminar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-850/50">
+                      {fixedAssets.map((asset, index) => (
+                        <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                          <td className="px-4 py-2">
+                            <input 
+                              type="text"
+                              id={`assets-name-${index}`}
+                              value={asset.name || ''}
+                              onChange={(e) => handleCellChange(index, 'name', e.target.value, 'assets')}
+                              onKeyDown={(e) => handleAssetsKeyDown(e, index, 'name')}
+                              className="bg-transparent border-0 text-white text-xs focus:ring-0 focus:outline-none w-full"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <select
+                              value={asset.type || 'Otro'}
+                              onChange={(e) => handleCellChange(index, 'type', e.target.value, 'assets')}
+                              className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
+                            >
+                              <option value="Rodado">Rodado (5 años)</option>
+                              <option value="Inmueble">Inmueble (50 años)</option>
+                              <option value="Equipamiento">Equipamiento (10 años)</option>
+                              <option value="Otro">Otro</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <input 
+                              type="number"
+                              id={`assets-cost-${index}`}
+                              value={asset.originalCost ?? ''}
+                              onChange={(e) => handleCellChange(index, 'originalCost', e.target.value, 'assets')}
+                              onKeyDown={(e) => handleAssetsKeyDown(e, index, 'cost')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <input 
+                              type="number"
+                              value={asset.usefulLife ?? ''}
+                              onChange={(e) => handleCellChange(index, 'usefulLife', e.target.value, 'assets')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-16 text-center focus:border-b focus:border-teal-500"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <input 
+                              type="number"
+                              value={asset.yearsElapsed ?? ''}
+                              onChange={(e) => handleCellChange(index, 'yearsElapsed', e.target.value, 'assets')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-16 text-center focus:border-b focus:border-teal-500"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <input 
+                              type="text"
+                              value={asset.customReexpIndex ?? ''}
+                              onChange={(e) => handleCellChange(index, 'customReexpIndex', e.target.value, 'assets')}
+                              className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-20 text-right"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button 
+                              onClick={() => deleteRow(index, 'assets')}
+                              className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {fixedAssets.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                            Sin bienes de uso declarados.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button 
+                  onClick={() => addRow('assets')}
+                  className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 stroke-[3.5]" />
+                  Añadir Bien de Uso
+                </button>
+              </div>
+
+              {/* SECCIÓN 2: DISPONIBILIDADES (BANCOS) */}
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                <div>
+                  <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Disponibilidades y Saldos Bancarios</h3>
+                  <p className="text-zinc-400 text-[11px] mt-1">Declare las cuentas bancarias del negocio impositivo y sus respectivos saldos al inicio y al cierre.</p>
+                </div>
+
+                <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                        <th className="px-4 py-3">Entidad Financiera</th>
+                        <th className="px-4 py-3">N° Cuenta</th>
+                        <th className="px-4 py-3 text-center">Moneda</th>
+                        <th className="px-4 py-3 text-right">Saldo Inicial</th>
+                        <th className="px-4 py-3 text-right">Saldo Cierre</th>
+                        <th className="px-4 py-3 text-right">Intereses ($)</th>
+                        <th className="px-4 py-3 text-right">Eliminar</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-850/50">
+                      {bankAccounts.map((bank, index) => (
+                        <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                          <td className="px-4 py-2">
+                            <input 
+                              type="text"
+                              value={bank.name || ''}
+                              onChange={(e) => handleCellChange(index, 'name', e.target.value, 'bankAccounts')}
+                              className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
+                              placeholder="Nombre del Banco"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input 
+                              type="text"
+                              value={bank.accountNumber || ''}
+                              onChange={(e) => handleCellChange(index, 'accountNumber', e.target.value, 'bankAccounts')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
+                              placeholder="Nº de Cuenta"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <select
+                              value={bank.currency || 'ARS'}
+                              onChange={(e) => handleCellChange(index, 'currency', e.target.value, 'bankAccounts')}
+                              className="bg-zinc-900 text-white text-xs font-bold rounded border border-zinc-800 focus:outline-none focus:ring-1 focus:ring-teal-500 py-1 px-2 cursor-pointer"
+                            >
+                              <option value="ARS">ARS</option>
+                              <option value="USD">USD</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <div className="space-y-1.5">
+                              <input 
+                                type="number"
+                                value={bank.nominalInitial ?? ''}
+                                onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'bankAccounts')}
+                                className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
+                              />
+                              {bank.currency === 'USD' && (
+                                <div className="flex flex-col items-end space-y-1">
+                                  <div className="flex items-center gap-1 text-[9px] text-zinc-500">
+                                    <span>TC Inicial:</span>
+                                    <input 
+                                      type="number" 
+                                      step="0.01"
+                                      value={bank.tcInitial ?? '1'}
+                                      onChange={(e) => handleCellChange(index, 'tcInitial', e.target.value, 'bankAccounts')}
+                                      className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-teal-400 font-mono">
+                                    ${(parseFloat(bank.nominalInitial || 0) * parseFloat(bank.tcInitial || 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <div className="space-y-1.5">
+                              <input 
+                                type="number"
+                                value={bank.nominalFinal ?? ''}
+                                onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'bankAccounts')}
+                                className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              />
+                              {bank.currency === 'USD' && (
+                                <div className="flex flex-col items-end space-y-1">
+                                  <div className="flex items-center gap-1 text-[9px] text-zinc-500">
+                                    <span>TC Cierre:</span>
+                                    <input 
+                                      type="number" 
+                                      step="0.01"
+                                      value={bank.tcFinal ?? '1'}
+                                      onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'bankAccounts')}
+                                      className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                    />
+                                  </div>
+                                  <span className="text-[10px] font-bold text-teal-400 font-mono">
+                                    ${(parseFloat(bank.nominalFinal || 0) * parseFloat(bank.tcFinal || 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <input 
+                              type="number"
+                              value={bank.interests ?? ''}
+                              onChange={(e) => handleCellChange(index, 'interests', e.target.value, 'bankAccounts')}
+                              className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button 
+                              onClick={() => deleteRow(index, 'bankAccounts')}
+                              className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {bankAccounts.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                            Sin cuentas bancarias declaradas.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <button 
+                  onClick={() => addRow('bankAccounts')}
+                  className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
+                >
+                  <Plus className="h-4 w-4 stroke-[3.5]" />
+                  Añadir Cuenta Bancaria
+                </button>
+              </div>
+
+              {/* SECCIÓN 3: BIENES Y ACTIVOS PERSONALES */}
               <div className="pt-6 border-t border-zinc-800 space-y-4">
                 <div>
                   <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Activos y Bienes Personales (No afectados al negocio)</h3>
-                  <p className="text-zinc-400 text-[11px] mt-1">Declare sus bienes de uso particular (ej: automóvil personal, casa de habitación, fondos personales). Estos bienes <strong>no generan deducciones</strong> ni amortizaciones en la liquidación comercial, pero son <strong>esenciales</strong> para conciliar el Consumo en la Variación Patrimonial Anual.</p>
+                  <p className="text-zinc-400 text-[11px] mt-1">Declare sus bienes de uso particular (ej: automóvil personal, casa de habitación, fondos personales). Estos bienes <strong>no generan deducciones</strong> en la liquidación comercial, pero son <strong>esenciales</strong> para conciliar el Consumo en la Variación Patrimonial Anual.</p>
                 </div>
 
                 <div className="border border-zinc-800 rounded-lg overflow-hidden">
@@ -2189,7 +2224,7 @@ export default function WizardPage() {
                     </thead>
                     <tbody className="divide-y divide-zinc-850/50">
                       {personalAssets.map((asset, index) => (
-                        <tr key={index} className="hover:bg-zinc-800/10">
+                        <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2">
                             <input 
                               type="text"
@@ -2257,7 +2292,7 @@ export default function WizardPage() {
                 </button>
               </div>
 
-              {/* SECCIÓN: DEUDAS Y PASIVOS PERSONALES */}
+              {/* SECCIÓN 4: DEUDAS Y PASIVOS PERSONALES */}
               <div className="pt-6 border-t border-zinc-800 space-y-4">
                 <div>
                   <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Pasivos y Deudas Personales</h3>
@@ -2276,7 +2311,7 @@ export default function WizardPage() {
                     </thead>
                     <tbody className="divide-y divide-zinc-850/50">
                       {personalLiabilities.map((liab, index) => (
-                        <tr key={index} className="hover:bg-zinc-800/10">
+                        <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2">
                             <input 
                               type="text"
@@ -2332,7 +2367,7 @@ export default function WizardPage() {
                 </button>
               </div>
 
-              {/* PILAR 4: PRE-CONCILIACIÓN PATRIMONIAL EN PASO 7 */}
+              {/* PILAR 4: PRE-CONCILIACIÓN PATRIMONIAL EN PASO 4 */}
               {(() => {
                 const banksIni = bankAccounts.reduce((sum, b) => sum.add(new Decimal(b.nominalInitial || 0).mul(new Decimal(b.tcInitial || 1))), new Decimal(0));
                 const banksFin = bankAccounts.reduce((sum, b) => sum.add(new Decimal(b.nominalFinal || 0).mul(new Decimal(b.tcFinal || 1))), new Decimal(0));
@@ -2354,7 +2389,7 @@ export default function WizardPage() {
                 if (!hasValues) return null;
                 
                 return (
-                  <div className="mt-8 p-5 rounded-xl bg-gradient-to-br from-[#181820] to-[#121216] border border-zinc-800 shadow-xl animate-fadeIn space-y-4">
+                  <div className="mt-8 p-5 rounded-xl bg-gradient-to-br from-[#181820] to-[#121216] border border-zinc-800 shadow-xl space-y-4 animate-fadeIn">
                     <div className="flex items-center gap-2">
                       <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400">
                         <DollarSign className="h-3.5 w-3.5" />
@@ -2384,14 +2419,15 @@ export default function WizardPage() {
             </div>
           )}
 
-          {/* PASO 8: DEDUCCIONES GENERALES */}
-          {currentStep === 8 && (
-            <div className="space-y-6">
+          {/* PASO 5: DEDUCCIONES Y AJUSTES */}
+          {currentStep === 5 && (
+            <div className="space-y-8 animate-fadeIn">
               <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Paso 8: Carga de Deducciones Generales</h2>
-                <p className="text-zinc-400 text-xs mt-1">Declare las erogaciones deducibles generales contempladas por la Ley de Ganancias para el ejercicio fiscal.</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">Paso 5: Deducciones Generales, Retenciones y Ajustes</h2>
+                <p className="text-zinc-400 text-xs mt-1">Configure las deducciones generales admitidas por ley, las retenciones sufridas y los saldos anteriores o variaciones AXI.</p>
               </div>
 
+              {/* SECCIÓN 1: DEDUCCIONES GENERALES */}
               {(() => {
                 const formatVal = (val: any) => {
                   const num = Number(val);
@@ -2405,253 +2441,294 @@ export default function WizardPage() {
                   return def;
                 };
 
+                const hasSecondaryDeductionsValue = 
+                  (generalDeductions.servicioDomestico && generalDeductions.servicioDomestico !== '0') ||
+                  (generalDeductions.seguroVida && generalDeductions.seguroVida !== '0') ||
+                  (generalDeductions.seguroRetiro && generalDeductions.seguroRetiro !== '0') ||
+                  (generalDeductions.gastosSepelio && generalDeductions.gastosSepelio !== '0') ||
+                  (generalDeductions.interesesHipoteca && generalDeductions.interesesHipoteca !== '0') ||
+                  (generalDeductions.alquilerCasaHabitacion && generalDeductions.alquilerCasaHabitacion !== '0') ||
+                  (generalDeductions.donaciones && generalDeductions.donaciones !== '0') ||
+                  (generalDeductions.honorariosMedicos && generalDeductions.honorariosMedicos !== '0');
+
+                const showSecondary = showAllDeductions || hasSecondaryDeductionsValue;
+
                 return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Aportes Autónomos</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.autonomos ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, autonomos: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Deducciones Generales Admitidas (Art. 85 / 86)</h3>
+                      <span className="text-[10px] text-zinc-450 italic">Erogaciones justificadas deducibles</span>
                     </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Servicio Doméstico (Tope: {getTope('topeServicioDomestico', '$4.507.505,52')})</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.servicioDomestico ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, servicioDomestico: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                    <div className="p-5 rounded-xl bg-[#09090b] border border-zinc-850 space-y-6">
+                      {/* Deducciones Principales */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-xs uppercase font-bold text-zinc-450 tracking-wider block">Aportes Autónomos</label>
+                          <input 
+                            type="number"
+                            value={generalDeductions.autonomos ?? ''}
+                            onChange={(e) => setGeneralDeductions({...generalDeductions, autonomos: e.target.value})}
+                            className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                          />
+                        </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Vida (Tope: {getTope('topeSeguroVida', '$573.817,13')})</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.seguroVida ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, seguroVida: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                        <div className="space-y-2">
+                          <label className="text-xs uppercase font-bold text-zinc-450 tracking-wider block">Prepagas / Asistencial (Tope: 5% Gan. Neta)</label>
+                          <input 
+                            type="number"
+                            value={generalDeductions.medicosAsistencial ?? ''}
+                            onChange={(e) => setGeneralDeductions({...generalDeductions, medicosAsistencial: e.target.value})}
+                            className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                          />
+                        </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Retiro (Tope: {getTope('topeSeguroRetiro', '$573.817,13')})</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.seguroRetiro ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, seguroRetiro: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                        <div className="space-y-2">
+                          <label className="text-xs uppercase font-bold text-zinc-450 tracking-wider block">Gastos Educativos (Tope: {getTope('topeGastosEducativos', '$1.803.002,21')})</label>
+                          <input 
+                            type="number"
+                            value={generalDeductions.gastosEducativos ?? ''}
+                            onChange={(e) => setGeneralDeductions({...generalDeductions, gastosEducativos: e.target.value})}
+                            className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                          />
+                        </div>
+                      </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Gastos de Sepelio (Tope: {getTope('topeGastosSepelio', '$996,23')})</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.gastosSepelio ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, gastosSepelio: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                      {/* Botón Acordeón / Colapsable */}
+                      <div className="flex justify-center border-t border-zinc-850/50 pt-4">
+                        <button
+                          type="button"
+                          onClick={() => setShowAllDeductions(!showAllDeductions)}
+                          className="flex items-center gap-1.5 px-4 py-2 rounded bg-zinc-900 border border-zinc-800 hover:border-teal-500/30 text-xs font-bold text-teal-400 uppercase tracking-wider transition-colors cursor-pointer"
+                        >
+                          {showSecondary ? 'Ocultar Deducciones Adicionales' : 'Mostrar Todas las Deducciones Generales (Serv. Doméstico, Seguros, Alquileres, Donaciones...)'}
+                        </button>
+                      </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Intereses Créditos Hipotecarios (Tope: {getTope('topeInteresHipoteca', '$20.000,00')})</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.interesesHipoteca ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, interesesHipoteca: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                      {/* Deducciones Adicionales (Collapsible) */}
+                      {showSecondary && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-zinc-850/50 pt-6 animate-fadeIn">
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Servicio Doméstico (Tope: {getTope('topeServicioDomestico', '$4.507.505,52')})</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.servicioDomestico ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, servicioDomestico: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Gastos Educativos (Tope: {getTope('topeGastosEducativos', '$1.803.002,21')})</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.gastosEducativos ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, gastosEducativos: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Vida (Tope: {getTope('topeSeguroVida', '$573.817,13')})</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.seguroVida ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, seguroVida: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Alquiler Casa Habitación (Deducible: 40%)</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.alquilerCasaHabitacion ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, alquilerCasaHabitacion: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Retiro (Tope: {getTope('topeSeguroRetiro', '$573.817,13')})</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.seguroRetiro ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, seguroRetiro: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Donaciones (Tope: 5% Ganancia Neta)</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.donaciones ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, donaciones: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Gastos de Sepelio (Tope: {getTope('topeGastosSepelio', '$996,23')})</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.gastosSepelio ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, gastosSepelio: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Prepagas / Cobertura Médica (Tope: 5% Ganancia Neta)</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.medicosAsistencial ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, medicosAsistencial: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
-                    </div>
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Intereses Créditos Hipotecarios (Tope: {getTope('topeInteresHipoteca', '$20.000,00')})</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.interesesHipoteca ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, interesesHipoteca: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
 
-                    <div className="space-y-2">
-                      <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Honorarios Médicos Facturados (Deducible: 40%)</label>
-                      <input 
-                        type="number"
-                        value={generalDeductions.honorariosMedicos ?? ''}
-                        onChange={(e) => setGeneralDeductions({...generalDeductions, honorariosMedicos: e.target.value})}
-                        className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
-                      />
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Alquiler Casa Habitación (Deducible: 40%)</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.alquilerCasaHabitacion ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, alquilerCasaHabitacion: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Donaciones (Tope: 5% Ganancia Neta)</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.donaciones ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, donaciones: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Honorarios Médicos Facturados (Deducible: 40%)</label>
+                            <input 
+                              type="number"
+                              value={generalDeductions.honorariosMedicos ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, honorariosMedicos: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
               })()}
-            </div>
-          )}
 
-          {/* PASO 9: RETENCIONES Y PAGOS A CUENTA (WITH AFIP EXCEL LOADER) */}
-          {currentStep === 9 && (
-            <div className="space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 9: Retenciones, Percepciones y Pagos a Cuenta</h2>
-                  <p className="text-zinc-400 text-xs mt-1">Cargue los pagos a cuenta computables. Puede subir el Excel de AFIP (Mis Retenciones).</p>
-                </div>
+              {/* SECCIÓN 2: RETENCIONES Y PAGOS A CUENTA */}
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Retenciones, Percepciones y Pagos a Cuenta</h3>
+                    <p className="text-zinc-400 text-[11px] mt-1">Cargue los pagos a cuenta computables. Puede subir el Excel de AFIP (Mis Retenciones).</p>
+                  </div>
 
-                <div className="flex flex-wrap items-center gap-4">
-                  {withholdings.length > 0 && (
-                    <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25">
-                      <div className="text-left">
-                        <span className="text-[9px] uppercase tracking-wider text-teal-400 block font-bold">Total Retenciones</span>
-                        <span className="text-sm font-bold font-mono text-teal-300">
-                          ${withholdings.reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
+                  <div className="flex flex-wrap items-center gap-4">
+                    {withholdings.length > 0 && (
+                      <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25 font-mono">
+                        <div className="text-left">
+                          <span className="text-[9px] uppercase tracking-wider text-teal-400 block font-bold">Total Retenciones</span>
+                          <span className="text-sm font-bold text-teal-300">
+                            ${withholdings.reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="h-6 w-[1px] bg-teal-500/20"></div>
+                        <div className="text-left text-[10px] text-zinc-400">
+                          <span className="block font-semibold">Ganancias: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode === 'Ganancias').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                          <span className="block font-semibold">Otros: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode !== 'Ganancias').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                        </div>
                       </div>
-                      <div className="h-6 w-[1px] bg-teal-500/20"></div>
-                      <div className="text-left text-[10px] text-zinc-400">
-                        <span className="block font-semibold">Ganancias: <span className="font-mono text-zinc-200">${withholdings.filter(w => w.taxCode === 'Ganancias').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
-                        <span className="block font-semibold">Otros: <span className="font-mono text-zinc-200">${withholdings.filter(w => w.taxCode !== 'Ganancias').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
-                      </div>
+                    )}
+
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept=".xlsx,.xls,.csv"
+                        onChange={(e) => handleFileUpload(e, 'withholdings')}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={isUploading}
+                      />
+                      <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors cursor-pointer">
+                        <Upload className="h-4 w-4" />
+                        {isUploading ? 'Procesando...' : 'Importar Excel AFIP'}
+                      </button>
                     </div>
-                  )}
-
-                  <div className="relative">
-                    <input 
-                      type="file" 
-                      accept=".xlsx,.xls,.csv"
-                      onChange={(e) => handleFileUpload(e, 'withholdings')}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={isUploading}
-                    />
-                    <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors">
-                      <Upload className="h-4 w-4" />
-                      {isUploading ? 'Procesando...' : 'Importar Excel AFIP'}
-                    </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
-                      <th className="px-4 py-3">Concepto / Impuesto</th>
-                      <th className="px-4 py-3 text-right">Importe Retenido ($)</th>
-                      <th className="px-4 py-3 text-right">Eliminar</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-850/50">
-                    {withholdings.map((withholding, index) => (
-                      <tr key={index} className="hover:bg-zinc-800/10">
-                        <td className="px-4 py-2">
-                          <select
-                            value={withholding.taxCode}
-                            onChange={(e) => handleCellChange(index, 'taxCode', e.target.value, 'withholdings')}
-                            className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none w-full"
-                          >
-                            <option value="Ganancias">Impuesto a las Ganancias (Cómputo en cabecera)</option>
-                            <option value="Otros">Otros Impuestos</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <input 
-                            type="number"
-                            value={withholding.amount ?? ''}
-                            onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'withholdings')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
-                          />
-                        </td>
-                        <td className="px-4 py-2 text-right">
-                          <button 
-                            onClick={() => deleteRow(index, 'withholdings')}
-                            className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
+                <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                        <th className="px-4 py-3">Concepto / Impuesto</th>
+                        <th className="px-4 py-3 text-right">Importe Retenido ($)</th>
+                        <th className="px-4 py-3 text-right">Eliminar</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-850/50">
+                      {withholdings.map((withholding, index) => (
+                        <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                          <td className="px-4 py-2">
+                            <select
+                              value={withholding.taxCode}
+                              onChange={(e) => handleCellChange(index, 'taxCode', e.target.value, 'withholdings')}
+                              className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none w-full"
+                            >
+                              <option value="Ganancias">Impuesto a las Ganancias (Cómputo en cabecera)</option>
+                              <option value="Otros">Otros Impuestos</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <input 
+                              type="number"
+                              value={withholding.amount ?? ''}
+                              onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'withholdings')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                            />
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <button 
+                              onClick={() => deleteRow(index, 'withholdings')}
+                              className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {withholdings.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                            Sin retenciones ni percepciones declaradas.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className="flex items-center justify-between">
                 <button 
                   type="button"
                   onClick={() => addRow('withholdings')}
-                  className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider focus:outline-none"
+                  className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider focus:outline-none cursor-pointer"
                 >
                   <Plus className="h-4 w-4 stroke-[3.5]" />
-                  Añadir Fila Manual
+                  Añadir Retención
                 </button>
               </div>
 
-              {/* SALDOS DE EJERCICIOS ANTERIORES Y QUEBRANTOS */}
-              <div className="bg-[#121216]/50 border border-zinc-800 rounded-xl p-5 mt-6 space-y-4">
-                <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-wider">Créditos y Quebrantos de Ejercicios Anteriores</h3>
+              {/* SECCIÓN 3: CRÉDITOS Y QUEBRANTOS */}
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Créditos y Quebrantos de Ejercicios Anteriores</h3>
                 <p className="text-zinc-400 text-[11px] leading-relaxed">Cargue los saldos a favor impositivos del ejercicio anterior y los quebrantos de años anteriores acumulados para compensar en el ejercicio actual.</p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#09090b] p-5 rounded-lg border border-zinc-850">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Saldo a Favor del Período Anterior ($)</label>
+                    <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block">Saldo a Favor del Período Anterior ($)</label>
                     <input 
                       type="number"
                       value={saldoAFavorAnterior ?? ''}
                       onChange={(e) => setSaldoAFavorAnterior(e.target.value)}
-                      className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                      className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       placeholder="Ej: 0.00"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Quebrantos de Períodos Anteriores a Compensar ($)</label>
+                    <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block">Quebrantos de Períodos Anteriores a Compensar ($)</label>
                     <input 
                       type="number"
                       value={quebrantosAnteriores ?? ''}
                       onChange={(e) => setQuebrantosAnteriores(e.target.value)}
-                      className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                      className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                       placeholder="Ej: 0.00"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* AJUSTE POR INFLACIÓN DINÁMICO (VARIACIONES DEL CAPITAL COMPUTABLE) */}
-              <div className="bg-[#121216]/50 border border-zinc-800 rounded-xl p-5 mt-6 space-y-4">
-                <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-wider">Ajuste por Inflación Dinámico (Variaciones)</h3>
+              {/* SECCIÓN 4: AJUSTE POR INFLACIÓN DINÁMICO (AXI) */}
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Ajuste por Inflación Dinámico (Variaciones)</h3>
                 <p className="text-zinc-400 text-[11px] leading-relaxed">Cargue los movimientos que modificaron el capital computable del negocio durante el año (ej: aportes de capital, retiros de socios). El sistema calculará el ajuste por inflación ponderado correspondiente.</p>
                 
                 <div className="border border-zinc-800 rounded-lg overflow-hidden">
@@ -2667,13 +2744,13 @@ export default function WizardPage() {
                     </thead>
                     <tbody className="divide-y divide-zinc-850/50">
                       {axiDynamic.map((item, index) => (
-                        <tr key={index} className="hover:bg-zinc-800/10">
+                        <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2 w-40">
                             <input 
                               type="date"
                               value={item.date || ''}
                               onChange={(e) => handleCellChange(index, 'date', e.target.value, 'axiDynamic')}
-                              className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 focus:outline-none w-full"
+                              className="bg-[#09090b] border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-350 focus:outline-none w-full"
                             />
                           </td>
                           <td className="px-4 py-2">
@@ -2736,20 +2813,20 @@ export default function WizardPage() {
             </div>
           )}
 
-          {/* PASO 10: CIERRE Y CONSOLIDACIÓN (CALCULATION MOTOR RESULTS) */}
-          {currentStep === 10 && calculationResult && (
+          {/* PASO 6: CIERRE Y CONSOLIDACIÓN (CALCULATION MOTOR RESULTS) */}
+          {currentStep === 6 && calculationResult && (
             <div className="space-y-8">
               
               {/* CABECERA DE RESULTADOS */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-dashed border-zinc-800 pb-6">
                 <div>
-                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 10: Consolidación y Determinación Impositiva</h2>
+                  <h2 className="text-xl font-bold text-white tracking-tight">Paso 6: Consolidación y Determinación Impositiva</h2>
                   <p className="text-zinc-400 text-xs mt-1">Los datos se han procesado de forma exitosa en el motor de cálculo. Verifique las determinaciones.</p>
                 </div>
                 
                 <div className="p-4 rounded-lg bg-[#09090b] border border-zinc-800 text-right">
-                  <span className="text-[10px] uppercase font-bold text-zinc-500 block">Saldo Final Determinado</span>
-                  <span className={`text-2xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.isNegative() ? 'text-emerald-400' : 'text-white'}`}>
+                  <span className="text-[10px] uppercase font-bold text-zinc-550 block">Saldo Final Determinado</span>
+                  <span className={`text-2xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.isNegative() ? 'text-emerald-450' : 'text-white'}`}>
                     ${calculationResult.impuestoAPagarOARCA.toNumber().toLocaleString('es-AR')}
                   </span>
                   <span className="text-[9px] font-semibold text-zinc-400 block -mt-1">
@@ -2866,6 +2943,181 @@ export default function WizardPage() {
                 </div>
               </div>
 
+              {/* PAPEL DE TRABAJO DETERMINATIVO CONSOLIDADO */}
+              {(() => {
+                const appliedQuebrantos = Decimal.min(
+                  Decimal.max(new Decimal(calculationResult.resultadoNetoAntesQuebrantos || 0), new Decimal(0)),
+                  new Decimal(quebrantosAnteriores || 0)
+                );
+                
+                return (
+                  <div className="p-6 rounded-xl bg-zinc-900/10 border border-zinc-800 space-y-6 animate-fadeIn">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
+                      <div>
+                        <h4 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4 text-teal-400" />
+                          Papel de Trabajo Determinativo Consolidado
+                        </h4>
+                        <p className="text-zinc-400 text-xs mt-1">Desglose analítico de la liquidación impositiva y su consistencia.</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-teal-500/10 border border-teal-500/25 text-teal-400 font-mono">
+                          DDJJ GANANCIAS F. 711
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto border border-zinc-800 rounded-lg bg-[#09090b]">
+                      <table className="w-full text-left border-collapse text-xs font-mono">
+                        <thead>
+                          <tr className="border-b border-zinc-850 bg-zinc-900/20 text-zinc-450 uppercase font-bold text-[9px] tracking-wider">
+                            <th className="px-4 py-3">Rubro / Concepto Determinativo</th>
+                            <th className="px-4 py-3">Referencia Legal / Cálculo</th>
+                            <th className="px-4 py-3 text-right">Parcial ($)</th>
+                            <th className="px-4 py-3 text-right">Total ($)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-850/40 text-zinc-300">
+                          {/* 1. RESULTADO DE TERCERA CATEGORÍA */}
+                          <tr className="bg-zinc-900/10">
+                            <td colSpan={4} className="px-4 py-2 font-bold text-teal-400 uppercase tracking-wider text-[10px]">
+                              1. Determinación del Resultado Neto (Tercera Categoría)
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">Ventas Gravadas del Ejercicio</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Facturación Gravada 3ra Cat</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">{formatDecimal(calculationResult.ventasGravadas)}</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Costo de Mercaderías Vendidas</td>
+                            <td className="px-4 py-2.5 text-zinc-500">CMV = Exist. Inicial + Compras - Exist. Final</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.costoVentas)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Gastos de Explotación y Administración</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Gastos Deducibles Declarados</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.gastosDeducibles)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Amortizaciones del Ejercicio</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Depreciación de Bienes de Uso (Impositivo)</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.amortizacionesBienesDeUso)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(+/-) Ajuste por Inflación Impositivo</td>
+                            <td className="px-4 py-2.5 text-zinc-500">AXI Impositivo Neto (Estático + Dinámico)</td>
+                            <td className={`px-4 py-2.5 text-right font-mono ${calculationResult.resultadoAjustePorInflacion.toNumber() >= 0 ? 'text-emerald-450' : 'text-red-450'}`}>
+                              {calculationResult.resultadoAjustePorInflacion.toNumber() >= 0 ? '+' : ''}{formatDecimal(calculationResult.resultadoAjustePorInflacion)}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="bg-zinc-900/30 font-bold border-t border-zinc-800 text-zinc-200">
+                            <td colSpan={2} className="px-4 py-2.5">Resultado Neto de Tercera Categoría</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                            <td className="px-4 py-2.5 text-right font-mono">{formatDecimal(calculationResult.resultadoComercialNeto)}</td>
+                          </tr>
+
+                          {/* 2. DEDUCCIONES GENERALES Y COMPENSACIONES */}
+                          <tr className="bg-zinc-900/10">
+                            <td colSpan={4} className="px-4 py-2 font-bold text-teal-400 uppercase tracking-wider text-[10px]">
+                              2. Deducciones Generales y Compensaciones
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Deducciones Generales Admitidas</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Art. 85 / 86 (Autónomos, Prepagas, Educativos, etc.)</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Quebrantos de Ejercicios Anteriores</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Compensación de Quebrantos Impositivos</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(appliedQuebrantos)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="bg-zinc-900/30 font-bold border-t border-zinc-800 text-zinc-200">
+                            <td colSpan={2} className="px-4 py-2.5">Ganancia Impositiva Neta del Ejercicio</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                            <td className="px-4 py-2.5 text-right font-mono">{formatDecimal(calculationResult.resultadoImpositivoNeto)}</td>
+                          </tr>
+
+                          {/* 3. DEDUCCIONES PERSONALES */}
+                          <tr className="bg-zinc-900/10">
+                            <td colSpan={4} className="px-4 py-2 font-bold text-teal-400 uppercase tracking-wider text-[10px]">
+                              3. Deducciones Personales (Art. 30)
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Mínimo No Imponible (MNI)</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. a (Ganancia No Imponible)</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.deduccionesPersonales.minimoNoImponible)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Cargas de Familia</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. b (Cónyuge: {formatDecimal(calculationResult.deduccionesPersonales.conyuge)} + Hijos)</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">
+                              (-{formatDecimal(calculationResult.deduccionesPersonales.conyuge.add(calculationResult.deduccionesPersonales.hijos).add(calculationResult.deduccionesPersonales.hijosIncapacitados))})
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Deducción Especial</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. c (Condición Fiscal del Contribuyente)</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.deduccionesPersonales.deduccionEspecial)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="bg-zinc-900/30 font-bold border-t border-zinc-800 text-zinc-200">
+                            <td colSpan={2} className="px-4 py-2.5">Ganancia Neta Sujeta a Impuesto (Base Imponible)</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                            <td className="px-4 py-2.5 text-right font-mono">{formatDecimal(calculationResult.gananciaNetaSujetaImpuesto)}</td>
+                          </tr>
+
+                          {/* 4. DETERMINACIÓN IMPOSITIVA Y SALDO */}
+                          <tr className="bg-zinc-900/10">
+                            <td colSpan={4} className="px-4 py-2 font-bold text-teal-400 uppercase tracking-wider text-[10px]">
+                              4. Determinación Impositiva y Liquidación Final
+                            </td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">Impuesto Progresivo Determinado</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Escala Progresiva Art. 94</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">{formatDecimal(calculationResult.impuestoDeterminado)}</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Retenciones, Percepciones y Pagos a Cuenta</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Cómputo Directo de Retenciones Sufridas</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.retencionesYPercepciones)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className="hover:bg-zinc-800/10">
+                            <td className="px-6 py-2.5">(-) Saldo a Favor del Contribuyente Período Anterior</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Saldo Técnico / Libre Disponibilidad DDJJ anterior</td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.saldoAFavorAnterior)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr className={`font-black border-t-2 text-sm ${calculationResult.impuestoAPagarOARCA.isNegative() ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-teal-500/10 border-teal-500 text-teal-400'}`}>
+                            <td colSpan={2} className="px-4 py-3 uppercase tracking-wider">
+                              {calculationResult.impuestoAPagarOARCA.isNegative() ? 'Saldo Técnico a Favor del Contribuyente' : 'Saldo a Pagar a Favor de ARCA'}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono">-</td>
+                            <td className="px-4 py-3 text-right font-mono">
+                              {calculationResult.impuestoAPagarOARCA.isNegative() ? '-' : ''}{formatDecimal(calculationResult.impuestoAPagarOARCA.abs())}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* PROYECCIÓN DE ANTICIPOS 2026 */}
               <div className="p-6 rounded-xl bg-zinc-900/10 border border-zinc-805 space-y-4">
                 <h4 className="text-xs uppercase font-bold text-teal-400 tracking-wider flex items-center gap-1.5">
@@ -2908,7 +3160,7 @@ export default function WizardPage() {
           )}
 
           {/* BARRA DE NAVEGACIÓN INFERIOR (SIGUIENTE / ANTERIOR) */}
-          {currentStep < 10 && (
+          {currentStep < 6 && (
             <div className="flex items-center justify-between border-t border-zinc-850 pt-8 mt-8">
               <button 
                 onClick={() => changeStep(Math.max(1, currentStep - 1))}
@@ -2920,7 +3172,7 @@ export default function WizardPage() {
               </button>
 
               <button 
-                onClick={() => changeStep(Math.min(10, currentStep + 1))}
+                onClick={() => changeStep(Math.min(6, currentStep + 1))}
                 className="flex items-center gap-2 h-10 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-all"
               >
                 Siguiente
@@ -2979,7 +3231,7 @@ export default function WizardPage() {
       )}
 
       {/* PANEL FLOTANTE DE IMPACTO FISCAL (LIVE TAX BAR) */}
-      {currentStep > 1 && currentStep < 10 && calculationResult && (
+      {currentStep > 1 && currentStep < 6 && calculationResult && (
         <>
           {isLiveBarOpen ? (
             <div className="fixed top-24 right-6 z-40 w-80 bg-[#121216]/95 border border-zinc-800 rounded-xl p-5 shadow-2xl backdrop-blur-md transition-all duration-300 animate-fadeIn font-sans">

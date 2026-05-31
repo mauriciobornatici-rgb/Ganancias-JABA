@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { calculateFixedAssetDepreciation } from '@/domain/ganancias/calculations/amortizaciones';
-import { TaxReturnCalculationInput } from '@/domain/ganancias/types';
+import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { Decimal } from 'decimal.js';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 
@@ -247,133 +247,37 @@ export async function PUT(
     });
 
     // 2. Ejecutar cálculo impositivo localmente con el motor puro impositivo
-    const calculationInput: TaxReturnCalculationInput = {
+    const calculationInput = buildTaxReturnCalculationInput({
       clientName: clientName || existingReturn.client.name,
       cuit: cuit || existingReturn.client.cuit,
       fiscalYear: parseInt(fiscalYear || existingReturn.fiscalYear.year, 10),
-      params: {
-        year: parseInt(fiscalYear || existingReturn.fiscalYear.year, 10),
-        deduccionesArt30: {
-          minimoNoImponible: new Decimal(dbParamSet.minimoNoImponible),
-          conyuge: new Decimal(dbParamSet.conyuge),
-          hijo: new Decimal(dbParamSet.hijo),
-          hijoIncapacitado: new Decimal(dbParamSet.hijoIncapacitado),
-          especialAutonomo: new Decimal(dbParamSet.especialAutonomo),
-          especialEmprendedor: new Decimal(dbParamSet.especialEmprendedor),
-          especialDependiente: new Decimal(dbParamSet.especialDependiente),
-        },
-        topesDeduccionesGenerales: {
-          topeServicioDomestico: new Decimal(dbParamSet.topeServicioDomestico),
-          topeSeguroVida: new Decimal(dbParamSet.topeSeguroVida),
-          topeSeguroRetiro: new Decimal(dbParamSet.topeSeguroRetiro),
-          topeGastosSepelio: new Decimal(dbParamSet.topeGastosSepelio),
-          topeInteresHipoteca: new Decimal(dbParamSet.topeInteresHipoteca),
-          topeGastosEducativos: new Decimal(dbParamSet.topeGastosEducativos),
-        },
-        escalaArt94: dbBrackets.map((b: any) => ({
-          fromAmount: new Decimal(b.fromAmount),
-          toAmount: b.toAmount ? new Decimal(b.toAmount) : null,
-          fixedAmount: new Decimal(b.fixedAmount),
-          percentage: new Decimal(b.percentage),
-          excessOf: new Decimal(b.excessOf),
-        })),
-        indicesIPC: dbIpcIndices.map((i: any) => ({
-          monthIndex: i.monthIndex,
-          ipcValue: new Decimal(i.ipcValue),
-        })),
-      },
-      sales: sales.map((s: any) => ({
-        date: new Date(s.date),
-        netAmount: new Decimal(s.netAmount || 0),
-        isExempt: s.isExempt || false,
-      })),
-      purchases: purchases.map((p: any) => ({
-        date: new Date(p.date),
-        netAmount: new Decimal(p.netAmount || 0),
-        isDeductible: p.isDeductible !== false,
-        isExempt: p.isExempt || false,
-        expenseType: p.expenseType || 'GastosGenerales',
-      })),
-      fixedAssets: fixedAssets.map((a: any) => ({
-        id: a.id,
-        name: a.name || '',
-        type: a.type || 'Otro',
-        purchaseDate: new Date(a.purchaseDate || new Date()),
-        originalCost: new Decimal(a.originalCost || 0),
-        usefulLife: parseInt(a.usefulLife || 10, 10),
-        yearsElapsed: parseInt(a.yearsElapsed || 0, 10),
-        customReexpIndex: new Decimal(a.customReexpIndex || 1.0),
-      })),
-      inventories: [
-        {
-          concept: 'Bienes de Cambio',
-          initialStock: new Decimal(initialStock || 0),
-          finalStock: new Decimal(finalStock || 0),
-        },
-      ],
-      bankAccounts: bankAccounts.map((b: any) => ({
-        id: b.id,
-        nominalInitial: new Decimal(b.nominalInitial || 0),
-        nominalFinal: new Decimal(b.nominalFinal || 0),
-        tcInitial: new Decimal(b.tcInitial || 1.0),
-        tcFinal: new Decimal(b.tcFinal || 1.0),
-        interests: new Decimal(b.interests || 0),
-      })),
-      cashHoldings: [],
-      receivables: [],
-      liabilities: [],
-      withholdings: withholdings.map((w: any) => ({
-        amount: new Decimal(w.amount || 0),
-        taxCode: w.taxCode || 'Ganancias',
-      })),
-      generalDeductions: [
-        {
-          autonomos: new Decimal(generalDeductions?.autonomos || 0),
-          servicioDomestico: new Decimal(generalDeductions?.servicioDomestico || 0),
-          seguroVida: new Decimal(generalDeductions?.seguroVida || 0),
-          seguroRetiro: new Decimal(generalDeductions?.seguroRetiro || 0),
-          gastosSepelio: new Decimal(generalDeductions?.gastosSepelio || 0),
-          interesesHipoteca: new Decimal(generalDeductions?.interesesHipoteca || 0),
-          gastosEducativos: new Decimal(generalDeductions?.gastosEducativos || 0),
-          alquilerCasaHabitacion: new Decimal(generalDeductions?.alquilerCasaHabitacion || 0),
-          deduccionLocadorLocatario: new Decimal(generalDeductions?.deduccionLocadorLocatario || 0),
-          donaciones: new Decimal(generalDeductions?.donaciones || 0),
-          medicosAsistencial: new Decimal(generalDeductions?.medicosAsistencial || 0),
-          honorariosMedicos: new Decimal(generalDeductions?.honorariosMedicos || 0),
-        },
-      ],
+      sales,
+      purchases,
+      fixedAssets,
+      initialStock,
+      finalStock,
+      bankAccounts,
+      withholdings,
+      generalDeductions,
       personalDeductions: {
         tieneConyuge: personalDeductions?.tieneConyuge || false,
         cantidadHijos: personalDeductions?.cantidadHijos || 0,
         cantidadHijosIncapacitados: personalDeductions?.cantidadHijosIncapacitados || 0,
         tipoDeduccionEspecial: personalDeductions?.tipoDeduccionEspecial || 'Ninguna',
       },
-      personalAssets: personalAssets.map((a: any) => ({
-        description: a.description || '',
-        type: a.type || 'Otros',
-        valueInitial: new Decimal(a.valueInitial || 0),
-        valueFinal: new Decimal(a.valueFinal || 0),
-      })),
-      personalLiabilities: personalLiabilities.map((l: any) => ({
-        description: l.description || '',
-        valueInitial: new Decimal(l.valueInitial || 0),
-        valueFinal: new Decimal(l.valueFinal || 0),
-      })),
-      otherJustifications: [],
-      axiStatic: {
-        activoTotalInicio: new Decimal(activoTotalInicio || 0),
-        bienesNoComputablesInicio: new Decimal(bienesNoComputablesInicio || 0),
-        pasivoTotalInicio: new Decimal(pasivoTotalInicio || 0),
-      },
-      axiDynamic: axiDynamic.map((a: any) => ({
-        concept: a.concept,
-        type: a.type || 'Otro',
-        amount: new Decimal(a.amount || 0),
-        date: new Date(a.date)
-      })),
-      saldoAFavorAnterior: new Decimal(saldoAFavorAnterior || 0),
-      quebrantosAnteriores: new Decimal(quebrantosAnteriores || 0),
-    };
+      personalAssets,
+      personalLiabilities,
+      activoTotalInicio,
+      bienesNoComputablesInicio,
+      pasivoTotalInicio,
+      axiDynamic,
+      saldoAFavorAnterior,
+      quebrantosAnteriores,
+    }, {
+      parameterSet: dbParamSet,
+      brackets: dbBrackets,
+      indices: dbIpcIndices,
+    });
 
     const calcResult = calculateTaxReturn(calculationInput);
 

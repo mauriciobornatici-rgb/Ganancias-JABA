@@ -120,4 +120,37 @@ describe('buildTaxReturnCalculationInput', () => {
     expect(input.params.indicesIPC[0].monthIndex).toBe(12);
     expect(input.params.indicesIPC[0].ipcValue.toNumber()).toBe(315);
   });
+
+  it('acepta valores decimales tipo Prisma que exponen toString', () => {
+    const decimalLike = { toString: () => '1234.56' };
+    const input = buildTaxReturnCalculationInput(
+      {
+        clientName: 'Cliente API',
+        cuit: '20-22222222-2',
+        fiscalYear: 2025,
+      },
+      {
+        parameterSet: {
+          minimoNoImponible: decimalLike,
+          conyuge: 0,
+          hijo: 0,
+          hijoIncapacitado: 0,
+          especialAutonomo: 0,
+          especialEmprendedor: 0,
+          especialDependiente: 0,
+          topeServicioDomestico: decimalLike,
+          topeSeguroVida: 0,
+          topeSeguroRetiro: 0,
+          topeGastosSepelio: 0,
+          topeInteresHipoteca: 0,
+          topeGastosEducativos: 0,
+        },
+        brackets: [],
+        indices: [],
+      }
+    );
+
+    expect(input.params.deduccionesArt30.minimoNoImponible.toNumber()).toBe(1234.56);
+    expect(input.params.topesDeduccionesGenerales.topeServicioDomestico.toNumber()).toBe(1234.56);
+  });
 });

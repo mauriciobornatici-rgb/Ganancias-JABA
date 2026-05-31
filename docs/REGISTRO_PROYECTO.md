@@ -595,7 +595,7 @@ Verificacion:
 
 Pendiente:
 
-- Evaluar mover tambien la API de guardado a este mapper o exponer un endpoint unico de calculo/preview para terminar de cerrar H6.
+- Evaluar exponer un endpoint unico de calculo/preview para terminar de cerrar H6.
 
 ### 2026-05-31 - Fase 1, duodecimo cambio: parametros por defecto en papel de trabajo
 
@@ -628,3 +628,32 @@ Verificacion:
 Pendiente:
 
 - Mostrar una advertencia visible cuando la pantalla use parametros default por falta de resolucion explicita en la DDJJ.
+
+### 2026-05-31 - Fase 1, decimotercer cambio: API de guardado conectada al mapper de calculo
+
+Se conecto la API `PUT /api/declaraciones/[id]` al mapper comun de `TaxReturnCalculationInput`.
+
+Archivos modificados:
+
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/domain/ganancias/mappers/calculationInputMapper.ts`.
+- `src/domain/ganancias/tests/calculationInputMapper.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Wizard, papel de trabajo y API de guardado comparten la misma normalizacion hacia el motor impositivo.
+- Se redujo una fuente importante de divergencia de calculo.
+- El mapper ahora acepta valores decimales tipo Prisma que exponen `toString()`, evitando convertir parametros de base a cero.
+
+Verificacion:
+
+- `vitest run`: 9 archivos, 20 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre mapper/test: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Crear un endpoint unico de preview/calculo para que el frontend no tenga que calcular localmente en el largo plazo.

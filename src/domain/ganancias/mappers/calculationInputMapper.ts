@@ -38,6 +38,10 @@ function decimalValue(value: unknown, fallback: string | number = 0): Decimal {
   if (value instanceof Decimal) return value;
   if (value === null || value === undefined || value === '') return new Decimal(fallback);
   if (typeof value === 'string' || typeof value === 'number') return new Decimal(value);
+  if (typeof value === 'object' && 'toString' in value) {
+    const asString = value.toString();
+    if (asString !== '[object Object]') return new Decimal(asString);
+  }
   return new Decimal(fallback);
 }
 

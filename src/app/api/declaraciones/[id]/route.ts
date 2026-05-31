@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
+import { formatDateForWizardInput } from '@/domain/ganancias/persistence/taxReturnReadMapper';
 
 export async function GET(
   req: NextRequest,
@@ -63,12 +64,12 @@ export async function GET(
       updatedAt: taxReturn.updatedAt.toISOString(),
       currentStep: extraState.currentStep || 1,
       sales: taxReturn.sales.map((s: any) => ({
-        date: s.date.toISOString().split('T')[0],
+        date: formatDateForWizardInput(s.date),
         netAmount: s.netAmount.toString(),
         isExempt: s.isExempt,
       })),
       purchases: taxReturn.purchases.map((p: any) => ({
-        date: p.date.toISOString().split('T')[0],
+        date: formatDateForWizardInput(p.date),
         netAmount: p.netAmount.toString(),
         isDeductible: p.isDeductible,
         isExempt: p.isExempt,
@@ -78,7 +79,7 @@ export async function GET(
         id: a.id,
         name: a.name,
         type: a.type,
-        purchaseDate: a.purchaseDate.toISOString().split('T')[0],
+        purchaseDate: formatDateForWizardInput(a.purchaseDate),
         originalCost: a.originalCost.toString(),
         usefulLife: a.usefulLife,
         yearsElapsed: a.yearsElapsed,
@@ -143,7 +144,7 @@ export async function GET(
         concept: a.concept,
         type: a.type,
         amount: a.amount.toString(),
-        date: a.date.toISOString().split('T')[0]
+        date: formatDateForWizardInput(a.date)
       })),
     };
 

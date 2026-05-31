@@ -174,6 +174,23 @@ Pendiente:
 - Validar manualmente contra base local con un caso real de wizard.
 - Mitigacion adicional aplicada: el `POST` guarda en `variablesSnapshot` todo el payload operativo recibido cuando no dispara persistencia relacional completa.
 
+### H9 - Reapertura de DDJJ con fechas incompletas podia fallar
+
+Estado: resuelto como mitigacion de robustez.
+
+La API `GET /api/declaraciones/[id]` formateaba fechas con `toISOString()` directo. Esto era fragil para campos opcionales como la fecha de movimientos AXI dinamicos.
+
+Riesgo:
+
+- Una DDJJ con datos historicos o importados con fecha nula podia fallar al abrirse en el wizard.
+- El usuario podia perder agilidad justo al intentar continuar una carga ya persistida.
+
+Accion aplicada:
+
+- Se agrego un formateador testeado para convertir fechas persistidas a formato `YYYY-MM-DD`.
+- Si la fecha es nula o invalida, la API devuelve cadena vacia en vez de romper la respuesta.
+- Se conecto el helper a ventas, compras, bienes de uso y AXI dinamico.
+
 ### H7 - Campos patrimoniales y JVP incompletos
 
 Estado: abierto.
@@ -946,3 +963,37 @@ Verificacion:
 Pendiente:
 
 - Validar visualmente el flujo de duplicado cuando exista una DDJJ real en base.
+
+### 2026-05-31 - Fase 1, vigesimo segundo cambio: fechas seguras al reabrir DDJJ
+
+Se reforzo la lectura de declaraciones persistidas desde `GET /api/declaraciones/[id]`.
+
+Riesgo corregido:
+
+- La API usaba `toISOString()` directo sobre fechas al mapear datos de base al estado del wizard.
+- `AxiDynamicItem.date` es opcional en el modelo, por lo que una fecha nula podia provocar error al reabrir la DDJJ.
+
+Archivos modificados:
+
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/domain/ganancias/persistence/taxReturnReadMapper.ts`.
+- `src/domain/ganancias/tests/taxReturnReadMapper.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Las fechas persistidas se convierten de forma segura al formato de input del wizard.
+- Fechas nulas o invalidas vuelven como cadena vacia.
+- Se evita que la reapertura de una DDJJ falle por un movimiento AXI incompleto o historico.
+
+Verificacion:
+
+- `vitest run`: 15 archivos, 43 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevos: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar visualmente una DDJJ con AXI dinamico sin fecha cargada.

@@ -69,7 +69,7 @@ export interface FixedAssetInput {
   purchaseDate: Date;
   originalCost: Decimal;
   usefulLife: number;     // Vida útil total en años
-  yearsElapsed: number;   // Años transcurridos al inicio (incl. ejercicio actual si es el año fiscal)
+  yearsElapsed: number;   // Años amortizados al cierre, como fiscalYear - año de compra + 1
   customReexpIndex?: Decimal; // Coeficiente IPC correspondiente manual si no se calcula dinámico
 }
 
@@ -136,6 +136,7 @@ export interface GeneralDeductionsInput {
   interesesHipoteca: Decimal;
   gastosEducativos: Decimal;
   alquilerCasaHabitacion: Decimal;
+  deduccionLocadorLocatario?: Decimal;
   donaciones: Decimal;
   medicosAsistencial: Decimal; // Prepagas
   honorariosMedicos: Decimal;
@@ -236,14 +237,18 @@ export interface AxiResult {
 }
 
 export interface GeneralDeductionsOutput {
+  autonomosAdmitidos: Decimal;
   servicioDomesticoTope: Decimal;
   seguroVidaTope: Decimal;
   seguroRetiroTope: Decimal;
   gastosSepelioTope: Decimal;
   interesesHipotecaTope: Decimal;
   gastosEducativosTope: Decimal;
+  medicosAsistencialTope: Decimal;
   honorariosMedicosTope: Decimal;
   alquilerCasaHabitacionTope: Decimal;
+  locadorLocatarioTope: Decimal;
+  donacionesTope: Decimal;
   totalDeduccionesGeneralesAdmitidas: Decimal;
 }
 

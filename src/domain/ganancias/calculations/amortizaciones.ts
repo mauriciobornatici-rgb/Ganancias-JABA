@@ -1,5 +1,17 @@
-import { Decimal } from 'decimal.js';
+﻿import { Decimal } from 'decimal.js';
 import { FixedAssetInput, FixedAssetCalculationOutput } from '../types';
+export function calculateYearsElapsedAtClose(purchaseDate: Date | string | null | undefined, fiscalYear: number): number {
+  if (!purchaseDate) return 1;
+
+  const parsedDate = purchaseDate instanceof Date ? purchaseDate : new Date(purchaseDate);
+  const purchaseYear = parsedDate.getFullYear();
+
+  if (!Number.isFinite(purchaseYear) || purchaseYear <= 0 || purchaseYear > fiscalYear) {
+    return 1;
+  }
+
+  return fiscalYear - purchaseYear + 1;
+}
 
 /**
  * Calcula la amortización impositiva anual y el valor residual impositivo de un bien de uso,
@@ -10,7 +22,7 @@ export function calculateFixedAssetDepreciation(
 ): FixedAssetCalculationOutput {
   const originalCost = new Decimal(asset.originalCost);
   const usefulLife = asset.usefulLife;
-  const yearsElapsed = asset.yearsElapsed;
+  const yearsElapsed = Math.max(0, asset.yearsElapsed);
   const reexpIndex = new Decimal(asset.customReexpIndex ?? 1.0);
 
   // Validación robusta para prevenir división por cero en vidas útiles inválidas o nulas
@@ -26,7 +38,7 @@ export function calculateFixedAssetDepreciation(
   }
 
   // Si el bien ya superó su vida útil total, está completamente amortizado
-  if (yearsElapsed >= usefulLife) {
+  if (yearsElapsed > usefulLife) {
     return {
       id: asset.id,
       name: asset.name,
@@ -44,7 +56,8 @@ export function calculateFixedAssetDepreciation(
   const annualDepreciationAdj = annualDepreciationHist.mul(reexpIndex);
 
   // Amortización Acumulada Histórica (incluyendo el año actual que se amortiza)
-  const accumulatedDepreciationHist = annualDepreciationHist.mul(yearsElapsed + 1);
+  const yearsDepreciatedAtClose = Math.min(Math.max(yearsElapsed, 1), usefulLife);
+  const accumulatedDepreciationHist = annualDepreciationHist.mul(yearsDepreciatedAtClose);
 
   // Valor Residual Histórico: Costo Origen - Amortización Acumulada Histórica
   let residualValueHist = originalCost.sub(accumulatedDepreciationHist);
@@ -91,3 +104,5 @@ export function calculateTotalDepreciation(
     totalDepreciationAdj,
   };
 }
+
+

@@ -1,4 +1,4 @@
-import { Decimal } from 'decimal.js';
+﻿import { Decimal } from 'decimal.js';
 import {
   TaxReturnCalculationInput,
   TaxCalculationResult,
@@ -149,17 +149,14 @@ export function calculateTaxReturn(
     interesesHipoteca: new Decimal(0),
     gastosEducativos: new Decimal(0),
     alquilerCasaHabitacion: new Decimal(0),
+    deduccionLocadorLocatario: new Decimal(0),
     donaciones: new Decimal(0),
     medicosAsistencial: new Decimal(0),
     honorariosMedicos: new Decimal(0),
   };
 
-  // Prepagas (Servicio Médico Asistencial): Tope del 5% del Resultado Neto
-  const prepagaReal = new Decimal(genInput.medicosAsistencial);
-  const prepagaTope = resultadoNetoTodasCategorias.mul(0.05);
-  const prepagaAdmitida = prepagaReal.gt(prepagaTope) ? prepagaTope : prepagaReal;
-
   // Servicio Doméstico
+  const autonomosAdmitidos = new Decimal(genInput.autonomos);
   const domReal = new Decimal(genInput.servicioDomestico);
   const domTope = new Decimal(caps.topeServicioDomestico);
   const domAdmitida = domReal.gt(domTope) ? domTope : domReal;
@@ -189,21 +186,47 @@ export function calculateTaxReturn(
   const educTope = new Decimal(caps.topeGastosEducativos);
   const educAdmitida = educReal.gt(educTope) ? educTope : educReal;
 
-  // Donaciones: Tope del 5% del Resultado Neto
-  const donacionesReal = new Decimal(genInput.donaciones);
-  const donacionesTope = resultadoNetoTodasCategorias.mul(0.05);
-  const donacionesAdmitida = donacionesReal.gt(donacionesTope) ? donacionesTope : donacionesReal;
 
   // Alquiler Casa Habitación: 40% del importe de alquiler, tope MNI
   const alquilerReal = new Decimal(genInput.alquilerCasaHabitacion).mul(0.40);
   const alquilerTope = new Decimal(input.params.deduccionesArt30.minimoNoImponible);
   const alquilerAdmitida = alquilerReal.gt(alquilerTope) ? alquilerTope : alquilerReal;
 
-  // Honorarios Médicos: 40% del importe facturado, dentro del tope del 5% de ganancia neta
+  // Nueva deduccion Locador / Locatario: la planilla IG 25 computa el 10% del importe informado.
+  const locadorLocatarioReal = new Decimal(genInput.deduccionLocadorLocatario || 0).mul(0.10);
+  const locadorLocatarioAdmitida = Decimal.max(locadorLocatarioReal, new Decimal(0));
+
+  const deduccionesF20aF23 = new Decimal(genInput.autonomos)
+    .add(domAdmitida)
+    .add(vidaAdmitida)
+    .add(retiroAdmitida);
+  const deduccionesF20aF28 = deduccionesF20aF23
+    .add(sepelioAdmitida)
+    .add(hipotecaAdmitida)
+    .add(educAdmitida)
+    .add(alquilerAdmitida)
+    .add(locadorLocatarioAdmitida);
+
+  // Prepagas: replica IG 25!D29/F29 con el chequeo del 5% luego de F20:F28.
+  const prepagaReal = new Decimal(genInput.medicosAsistencial);
+  const prepagaTopeControl = resultadoNetoTodasCategorias.sub(deduccionesF20aF28).mul(0.05);
+  const prepagaTope = prepagaTopeControl.isNegative()
+    ? new Decimal(0)
+    : resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul(0.05);
+  const prepagaAdmitida = prepagaReal.gt(prepagaTope) ? prepagaTope : prepagaReal;
+
+  // Honorarios medicos: replica IG 25!D30/F30, 40% del comprobante y tope 5% luego de F20:F28.
   const honorariosMedReal = new Decimal(genInput.honorariosMedicos).mul(0.40);
-  const honorariosMedTope = resultadoNetoTodasCategorias.mul(0.05).sub(prepagaAdmitida);
-  const honorariosMedAdmitida = honorariosMedTope.isNegative() ? new Decimal(0) : 
-    honorariosMedReal.gt(honorariosMedTope) ? honorariosMedTope : honorariosMedReal;
+  const honorariosMedTopeControl = resultadoNetoTodasCategorias.sub(deduccionesF20aF28).mul(0.05);
+  const honorariosMedTope = honorariosMedTopeControl.isNegative()
+    ? honorariosMedReal
+    : Decimal.min(honorariosMedTopeControl, honorariosMedReal);
+  const honorariosMedAdmitida = Decimal.max(honorariosMedTope, new Decimal(0));
+
+  // Donaciones: replica IG 25!D31/F31, con base neta luego de F20:F23.
+  const donacionesReal = new Decimal(genInput.donaciones);
+  const donacionesTope = Decimal.max(resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul(0.05), new Decimal(0));
+  const donacionesAdmitida = donacionesReal.gt(donacionesTope) ? donacionesTope : donacionesReal;
 
   const totalDeduccionesGeneralesAdmitidas = new Decimal(genInput.autonomos)
     .add(prepagaAdmitida)
@@ -215,17 +238,22 @@ export function calculateTaxReturn(
     .add(educAdmitida)
     .add(donacionesAdmitida)
     .add(alquilerAdmitida)
+    .add(locadorLocatarioAdmitida)
     .add(honorariosMedAdmitida);
 
   const deduccionesGenerales: GeneralDeductionsOutput = {
+    autonomosAdmitidos: autonomosAdmitidos.round(),
     servicioDomesticoTope: domAdmitida.round(),
     seguroVidaTope: vidaAdmitida.round(),
     seguroRetiroTope: retiroAdmitida.round(),
     gastosSepelioTope: sepelioAdmitida.round(),
     interesesHipotecaTope: hipotecaAdmitida.round(),
     gastosEducativosTope: educAdmitida.round(),
+    medicosAsistencialTope: prepagaAdmitida.round(),
     honorariosMedicosTope: honorariosMedAdmitida.round(),
     alquilerCasaHabitacionTope: alquilerAdmitida.round(),
+    locadorLocatarioTope: locadorLocatarioAdmitida.round(),
+    donacionesTope: donacionesAdmitida.round(),
     totalDeduccionesGeneralesAdmitidas: totalDeduccionesGeneralesAdmitidas.round(),
   };
 
@@ -460,3 +488,4 @@ export function calculateTaxReturn(
     errors,
   };
 }
+

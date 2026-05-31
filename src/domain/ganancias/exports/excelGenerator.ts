@@ -1,8 +1,29 @@
 import * as XLSX from 'xlsx';
 import { Decimal } from 'decimal.js';
+import { TaxCalculationResult } from '../types';
+
+interface ExportFixedAsset {
+  name?: string;
+  type?: string;
+  purchaseDate?: string | Date;
+  originalCost?: Decimal | number | string;
+  customReexpIndex?: Decimal | number | string;
+  usefulLife?: number | string;
+  yearsElapsed?: number | string;
+}
+
+interface ExportTaxReturnData {
+  fiscalYear?: number;
+  clientName?: string;
+  cuit?: string;
+  mainActivity?: string;
+  status?: string;
+  version?: number;
+  fixedAssets?: ExportFixedAsset[];
+}
 
 // Helper function to safely convert Decimal to number or fallback to 0
-function toNumber(val: any): number {
+function toNumber(val: unknown): number {
   if (val instanceof Decimal) return val.toNumber();
   if (typeof val === 'number') return val;
   if (typeof val === 'string') {
@@ -12,7 +33,10 @@ function toNumber(val: any): number {
   return 0;
 }
 
-export function downloadTaxReturnExcel(data: any, calculationResult: any) {
+export function downloadTaxReturnExcel(
+  data?: ExportTaxReturnData,
+  calculationResult?: Partial<TaxCalculationResult> | null
+) {
   if (typeof window === 'undefined') return;
 
   const wb = XLSX.utils.book_new();
@@ -69,7 +93,7 @@ export function downloadTaxReturnExcel(data: any, calculationResult: any) {
 
   // Agregar los 5 anticipos a la planilla
   const anticipos = calculationResult?.anticiposSiguientePeriodo || [];
-  anticipos.forEach((ant: any, idx: number) => {
+  anticipos.forEach((ant, idx: number) => {
     generalData.push([`Anticipo ${idx + 1} (20%)`, toNumber(ant)]);
   });
 
@@ -88,7 +112,7 @@ export function downloadTaxReturnExcel(data: any, calculationResult: any) {
       'Fecha Adquisición', 
       'Costo Origen Histórico', 
       'Vida Útil (Años)', 
-      'Años Transcurridos', 
+      'Años al Cierre', 
       'Índice Reexpresión',
       'Amortización Histórica Anual',
       'Amortización Impositiva Reexpresada Anual',
@@ -97,18 +121,20 @@ export function downloadTaxReturnExcel(data: any, calculationResult: any) {
     ]
   ];
 
-  const fixedAssetsRows = (data?.fixedAssets || []).map((a: any) => {
+  const fixedAssetsRows = (data?.fixedAssets || []).map((a) => {
     const cost = toNumber(a.originalCost);
     const reexp = toNumber(a.customReexpIndex || 1.0);
     const reexpCost = cost * reexp;
-    const life = parseInt(a.usefulLife || 10, 10);
-    const elapsed = parseInt(a.yearsElapsed || 0, 10);
+    const life = parseInt(String(a.usefulLife || 10), 10);
+    const elapsed = Math.max(0, parseInt(String(a.yearsElapsed || 0), 10));
+    const beyondUsefulLife = elapsed > life;
+    const depreciatedYearsAtClose = Math.min(Math.max(elapsed, 1), life);
     
-    const depHist = elapsed >= life ? 0 : cost / life;
-    const depAdj = elapsed >= life ? 0 : reexpCost / life;
+    const depHist = beyondUsefulLife ? 0 : cost / life;
+    const depAdj = beyondUsefulLife ? 0 : reexpCost / life;
     
-    const resHist = elapsed >= life ? 0 : cost - (depHist * elapsed);
-    const resAdj = elapsed >= life ? 0 : reexpCost - (depAdj * elapsed);
+    const resHist = beyondUsefulLife ? 0 : cost - (depHist * depreciatedYearsAtClose);
+    const resAdj = beyondUsefulLife ? 0 : reexpCost - (depAdj * depreciatedYearsAtClose);
 
     return [
       a.name || 'Activo sin Nombre',

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -19,7 +19,9 @@ import {
 import Link from 'next/link';
 import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
-import { TaxReturnCalculationInput, SalesInput, PurchaseInput, FixedAssetInput, TaxWithholdingInput, PersonalAssetInput, PersonalLiabilityInput } from '@/domain/ganancias/types';
+import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/amortizaciones';
+import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
+import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
 
 // Escala Art 94 Mock (2025)
@@ -160,6 +162,7 @@ export default function WizardPage() {
         interesesHipoteca: '0',
         gastosEducativos: '0',
         alquilerCasaHabitacion: '0',
+        deduccionLocadorLocatario: '0',
         donaciones: '0',
         medicosAsistencial: '0',
         honorariosMedicos: '0',
@@ -239,6 +242,7 @@ export default function WizardPage() {
         interesesHipoteca: '0',
         gastosEducativos: '200000',
         alquilerCasaHabitacion: '0',
+        deduccionLocadorLocatario: '0',
         donaciones: '0',
         medicosAsistencial: '0',
         honorariosMedicos: '0',
@@ -417,6 +421,7 @@ export default function WizardPage() {
     interesesHipoteca: '0',
     gastosEducativos: '0',
     alquilerCasaHabitacion: '0',
+    deduccionLocadorLocatario: '0',
     donaciones: '0',
     medicosAsistencial: '0',
     honorariosMedicos: '0',
@@ -596,6 +601,7 @@ export default function WizardPage() {
       interesesHipoteca: '0',
       gastosEducativos: '0',
       alquilerCasaHabitacion: '0',
+      deduccionLocadorLocatario: '0',
       donaciones: '0',
       medicosAsistencial: '0',
       honorariosMedicos: '0',
@@ -788,7 +794,8 @@ export default function WizardPage() {
     } else if (type === 'purchases') {
       setPurchases([...purchases, { date: `${fiscalYear}-01-01`, netAmount: '0', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' }]);
     } else if (type === 'assets') {
-      setFixedAssets([...fixedAssets, { id: `asset-${Date.now()}`, name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate: `${fiscalYear}-01-01`, originalCost: '0', usefulLife: 10, yearsElapsed: 0, customReexpIndex: '1.0' }]);
+      const purchaseDate = `${fiscalYear}-01-01`;
+      setFixedAssets([...fixedAssets, { id: `asset-${Date.now()}`, name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate, originalCost: '0', usefulLife: 10, yearsElapsed: calculateYearsElapsedAtClose(purchaseDate, fiscalYear), customReexpIndex: '1.0' }]);
     } else if (type === 'withholdings') {
       setWithholdings([...withholdings, { amount: '0', taxCode: 'Ganancias' }]);
     } else if (type === 'personalAssets') {
@@ -825,6 +832,9 @@ export default function WizardPage() {
     } else if (type === 'assets') {
       const updated = [...fixedAssets];
       updated[index][field] = value;
+      if (field === 'purchaseDate') {
+        updated[index].yearsElapsed = calculateYearsElapsedAtClose(value, fiscalYear);
+      }
       setFixedAssets(updated);
     } else if (type === 'withholdings') {
       const updated = [...withholdings];
@@ -910,154 +920,56 @@ export default function WizardPage() {
   // EJECUCIÓN DEL MOTOR DE CÁLCULO IMPOSTIVO
   // ==========================================
   const executeCalculation = () => {
-    // Si tenemos los parámetros cargados de la base de datos para la resolución seleccionada, usarlos
-    const ded30 = activeParams?.parameterSet ? {
-      minimoNoImponible: new Decimal(activeParams.parameterSet.minimoNoImponible),
-      conyuge: new Decimal(activeParams.parameterSet.conyuge),
-      hijo: new Decimal(activeParams.parameterSet.hijo),
-      hijoIncapacitado: new Decimal(activeParams.parameterSet.hijoIncapacitado),
-      especialAutonomo: new Decimal(activeParams.parameterSet.especialAutonomo),
-      especialEmprendedor: new Decimal(activeParams.parameterSet.especialEmprendedor),
-      especialDependiente: new Decimal(activeParams.parameterSet.especialDependiente),
-    } : {
-      minimoNoImponible: new Decimal(4507505.52),
-      conyuge: new Decimal(4245166.13),
-      hijo: new Decimal(2140852.77),
-      hijoIncapacitado: new Decimal(4281705.53),
-      especialAutonomo: new Decimal(15776269.32),
-      especialEmprendedor: new Decimal(18030022.08),
-      especialDependiente: new Decimal(21636026.50),
+    const fallbackParameterSet = {
+      minimoNoImponible: 4507505.52,
+      conyuge: 4245166.13,
+      hijo: 2140852.77,
+      hijoIncapacitado: 4281705.53,
+      especialAutonomo: 15776269.32,
+      especialEmprendedor: 18030022.08,
+      especialDependiente: 21636026.50,
+      topeServicioDomestico: 4507505.52,
+      topeSeguroVida: 573817.13,
+      topeSeguroRetiro: 573817.13,
+      topeGastosSepelio: 996.23,
+      topeInteresHipoteca: 20000.00,
+      topeGastosEducativos: 1803002.21,
     };
 
-    const caps = activeParams?.parameterSet ? {
-      topeServicioDomestico: new Decimal(activeParams.parameterSet.topeServicioDomestico),
-      topeSeguroVida: new Decimal(activeParams.parameterSet.topeSeguroVida),
-      topeSeguroRetiro: new Decimal(activeParams.parameterSet.topeSeguroRetiro),
-      topeGastosSepelio: new Decimal(activeParams.parameterSet.topeGastosSepelio),
-      topeInteresHipoteca: new Decimal(activeParams.parameterSet.topeInteresHipoteca),
-      topeGastosEducativos: new Decimal(activeParams.parameterSet.topeGastosEducativos),
-    } : {
-      topeServicioDomestico: new Decimal(4507505.52),
-      topeSeguroVida: new Decimal(573817.13),
-      topeSeguroRetiro: new Decimal(573817.13),
-      topeGastosSepelio: new Decimal(996.23),
-      topeInteresHipoteca: new Decimal(20000.00),
-      topeGastosEducativos: new Decimal(1803002.21),
-    };
+    const calculationParams = activeParams
+      ? {
+          ...activeParams,
+          brackets: activeParams.brackets?.length > 0 ? activeParams.brackets : escala2025BracketMock,
+          indices: activeParams.indices || [],
+        }
+      : {
+          parameterSet: fallbackParameterSet,
+          brackets: escala2025BracketMock,
+          indices: [],
+        };
 
-    const escala94 = activeParams?.brackets?.length > 0 
-      ? activeParams.brackets.map((b: any) => ({
-          fromAmount: new Decimal(b.fromAmount),
-          toAmount: b.toAmount ? new Decimal(b.toAmount) : null,
-          fixedAmount: new Decimal(b.fixedAmount),
-          percentage: new Decimal(b.percentage),
-          excessOf: new Decimal(b.excessOf),
-        }))
-      : escala2025BracketMock;
-
-    // Normalizar datos de estado a tipos de dominio impositivo (Decimal.js)
-    const calculationInput: TaxReturnCalculationInput = {
+    const calculationInput = buildTaxReturnCalculationInput({
       clientName,
       cuit,
       fiscalYear,
-      params: {
-        year: fiscalYear,
-        deduccionesArt30: ded30,
-        topesDeduccionesGenerales: caps,
-        escalaArt94: escala94,
-        indicesIPC: (activeParams?.indices || []).map((i: any) => ({
-          monthIndex: i.monthIndex,
-          ipcValue: new Decimal(i.ipcValue),
-        })),
-      },
-      sales: sales.map(s => ({
-        date: new Date(s.date),
-        netAmount: new Decimal(s.netAmount || 0),
-        isExempt: s.isExempt
-      })),
-      purchases: purchases.map(p => ({
-        date: new Date(p.date),
-        netAmount: new Decimal(p.netAmount || 0),
-        isDeductible: p.isDeductible,
-        isExempt: p.isExempt,
-        expenseType: p.expenseType
-      })),
-      fixedAssets: fixedAssets.map(a => ({
-        id: a.id,
-        name: a.name,
-        type: a.type,
-        purchaseDate: new Date(a.purchaseDate),
-        originalCost: new Decimal(a.originalCost || 0),
-        usefulLife: Number(a.usefulLife),
-        yearsElapsed: Number(a.yearsElapsed),
-        customReexpIndex: new Decimal(a.customReexpIndex || 1.0)
-      })),
-      inventories: [
-        { concept: 'Bienes de Cambio', initialStock: new Decimal(initialStock || 0), finalStock: new Decimal(finalStock || 0) }
-      ],
-      bankAccounts: bankAccounts.map(b => ({
-        id: b.id,
-        nominalInitial: new Decimal(b.nominalInitial || 0),
-        nominalFinal: new Decimal(b.nominalFinal || 0),
-        tcInitial: new Decimal(b.tcInitial || 1.0),
-        tcFinal: new Decimal(b.tcFinal || 1.0),
-        interests: new Decimal(b.interests || 0)
-      })),
-      cashHoldings: [],
-      receivables: [],
-      liabilities: [],
-      withholdings: withholdings.map(w => ({
-        amount: new Decimal(w.amount || 0),
-        taxCode: w.taxCode
-      })),
-      generalDeductions: [
-        {
-          autonomos: new Decimal(generalDeductions.autonomos || 0),
-          servicioDomestico: new Decimal(generalDeductions.servicioDomestico || 0),
-          seguroVida: new Decimal(generalDeductions.seguroVida || 0),
-          seguroRetiro: new Decimal(generalDeductions.seguroRetiro || 0),
-          gastosSepelio: new Decimal(generalDeductions.gastosSepelio || 0),
-          interesesHipoteca: new Decimal(generalDeductions.interesesHipoteca || 0),
-          gastosEducativos: new Decimal(generalDeductions.gastosEducativos || 0),
-          alquilerCasaHabitacion: new Decimal(generalDeductions.alquilerCasaHabitacion || 0),
-          donaciones: new Decimal(generalDeductions.donaciones || 0),
-          medicosAsistencial: new Decimal(generalDeductions.medicosAsistencial || 0),
-          honorariosMedicos: new Decimal(generalDeductions.honorariosMedicos || 0),
-        }
-      ],
-      personalDeductions: {
-        tieneConyuge: personalDeductions.tieneConyuge,
-        cantidadHijos: personalDeductions.cantidadHijos,
-        cantidadHijosIncapacitados: personalDeductions.cantidadHijosIncapacitados,
-        tipoDeduccionEspecial: personalDeductions.tipoDeduccionEspecial,
-        esJubiladoOchoHaberes: personalDeductions.esJubiladoOchoHaberes,
-      },
-      personalAssets: personalAssets.map(a => ({
-        description: a.description,
-        type: a.type,
-        valueInitial: new Decimal(a.valueInitial || 0),
-        valueFinal: new Decimal(a.valueFinal || 0)
-      })),
-      personalLiabilities: personalLiabilities.map(l => ({
-        description: l.description,
-        valueInitial: new Decimal(l.valueInitial || 0),
-        valueFinal: new Decimal(l.valueFinal || 0)
-      })),
-      otherJustifications: [],
-      axiStatic: {
-        activoTotalInicio: new Decimal(activoTotalInicio || 0),
-        bienesNoComputablesInicio: new Decimal(bienesNoComputablesInicio || 0),
-        pasivoTotalInicio: new Decimal(pasivoTotalInicio || 0),
-      },
-      axiDynamic: axiDynamic.map(a => ({
-        concept: a.concept,
-        type: a.type || 'Otro',
-        amount: new Decimal(a.amount || 0),
-        date: new Date(a.date)
-      })),
-      saldoAFavorAnterior: new Decimal(saldoAFavorAnterior || 0),
-      quebrantosAnteriores: new Decimal(quebrantosAnteriores || 0),
-    };
+      sales,
+      purchases,
+      fixedAssets,
+      initialStock,
+      finalStock,
+      bankAccounts,
+      withholdings,
+      generalDeductions,
+      personalDeductions,
+      personalAssets,
+      personalLiabilities,
+      activoTotalInicio,
+      bienesNoComputablesInicio,
+      pasivoTotalInicio,
+      axiDynamic,
+      saldoAFavorAnterior,
+      quebrantosAnteriores,
+    }, calculationParams);
 
     return calculateTaxReturn(calculationInput);
   };
@@ -1965,9 +1877,10 @@ export default function WizardPage() {
                       <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
                         <th className="px-4 py-3">Nombre del Bien</th>
                         <th className="px-4 py-3 text-center">Tipo</th>
+                        <th className="px-4 py-3 text-center">Fecha Compra</th>
                         <th className="px-4 py-3 text-right">Valor Origen ($)</th>
                         <th className="px-4 py-3 text-center">Vida Útil (Años)</th>
-                        <th className="px-4 py-3 text-center">Años Transcurridos</th>
+                        <th className="px-4 py-3 text-center">Años al Cierre</th>
                         <th className="px-4 py-3 text-right">Coef. Reexp.</th>
                         <th className="px-4 py-3 text-right">Eliminar</th>
                       </tr>
@@ -1996,6 +1909,14 @@ export default function WizardPage() {
                               <option value="Equipamiento">Equipamiento (10 años)</option>
                               <option value="Otro">Otro</option>
                             </select>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <input
+                              type="date"
+                              value={asset.purchaseDate ?? ''}
+                              onChange={(e) => handleCellChange(index, 'purchaseDate', e.target.value, 'assets')}
+                              className="bg-transparent border-0 text-zinc-300 text-xs font-mono focus:ring-0 focus:outline-none w-32 text-center focus:border-b focus:border-teal-500"
+                            />
                           </td>
                           <td className="px-4 py-2 text-right">
                             <input 
@@ -2043,7 +1964,7 @@ export default function WizardPage() {
                       ))}
                       {fixedAssets.length === 0 && (
                         <tr>
-                          <td colSpan={7} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                          <td colSpan={8} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
                             Sin bienes de uso declarados.
                           </td>
                         </tr>
@@ -2448,6 +2369,7 @@ export default function WizardPage() {
                   (generalDeductions.gastosSepelio && generalDeductions.gastosSepelio !== '0') ||
                   (generalDeductions.interesesHipoteca && generalDeductions.interesesHipoteca !== '0') ||
                   (generalDeductions.alquilerCasaHabitacion && generalDeductions.alquilerCasaHabitacion !== '0') ||
+                  (generalDeductions.deduccionLocadorLocatario && generalDeductions.deduccionLocadorLocatario !== '0') ||
                   (generalDeductions.donaciones && generalDeductions.donaciones !== '0') ||
                   (generalDeductions.honorariosMedicos && generalDeductions.honorariosMedicos !== '0');
 
@@ -2564,6 +2486,16 @@ export default function WizardPage() {
                               type="number"
                               value={generalDeductions.alquilerCasaHabitacion ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, alquilerCasaHabitacion: e.target.value})}
+                              className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Locador / Locatario (Deducible: 10%)</label>
+                            <input
+                              type="number"
+                              value={generalDeductions.deduccionLocadorLocatario ?? ''}
+                              onChange={(e) => setGeneralDeductions({...generalDeductions, deduccionLocadorLocatario: e.target.value})}
                               className="w-full h-11 px-4 rounded-lg bg-[#121216] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
                             />
                           </div>
@@ -2922,6 +2854,14 @@ export default function WizardPage() {
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Deducciones Generales Admitidas:</span>
                       <span className="font-mono text-zinc-300">-${calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber().toLocaleString('es-AR')}</span>
+                    </div>
+                    <div className="rounded-lg border border-zinc-850/70 bg-[#09090b]/70 p-3 space-y-1">
+                      {buildGeneralDeductionsBreakdown(calculationResult.deduccionesGenerales).map(({ label, amount }) => (
+                        <div key={label} className="flex justify-between gap-3 text-[11px]">
+                          <span className="text-zinc-500">{label}:</span>
+                          <span className="font-mono text-zinc-300">-{formatDecimal(amount)}</span>
+                        </div>
+                      ))}
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Mínimo No Imponible:</span>
@@ -3312,3 +3252,4 @@ export default function WizardPage() {
     </div>
   );
 }
+

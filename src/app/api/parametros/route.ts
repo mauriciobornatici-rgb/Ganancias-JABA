@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { Decimal } from 'decimal.js';
 
@@ -180,7 +180,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// POST: Sincronizar automáticamente con ARCA (ex-AFIP)
+// POST: Cargar parametros base internos. No consulta ARCA ni otra fuente oficial externa.
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -198,9 +198,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 2. Simulación de Fetch de resoluciones oficiales externas
-    // En producción, esto consulta la API de ARCA o un servidor central de JABA.
-    // Aplicamos los valores actualizados oficiales aprobados para cada año fiscal:
+    // 2. Carga interna estimada/base para iniciar trabajo
+    // No debe presentarse como sincronizacion oficial: validar contra normativa/importes oficiales.
+    // Aplicamos valores base parametrizados para cada año fiscal:
     let officialDeducciones;
     let multiplier = 1.0;
 
@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
           topeInteresHipoteca: new Decimal(officialDeducciones.topeInteresHipoteca),
           topeGastosEducativos: new Decimal(officialDeducciones.topeGastosEducativos),
           status: 'validado',
-          sourceLaw: 'ARCA RG Oficial'
+          sourceLaw: 'Plantilla interna JABA - verificar normativa oficial'
         }
       });
 
@@ -341,12 +341,13 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `¡Escalas impositivas del Período Fiscal ${targetYear} sincronizadas y validadas con éxito desde el servidor oficial de ARCA (ex-AFIP)!`
+      message: `Parámetros base internos del Período Fiscal ${targetYear} cargados. Verificar contra normativa oficial antes de presentar.`
     });
   } catch (err: any) {
     return NextResponse.json({
       success: false,
-      error: `Error al sincronizar con ARCA: ${err.message}`
+      error: `Error al cargar parámetros base internos: ${err.message}`
     }, { status: 500 });
   }
 }
+

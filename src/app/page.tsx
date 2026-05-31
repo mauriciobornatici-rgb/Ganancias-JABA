@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { 
@@ -141,7 +141,7 @@ export default function Home() {
       .finally(() => setIsParamsLoading(false));
   };
 
-  const handleSyncWithARCA = () => {
+  const handleLoadInternalBaseParameters = () => {
     setIsSyncing(true);
     fetch('/api/parametros', {
       method: 'POST',
@@ -152,21 +152,21 @@ export default function Home() {
       .then(res => {
         if (res.success) {
           setNotification({
-            message: `¡Escalas impositivas y coeficientes del Período Fiscal ${selectedYear} sincronizados con éxito desde ARCA (ex-AFIP)!`,
+            message: `Parámetros base internos del Período Fiscal ${selectedYear} cargados. Verificá/importá normativa oficial antes de presentar.`,
             type: 'success'
           });
           loadParameters(selectedYear);
         } else {
           setNotification({
-            message: `Error al sincronizar: ${res.error}`,
+            message: `Error al cargar parámetros base: ${res.error}`,
             type: 'error'
           });
         }
       })
       .catch(err => {
-        console.error("Error syncing parameters:", err);
+        console.error("Error loading internal base parameters:", err);
         setNotification({
-          message: `Error de red al sincronizar: ${err.message}`,
+          message: `Error de red al cargar parámetros base: ${err.message}`,
           type: 'error'
         });
       })
@@ -983,12 +983,12 @@ export default function Home() {
                 </div>
 
                 <button
-                  onClick={handleSyncWithARCA}
+                  onClick={handleLoadInternalBaseParameters}
                   disabled={isSyncing}
                   className="flex items-center gap-2 px-4 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-xs font-bold text-teal-400 transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Sincronizando...' : 'Sincronizar ARCA'}
+                  {isSyncing ? 'Cargando...' : 'Cargar base interna'}
                 </button>
 
                 <button
@@ -1090,12 +1090,12 @@ export default function Home() {
                   </p>
                 </div>
                 <button
-                  onClick={handleSyncWithARCA}
+                  onClick={handleLoadInternalBaseParameters}
                   disabled={isSyncing}
                   className="inline-flex items-center gap-2 px-6 h-11 rounded-lg bg-teal-500 hover:bg-teal-400 text-[#09090b] text-sm font-bold transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                  {isSyncing ? 'Sincronizando...' : `Sincronizar Período ${selectedYear}`}
+                  {isSyncing ? 'Cargando...' : `Cargar base ${selectedYear}`}
                 </button>
               </div>
             ) : (
@@ -1734,3 +1734,4 @@ export default function Home() {
     </div>
   );
 }
+

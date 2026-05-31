@@ -20,7 +20,9 @@ import {
 } from 'lucide-react';
 import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
-import { TaxReturnCalculationInput } from '@/domain/ganancias/types';
+import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
+import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
+import { buildTaxParameterRequestUrl } from '@/domain/ganancias/presentation/taxParameterRequest';
 import { downloadTaxReturnExcel } from '@/domain/ganancias/exports/excelGenerator';
 
 export default function PapelDeTrabajoPage() {
@@ -39,15 +41,13 @@ export default function PapelDeTrabajoPage() {
         .then(res => {
           if (res.success && res.data) {
             setData(res.data);
-            if (res.data.taxParameterSetId) {
-              fetch(`/api/parametros?year=${res.data.fiscalYear}&resolutionId=${res.data.taxParameterSetId}`)
-                .then(r => r.json())
-                .then(pRes => {
-                  if (pRes.success && pRes.data) {
-                    setTaxParams(pRes.data);
-                  }
-                });
-            }
+            fetch(buildTaxParameterRequestUrl(res.data.fiscalYear, res.data.taxParameterSetId))
+              .then(r => r.json())
+              .then(pRes => {
+                if (pRes.success && pRes.data) {
+                  setTaxParams(pRes.data);
+                }
+              });
           }
         })
         .catch(err => console.error("Error al obtener papel de trabajo de base de datos:", err))
@@ -58,120 +58,7 @@ export default function PapelDeTrabajoPage() {
   const calculationResult = React.useMemo(() => {
     if (!data || !taxParams) return null;
     try {
-      const calculationInput: TaxReturnCalculationInput = {
-        clientName: data.clientName,
-        cuit: data.cuit,
-        fiscalYear: data.fiscalYear,
-        params: {
-          year: data.fiscalYear,
-          deduccionesArt30: {
-            minimoNoImponible: new Decimal(taxParams.minimoNoImponible || 0),
-            conyuge: new Decimal(taxParams.conyuge || 0),
-            hijo: new Decimal(taxParams.hijo || 0),
-            hijoIncapacitado: new Decimal(taxParams.hijoIncapacitado || 0),
-            especialAutonomo: new Decimal(taxParams.especialAutonomo || 0),
-            especialEmprendedor: new Decimal(taxParams.especialEmprendedor || 0),
-            especialDependiente: new Decimal(taxParams.especialDependiente || 0),
-          },
-          topesDeduccionesGenerales: {
-            topeServicioDomestico: new Decimal(taxParams.topeServicioDomestico || 0),
-            topeSeguroVida: new Decimal(taxParams.topeSeguroVida || 0),
-            topeSeguroRetiro: new Decimal(taxParams.topeSeguroRetiro || 0),
-            topeGastosSepelio: new Decimal(taxParams.topeGastosSepelio || 0),
-            topeInteresHipoteca: new Decimal(taxParams.topeInteresHipoteca || 0),
-            topeGastosEducativos: new Decimal(taxParams.topeGastosEducativos || 0),
-          },
-          escalaArt94: (taxParams.brackets || []).map((b: any) => ({
-            fromAmount: new Decimal(b.fromAmount),
-            toAmount: b.toAmount ? new Decimal(b.toAmount) : null,
-            fixedAmount: new Decimal(b.fixedAmount),
-            percentage: new Decimal(b.percentage),
-            excessOf: new Decimal(b.excessOf),
-          })),
-          indicesIPC: (taxParams.ipcIndices || []).map((i: any) => ({
-            monthIndex: i.monthIndex,
-            ipcValue: new Decimal(i.ipcValue),
-          })),
-        },
-        sales: (data.sales || []).map((s: any) => ({
-          date: new Date(s.date),
-          netAmount: new Decimal(s.netAmount || 0),
-          isExempt: s.isExempt || false
-        })),
-        purchases: (data.purchases || []).map((p: any) => ({
-          date: new Date(p.date),
-          netAmount: new Decimal(p.netAmount || 0),
-          isDeductible: p.isDeductible !== false,
-          isExempt: p.isExempt || false,
-          expenseType: p.expenseType || 'GastosGenerales'
-        })),
-        fixedAssets: (data.fixedAssets || []).map((a: any) => ({
-          id: a.id,
-          name: a.name || '',
-          type: a.type || 'Otro',
-          purchaseDate: new Date(a.purchaseDate || new Date()),
-          originalCost: new Decimal(a.originalCost || 0),
-          usefulLife: Number(a.usefulLife || 10),
-          yearsElapsed: Number(a.yearsElapsed || 0),
-          customReexpIndex: new Decimal(a.customReexpIndex || 1.0)
-        })),
-        inventories: [
-          { concept: 'Bienes de Cambio', initialStock: new Decimal(data.initialStock || 0), finalStock: new Decimal(data.finalStock || 0) }
-        ],
-        bankAccounts: (data.bankAccounts || []).map((b: any) => ({
-          id: b.id,
-          nominalInitial: new Decimal(b.nominalInitial || 0),
-          nominalFinal: new Decimal(b.nominalFinal || 0),
-          tcInitial: new Decimal(b.tcInitial || 1.0),
-          tcFinal: new Decimal(b.tcFinal || 1.0),
-          interests: new Decimal(b.interests || 0)
-        })),
-        cashHoldings: [],
-        receivables: [],
-        liabilities: [],
-        withholdings: (data.withholdings || []).map((w: any) => ({
-          amount: new Decimal(w.amount || 0),
-          taxCode: w.taxCode || 'Ganancias'
-        })),
-        generalDeductions: [
-          {
-            autonomos: new Decimal(data.generalDeductions?.autonomos || 0),
-            servicioDomestico: new Decimal(data.generalDeductions?.servicioDomestico || 0),
-            seguroVida: new Decimal(data.generalDeductions?.seguroVida || 0),
-            seguroRetiro: new Decimal(data.generalDeductions?.seguroRetiro || 0),
-            gastosSepelio: new Decimal(data.generalDeductions?.gastosSepelio || 0),
-            interesesHipoteca: new Decimal(data.generalDeductions?.interesesHipoteca || 0),
-            gastosEducativos: new Decimal(data.generalDeductions?.gastosEducativos || 0),
-            alquilerCasaHabitacion: new Decimal(data.generalDeductions?.alquilerCasaHabitacion || 0),
-            donaciones: new Decimal(data.generalDeductions?.donaciones || 0),
-            medicosAsistencial: new Decimal(data.generalDeductions?.medicosAsistencial || 0),
-            honorariosMedicos: new Decimal(data.generalDeductions?.honorariosMedicos || 0),
-          }
-        ],
-        personalDeductions: {
-          tieneConyuge: data.personalDeductions?.tieneConyuge || false,
-          cantidadHijos: data.personalDeductions?.cantidadHijos || 0,
-          cantidadHijosIncapacitados: data.personalDeductions?.cantidadHijosIncapacitados || 0,
-          tipoDeduccionEspecial: data.personalDeductions?.tipoDeduccionEspecial || 'Ninguna',
-          esJubiladoOchoHaberes: data.personalDeductions?.esJubiladoOchoHaberes || false,
-        },
-        personalAssets: (data.personalAssets || []).map((a: any) => ({
-          description: a.description || '',
-          type: a.type || 'Otros',
-          valueInitial: new Decimal(a.valueInitial || 0),
-          valueFinal: new Decimal(a.valueFinal || 0)
-        })),
-        personalLiabilities: [],
-        otherJustifications: [],
-        axiStatic: {
-          activoTotalInicio: new Decimal(data.activoTotalInicio || 0),
-          bienesNoComputablesInicio: new Decimal(data.bienesNoComputablesInicio || 0),
-          pasivoTotalInicio: new Decimal(data.pasivoTotalInicio || 0),
-        },
-        axiDynamic: [],
-        saldoAFavorAnterior: new Decimal(data.saldoAFavorAnterior || 0),
-        quebrantosAnteriores: new Decimal(data.quebrantosAnteriores || 0),
-      };
+      const calculationInput = buildTaxReturnCalculationInput(data, taxParams);
       return calculateTaxReturn(calculationInput);
     } catch (e) {
       console.error("Error executing dynamic calculation for papel de trabajo:", e);
@@ -208,6 +95,7 @@ export default function PapelDeTrabajoPage() {
   const deduccionEspecial = calculationResult ? calculationResult.deduccionesPersonales.deduccionEspecial : new Decimal(0);
   const cargasFamilia = calculationResult ? calculationResult.deduccionesPersonales.conyuge.plus(calculationResult.deduccionesPersonales.hijos).plus(calculationResult.deduccionesPersonales.hijosIncapacitados) : new Decimal(0);
   const deduccionesGenerales = calculationResult ? calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas : new Decimal(0);
+  const generalDeductionsBreakdown = buildGeneralDeductionsBreakdown(calculationResult?.deduccionesGenerales);
   
   const totalDeducciones = mni.plus(deduccionEspecial).plus(cargasFamilia).plus(deduccionesGenerales);
   const baseImponible = calculationResult ? calculationResult.gananciaNetaSujetaImpuesto : new Decimal(0);
@@ -420,6 +308,14 @@ export default function PapelDeTrabajoPage() {
                 <span className="text-zinc-450 print:text-black">Deducciones Generales Admitidas (Seguros/Educativos)</span>
                 <span className="text-red-400 print:text-black">-${deduccionesGenerales.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
               </div>
+              {generalDeductionsBreakdown.map(({ label, reference, amount }) => (
+                <div key={reference} className="flex justify-between gap-4 py-1 pl-4 border-b border-zinc-850/20 print:border-black text-[11px]">
+                  <span className="text-zinc-500 print:text-black">
+                    {label} <span className="text-zinc-600 print:text-black">({reference})</span>
+                  </span>
+                  <span className="text-red-400 print:text-black">-${amount.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              ))}
               <div className="flex justify-between py-2 border-t border-zinc-800 font-bold text-white print:text-black print:border-black text-sm">
                 <span className="font-sans">Total Erogaciones Deducibles</span>
                 <span>-${totalDeducciones.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>

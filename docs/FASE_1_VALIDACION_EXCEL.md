@@ -143,6 +143,7 @@ Avance 2026-05-30:
 - Se agrego aviso visible en el papel de trabajo cuando se usan parametros default por falta de resolucion explicita.
 - Se agrego confirmacion antes de cerrar desde el wizard si faltan parametros activos o resolucion explicita.
 - Se corrigio el alta nueva desde wizard para que, luego del `POST`, persista toda la carga mediante `PUT` al nuevo ID.
+- Si ese `PUT` completo falla, el wizard intenta eliminar la cabecera recien creada para evitar DDJJ incompletas en la base.
 
 ## Criterios de aceptacion
 

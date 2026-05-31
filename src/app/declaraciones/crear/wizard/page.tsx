@@ -23,7 +23,10 @@ import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/am
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
-import { buildCreatedTaxReturnFullSaveRequest } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
+import {
+  buildCreatedTaxReturnFullSaveRequest,
+  buildCreatedTaxReturnRollbackRequest,
+} from '@/domain/ganancias/presentation/taxReturnSaveFlow';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
 
 // Escala Art 94 Mock (2025)
@@ -397,6 +400,10 @@ export default function WizardPage() {
           const fullSaveResult = await fullSaveResponse.json();
 
           if (!fullSaveResult.success) {
+            const rollbackRequest = buildCreatedTaxReturnRollbackRequest(newId);
+            await fetch(rollbackRequest.url, rollbackRequest.init).catch(rollbackError => {
+              console.error('No se pudo revertir la cabecera de DDJJ creada sin detalle:', rollbackError);
+            });
             throw new Error(fullSaveResult.error || 'La DDJJ se creó, pero no se pudieron persistir los datos cargados.');
           }
 

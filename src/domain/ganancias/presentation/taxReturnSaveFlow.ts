@@ -11,3 +11,14 @@ export function buildCreatedTaxReturnFullSaveRequest(
     },
   };
 }
+
+export function buildCreatedTaxReturnRollbackRequest(
+  taxReturnId: string
+): { url: string; init: RequestInit } {
+  return {
+    url: `/api/declaraciones/${taxReturnId}`,
+    init: {
+      method: 'DELETE',
+    },
+  };
+}

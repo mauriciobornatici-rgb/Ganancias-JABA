@@ -753,10 +753,11 @@ Resultado funcional:
 - Al crear una DDJJ nueva, primero se obtiene el `id` de la cabecera.
 - Inmediatamente se dispara un `PUT` al nuevo `id` con todo el payload cargado.
 - Si el guardado completo falla, no se muestra exito y el usuario recibe error.
+- Si falla ese guardado completo, el wizard intenta revertir la cabecera recien creada para no dejar una DDJJ vacia/incompleta en la base.
 
 Verificacion:
 
-- `vitest run`: 11 archivos, 26 tests, todo OK.
+- `vitest run`: 11 archivos, 27 tests, todo OK.
 - `tsc --noEmit`: OK.
 - `eslint` focalizado sobre helper/test: OK.
 - `next build --webpack`: OK.

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildCreatedTaxReturnFullSaveRequest } from '../presentation/taxReturnSaveFlow';
+import {
+  buildCreatedTaxReturnFullSaveRequest,
+  buildCreatedTaxReturnRollbackRequest,
+} from '../presentation/taxReturnSaveFlow';
 
 describe('buildCreatedTaxReturnFullSaveRequest', () => {
   it('arma un PUT completo para persistir datos cargados luego de crear una DDJJ', () => {
@@ -16,5 +19,12 @@ describe('buildCreatedTaxReturnFullSaveRequest', () => {
     expect(request.init.method).toBe('PUT');
     expect(request.init.headers).toEqual({ 'Content-Type': 'application/json' });
     expect(request.init.body).toBe(JSON.stringify(payload));
+  });
+
+  it('arma un DELETE de rollback para no dejar cabeceras vacias si falla el guardado completo', () => {
+    const request = buildCreatedTaxReturnRollbackRequest('return-123');
+
+    expect(request.url).toBe('/api/declaraciones/return-123');
+    expect(request.init.method).toBe('DELETE');
   });
 });

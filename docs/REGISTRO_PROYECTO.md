@@ -167,11 +167,12 @@ Accion aplicada:
 - El exito del modal se muestra solo si ese guardado completo tambien sale bien.
 - El wizard conserva en memoria el `id` real ya persistido para que los guardados siguientes usen `PUT` aunque la ruta todavia venga de `/crear`.
 - El auto-alta del wizard tambien envia payload completo y dispara el `PUT` completo al nuevo `id`, evitando que la base quede con una cabecera sin detalle relacional.
+- El backend ahora detecta cuando el `POST /api/declaraciones` trae carga operativa y persiste detalle relacional/calculo dentro de la misma transaccion de creacion.
 
 Pendiente:
 
-- Refactor posterior: mover esta orquestacion al backend para que el `POST` sea atomicamente completo, evitando cabecera creada si falla el guardado detallado.
-- Mitigacion adicional aplicada: el `POST` guarda en `variablesSnapshot` todo el payload operativo recibido, no solo `currentStep`.
+- El `PUT` redundante del frontend se conserva como cinturon y tirantes por ahora; en una limpieza posterior puede simplificarse si se valida manualmente el flujo completo contra base real.
+- Mitigacion adicional aplicada: el `POST` guarda en `variablesSnapshot` todo el payload operativo recibido cuando no dispara persistencia relacional completa.
 
 ### H7 - Campos patrimoniales y JVP incompletos
 
@@ -833,3 +834,41 @@ Verificacion:
 Pendiente:
 
 - Mantener como mejora estructural la persistencia atomica del `POST` en backend para eliminar la doble request desde frontend.
+
+### 2026-05-31 - Fase 1, decimonoveno cambio: POST atomico con detalle operativo
+
+Se movio la persistencia relacional completa a una rutina compartida de backend.
+
+Riesgo corregido:
+
+- El alta completa dependia de que el frontend hiciera `POST` y luego `PUT`.
+- Si el usuario/navegador/interfaz se interrumpia entre requests, podia quedar una DDJJ creada sin detalle relacional.
+- La logica de persistencia estaba duplicada dentro del `PUT`, dificultando reutilizarla en el `POST`.
+
+Archivos modificados:
+
+- `src/app/api/declaraciones/route.ts`.
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/persistence/taxReturnPayload.ts`.
+- `src/domain/ganancias/tests/taxReturnPayload.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- El `POST /api/declaraciones` distingue cabecera minima de payload operativo completo.
+- Si el payload trae carga del wizard, crea cabecera, detalle relacional y `CalculationRun` dentro de una misma transaccion Prisma.
+- El `PUT /api/declaraciones/[id]` reutiliza la misma rutina de persistencia, reduciendo divergencia entre alta y actualizacion.
+- El alta minima sigue disponible para casos donde solo se necesita crear cabecera y snapshot inicial.
+
+Verificacion:
+
+- `vitest run`: 13 archivos, 35 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helpers/tests nuevos: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar manualmente contra base local con un caso real de wizard y, si no aparecen diferencias, retirar el `PUT` redundante del frontend o dejarlo como reintento explicito.

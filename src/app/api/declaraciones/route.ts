@@ -2,7 +2,9 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
+import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import { buildInitialTaxReturnSnapshot } from '@/domain/ganancias/persistence/taxReturnSnapshot';
+import { hasDetailedTaxReturnPayload } from '@/domain/ganancias/persistence/taxReturnPayload';
 
 export async function GET(req: NextRequest) {
   try {
@@ -58,7 +60,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cuit, clientName, fiscalYear, status, currentStep, taxParameterSetId } = body;
+    const { cuit, clientName, fiscalYear, status, taxParameterSetId } = body;
 
     if (!cuit || !clientName || !fiscalYear) {
       return NextResponse.json(
@@ -67,80 +69,95 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Buscar el Cliente
     const client = await prisma.client.findUnique({
       where: { cuit },
     });
 
     if (!client) {
       return NextResponse.json(
-        { success: false, error: 'El contribuyente ingresado no se encuentra registrado en el padrón de Clientes. Debe registrarlo previamente en la sección de Clientes.' },
+        { success: false, error: 'El contribuyente ingresado no se encuentra registrado en el padron de Clientes. Debe registrarlo previamente en la seccion de Clientes.' },
         { status: 400 }
       );
     }
 
-    // 2. Buscar o crear el FiscalYear
     const yearInt = parseInt(fiscalYear, 10);
-    let fYear = await prisma.fiscalYear.findUnique({
-      where: { year: yearInt },
-    });
+    const result = await prisma.$transaction(async (tx: any) => {
+      let fYear = await tx.fiscalYear.findUnique({
+        where: { year: yearInt },
+      });
 
-    if (!fYear) {
-      fYear = await prisma.fiscalYear.create({
+      if (!fYear) {
+        fYear = await tx.fiscalYear.create({
+          data: {
+            year: yearInt,
+            isEnabled: true,
+          },
+        });
+      }
+
+      const taxReturn = await tx.taxReturn.create({
         data: {
-          year: yearInt,
-          isEnabled: true,
+          clientId: client.id,
+          fiscalYearId: fYear.id,
+          status: status || 'Borrador',
+          version: 0,
+          taxParameterSetId: taxParameterSetId || null,
         },
       });
-    }
 
-    // 3. Crear la Declaración Jurada original (version 0)
-    const taxReturn = await prisma.taxReturn.create({
-      data: {
-        clientId: client.id,
-        fiscalYearId: fYear.id,
-        status: status || 'Borrador',
-        version: 0,
-        taxParameterSetId: taxParameterSetId || null,
-      },
-    });
+      const existingReturn = {
+        ...taxReturn,
+        client,
+        fiscalYear: fYear,
+      };
 
-    // 4. Crear un CalculationRun vacío inicial para guardar metadatos de pasos
-    const variablesSnapshot = buildInitialTaxReturnSnapshot(body);
-    await prisma.calculationRun.create({
-      data: {
-        taxReturnId: taxReturn.id,
-        resultThirdCategory: 0,
-        resultTotalNet: 0,
-        totalGeneralDeductions: 0,
-        impositiveResultBeforeQuebrantos: 0,
-        quebrantosApplied: 0,
-        impositiveResultNet: 0,
-        totalPersonalDeductions: 0,
-        taxableIncome: 0,
-        taxDetermined: 0,
-        totalPaymentsOnAccount: 0,
-        finalBalance: 0,
-        computedConsumo: 0,
-        justificationDiff: 0,
-        axiStaticResult: 0,
-        axiDynamicResult: 0,
-        axiNetAdjustment: 0,
-        variablesSnapshot: JSON.stringify(variablesSnapshot),
-      },
+      if (hasDetailedTaxReturnPayload(body)) {
+        await persistTaxReturnDetails({
+          db: tx,
+          taxReturnId: taxReturn.id,
+          existingReturn,
+          payload: body,
+        });
+      } else {
+        const variablesSnapshot = buildInitialTaxReturnSnapshot(body);
+        await tx.calculationRun.create({
+          data: {
+            taxReturnId: taxReturn.id,
+            resultThirdCategory: 0,
+            resultTotalNet: 0,
+            totalGeneralDeductions: 0,
+            impositiveResultBeforeQuebrantos: 0,
+            quebrantosApplied: 0,
+            impositiveResultNet: 0,
+            totalPersonalDeductions: 0,
+            taxableIncome: 0,
+            taxDetermined: 0,
+            totalPaymentsOnAccount: 0,
+            finalBalance: 0,
+            computedConsumo: 0,
+            justificationDiff: 0,
+            axiStaticResult: 0,
+            axiDynamicResult: 0,
+            axiNetAdjustment: 0,
+            variablesSnapshot: JSON.stringify(variablesSnapshot),
+          },
+        });
+      }
+
+      return { taxReturn, fYear };
     });
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          id: taxReturn.id,
+          id: result.taxReturn.id,
           clientId: client.id,
           clientName: client.name,
           cuit: client.cuit,
-          year: fYear.year,
-          status: taxReturn.status,
-          version: taxReturn.version,
+          year: result.fYear.year,
+          status: status || result.taxReturn.status,
+          version: result.taxReturn.version,
         },
       },
       { status: 201 }

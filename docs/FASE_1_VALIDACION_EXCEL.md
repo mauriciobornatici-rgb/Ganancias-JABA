@@ -147,6 +147,8 @@ Avance 2026-05-30:
 - El `POST /api/declaraciones` ahora guarda un `variablesSnapshot` inicial completo si recibe payload de carga.
 - El wizard ahora conserva el ID persistido activo y usa `PUT` en guardados posteriores aunque la ruta todavia no se haya refrescado desde `/crear`.
 - El auto-alta del wizard envia payload completo y aplica el mismo guardado detallado con rollback.
+- El backend ahora detecta payload operativo en `POST /api/declaraciones` y persiste detalle relacional/calculo dentro de la misma transaccion de creacion.
+- El `PUT` y el `POST` completo comparten rutina de persistencia para reducir divergencias.
 
 ## Criterios de aceptacion
 

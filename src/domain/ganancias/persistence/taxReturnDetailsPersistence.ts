@@ -1,0 +1,496 @@
+import { Decimal } from 'decimal.js';
+import { calculateFixedAssetDepreciation } from '../calculations/amortizaciones';
+import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
+import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMapper';
+
+type NumericValue = string | number;
+type DateValue = string | number | Date;
+type RawRecord = Record<string, unknown>;
+type FixedAssetType = 'Rodado' | 'Inmueble' | 'Equipamiento' | 'Otro';
+
+type PersistenceModel = {
+  findUnique(args: unknown): Promise<unknown>;
+  findFirst(args: unknown): Promise<unknown>;
+  findMany(args: unknown): Promise<unknown>;
+  deleteMany(args: unknown): Promise<unknown>;
+  createMany(args: unknown): Promise<unknown>;
+  create(args: unknown): Promise<unknown>;
+  update(args: unknown): Promise<unknown>;
+};
+
+type PersistenceDb = Record<string, PersistenceModel>;
+
+type ExistingTaxReturn = {
+  taxParameterSetId?: string | null;
+  fiscalYearId: string;
+  status: string;
+  client: {
+    name: string;
+    cuit: string;
+  };
+  fiscalYear: {
+    year: number;
+  };
+};
+
+type SalesPayload = {
+  date?: DateValue;
+  netAmount?: NumericValue;
+  isExempt?: boolean;
+};
+
+type PurchasePayload = SalesPayload & {
+  isDeductible?: boolean;
+  expenseType?: string;
+};
+
+type FixedAssetPayload = {
+  id?: string;
+  name?: string;
+  type?: string;
+  purchaseDate?: DateValue;
+  originalCost?: NumericValue;
+  usefulLife?: NumericValue;
+  yearsElapsed?: NumericValue;
+  customReexpIndex?: NumericValue;
+};
+
+type BankAccountPayload = {
+  name?: string;
+  cuitBank?: string;
+  accountNumber?: string;
+  accountType?: string;
+  nominalInitial?: NumericValue;
+  nominalFinal?: NumericValue;
+  tcInitial?: NumericValue;
+  tcFinal?: NumericValue;
+  interests?: NumericValue;
+};
+
+type WithholdingPayload = {
+  taxCode?: string;
+  amount?: NumericValue;
+};
+
+type PersonalAssetPayload = {
+  description?: string;
+  type?: string;
+  valueInitial?: NumericValue;
+  valueFinal?: NumericValue;
+};
+
+type PersonalLiabilityPayload = {
+  description?: string;
+  valueInitial?: NumericValue;
+  valueFinal?: NumericValue;
+};
+
+type PersonalDeductionsPayload = {
+  tieneConyuge?: boolean;
+  cantidadHijos?: NumericValue;
+  cantidadHijosIncapacitados?: NumericValue;
+  tipoDeduccionEspecial?: string;
+  [key: string]: unknown;
+};
+
+type AxiDynamicPayload = {
+  concept?: string;
+  type?: string;
+  date?: DateValue;
+  amount?: NumericValue;
+};
+
+type TaxReturnPersistencePayload = {
+  cuit?: string;
+  clientName?: string;
+  fiscalYear?: NumericValue;
+  currentStep?: number;
+  taxParameterSetId?: string | null;
+  sales?: SalesPayload[];
+  purchases?: PurchasePayload[];
+  fixedAssets?: FixedAssetPayload[];
+  initialStock?: NumericValue;
+  finalStock?: NumericValue;
+  bankAccounts?: BankAccountPayload[];
+  withholdings?: WithholdingPayload[];
+  generalDeductions?: RawRecord;
+  personalDeductions?: PersonalDeductionsPayload;
+  personalAssets?: PersonalAssetPayload[];
+  personalLiabilities?: PersonalLiabilityPayload[];
+  activoTotalInicio?: NumericValue;
+  pasivoTotalInicio?: NumericValue;
+  bienesNoComputablesInicio?: NumericValue;
+  saldoAFavorAnterior?: NumericValue;
+  quebrantosAnteriores?: NumericValue;
+  axiDynamic?: AxiDynamicPayload[];
+  status?: string;
+};
+
+type DbParameterSet = RawRecord & { id: string };
+type DbIpcIndex = {
+  monthIndex: number;
+  ipcValue: unknown;
+};
+
+function numberInput(value: NumericValue | undefined, fallback = 0): number {
+  const parsed = Number(value ?? fallback);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function integerInput(value: NumericValue | undefined, fallback = 0): number {
+  return Math.trunc(numberInput(value, fallback));
+}
+
+function stringInput(value: string | undefined, fallback = ''): string {
+  return value ?? fallback;
+}
+
+function dateInput(value: DateValue | undefined): Date {
+  const date = value instanceof Date ? value : new Date(value ?? Date.now());
+  return Number.isNaN(date.getTime()) ? new Date() : date;
+}
+
+function fixedAssetType(value: string | undefined): FixedAssetType {
+  if (value === 'Rodado' || value === 'Inmueble' || value === 'Equipamiento' || value === 'Otro') {
+    return value;
+  }
+
+  return 'Otro';
+}
+
+export async function persistTaxReturnDetails({
+  db,
+  taxReturnId,
+  existingReturn,
+  payload,
+}: {
+  db: PersistenceDb;
+  taxReturnId: string;
+  existingReturn: ExistingTaxReturn;
+  payload: TaxReturnPersistencePayload;
+}): Promise<void> {
+  const {
+    cuit,
+    clientName,
+    fiscalYear,
+    currentStep,
+    taxParameterSetId,
+    sales = [],
+    purchases = [],
+    fixedAssets = [],
+    initialStock = '0',
+    finalStock = '0',
+    bankAccounts = [],
+    withholdings = [],
+    generalDeductions,
+    personalDeductions,
+    personalAssets = [],
+    personalLiabilities = [],
+    activoTotalInicio = '0',
+    pasivoTotalInicio = '0',
+    bienesNoComputablesInicio = '0',
+    saldoAFavorAnterior = '0',
+    quebrantosAnteriores = '0',
+    axiDynamic = [],
+    status,
+  } = payload;
+
+  const fiscalYearNumber = integerInput(fiscalYear, existingReturn.fiscalYear.year);
+  const requestedResId = taxParameterSetId || existingReturn.taxParameterSetId;
+  let dbParamSet: DbParameterSet | null = null;
+  if (requestedResId) {
+    dbParamSet = await db.taxParameterSet.findUnique({
+      where: { id: requestedResId },
+    }) as DbParameterSet | null;
+  }
+
+  if (!dbParamSet) {
+    dbParamSet = await db.taxParameterSet.findFirst({
+      where: { fiscalYear: { year: fiscalYearNumber } },
+      orderBy: { version: 'desc' },
+    }) as DbParameterSet | null;
+  }
+
+  if (!dbParamSet) {
+    throw new Error(`No se encontraron parametros impositivos registrados en la base de datos para el anio ${fiscalYearNumber}. Cargue una resolucion primero en Parametros.`);
+  }
+
+  const dbBrackets = await db.taxArt94Bracket.findMany({
+    where: {
+      OR: [
+        { taxParameterSetId: dbParamSet.id },
+        { fiscalYearId: existingReturn.fiscalYearId, taxParameterSetId: null },
+      ],
+    },
+  }) as unknown[];
+
+  const dbIpcIndices = await db.updateIndex.findMany({
+    where: { fiscalYearId: existingReturn.fiscalYearId },
+    orderBy: { monthIndex: 'asc' },
+  }) as DbIpcIndex[];
+
+  const calculationInput = buildTaxReturnCalculationInput({
+    clientName: clientName || existingReturn.client.name,
+    cuit: cuit || existingReturn.client.cuit,
+    fiscalYear: fiscalYearNumber,
+    sales,
+    purchases,
+    fixedAssets,
+    initialStock,
+    finalStock,
+    bankAccounts,
+    withholdings,
+    generalDeductions,
+    personalDeductions: {
+      tieneConyuge: personalDeductions?.tieneConyuge || false,
+      cantidadHijos: integerInput(personalDeductions?.cantidadHijos),
+      cantidadHijosIncapacitados: integerInput(personalDeductions?.cantidadHijosIncapacitados),
+      tipoDeduccionEspecial: personalDeductions?.tipoDeduccionEspecial || 'Ninguna',
+    },
+    personalAssets,
+    personalLiabilities,
+    activoTotalInicio,
+    bienesNoComputablesInicio,
+    pasivoTotalInicio,
+    axiDynamic,
+    saldoAFavorAnterior,
+    quebrantosAnteriores,
+  }, {
+    parameterSet: dbParamSet,
+    brackets: dbBrackets,
+    indices: dbIpcIndices,
+  });
+
+  const calcResult = calculateTaxReturn(calculationInput);
+
+  await db.salesInvoice.deleteMany({ where: { taxReturnId } });
+  await db.purchaseInvoice.deleteMany({ where: { taxReturnId } });
+  await db.fixedAsset.deleteMany({ where: { taxReturnId } });
+  await db.inventoryValue.deleteMany({ where: { taxReturnId } });
+  await db.bankAccountBalance.deleteMany({ where: { taxReturnId } });
+  await db.taxWithholding.deleteMany({ where: { taxReturnId } });
+  await db.personalAsset.deleteMany({ where: { taxReturnId } });
+  await db.personalLiability.deleteMany({ where: { taxReturnId } });
+  await db.axiDynamicItem.deleteMany({ where: { taxReturnId } });
+  await db.calculationRun.deleteMany({ where: { taxReturnId } });
+
+  if (sales.length > 0) {
+    await db.salesInvoice.createMany({
+      data: sales.map(s => ({
+        taxReturnId,
+        date: dateInput(s.date),
+        invoiceType: 'Factura',
+        invoiceNumber: '00000000',
+        customerName: 'Cliente General',
+        netAmount: numberInput(s.netAmount),
+        ivaAmount: 0,
+        totalAmount: numberInput(s.netAmount),
+        isExempt: s.isExempt || false,
+      })),
+    });
+  }
+
+  if (purchases.length > 0) {
+    await db.purchaseInvoice.createMany({
+      data: purchases.map(p => ({
+        taxReturnId,
+        date: dateInput(p.date),
+        invoiceType: 'Factura',
+        invoiceNumber: '00000000',
+        vendorName: 'Proveedor General',
+        netAmount: numberInput(p.netAmount),
+        ivaAmount: 0,
+        totalAmount: numberInput(p.netAmount),
+        isDeductible: p.isDeductible !== false,
+        isExempt: p.isExempt || false,
+        expenseType: p.expenseType || 'GastosGenerales',
+      })),
+    });
+  }
+
+  for (const asset of fixedAssets) {
+    const assetId = stringInput(asset.id);
+    const assetName = stringInput(asset.name);
+    const assetType = fixedAssetType(asset.type);
+    const purchaseDate = dateInput(asset.purchaseDate);
+    const originalCost = numberInput(asset.originalCost);
+    const usefulLife = integerInput(asset.usefulLife, 10);
+    const yearsElapsed = integerInput(asset.yearsElapsed);
+    const customReexpIndex = numberInput(asset.customReexpIndex, 1);
+
+    const depResult = calculateFixedAssetDepreciation({
+      id: assetId,
+      name: assetName,
+      type: assetType,
+      purchaseDate,
+      originalCost: new Decimal(originalCost),
+      usefulLife,
+      yearsElapsed,
+      customReexpIndex: new Decimal(customReexpIndex),
+    });
+
+    await db.fixedAsset.create({
+      data: {
+        id: assetId || undefined,
+        taxReturnId,
+        name: assetName,
+        type: assetType,
+        purchaseDate,
+        originalCost,
+        usefulLife,
+        yearsElapsed,
+        customReexpIndex,
+        annualDepreciationHist: depResult.annualDepreciationHist.toNumber(),
+        annualDepreciationAdj: depResult.annualDepreciationAdj.toNumber(),
+        residualValueHist: depResult.residualValueHist.toNumber(),
+        residualValueAdj: depResult.residualValueAdj.toNumber(),
+      },
+    });
+  }
+
+  await db.inventoryValue.create({
+    data: {
+      taxReturnId,
+      concept: 'Bienes de Cambio',
+      initialStock: numberInput(initialStock),
+      finalStock: numberInput(finalStock),
+    },
+  });
+
+  if (bankAccounts.length > 0) {
+    await db.bankAccountBalance.createMany({
+      data: bankAccounts.map(bank => {
+        const nominalInitial = numberInput(bank.nominalInitial);
+        const nominalFinal = numberInput(bank.nominalFinal);
+        const tcInitial = numberInput(bank.tcInitial, 1);
+        const tcFinal = numberInput(bank.tcFinal, 1);
+
+        return {
+          taxReturnId,
+          bankName: stringInput(bank.name),
+          cuitBank: stringInput(bank.cuitBank),
+          accountNumber: stringInput(bank.accountNumber),
+          accountType: stringInput(bank.accountType, 'Cuenta Corriente'),
+          nominalBalanceInitial: nominalInitial,
+          nominalBalanceFinal: nominalFinal,
+          tcInitial,
+          tcFinal,
+          balanceInitialArs: nominalInitial * tcInitial,
+          balanceFinalArs: nominalFinal * tcFinal,
+          interests: numberInput(bank.interests),
+        };
+      }),
+    });
+  }
+
+  if (withholdings.length > 0) {
+    await db.taxWithholding.createMany({
+      data: withholdings.map(withholding => ({
+        taxReturnId,
+        agentName: 'Agente Retencion',
+        taxCode: withholding.taxCode || 'Ganancias',
+        taxDescription: 'Impuesto a las Ganancias',
+        date: new Date(),
+        certificateNumber: '00000000',
+        amount: numberInput(withholding.amount),
+      })),
+    });
+  }
+
+  if (personalAssets.length > 0) {
+    await db.personalAsset.createMany({
+      data: personalAssets.map(asset => ({
+        taxReturnId,
+        description: stringInput(asset.description),
+        type: stringInput(asset.type, 'Otros'),
+        valueInitial: numberInput(asset.valueInitial),
+        valueFinal: numberInput(asset.valueFinal),
+      })),
+    });
+  }
+
+  if (personalLiabilities.length > 0) {
+    await db.personalLiability.createMany({
+      data: personalLiabilities.map(liability => ({
+        taxReturnId,
+        description: stringInput(liability.description),
+        valueInitial: numberInput(liability.valueInitial),
+        valueFinal: numberInput(liability.valueFinal),
+      })),
+    });
+  }
+
+  for (const item of axiDynamic) {
+    let coef = 1.0;
+    if (dbIpcIndices.length > 0) {
+      const decIpc = dbIpcIndices.find(index => index.monthIndex === 12);
+      const movementMonth = dateInput(item.date).getMonth() + 1;
+      const movementIpc = dbIpcIndices.find(index => index.monthIndex === movementMonth);
+      if (decIpc && movementIpc) {
+        coef = Number(decIpc.ipcValue) / Number(movementIpc.ipcValue);
+      }
+    }
+    const amountNum = numberInput(item.amount);
+    const factor = item.type === 'AporteCapital' ? -1 : 1;
+    const computedAxi = amountNum * (coef - 1) * factor;
+
+    await db.axiDynamicItem.create({
+      data: {
+        taxReturnId,
+        concept: stringInput(item.concept),
+        type: stringInput(item.type, 'Otro'),
+        date: dateInput(item.date),
+        amount: amountNum,
+        coef,
+        factor,
+        computedAxi,
+      },
+    });
+  }
+
+  const extraStateData = {
+    currentStep: currentStep || 1,
+    generalDeductions,
+    personalDeductions,
+    activoTotalInicio,
+    pasivoTotalInicio,
+    bienesNoComputablesInicio,
+    saldoAFavorAnterior,
+    quebrantosAnteriores,
+    axiDynamic,
+  };
+
+  await db.calculationRun.create({
+    data: {
+      taxReturnId,
+      resultThirdCategory: calcResult.resultadoComercialNeto.toNumber(),
+      resultTotalNet: calcResult.resultadoNetoTodasCategorias.toNumber(),
+      totalGeneralDeductions: calcResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber(),
+      impositiveResultBeforeQuebrantos: calcResult.resultadoNetoAntesQuebrantos.toNumber(),
+      quebrantosApplied: 0,
+      impositiveResultNet: calcResult.resultadoImpositivoNeto.toNumber(),
+      totalPersonalDeductions: calcResult.deduccionesPersonales.totalDeduccionesPersonalesAdmitidas.toNumber(),
+      taxableIncome: calcResult.gananciaNetaSujetaImpuesto.toNumber(),
+      taxDetermined: calcResult.impuestoDeterminado.toNumber(),
+      totalPaymentsOnAccount: calcResult.retencionesYPercepciones.toNumber(),
+      finalBalance: calcResult.impuestoAPagarOARCA.toNumber(),
+      computedConsumo: calcResult.consumoDiferencial.toNumber(),
+      justificationDiff: 0,
+      axiStaticResult: calcResult.axiStaticResult.toNumber(),
+      axiDynamicResult: calcResult.axiDynamicResult.toNumber(),
+      axiNetAdjustment: calcResult.resultadoAjustePorInflacion.toNumber(),
+      variablesSnapshot: JSON.stringify(extraStateData),
+      hasErrors: calcResult.warnings.length > 0,
+      errorMessages: calcResult.warnings.join(' | '),
+    },
+  });
+
+  await db.taxReturn.update({
+    where: { id: taxReturnId },
+    data: {
+      status: status || existingReturn.status,
+      taxParameterSetId: dbParamSet.id,
+      updatedAt: new Date(),
+    },
+  });
+}

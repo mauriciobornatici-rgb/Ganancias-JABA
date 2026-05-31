@@ -22,6 +22,7 @@ import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
+import { buildTaxParameterSourceNotice } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { buildTaxParameterRequestUrl } from '@/domain/ganancias/presentation/taxParameterRequest';
 import { downloadTaxReturnExcel } from '@/domain/ganancias/exports/excelGenerator';
 
@@ -96,6 +97,7 @@ export default function PapelDeTrabajoPage() {
   const cargasFamilia = calculationResult ? calculationResult.deduccionesPersonales.conyuge.plus(calculationResult.deduccionesPersonales.hijos).plus(calculationResult.deduccionesPersonales.hijosIncapacitados) : new Decimal(0);
   const deduccionesGenerales = calculationResult ? calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas : new Decimal(0);
   const generalDeductionsBreakdown = buildGeneralDeductionsBreakdown(calculationResult?.deduccionesGenerales);
+  const taxParameterNotice = buildTaxParameterSourceNotice(data, taxParams);
   
   const totalDeducciones = mni.plus(deduccionEspecial).plus(cargasFamilia).plus(deduccionesGenerales);
   const baseImponible = calculationResult ? calculationResult.gananciaNetaSujetaImpuesto : new Decimal(0);
@@ -224,6 +226,18 @@ export default function PapelDeTrabajoPage() {
             </div>
           </div>
         </header>
+
+        {taxParameterNotice && (
+          <section className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-100 print:border-black print:bg-white print:text-black">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-amber-300 print:text-black" />
+              <div>
+                <p className="font-bold uppercase tracking-wider">Control de parametros</p>
+                <p className="mt-1 leading-relaxed">{taxParameterNotice}</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* FICHA CONTRIBUYENTE */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black">

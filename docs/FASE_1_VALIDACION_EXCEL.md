@@ -140,6 +140,7 @@ Avance 2026-05-30:
 - Se conecto el wizard al mismo mapper de calculo para reducir duplicacion y diferencias de normalizacion.
 - Se corrigio la carga de parametros del papel de trabajo para usar la resolucion default del anio si la DDJJ no tiene `taxParameterSetId`.
 - Se conecto la API de guardado al mapper comun de calculo y se cubrieron decimales tipo Prisma.
+- Se agrego aviso visible en el papel de trabajo cuando se usan parametros default por falta de resolucion explicita.
 
 ## Criterios de aceptacion
 

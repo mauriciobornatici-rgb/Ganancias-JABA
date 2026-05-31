@@ -627,7 +627,7 @@ Verificacion:
 
 Pendiente:
 
-- Mostrar una advertencia visible cuando la pantalla use parametros default por falta de resolucion explicita en la DDJJ.
+- Resuelto en cambio posterior: el papel de trabajo ya muestra advertencia visible cuando usa parametros default por falta de resolucion explicita.
 
 ### 2026-05-31 - Fase 1, decimotercer cambio: API de guardado conectada al mapper de calculo
 
@@ -657,3 +657,32 @@ Verificacion:
 Pendiente:
 
 - Crear un endpoint unico de preview/calculo para que el frontend no tenga que calcular localmente en el largo plazo.
+
+### 2026-05-31 - Fase 1, decimocuarto cambio: aviso de parametros default en papel de trabajo
+
+Se agrego una advertencia visible cuando el papel de trabajo usa parametros default del periodo por falta de `taxParameterSetId` en la DDJJ.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/taxParameterNotice.ts`.
+- `src/domain/ganancias/tests/taxParameterNotice.test.ts`.
+- `src/app/declaraciones/[id]/papel-de-trabajo/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- La pantalla ya no usa parametros default de manera silenciosa.
+- El aviso muestra la fuente normativa/base usada y version si esta disponible.
+- La advertencia tambien queda en el documento impreso para auditoria interna.
+
+Verificacion:
+
+- `vitest run`: 10 archivos, 22 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- A futuro, bloquear cierre o pedir confirmacion si una DDJJ usa parametros default sin resolucion explicita.

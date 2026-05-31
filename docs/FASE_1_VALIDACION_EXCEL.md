@@ -150,6 +150,7 @@ Avance 2026-05-30:
 - El backend ahora detecta payload operativo en `POST /api/declaraciones` y persiste detalle relacional/calculo dentro de la misma transaccion de creacion.
 - El `PUT` y el `POST` completo comparten rutina de persistencia para reducir divergencias.
 - El wizard ya no ejecuta un `PUT` redundante despues de un `POST` exitoso; el backend queda como fuente de verdad de la creacion atomica.
+- Si ya existe una DDJJ original para el mismo cliente y periodo, el `POST` responde con codigo funcional e ID existente para continuar sobre esa declaracion.
 
 ## Criterios de aceptacion
 

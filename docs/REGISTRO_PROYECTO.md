@@ -167,6 +167,7 @@ Accion aplicada:
 - El auto-alta del wizard envia payload completo al `POST /api/declaraciones`.
 - El backend ahora detecta cuando el `POST /api/declaraciones` trae carga operativa y persiste detalle relacional/calculo dentro de la misma transaccion de creacion.
 - El exito del modal se muestra solo si ese `POST` atomico devuelve confirmacion.
+- Si ya existe una DDJJ original para el mismo cliente y periodo, el backend responde con codigo funcional e ID existente, y el wizard abre esa declaracion en lugar de mostrar un error tecnico.
 
 Pendiente:
 
@@ -906,3 +907,42 @@ Verificacion:
 Pendiente:
 
 - Validar manualmente contra base local desde el flujo visual completo del wizard.
+
+### 2026-05-31 - Fase 1, vigesimo primer cambio: duplicados de DDJJ con respuesta funcional
+
+Se agrego manejo explicito para el caso en que ya existe una DDJJ original del mismo contribuyente y periodo.
+
+Riesgo corregido:
+
+- La base tiene un indice unico por cliente, periodo fiscal y version.
+- Si el wizard intentaba crear otra original para el mismo cliente/anio, podia devolver un error tecnico de restriccion unica.
+- Ese mensaje no era util para seguir cargando con agilidad.
+
+Archivos modificados:
+
+- `src/app/api/declaraciones/route.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/persistence/taxReturnDuplicate.ts`.
+- `src/domain/ganancias/tests/taxReturnDuplicate.test.ts`.
+- `src/domain/ganancias/presentation/taxReturnSaveFlow.ts`.
+- `src/domain/ganancias/tests/taxReturnSaveFlow.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- `POST /api/declaraciones` busca una DDJJ original existente antes de crear.
+- Si existe, responde `409` con `code: DUPLICATE_TAX_RETURN` y el `id` de la DDJJ existente.
+- El wizard detecta esa respuesta y abre la declaracion existente.
+- El guardado manual muestra mensaje claro; el auto-alta redirige sin dejar al usuario ante un error de base.
+
+Verificacion:
+
+- `vitest run`: 14 archivos, 40 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helpers/tests nuevos: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar visualmente el flujo de duplicado cuando exista una DDJJ real en base.

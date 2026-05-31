@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
+import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persistence/taxReturnDuplicate';
 import { buildInitialTaxReturnSnapshot } from '@/domain/ganancias/persistence/taxReturnSnapshot';
 import { hasDetailedTaxReturnPayload } from '@/domain/ganancias/persistence/taxReturnPayload';
 
@@ -95,6 +96,23 @@ export async function POST(req: NextRequest) {
         });
       }
 
+      const duplicateReturn = await tx.taxReturn.findFirst({
+        where: {
+          clientId: client.id,
+          fiscalYearId: fYear.id,
+          version: 0,
+        },
+        select: {
+          id: true,
+          status: true,
+          version: true,
+        },
+      });
+
+      if (duplicateReturn) {
+        return { duplicateReturn, fYear, taxReturn: null };
+      }
+
       const taxReturn = await tx.taxReturn.create({
         data: {
           clientId: client.id,
@@ -144,20 +162,32 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return { taxReturn, fYear };
+      return { duplicateReturn: null, taxReturn, fYear };
     });
+
+    if (result.duplicateReturn) {
+      return NextResponse.json(
+        buildDuplicateTaxReturnCreateResponse({
+          id: result.duplicateReturn.id,
+          status: result.duplicateReturn.status,
+          version: result.duplicateReturn.version,
+          fiscalYear: result.fYear.year,
+        }),
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          id: result.taxReturn.id,
+          id: result.taxReturn!.id,
           clientId: client.id,
           clientName: client.name,
           cuit: client.cuit,
           year: result.fYear.year,
-          status: status || result.taxReturn.status,
-          version: result.taxReturn.version,
+          status: status || result.taxReturn!.status,
+          version: result.taxReturn!.version,
         },
       },
       { status: 201 }

@@ -70,6 +70,23 @@ export function buildTaxReturnSaveRequest({
   };
 }
 
+export function buildDuplicateTaxReturnRedirectPath(response: unknown): string | null {
+  if (!response || typeof response !== 'object') return null;
+
+  const data = response as {
+    code?: unknown;
+    data?: {
+      id?: unknown;
+    };
+  };
+
+  if (data.code !== 'DUPLICATE_TAX_RETURN' || typeof data.data?.id !== 'string') {
+    return null;
+  }
+
+  return `/declaraciones/${data.data.id}/wizard`;
+}
+
 export function buildCreatedTaxReturnRollbackRequest(
   taxReturnId: string
 ): { url: string; init: RequestInit } {

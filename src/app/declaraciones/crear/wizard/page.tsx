@@ -24,6 +24,7 @@ import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calcu
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import {
+  buildDuplicateTaxReturnRedirectPath,
   buildTaxReturnSaveRequest,
   resolveTaxReturnSaveTarget,
 } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
@@ -403,6 +404,13 @@ export default function WizardPage() {
         }
         setModalLoading(false);
       } else {
+        const duplicateRedirectPath = buildDuplicateTaxReturnRedirectPath(res);
+        if (duplicateRedirectPath) {
+          alert(`${res.error}\n\nSe abrirá la declaración existente para continuar la carga.`);
+          window.location.href = duplicateRedirectPath;
+          return;
+        }
+
         alert(`Error al guardar en base de datos: ${res.error}`);
         setShowSaveModal(false);
       }
@@ -565,6 +573,12 @@ export default function WizardPage() {
             localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(createPayload));
             window.location.href = `/declaraciones/${newId}/wizard`;
           } else {
+            const duplicateRedirectPath = buildDuplicateTaxReturnRedirectPath(res);
+            if (duplicateRedirectPath) {
+              window.location.href = duplicateRedirectPath;
+              return;
+            }
+
             isCreatingRef.current = false;
           }
         })

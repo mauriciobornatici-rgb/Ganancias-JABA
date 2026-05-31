@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildTaxReturnSaveRequest,
+  buildDuplicateTaxReturnRedirectPath,
   buildCreatedTaxReturnFullSaveRequest,
   buildCreatedTaxReturnRollbackRequest,
   resolveTaxReturnSaveTarget,
@@ -113,5 +114,26 @@ describe('buildTaxReturnSaveRequest', () => {
     expect(request.init.headers).toEqual({ 'Content-Type': 'application/json' });
     expect(request.init.body).toBe(JSON.stringify(payload));
     expect(request.target.isCreate).toBe(false);
+  });
+});
+
+describe('buildDuplicateTaxReturnRedirectPath', () => {
+  it('arma la ruta al wizard existente cuando la API informa DDJJ duplicada', () => {
+    const path = buildDuplicateTaxReturnRedirectPath({
+      success: false,
+      code: 'DUPLICATE_TAX_RETURN',
+      data: {
+        id: 'return-123',
+      },
+    });
+
+    expect(path).toBe('/declaraciones/return-123/wizard');
+  });
+
+  it('devuelve null para errores que no son duplicados funcionales', () => {
+    expect(buildDuplicateTaxReturnRedirectPath({
+      success: false,
+      error: 'Error generico',
+    })).toBeNull();
   });
 });

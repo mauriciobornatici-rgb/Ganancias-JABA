@@ -144,6 +144,7 @@ Avance 2026-05-30:
 - Se agrego confirmacion antes de cerrar desde el wizard si faltan parametros activos o resolucion explicita.
 - Se corrigio el alta nueva desde wizard para que, luego del `POST`, persista toda la carga mediante `PUT` al nuevo ID.
 - Si ese `PUT` completo falla, el wizard intenta eliminar la cabecera recien creada para evitar DDJJ incompletas en la base.
+- El `POST /api/declaraciones` ahora guarda un `variablesSnapshot` inicial completo si recibe payload de carga.
 
 ## Criterios de aceptacion
 

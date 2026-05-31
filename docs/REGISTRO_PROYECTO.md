@@ -169,6 +169,7 @@ Accion aplicada:
 Pendiente:
 
 - Refactor posterior: mover esta orquestacion al backend para que el `POST` sea atomicamente completo, evitando cabecera creada si falla el guardado detallado.
+- Mitigacion adicional aplicada: el `POST` guarda en `variablesSnapshot` todo el payload operativo recibido, no solo `currentStep`.
 
 ### H7 - Campos patrimoniales y JVP incompletos
 
@@ -765,3 +766,32 @@ Verificacion:
 Pendiente:
 
 - Convertir el `POST /api/declaraciones` en una operacion atomica completa para que no dependa de dos requests desde el frontend.
+
+### 2026-05-31 - Fase 1, decimoseptimo cambio: snapshot inicial completo en POST de DDJJ
+
+Se reforzo el endpoint `POST /api/declaraciones` para que guarde en base un snapshot inicial completo cuando recibe payload de carga.
+
+Archivos modificados:
+
+- `src/app/api/declaraciones/route.ts`.
+- `src/domain/ganancias/persistence/taxReturnSnapshot.ts`.
+- `src/domain/ganancias/tests/taxReturnSnapshot.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- El `CalculationRun` inicial ya no guarda solo `currentStep`.
+- Si el POST recibe ventas, compras, bienes, bancos, deducciones, patrimonio o AXI, esos datos quedan registrados en `variablesSnapshot`.
+- Esto suma una capa de persistencia/auditoria desde el primer request, mientras se mantiene el `PUT` completo para poblar tablas relacionales.
+
+Verificacion:
+
+- `vitest run`: 12 archivos, 29 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Mover toda la persistencia relacional al `POST` dentro de una transaccion atomica compartida con `PUT`.

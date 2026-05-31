@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
+import { buildInitialTaxReturnSnapshot } from '@/domain/ganancias/persistence/taxReturnSnapshot';
 
 export async function GET(req: NextRequest) {
   try {
@@ -105,6 +106,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 4. Crear un CalculationRun vacío inicial para guardar metadatos de pasos
+    const variablesSnapshot = buildInitialTaxReturnSnapshot(body);
     await prisma.calculationRun.create({
       data: {
         taxReturnId: taxReturn.id,
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest) {
         axiStaticResult: 0,
         axiDynamicResult: 0,
         axiNetAdjustment: 0,
-        variablesSnapshot: JSON.stringify({ currentStep: currentStep || 1 }),
+        variablesSnapshot: JSON.stringify(variablesSnapshot),
       },
     });
 

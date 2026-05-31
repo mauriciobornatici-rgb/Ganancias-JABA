@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTaxReturnSaveRequest,
   buildCreatedTaxReturnFullSaveRequest,
   buildCreatedTaxReturnRollbackRequest,
   resolveTaxReturnSaveTarget,
@@ -71,5 +72,46 @@ describe('resolveTaxReturnSaveTarget', () => {
       isCreate: false,
       taxReturnId: 'return-789',
     });
+  });
+});
+
+describe('buildTaxReturnSaveRequest', () => {
+  it('arma un POST atomico con payload completo al crear una DDJJ', () => {
+    const payload = {
+      clientName: 'Cliente Nuevo',
+      sales: [{ date: '2025-01-01', netAmount: '1000' }],
+      status: 'Borrador',
+    };
+
+    const request = buildTaxReturnSaveRequest({
+      routeId: 'crear',
+      persistedReturnId: '',
+      payload,
+    });
+
+    expect(request.url).toBe('/api/declaraciones');
+    expect(request.init.method).toBe('POST');
+    expect(request.init.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(request.init.body).toBe(JSON.stringify(payload));
+    expect(request.target.isCreate).toBe(true);
+  });
+
+  it('arma un PUT contra la DDJJ persistida cuando ya existe id activo', () => {
+    const payload = {
+      clientName: 'Cliente Existente',
+      status: 'Cerrada',
+    };
+
+    const request = buildTaxReturnSaveRequest({
+      routeId: 'crear',
+      persistedReturnId: 'return-123',
+      payload,
+    });
+
+    expect(request.url).toBe('/api/declaraciones/return-123');
+    expect(request.init.method).toBe('PUT');
+    expect(request.init.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(request.init.body).toBe(JSON.stringify(payload));
+    expect(request.target.isCreate).toBe(false);
   });
 });

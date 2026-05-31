@@ -152,7 +152,7 @@ Accion esperada:
 
 ### H8 - Alta nueva de DDJJ no persistia toda la carga inicial
 
-Estado: resuelto como mitigacion de flujo.
+Estado: resuelto.
 
 Cuando el wizard creaba una declaracion nueva desde `/declaraciones/crear/wizard`, el `POST /api/declaraciones` creaba cabecera y un `CalculationRun` inicial, pero no persistia ventas, compras, bienes, bancos, deducciones, patrimonio ni AXI cargados en ese mismo cierre/guardado.
 
@@ -163,15 +163,14 @@ Riesgo:
 
 Accion aplicada:
 
-- Luego del `POST`, el wizard ejecuta inmediatamente un `PUT /api/declaraciones/[id]` con el payload completo.
-- El exito del modal se muestra solo si ese guardado completo tambien sale bien.
 - El wizard conserva en memoria el `id` real ya persistido para que los guardados siguientes usen `PUT` aunque la ruta todavia venga de `/crear`.
-- El auto-alta del wizard tambien envia payload completo y dispara el `PUT` completo al nuevo `id`, evitando que la base quede con una cabecera sin detalle relacional.
+- El auto-alta del wizard envia payload completo al `POST /api/declaraciones`.
 - El backend ahora detecta cuando el `POST /api/declaraciones` trae carga operativa y persiste detalle relacional/calculo dentro de la misma transaccion de creacion.
+- El exito del modal se muestra solo si ese `POST` atomico devuelve confirmacion.
 
 Pendiente:
 
-- El `PUT` redundante del frontend se conserva como cinturon y tirantes por ahora; en una limpieza posterior puede simplificarse si se valida manualmente el flujo completo contra base real.
+- Validar manualmente contra base local con un caso real de wizard.
 - Mitigacion adicional aplicada: el `POST` guarda en `variablesSnapshot` todo el payload operativo recibido cuando no dispara persistencia relacional completa.
 
 ### H7 - Campos patrimoniales y JVP incompletos
@@ -822,7 +821,7 @@ Resultado funcional:
 - Se agrego un resolver testeado para decidir si el guardado debe ser `POST /api/declaraciones` o `PUT /api/declaraciones/[id]`.
 - Una DDJJ recien creada guarda su `id` persistido en el estado del wizard.
 - Los cambios de paso y guardados manuales posteriores actualizan la DDJJ existente, aunque la ruta no se haya refrescado completamente.
-- El auto-alta desde el wizard ahora crea con payload completo, ejecuta el `PUT` completo al nuevo `id` y revierte la cabecera si falla ese guardado detallado.
+- El auto-alta desde el wizard ahora crea con payload completo.
 
 Verificacion:
 
@@ -871,4 +870,39 @@ Verificacion:
 
 Pendiente:
 
-- Validar manualmente contra base local con un caso real de wizard y, si no aparecen diferencias, retirar el `PUT` redundante del frontend o dejarlo como reintento explicito.
+- Resuelto en cambio posterior: el `PUT` redundante del frontend fue retirado del flujo de creacion.
+
+### 2026-05-31 - Fase 1, vigesimo cambio: frontend alineado al POST atomico
+
+Se simplifico el guardado del wizard ahora que el backend persiste detalle completo durante el `POST`.
+
+Riesgo corregido:
+
+- El frontend seguia haciendo `POST` y luego `PUT` aunque el backend ya resolvia la creacion atomica.
+- Eso duplicaba calculo/persistencia y podia producir mas latencia o resultados dificiles de auditar ante errores intermedios.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/taxReturnSaveFlow.ts`.
+- `src/domain/ganancias/tests/taxReturnSaveFlow.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Se agrego un builder testeado para armar el request de guardado del wizard.
+- Si la DDJJ no tiene `id`, el wizard hace un `POST /api/declaraciones` con payload completo.
+- Si ya existe `id` persistido, el wizard hace `PUT /api/declaraciones/[id]`.
+- El `POST` exitoso ya no dispara un `PUT` redundante; solo guarda el nuevo `id`, actualiza localStorage y reemplaza/navega la URL.
+
+Verificacion:
+
+- `vitest run`: 13 archivos, 37 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevos: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar manualmente contra base local desde el flujo visual completo del wizard.

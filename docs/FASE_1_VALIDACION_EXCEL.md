@@ -146,9 +146,10 @@ Avance 2026-05-30:
 - Si ese `PUT` completo falla, el wizard intenta eliminar la cabecera recien creada para evitar DDJJ incompletas en la base.
 - El `POST /api/declaraciones` ahora guarda un `variablesSnapshot` inicial completo si recibe payload de carga.
 - El wizard ahora conserva el ID persistido activo y usa `PUT` en guardados posteriores aunque la ruta todavia no se haya refrescado desde `/crear`.
-- El auto-alta del wizard envia payload completo y aplica el mismo guardado detallado con rollback.
+- El auto-alta del wizard envia payload completo al `POST /api/declaraciones`.
 - El backend ahora detecta payload operativo en `POST /api/declaraciones` y persiste detalle relacional/calculo dentro de la misma transaccion de creacion.
 - El `PUT` y el `POST` completo comparten rutina de persistencia para reducir divergencias.
+- El wizard ya no ejecuta un `PUT` redundante despues de un `POST` exitoso; el backend queda como fuente de verdad de la creacion atomica.
 
 ## Criterios de aceptacion
 

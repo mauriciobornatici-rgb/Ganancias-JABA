@@ -24,8 +24,7 @@ import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calcu
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import {
-  buildCreatedTaxReturnFullSaveRequest,
-  buildCreatedTaxReturnRollbackRequest,
+  buildTaxReturnSaveRequest,
   resolveTaxReturnSaveTarget,
 } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
@@ -390,30 +389,14 @@ export default function WizardPage() {
       status: targetStatus
     };
 
-    const saveTarget = resolveTaxReturnSaveTarget({ routeId: id, persistedReturnId });
+    const saveRequest = buildTaxReturnSaveRequest({ routeId: id, persistedReturnId, payload });
 
-    fetch(saveTarget.url, {
-      method: saveTarget.method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
+    fetch(saveRequest.url, saveRequest.init)
     .then(res => res.json())
-    .then(async res => {
+    .then(res => {
       if (res.success) {
-        if (saveTarget.isCreate && res.data?.id) {
+        if (saveRequest.target.isCreate && res.data?.id) {
           const newId = res.data.id;
-          const fullSaveRequest = buildCreatedTaxReturnFullSaveRequest(newId, payload);
-          const fullSaveResponse = await fetch(fullSaveRequest.url, fullSaveRequest.init);
-          const fullSaveResult = await fullSaveResponse.json();
-
-          if (!fullSaveResult.success) {
-            const rollbackRequest = buildCreatedTaxReturnRollbackRequest(newId);
-            await fetch(rollbackRequest.url, rollbackRequest.init).catch(rollbackError => {
-              console.error('No se pudo revertir la cabecera de DDJJ creada sin detalle:', rollbackError);
-            });
-            throw new Error(fullSaveResult.error || 'La DDJJ se creó, pero no se pudieron persistir los datos cargados.');
-          }
-
           setPersistedReturnId(newId);
           localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(payload));
           window.history.replaceState(null, '', `/declaraciones/${newId}/wizard`);
@@ -575,21 +558,9 @@ export default function WizardPage() {
           body: JSON.stringify(createPayload)
         })
         .then(res => res.json())
-        .then(async res => {
+        .then(res => {
           if (res.success && res.data?.id) {
             const newId = res.data.id;
-            const fullSaveRequest = buildCreatedTaxReturnFullSaveRequest(newId, createPayload);
-            const fullSaveResponse = await fetch(fullSaveRequest.url, fullSaveRequest.init);
-            const fullSaveResult = await fullSaveResponse.json();
-
-            if (!fullSaveResult.success) {
-              const rollbackRequest = buildCreatedTaxReturnRollbackRequest(newId);
-              await fetch(rollbackRequest.url, rollbackRequest.init).catch(rollbackError => {
-                console.error('No se pudo revertir la cabecera de DDJJ creada sin detalle:', rollbackError);
-              });
-              throw new Error(fullSaveResult.error || 'La DDJJ se creó, pero no se pudieron persistir los datos cargados.');
-            }
-
             setPersistedReturnId(newId);
             localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(createPayload));
             window.location.href = `/declaraciones/${newId}/wizard`;

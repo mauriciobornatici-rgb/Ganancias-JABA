@@ -44,6 +44,32 @@ export function resolveTaxReturnSaveTarget({
   };
 }
 
+export function buildTaxReturnSaveRequest({
+  routeId,
+  persistedReturnId,
+  payload,
+}: {
+  routeId?: string | null;
+  persistedReturnId?: string | null;
+  payload: unknown;
+}): {
+  url: string;
+  init: RequestInit;
+  target: ReturnType<typeof resolveTaxReturnSaveTarget>;
+} {
+  const target = resolveTaxReturnSaveTarget({ routeId, persistedReturnId });
+
+  return {
+    url: target.url,
+    init: {
+      method: target.method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+    target,
+  };
+}
+
 export function buildCreatedTaxReturnRollbackRequest(
   taxReturnId: string
 ): { url: string; init: RequestInit } {

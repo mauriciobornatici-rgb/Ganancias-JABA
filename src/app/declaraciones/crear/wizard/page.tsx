@@ -22,6 +22,7 @@ import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacio
 import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/amortizaciones';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
+import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
 
 // Escala Art 94 Mock (2025)
@@ -338,6 +339,13 @@ export default function WizardPage() {
   };
 
   const handleSaveAction = (type: 'borrador' | 'cerrar') => {
+    if (type === 'cerrar') {
+      const warning = buildTaxParameterClosureWarning({ taxParameterSetId }, activeParams);
+      if (warning && !window.confirm(`${warning}\n\n¿Desea continuar y cerrar igualmente?`)) {
+        return;
+      }
+    }
+
     setShowSaveModal(true);
     setModalActionType(type);
     setModalLoading(true);

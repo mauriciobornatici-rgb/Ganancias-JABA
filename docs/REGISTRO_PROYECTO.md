@@ -686,3 +686,32 @@ Verificacion:
 Pendiente:
 
 - A futuro, bloquear cierre o pedir confirmacion si una DDJJ usa parametros default sin resolucion explicita.
+
+### 2026-05-31 - Fase 1, decimoquinto cambio: confirmacion al cerrar con parametros no explicitos
+
+Se agrego una confirmacion en el wizard antes de cerrar una DDJJ cuando falta resolucion explicita o parametros activos.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/taxParameterNotice.ts`.
+- `src/domain/ganancias/tests/taxParameterNotice.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- El cierre ya no avanza silenciosamente si la DDJJ puede estar usando parametros default o fallback interno.
+- El usuario puede cancelar, revisar/cargar resolucion y luego cerrar.
+- Si decide continuar, la confirmacion deja claro que es una decision consciente.
+
+Verificacion:
+
+- `vitest run`: 10 archivos, 25 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Reemplazar el `window.confirm` por un modal propio de la app para mejorar trazabilidad y UX.

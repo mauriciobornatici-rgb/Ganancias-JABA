@@ -141,6 +141,7 @@ Avance 2026-05-30:
 - Se corrigio la carga de parametros del papel de trabajo para usar la resolucion default del anio si la DDJJ no tiene `taxParameterSetId`.
 - Se conecto la API de guardado al mapper comun de calculo y se cubrieron decimales tipo Prisma.
 - Se agrego aviso visible en el papel de trabajo cuando se usan parametros default por falta de resolucion explicita.
+- Se agrego confirmacion antes de cerrar desde el wizard si faltan parametros activos o resolucion explicita.
 
 ## Criterios de aceptacion
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTaxReturnPreviewRequest,
   buildTaxReturnPreview,
   hydrateTaxReturnPreviewResult,
 } from '../presentation/taxReturnPreview';
@@ -67,6 +68,23 @@ describe('buildTaxReturnPreview', () => {
     expect(preview.impuestoAPagarOARCA).toBe(50);
     expect(preview.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas).toBe(0);
     expect(preview.anticiposSiguientePeriodo).toEqual([10, 10, 10, 10, 10]);
+  });
+});
+
+describe('buildTaxReturnPreviewRequest', () => {
+  it('arma el request POST para calcular preview en backend', () => {
+    const request = buildTaxReturnPreviewRequest({
+      declarationData: { clientName: 'Cliente Preview' },
+      taxParameters,
+    });
+
+    expect(request.url).toBe('/api/declaraciones/preview');
+    expect(request.init.method).toBe('POST');
+    expect(request.init.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(request.init.body).toBe(JSON.stringify({
+      declarationData: { clientName: 'Cliente Preview' },
+      taxParameters,
+    }));
   });
 });
 

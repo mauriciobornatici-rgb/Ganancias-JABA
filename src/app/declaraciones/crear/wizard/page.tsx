@@ -24,6 +24,10 @@ import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calcu
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import {
+  buildTaxReturnPreviewRequest,
+  hydrateTaxReturnPreviewResult,
+} from '@/domain/ganancias/presentation/taxReturnPreview';
+import {
   buildDuplicateTaxReturnRedirectPath,
   buildTaxReturnSaveRequest,
   resolveTaxReturnSaveTarget,
@@ -101,6 +105,10 @@ export default function WizardPage() {
   const [taxParameterSetId, setTaxParameterSetId] = useState<string>('');
   const [resolutions, setResolutions] = useState<any[]>([]);
   const [activeParams, setActiveParams] = useState<any>(null);
+  const [backendPreview, setBackendPreview] = useState<{
+    key: string;
+    result: ReturnType<typeof calculateTaxReturn>;
+  } | null>(null);
 
   // Saldos Iniciales y Patrimonio del Año Anterior
   const [activoTotalInicio, setActivoTotalInicio] = useState('0');
@@ -943,62 +951,109 @@ export default function WizardPage() {
   // ==========================================
   // EJECUCIÓN DEL MOTOR DE CÁLCULO IMPOSTIVO
   // ==========================================
+  const fallbackParameterSet = {
+    minimoNoImponible: 4507505.52,
+    conyuge: 4245166.13,
+    hijo: 2140852.77,
+    hijoIncapacitado: 4281705.53,
+    especialAutonomo: 15776269.32,
+    especialEmprendedor: 18030022.08,
+    especialDependiente: 21636026.50,
+    topeServicioDomestico: 4507505.52,
+    topeSeguroVida: 573817.13,
+    topeSeguroRetiro: 573817.13,
+    topeGastosSepelio: 996.23,
+    topeInteresHipoteca: 20000.00,
+    topeGastosEducativos: 1803002.21,
+  };
+
+  const calculationParams = activeParams
+    ? {
+        ...activeParams,
+        brackets: activeParams.brackets?.length > 0 ? activeParams.brackets : escala2025BracketMock,
+        indices: activeParams.indices || [],
+      }
+    : {
+        parameterSet: fallbackParameterSet,
+        brackets: escala2025BracketMock,
+        indices: [],
+      };
+
+  const calculationData = {
+    clientName,
+    cuit,
+    fiscalYear,
+    sales,
+    purchases,
+    fixedAssets,
+    initialStock,
+    finalStock,
+    bankAccounts,
+    withholdings,
+    generalDeductions,
+    personalDeductions,
+    personalAssets,
+    personalLiabilities,
+    activoTotalInicio,
+    bienesNoComputablesInicio,
+    pasivoTotalInicio,
+    axiDynamic,
+    saldoAFavorAnterior,
+    quebrantosAnteriores,
+  };
+
+  const calculationRequestKey = JSON.stringify({
+    declarationData: calculationData,
+    taxParameters: calculationParams,
+  });
+
+  const hasRequiredPreviewIdentity = clientName.trim() !== '' && cuit.trim() !== '';
+
   const executeCalculation = () => {
-    const fallbackParameterSet = {
-      minimoNoImponible: 4507505.52,
-      conyuge: 4245166.13,
-      hijo: 2140852.77,
-      hijoIncapacitado: 4281705.53,
-      especialAutonomo: 15776269.32,
-      especialEmprendedor: 18030022.08,
-      especialDependiente: 21636026.50,
-      topeServicioDomestico: 4507505.52,
-      topeSeguroVida: 573817.13,
-      topeSeguroRetiro: 573817.13,
-      topeGastosSepelio: 996.23,
-      topeInteresHipoteca: 20000.00,
-      topeGastosEducativos: 1803002.21,
-    };
-
-    const calculationParams = activeParams
-      ? {
-          ...activeParams,
-          brackets: activeParams.brackets?.length > 0 ? activeParams.brackets : escala2025BracketMock,
-          indices: activeParams.indices || [],
-        }
-      : {
-          parameterSet: fallbackParameterSet,
-          brackets: escala2025BracketMock,
-          indices: [],
-        };
-
-    const calculationInput = buildTaxReturnCalculationInput({
-      clientName,
-      cuit,
-      fiscalYear,
-      sales,
-      purchases,
-      fixedAssets,
-      initialStock,
-      finalStock,
-      bankAccounts,
-      withholdings,
-      generalDeductions,
-      personalDeductions,
-      personalAssets,
-      personalLiabilities,
-      activoTotalInicio,
-      bienesNoComputablesInicio,
-      pasivoTotalInicio,
-      axiDynamic,
-      saldoAFavorAnterior,
-      quebrantosAnteriores,
-    }, calculationParams);
-
+    const calculationInput = buildTaxReturnCalculationInput(calculationData, calculationParams);
     return calculateTaxReturn(calculationInput);
   };
 
-  const calculationResult = (clientName.trim() !== '' && cuit.trim() !== '') ? executeCalculation() : null;
+  const localCalculationResult = hasRequiredPreviewIdentity ? executeCalculation() : null;
+
+  useEffect(() => {
+    if (!hasRequiredPreviewIdentity) return;
+
+    const key = calculationRequestKey;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      const previewRequest = buildTaxReturnPreviewRequest(
+        JSON.parse(key) as { declarationData: unknown; taxParameters: unknown }
+      );
+
+      fetch(previewRequest.url, { ...previewRequest.init, signal: controller.signal })
+        .then(res => res.json())
+        .then(res => {
+          if (res.success && res.data) {
+            setBackendPreview({
+              key,
+              result: hydrateTaxReturnPreviewResult(res.data),
+            });
+          } else {
+            console.error('Error al calcular preview backend:', res.error);
+          }
+        })
+        .catch(err => {
+          if (err.name !== 'AbortError') {
+            console.error('Error de red al calcular preview backend:', err);
+          }
+        });
+    }, 350);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [calculationRequestKey, hasRequiredPreviewIdentity]);
+
+  const calculationResult = backendPreview?.key === calculationRequestKey
+    ? backendPreview.result
+    : localCalculationResult;
 
   // Buscar si el cliente actual (según el CUIT ingresado) tiene una DDJJ anterior cerrada en la BD o mock
   const clientObj = dbClients.find(c => c.cuit === cuit) || mockClients.find(c => c.cuit === cuit);

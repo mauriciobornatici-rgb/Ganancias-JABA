@@ -1035,3 +1035,41 @@ Verificacion:
 Pendiente:
 
 - Conectar el wizard al endpoint con debounce/cancelacion y fallback local mientras se valida visualmente.
+
+### 2026-05-31 - Fase 1, vigesimo cuarto cambio: wizard conectado al preview backend
+
+Se conecto el wizard de carga al endpoint backend de preview sin retirar todavia el calculo local.
+
+Riesgo mitigado:
+
+- El usuario necesita resultados inmediatos mientras carga.
+- El backend debe empezar a ser la fuente operativa del calculo para evitar divergencias al guardar.
+- Cambiar todo de golpe podia degradar agilidad o dejar la pantalla sin resultado ante una falla de red.
+
+Archivos modificados:
+
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/presentation/taxReturnPreview.ts`.
+- `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Se agrego `buildTaxReturnPreviewRequest` para centralizar el request `POST /api/declaraciones/preview`.
+- El wizard arma el mismo payload de calculo que ya usa localmente y lo envia al backend con debounce de 350 ms.
+- Se usa `AbortController` para cancelar requests anteriores cuando la carga cambia rapido.
+- El resultado backend se aplica solo si corresponde al payload vigente.
+- Si el backend demora o falla, la UI conserva el calculo local como fallback, manteniendo agilidad y evitando "magia" oculta.
+
+Verificacion:
+
+- `vitest run`: 16 archivos, 46 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevos: OK.
+- `eslint` sobre el wizard sigue fallando por deuda previa ya registrada (`any`, efectos antiguos, `Date.now`), sin errores nuevos del preview conectado.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar visualmente que el resumen final del wizard muestre el resultado backend cuando haya conexion normal y conserve el fallback local ante error/cancelacion.

@@ -83,6 +83,23 @@ export function buildTaxReturnPreview(declarationData: unknown, taxParameters: u
   return serializeTaxCalculationResult(calculateTaxReturn(calculationInput));
 }
 
+export function buildTaxReturnPreviewRequest({
+  declarationData,
+  taxParameters,
+}: {
+  declarationData: unknown;
+  taxParameters: unknown;
+}): { url: string; init: RequestInit } {
+  return {
+    url: '/api/declaraciones/preview',
+    init: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ declarationData, taxParameters }),
+    },
+  };
+}
+
 export function hydrateTaxReturnPreviewResult(value: ReturnType<typeof serializeTaxCalculationResult>): TaxCalculationResult {
   return {
     clientName: value.clientName,

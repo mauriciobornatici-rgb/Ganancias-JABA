@@ -150,6 +150,26 @@ Accion esperada:
 - El frontend debe pedir preview/calculo y mostrar resultado, no ser una segunda fuente de verdad.
 - Primeros pasos aplicados: el wizard y la pagina independiente de papel de trabajo ya usan un mapper testeado para no recalcular con datos parciales o divergentes.
 
+### H8 - Alta nueva de DDJJ no persistia toda la carga inicial
+
+Estado: resuelto como mitigacion de flujo.
+
+Cuando el wizard creaba una declaracion nueva desde `/declaraciones/crear/wizard`, el `POST /api/declaraciones` creaba cabecera y un `CalculationRun` inicial, pero no persistia ventas, compras, bienes, bancos, deducciones, patrimonio ni AXI cargados en ese mismo cierre/guardado.
+
+Riesgo:
+
+- La informacion podia quedar solo en `localStorage` del navegador despues de la creacion inicial.
+- Al consultar desde otra sesion/dispositivo o desde la base, la DDJJ podia aparecer incompleta.
+
+Accion aplicada:
+
+- Luego del `POST`, el wizard ejecuta inmediatamente un `PUT /api/declaraciones/[id]` con el payload completo.
+- El exito del modal se muestra solo si ese guardado completo tambien sale bien.
+
+Pendiente:
+
+- Refactor posterior: mover esta orquestacion al backend para que el `POST` sea atomicamente completo, evitando cabecera creada si falla el guardado detallado.
+
 ### H7 - Campos patrimoniales y JVP incompletos
 
 Estado: abierto.
@@ -715,3 +735,32 @@ Verificacion:
 Pendiente:
 
 - Reemplazar el `window.confirm` por un modal propio de la app para mejorar trazabilidad y UX.
+
+### 2026-05-31 - Fase 1, decimosexto cambio: persistencia completa al crear DDJJ desde wizard
+
+Se corrigio el flujo de alta nueva para evitar que la informacion cargada quede solo en memoria/localStorage.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/taxReturnSaveFlow.ts`.
+- `src/domain/ganancias/tests/taxReturnSaveFlow.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Al crear una DDJJ nueva, primero se obtiene el `id` de la cabecera.
+- Inmediatamente se dispara un `PUT` al nuevo `id` con todo el payload cargado.
+- Si el guardado completo falla, no se muestra exito y el usuario recibe error.
+
+Verificacion:
+
+- `vitest run`: 11 archivos, 26 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Convertir el `POST /api/declaraciones` en una operacion atomica completa para que no dependa de dos requests desde el frontend.

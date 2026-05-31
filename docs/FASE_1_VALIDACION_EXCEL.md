@@ -142,6 +142,7 @@ Avance 2026-05-30:
 - Se conecto la API de guardado al mapper comun de calculo y se cubrieron decimales tipo Prisma.
 - Se agrego aviso visible en el papel de trabajo cuando se usan parametros default por falta de resolucion explicita.
 - Se agrego confirmacion antes de cerrar desde el wizard si faltan parametros activos o resolucion explicita.
+- Se corrigio el alta nueva desde wizard para que, luego del `POST`, persista toda la carga mediante `PUT` al nuevo ID.
 
 ## Criterios de aceptacion
 

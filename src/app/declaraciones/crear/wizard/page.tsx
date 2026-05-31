@@ -23,6 +23,7 @@ import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/am
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
+import { buildCreatedTaxReturnFullSaveRequest } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
 
 // Escala Art 94 Mock (2025)
@@ -387,10 +388,18 @@ export default function WizardPage() {
       body: JSON.stringify(payload)
     })
     .then(res => res.json())
-    .then(res => {
+    .then(async res => {
       if (res.success) {
         if (method === 'POST' && res.data?.id) {
           const newId = res.data.id;
+          const fullSaveRequest = buildCreatedTaxReturnFullSaveRequest(newId, payload);
+          const fullSaveResponse = await fetch(fullSaveRequest.url, fullSaveRequest.init);
+          const fullSaveResult = await fullSaveResponse.json();
+
+          if (!fullSaveResult.success) {
+            throw new Error(fullSaveResult.error || 'La DDJJ se creó, pero no se pudieron persistir los datos cargados.');
+          }
+
           localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(payload));
           window.history.replaceState(null, '', `/declaraciones/${newId}/wizard`);
         }

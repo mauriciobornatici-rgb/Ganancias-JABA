@@ -136,7 +136,7 @@ Accion esperada:
 
 ### H6 - Doble calculo entre frontend y backend
 
-Estado: abierto con primera mitigacion.
+Estado: abierto con mitigaciones incrementales.
 
 El wizard calcula en cliente y el backend vuelve a calcular al guardar.
 
@@ -149,6 +149,7 @@ Accion esperada:
 - Centralizar calculo en dominio/backend.
 - El frontend debe pedir preview/calculo y mostrar resultado, no ser una segunda fuente de verdad.
 - Primeros pasos aplicados: el wizard y la pagina independiente de papel de trabajo ya usan un mapper testeado para no recalcular con datos parciales o divergentes.
+- Se agrego un endpoint backend de preview/cálculo (`POST /api/declaraciones/preview`) que usa el mapper comun y devuelve resultado serializado apto para UI.
 
 ### H8 - Alta nueva de DDJJ no persistia toda la carga inicial
 
@@ -997,3 +998,39 @@ Verificacion:
 Pendiente:
 
 - Validar visualmente una DDJJ con AXI dinamico sin fecha cargada.
+
+### 2026-05-31 - Fase 1, vigesimo tercer cambio: endpoint backend de preview de calculo
+
+Se agrego una primera pieza para cerrar la divergencia entre calculo de frontend y backend.
+
+Riesgo mitigado:
+
+- El wizard calcula en cliente mientras el backend recalcula al guardar.
+- Aunque ambos usan el mapper comun, el frontend sigue siendo una segunda fuente operativa de resultado.
+- Para mover el calculo sin romper la experiencia, primero se necesita un endpoint backend estable y testeado.
+
+Archivos modificados:
+
+- `src/app/api/declaraciones/preview/route.ts`.
+- `src/domain/ganancias/presentation/taxReturnPreview.ts`.
+- `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- `POST /api/declaraciones/preview` recibe datos de declaracion y parametros impositivos.
+- El endpoint usa `buildTaxReturnCalculationInput` y `calculateTaxReturn`, igual que el guardado backend.
+- La respuesta serializa los `Decimal` a numeros y arreglos simples para que sea apta para JSON/UI.
+- El wizard todavia no consume este endpoint; se deja listo para conectar en una iteracion controlada.
+
+Verificacion:
+
+- `vitest run`: 16 archivos, 44 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre endpoint/helper/test nuevos: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Conectar el wizard al endpoint con debounce/cancelacion y fallback local mientras se valida visualmente.

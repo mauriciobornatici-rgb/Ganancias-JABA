@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCreatedTaxReturnFullSaveRequest,
   buildCreatedTaxReturnRollbackRequest,
+  resolveTaxReturnSaveTarget,
 } from '../presentation/taxReturnSaveFlow';
 
 describe('buildCreatedTaxReturnFullSaveRequest', () => {
@@ -26,5 +27,49 @@ describe('buildCreatedTaxReturnFullSaveRequest', () => {
 
     expect(request.url).toBe('/api/declaraciones/return-123');
     expect(request.init.method).toBe('DELETE');
+  });
+});
+
+describe('resolveTaxReturnSaveTarget', () => {
+  it('crea una DDJJ nueva cuando la ruta todavia no tiene id persistido', () => {
+    const target = resolveTaxReturnSaveTarget({
+      routeId: 'crear',
+      persistedReturnId: '',
+    });
+
+    expect(target).toEqual({
+      method: 'POST',
+      url: '/api/declaraciones',
+      isCreate: true,
+      taxReturnId: null,
+    });
+  });
+
+  it('actualiza la DDJJ ya persistida aunque la ruta siga siendo crear', () => {
+    const target = resolveTaxReturnSaveTarget({
+      routeId: 'crear',
+      persistedReturnId: 'return-123',
+    });
+
+    expect(target).toEqual({
+      method: 'PUT',
+      url: '/api/declaraciones/return-123',
+      isCreate: false,
+      taxReturnId: 'return-123',
+    });
+  });
+
+  it('actualiza por el id de la ruta cuando se edita una DDJJ existente', () => {
+    const target = resolveTaxReturnSaveTarget({
+      routeId: 'return-789',
+      persistedReturnId: null,
+    });
+
+    expect(target).toEqual({
+      method: 'PUT',
+      url: '/api/declaraciones/return-789',
+      isCreate: false,
+      taxReturnId: 'return-789',
+    });
   });
 });

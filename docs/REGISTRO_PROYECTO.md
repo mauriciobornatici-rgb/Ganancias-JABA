@@ -165,6 +165,8 @@ Accion aplicada:
 
 - Luego del `POST`, el wizard ejecuta inmediatamente un `PUT /api/declaraciones/[id]` con el payload completo.
 - El exito del modal se muestra solo si ese guardado completo tambien sale bien.
+- El wizard conserva en memoria el `id` real ya persistido para que los guardados siguientes usen `PUT` aunque la ruta todavia venga de `/crear`.
+- El auto-alta del wizard tambien envia payload completo y dispara el `PUT` completo al nuevo `id`, evitando que la base quede con una cabecera sin detalle relacional.
 
 Pendiente:
 
@@ -795,3 +797,39 @@ Verificacion:
 Pendiente:
 
 - Mover toda la persistencia relacional al `POST` dentro de una transaccion atomica compartida con `PUT`.
+
+### 2026-05-31 - Fase 1, decimoctavo cambio: ID persistido activo en wizard
+
+Se reforzo el flujo de guardado para evitar duplicados o guardados contra el endpoint incorrecto despues de crear una DDJJ desde `/declaraciones/crear/wizard`.
+
+Riesgo corregido:
+
+- Despues del primer `POST`, el wizard podia seguir decidiendo `POST` vs `PUT` solo por el `id` de la ruta.
+- Si la URL seguia siendo `crear` en memoria, un guardado posterior podia intentar crear otra DDJJ en lugar de actualizar la ya creada.
+- El auto-alta del wizard enviaba un payload minimo, por lo que dependia demasiado de un guardado posterior para persistir el detalle.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/taxReturnSaveFlow.ts`.
+- `src/domain/ganancias/tests/taxReturnSaveFlow.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Se agrego un resolver testeado para decidir si el guardado debe ser `POST /api/declaraciones` o `PUT /api/declaraciones/[id]`.
+- Una DDJJ recien creada guarda su `id` persistido en el estado del wizard.
+- Los cambios de paso y guardados manuales posteriores actualizan la DDJJ existente, aunque la ruta no se haya refrescado completamente.
+- El auto-alta desde el wizard ahora crea con payload completo, ejecuta el `PUT` completo al nuevo `id` y revierte la cabecera si falla ese guardado detallado.
+
+Verificacion:
+
+- `vitest run`: 12 archivos, 32 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevos: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Mantener como mejora estructural la persistencia atomica del `POST` en backend para eliminar la doble request desde frontend.

@@ -26,6 +26,7 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import {
   buildCreatedTaxReturnFullSaveRequest,
   buildCreatedTaxReturnRollbackRequest,
+  resolveTaxReturnSaveTarget,
 } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
 
@@ -71,10 +72,16 @@ function formatCuit(cuit: string): string {
 export default function WizardPage() {
   const params = useParams();
   const id = params?.id as string;
+  const [persistedReturnId, setPersistedReturnId] = useState(id && id !== 'crear' ? id : '');
+  const activeReturnId = persistedReturnId || (id && id !== 'crear' ? id : '');
   const initialCuitRef = React.useRef<string | null>(null);
   const isCreatingRef = React.useRef(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [maxVisitedStep, setMaxVisitedStep] = useState(1);
+
+  useEffect(() => {
+    setPersistedReturnId(id && id !== 'crear' ? id : '');
+  }, [id]);
 
   // Sync highest step visited
   useEffect(() => {
@@ -278,7 +285,8 @@ export default function WizardPage() {
   };
 
   const saveToServer = (targetStep: number) => {
-    if (!id || id === 'crear') return;
+    const saveTarget = resolveTaxReturnSaveTarget({ routeId: id, persistedReturnId });
+    if (saveTarget.isCreate) return;
     
     const payload = {
       cuit,
@@ -306,8 +314,8 @@ export default function WizardPage() {
       status: 'Borrador'
     };
     
-    fetch(`/api/declaraciones/${id}`, {
-      method: 'PUT',
+    fetch(saveTarget.url, {
+      method: saveTarget.method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
@@ -382,18 +390,17 @@ export default function WizardPage() {
       status: targetStatus
     };
 
-    const url = id && id !== 'crear' ? `/api/declaraciones/${id}` : '/api/declaraciones';
-    const method = id && id !== 'crear' ? 'PUT' : 'POST';
+    const saveTarget = resolveTaxReturnSaveTarget({ routeId: id, persistedReturnId });
 
-    fetch(url, {
-      method,
+    fetch(saveTarget.url, {
+      method: saveTarget.method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(async res => {
       if (res.success) {
-        if (method === 'POST' && res.data?.id) {
+        if (saveTarget.isCreate && res.data?.id) {
           const newId = res.data.id;
           const fullSaveRequest = buildCreatedTaxReturnFullSaveRequest(newId, payload);
           const fullSaveResponse = await fetch(fullSaveRequest.url, fullSaveRequest.init);
@@ -407,6 +414,7 @@ export default function WizardPage() {
             throw new Error(fullSaveResult.error || 'La DDJJ se creó, pero no se pudieron persistir los datos cargados.');
           }
 
+          setPersistedReturnId(newId);
           localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(payload));
           window.history.replaceState(null, '', `/declaraciones/${newId}/wizard`);
         }
@@ -553,30 +561,37 @@ export default function WizardPage() {
         axiDynamic
       };
       
-      const saveKey = id || `new_${cuit}`;
+      const saveKey = activeReturnId || `new_${cuit}`;
       localStorage.setItem(`jaba_wizard_state_${saveKey}`, JSON.stringify(wizardState));
       
-      if ((!id || id === 'crear') && currentStep > 1 && clientName && cuit) {
+      if (!activeReturnId && currentStep > 1 && clientName && cuit) {
         if (isCreatingRef.current) return;
         isCreatingRef.current = true;
+        const createPayload = { ...wizardState, status: 'Borrador' };
         
         fetch('/api/declaraciones', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cuit,
-            clientName,
-            fiscalYear,
-            status: 'Borrador',
-            currentStep,
-            taxParameterSetId
-          })
+          body: JSON.stringify(createPayload)
         })
         .then(res => res.json())
-        .then(res => {
+        .then(async res => {
           if (res.success && res.data?.id) {
             const newId = res.data.id;
-            localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(wizardState));
+            const fullSaveRequest = buildCreatedTaxReturnFullSaveRequest(newId, createPayload);
+            const fullSaveResponse = await fetch(fullSaveRequest.url, fullSaveRequest.init);
+            const fullSaveResult = await fullSaveResponse.json();
+
+            if (!fullSaveResult.success) {
+              const rollbackRequest = buildCreatedTaxReturnRollbackRequest(newId);
+              await fetch(rollbackRequest.url, rollbackRequest.init).catch(rollbackError => {
+                console.error('No se pudo revertir la cabecera de DDJJ creada sin detalle:', rollbackError);
+              });
+              throw new Error(fullSaveResult.error || 'La DDJJ se creó, pero no se pudieron persistir los datos cargados.');
+            }
+
+            setPersistedReturnId(newId);
+            localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(createPayload));
             window.location.href = `/declaraciones/${newId}/wizard`;
           } else {
             isCreatingRef.current = false;
@@ -589,7 +604,7 @@ export default function WizardPage() {
       }
     }
   }, [
-    id, cuit, clientName, fiscalYear, currentStep, taxParameterSetId,
+    activeReturnId, cuit, clientName, fiscalYear, currentStep, taxParameterSetId,
     sales, purchases, fixedAssets, initialStock, finalStock,
     bankAccounts, withholdings, generalDeductions, personalDeductions,
     personalAssets, personalLiabilities, activoTotalInicio, pasivoTotalInicio,
@@ -599,11 +614,11 @@ export default function WizardPage() {
   // Hook 3: Limpiar los campos si se cambia el contribuyente para evitar contaminación de datos
   useEffect(() => {
     // Si ya existe una declaración guardada en localStorage para este id, no sobreescribir con valores vacíos
-    const saved = localStorage.getItem(`jaba_wizard_state_${id}`);
+    const saved = localStorage.getItem(`jaba_wizard_state_${activeReturnId || id}`);
     if (saved) return;
 
     // Solo limpiar si no se está cargando un borrador del servidor
-    if (id && id !== 'crear') return;
+    if (activeReturnId) return;
 
     // Si se cambia de cliente, vaciar todos los campos a su estado inicial en blanco
     setActivoTotalInicio('0');
@@ -640,7 +655,7 @@ export default function WizardPage() {
     setPersonalAssets([]);
     setPersonalLiabilities([]);
     setAxiDynamic([]);
-  }, [cuit, clientName]);
+  }, [activeReturnId, cuit, clientName, id]);
 
   // Hook 4: Buscar resoluciones para el año seleccionado
   useEffect(() => {

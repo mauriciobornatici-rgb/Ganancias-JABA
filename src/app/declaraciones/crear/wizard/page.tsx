@@ -24,6 +24,7 @@ import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calcu
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import {
+  buildTaxReturnPreviewStatus,
   buildTaxReturnPreviewRequest,
   hydrateTaxReturnPreviewResult,
 } from '@/domain/ganancias/presentation/taxReturnPreview';
@@ -109,6 +110,8 @@ export default function WizardPage() {
     key: string;
     result: ReturnType<typeof calculateTaxReturn>;
   } | null>(null);
+  const [isBackendPreviewPending, setIsBackendPreviewPending] = useState(false);
+  const [backendPreviewError, setBackendPreviewError] = useState<string | null>(null);
 
   // Saldos Iniciales y Patrimonio del Año Anterior
   const [activoTotalInicio, setActivoTotalInicio] = useState('0');
@@ -1022,25 +1025,38 @@ export default function WizardPage() {
     const key = calculationRequestKey;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => {
+      setIsBackendPreviewPending(true);
+      setBackendPreviewError(null);
       const previewRequest = buildTaxReturnPreviewRequest(
         JSON.parse(key) as { declarationData: unknown; taxParameters: unknown }
       );
 
       fetch(previewRequest.url, { ...previewRequest.init, signal: controller.signal })
-        .then(res => res.json())
-        .then(res => {
-          if (res.success && res.data) {
+        .then(async response => {
+          const res = await response.json();
+          if (response.ok && res.success && res.data) {
             setBackendPreview({
               key,
               result: hydrateTaxReturnPreviewResult(res.data),
             });
+            setBackendPreviewError(null);
           } else {
-            console.error('Error al calcular preview backend:', res.error);
+            const message = res.error || 'Preview backend no disponible';
+            setBackendPreviewError(message);
+            console.error('Error al calcular preview backend:', message);
           }
         })
         .catch(err => {
-          if (err.name !== 'AbortError') {
+          const errorName = err instanceof Error ? err.name : '';
+          if (errorName !== 'AbortError') {
+            const message = err instanceof Error ? err.message : 'Error de red desconocido';
+            setBackendPreviewError(message);
             console.error('Error de red al calcular preview backend:', err);
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setIsBackendPreviewPending(false);
           }
         });
     }, 350);
@@ -1054,6 +1070,28 @@ export default function WizardPage() {
   const calculationResult = backendPreview?.key === calculationRequestKey
     ? backendPreview.result
     : localCalculationResult;
+
+  const previewStatus = buildTaxReturnPreviewStatus({
+    hasRequiredPreviewIdentity,
+    calculationRequestKey,
+    backendPreviewKey: backendPreview?.key ?? null,
+    isBackendPreviewPending,
+    backendPreviewError,
+  });
+
+  const previewStatusClasses = {
+    idle: 'border-zinc-700 bg-zinc-900/70 text-zinc-400',
+    backend: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    pending: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+    fallback: 'border-sky-500/30 bg-sky-500/10 text-sky-300',
+  }[previewStatus.kind];
+
+  const previewStatusDotClasses = {
+    idle: 'bg-zinc-500',
+    backend: 'bg-emerald-400',
+    pending: 'bg-amber-400 animate-pulse',
+    fallback: 'bg-sky-400',
+  }[previewStatus.kind];
 
   // Buscar si el cliente actual (según el CUIT ingresado) tiene una DDJJ anterior cerrada en la BD o mock
   const clientObj = dbClients.find(c => c.cuit === cuit) || mockClients.find(c => c.cuit === cuit);
@@ -2833,6 +2871,16 @@ export default function WizardPage() {
                 <div>
                   <h2 className="text-xl font-bold text-white tracking-tight">Paso 6: Consolidación y Determinación Impositiva</h2>
                   <p className="text-zinc-400 text-xs mt-1">Los datos se han procesado de forma exitosa en el motor de cálculo. Verifique las determinaciones.</p>
+                  <div
+                    className={`mt-3 inline-flex max-w-xl items-start gap-2 rounded-lg border px-3 py-2 text-[11px] font-semibold ${previewStatusClasses}`}
+                    title={previewStatus.detail}
+                  >
+                    <span className={`mt-1 h-2 w-2 rounded-full shrink-0 ${previewStatusDotClasses}`} />
+                    <span>
+                      <span className="block uppercase tracking-[0.16em]">{previewStatus.label}</span>
+                      <span className="mt-0.5 block normal-case tracking-normal opacity-80">{previewStatus.detail}</span>
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="p-4 rounded-lg bg-[#09090b] border border-zinc-800 text-right">
@@ -3273,6 +3321,16 @@ export default function WizardPage() {
               </div>
 
               <div className="space-y-4">
+                <div
+                  className={`rounded-lg border px-3 py-2 text-[10px] font-bold uppercase tracking-[0.14em] ${previewStatusClasses}`}
+                  title={previewStatus.detail}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${previewStatusDotClasses}`} />
+                    {previewStatus.label}
+                  </span>
+                </div>
+
                 {/* Resultado Comercial */}
                 <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
                   <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Resultado Neto 3ra Cat.</span>

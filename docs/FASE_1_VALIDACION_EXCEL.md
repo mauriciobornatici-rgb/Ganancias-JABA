@@ -155,6 +155,7 @@ Avance 2026-05-30:
 - Se agrego `POST /api/declaraciones/preview` como endpoint backend de calculo para empezar a retirar el calculo duplicado del frontend.
 - El preview backend ya tiene serializacion JSON y rehidratacion a `Decimal` para integrarse con la UI actual del wizard.
 - El wizard ya consume el preview backend con debounce, cancelacion y fallback local para mantener carga agil mientras se valida la fuente backend.
+- La UI ahora informa si el resultado visible esta confirmado por backend, pendiente de confirmacion o usando preview local de respaldo.
 
 ## Criterios de aceptacion
 

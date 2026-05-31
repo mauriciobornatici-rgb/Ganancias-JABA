@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildTaxReturnPreviewRequest,
+  buildTaxReturnPreviewStatus,
   buildTaxReturnPreview,
   hydrateTaxReturnPreviewResult,
 } from '../presentation/taxReturnPreview';
@@ -85,6 +86,47 @@ describe('buildTaxReturnPreviewRequest', () => {
       declarationData: { clientName: 'Cliente Preview' },
       taxParameters,
     }));
+  });
+});
+
+describe('buildTaxReturnPreviewStatus', () => {
+  it('marca el resultado como backend actualizado cuando la clave coincide', () => {
+    const status = buildTaxReturnPreviewStatus({
+      hasRequiredPreviewIdentity: true,
+      calculationRequestKey: 'payload-vigente',
+      backendPreviewKey: 'payload-vigente',
+      isBackendPreviewPending: false,
+      backendPreviewError: null,
+    });
+
+    expect(status.kind).toBe('backend');
+    expect(status.label).toBe('Motor backend actualizado');
+  });
+
+  it('marca espera backend cuando todavia se muestra fallback local', () => {
+    const status = buildTaxReturnPreviewStatus({
+      hasRequiredPreviewIdentity: true,
+      calculationRequestKey: 'payload-nuevo',
+      backendPreviewKey: 'payload-anterior',
+      isBackendPreviewPending: true,
+      backendPreviewError: null,
+    });
+
+    expect(status.kind).toBe('pending');
+    expect(status.label).toBe('Esperando confirmacion backend');
+  });
+
+  it('marca preview local cuando el backend no respondio correctamente', () => {
+    const status = buildTaxReturnPreviewStatus({
+      hasRequiredPreviewIdentity: true,
+      calculationRequestKey: 'payload-vigente',
+      backendPreviewKey: null,
+      isBackendPreviewPending: false,
+      backendPreviewError: 'Error de red',
+    });
+
+    expect(status.kind).toBe('fallback');
+    expect(status.detail).toContain('Error de red');
   });
 });
 

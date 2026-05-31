@@ -1073,3 +1073,44 @@ Verificacion:
 Pendiente:
 
 - Validar visualmente que el resumen final del wizard muestre el resultado backend cuando haya conexion normal y conserve el fallback local ante error/cancelacion.
+
+### 2026-05-31 - Fase 1, vigesimo quinto cambio: indicador visible de origen del preview
+
+Se hizo explicito en la UI de carga si el resultado mostrado viene del preview backend o del calculo local de respaldo.
+
+Riesgo mitigado:
+
+- El sistema usa backend y fallback local durante la transicion hacia un motor unico.
+- Sin una senal visible, el usuario no podia saber si estaba viendo un resultado confirmado por backend o un preview local provisorio.
+- Para un estudio chico, la agilidad no debe depender de "magia"; la pantalla debe explicar el estado operativo sin interrumpir la carga.
+
+Archivos modificados:
+
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/presentation/taxReturnPreview.ts`.
+- `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- Se agrego `buildTaxReturnPreviewStatus` para describir el estado del preview como `backend`, `pending`, `fallback` o `idle`.
+- El wizard registra si hay request backend pendiente y si el ultimo intento fallo.
+- El paso 6 muestra un indicador con detalle: motor backend actualizado, esperando confirmacion backend o preview local de respaldo.
+- La barra fiscal viva tambien muestra un badge compacto con el origen del calculo.
+- El fallback local sigue operativo para no romper la agilidad de carga cuando el backend demora o no responde.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxReturnPreview.test.ts` fallo inicialmente porque `buildTaxReturnPreviewStatus` no existia.
+- `vitest run src/domain/ganancias/tests/taxReturnPreview.test.ts`: 6 tests, todo OK.
+- `vitest run`: 16 archivos, 49 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevos: OK.
+- `eslint` sobre el wizard sigue fallando por deuda previa ya registrada (`any`, efectos antiguos, `Date.now`), sin errores nuevos del indicador.
+- `next build --webpack`: OK.
+- Validacion HTTP local de `POST /api/declaraciones/preview`: OK, respondio `success: true` con impuesto determinado 50 para payload minimo.
+
+Pendiente:
+
+- Validar visualmente con navegador cuando el conector/browser local este disponible; el intento en esta sesion quedo bloqueado por entorno de automatizacion.

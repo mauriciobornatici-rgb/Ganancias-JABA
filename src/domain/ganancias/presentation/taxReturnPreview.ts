@@ -7,6 +7,14 @@ import type {
   TaxCalculationResult,
 } from '../types';
 
+export type TaxReturnPreviewStatusKind = 'idle' | 'backend' | 'pending' | 'fallback';
+
+export type TaxReturnPreviewStatus = {
+  kind: TaxReturnPreviewStatusKind;
+  label: string;
+  detail: string;
+};
+
 function decimalToNumber(value: Decimal): number {
   return value.toNumber();
 }
@@ -97,6 +105,52 @@ export function buildTaxReturnPreviewRequest({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ declarationData, taxParameters }),
     },
+  };
+}
+
+export function buildTaxReturnPreviewStatus({
+  hasRequiredPreviewIdentity,
+  calculationRequestKey,
+  backendPreviewKey,
+  isBackendPreviewPending,
+  backendPreviewError,
+}: {
+  hasRequiredPreviewIdentity: boolean;
+  calculationRequestKey: string;
+  backendPreviewKey: string | null;
+  isBackendPreviewPending: boolean;
+  backendPreviewError: string | null;
+}): TaxReturnPreviewStatus {
+  if (!hasRequiredPreviewIdentity) {
+    return {
+      kind: 'idle',
+      label: 'Sin calculo disponible',
+      detail: 'Complete contribuyente y CUIT para activar el motor de calculo.',
+    };
+  }
+
+  if (backendPreviewKey === calculationRequestKey) {
+    return {
+      kind: 'backend',
+      label: 'Motor backend actualizado',
+      detail: 'Resultado calculado por el endpoint backend con el mismo payload vigente.',
+    };
+  }
+
+  if (isBackendPreviewPending) {
+    return {
+      kind: 'pending',
+      label: 'Esperando confirmacion backend',
+      detail: 'Se muestra el calculo local mientras el backend actualiza el preview.',
+    };
+  }
+
+  return {
+    kind: 'fallback',
+    label: 'Preview local de respaldo',
+    detail: backendPreviewError
+      ? `Se muestra el calculo local. Ultimo intento backend: ${backendPreviewError}.`
+      : 'Se muestra el calculo local hasta recibir una respuesta backend vigente.',
   };
 }
 

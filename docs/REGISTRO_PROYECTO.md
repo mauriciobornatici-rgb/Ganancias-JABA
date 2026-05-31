@@ -1022,11 +1022,12 @@ Resultado funcional:
 - `POST /api/declaraciones/preview` recibe datos de declaracion y parametros impositivos.
 - El endpoint usa `buildTaxReturnCalculationInput` y `calculateTaxReturn`, igual que el guardado backend.
 - La respuesta serializa los `Decimal` a numeros y arreglos simples para que sea apta para JSON/UI.
+- Se agrego una funcion de rehidratacion para convertir la respuesta JSON nuevamente a `Decimal`, compatible con la UI actual del wizard.
 - El wizard todavia no consume este endpoint; se deja listo para conectar en una iteracion controlada.
 
 Verificacion:
 
-- `vitest run`: 16 archivos, 44 tests, todo OK.
+- `vitest run`: 16 archivos, 45 tests, todo OK.
 - `tsc --noEmit`: OK.
 - `eslint` focalizado sobre endpoint/helper/test nuevos: OK.
 - `next build --webpack`: OK.

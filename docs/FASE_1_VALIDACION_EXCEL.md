@@ -153,6 +153,7 @@ Avance 2026-05-30:
 - Si ya existe una DDJJ original para el mismo cliente y periodo, el `POST` responde con codigo funcional e ID existente para continuar sobre esa declaracion.
 - La lectura de DDJJ desde base ahora formatea fechas de forma segura; fechas nulas o invalidas vuelven vacias en vez de romper el wizard.
 - Se agrego `POST /api/declaraciones/preview` como endpoint backend de calculo para empezar a retirar el calculo duplicado del frontend.
+- El preview backend ya tiene serializacion JSON y rehidratacion a `Decimal` para integrarse con la UI actual del wizard.
 
 ## Criterios de aceptacion
 

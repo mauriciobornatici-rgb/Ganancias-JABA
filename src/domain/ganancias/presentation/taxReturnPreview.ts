@@ -1,4 +1,4 @@
-import type { Decimal } from 'decimal.js';
+import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMapper';
 import type {
@@ -9,6 +9,10 @@ import type {
 
 function decimalToNumber(value: Decimal): number {
   return value.toNumber();
+}
+
+function numberToDecimal(value: unknown): Decimal {
+  return new Decimal(typeof value === 'number' || typeof value === 'string' ? value : 0);
 }
 
 function serializeGeneralDeductions(value: GeneralDeductionsOutput) {
@@ -77,4 +81,59 @@ export function serializeTaxCalculationResult(result: TaxCalculationResult) {
 export function buildTaxReturnPreview(declarationData: unknown, taxParameters: unknown) {
   const calculationInput = buildTaxReturnCalculationInput(declarationData, taxParameters);
   return serializeTaxCalculationResult(calculateTaxReturn(calculationInput));
+}
+
+export function hydrateTaxReturnPreviewResult(value: ReturnType<typeof serializeTaxCalculationResult>): TaxCalculationResult {
+  return {
+    clientName: value.clientName,
+    cuit: value.cuit,
+    fiscalYear: value.fiscalYear,
+    ventasGravadas: numberToDecimal(value.ventasGravadas),
+    ventasExentas: numberToDecimal(value.ventasExentas),
+    costoVentas: numberToDecimal(value.costoVentas),
+    gastosDeducibles: numberToDecimal(value.gastosDeducibles),
+    gastosNoDeducibles: numberToDecimal(value.gastosNoDeducibles),
+    amortizacionesBienesDeUso: numberToDecimal(value.amortizacionesBienesDeUso),
+    resultadoAjustePorInflacion: numberToDecimal(value.resultadoAjustePorInflacion),
+    axiStaticResult: numberToDecimal(value.axiStaticResult),
+    axiDynamicResult: numberToDecimal(value.axiDynamicResult),
+    resultadoComercialNeto: numberToDecimal(value.resultadoComercialNeto),
+    resultadoNetoTodasCategorias: numberToDecimal(value.resultadoNetoTodasCategorias),
+    deduccionesGenerales: {
+      autonomosAdmitidos: numberToDecimal(value.deduccionesGenerales.autonomosAdmitidos),
+      servicioDomesticoTope: numberToDecimal(value.deduccionesGenerales.servicioDomesticoTope),
+      seguroVidaTope: numberToDecimal(value.deduccionesGenerales.seguroVidaTope),
+      seguroRetiroTope: numberToDecimal(value.deduccionesGenerales.seguroRetiroTope),
+      gastosSepelioTope: numberToDecimal(value.deduccionesGenerales.gastosSepelioTope),
+      interesesHipotecaTope: numberToDecimal(value.deduccionesGenerales.interesesHipotecaTope),
+      gastosEducativosTope: numberToDecimal(value.deduccionesGenerales.gastosEducativosTope),
+      medicosAsistencialTope: numberToDecimal(value.deduccionesGenerales.medicosAsistencialTope),
+      honorariosMedicosTope: numberToDecimal(value.deduccionesGenerales.honorariosMedicosTope),
+      alquilerCasaHabitacionTope: numberToDecimal(value.deduccionesGenerales.alquilerCasaHabitacionTope),
+      locadorLocatarioTope: numberToDecimal(value.deduccionesGenerales.locadorLocatarioTope),
+      donacionesTope: numberToDecimal(value.deduccionesGenerales.donacionesTope),
+      totalDeduccionesGeneralesAdmitidas: numberToDecimal(value.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas),
+    },
+    resultadoNetoAntesQuebrantos: numberToDecimal(value.resultadoNetoAntesQuebrantos),
+    resultadoImpositivoNeto: numberToDecimal(value.resultadoImpositivoNeto),
+    deduccionesPersonales: {
+      minimoNoImponible: numberToDecimal(value.deduccionesPersonales.minimoNoImponible),
+      conyuge: numberToDecimal(value.deduccionesPersonales.conyuge),
+      hijos: numberToDecimal(value.deduccionesPersonales.hijos),
+      hijosIncapacitados: numberToDecimal(value.deduccionesPersonales.hijosIncapacitados),
+      deduccionEspecial: numberToDecimal(value.deduccionesPersonales.deduccionEspecial),
+      totalDeduccionesPersonalesAdmitidas: numberToDecimal(value.deduccionesPersonales.totalDeduccionesPersonalesAdmitidas),
+    },
+    gananciaNetaSujetaImpuesto: numberToDecimal(value.gananciaNetaSujetaImpuesto),
+    impuestoDeterminado: numberToDecimal(value.impuestoDeterminado),
+    retencionesYPercepciones: numberToDecimal(value.retencionesYPercepciones),
+    anticiposSiguientePeriodo: value.anticiposSiguientePeriodo.map(numberToDecimal),
+    saldoAFavorAnterior: numberToDecimal(value.saldoAFavorAnterior),
+    impuestoAPagarOARCA: numberToDecimal(value.impuestoAPagarOARCA),
+    patrimonioInicioTotal: numberToDecimal(value.patrimonioInicioTotal),
+    patrimonioCierreTotal: numberToDecimal(value.patrimonioCierreTotal),
+    consumoDiferencial: numberToDecimal(value.consumoDiferencial),
+    warnings: value.warnings,
+    errors: value.errors,
+  };
 }

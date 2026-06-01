@@ -32,6 +32,20 @@ export function wizardMoneyToNumber(value: WizardMoneyValue | null | undefined, 
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export type WizardOtherJustificationColumn = 1 | 2;
+
+export function coerceWizardOtherJustificationColumn(value: WizardMoneyValue | null | undefined): WizardOtherJustificationColumn {
+  return Number(value) === 1 ? 1 : 2;
+}
+
+export function buildDefaultWizardOtherJustification(): WizardOtherJustification {
+  return {
+    concept: 'Nueva justificacion patrimonial',
+    column: 2,
+    amount: '0',
+  };
+}
+
 export function resolveWizardRouteReturnId(routeId: string | null | undefined): string {
   return routeId && routeId !== 'crear' ? routeId : '';
 }
@@ -163,6 +177,12 @@ export type WizardPersonalLiability = WizardEditableRecord & {
   description?: string;
   valueInitial?: WizardMoneyValue;
   valueFinal?: WizardMoneyValue;
+};
+
+export type WizardOtherJustification = WizardEditableRecord & {
+  concept?: string;
+  column?: WizardOtherJustificationColumn;
+  amount?: WizardMoneyValue;
 };
 
 export type WizardAxiDynamic = WizardEditableRecord & {

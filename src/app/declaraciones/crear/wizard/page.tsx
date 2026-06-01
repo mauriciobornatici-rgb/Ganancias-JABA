@@ -25,6 +25,8 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import {
+  buildDefaultWizardOtherJustification,
+  coerceWizardOtherJustificationColumn,
   coerceWizardPersonalDeductionType,
   resolveWizardRouteReturnId,
   shouldRequestActiveTaxParameters,
@@ -38,6 +40,7 @@ import {
   type WizardCellValue,
   type WizardClient,
   type WizardFixedAsset,
+  type WizardOtherJustification,
   type WizardPersonalAsset,
   type WizardPersonalDeductionType,
   type WizardPersonalLiability,
@@ -225,7 +228,7 @@ export default function WizardPage() {
     }
     if (step === 2) return sales.length > 0;
     if (step === 3) return purchases.length > 0 || (initialStock !== '0' && initialStock !== '') || (finalStock !== '0' && finalStock !== '');
-    if (step === 4) return fixedAssets.length > 0 || bankAccounts.length > 0 || personalAssets.length > 0 || personalLiabilities.length > 0;
+    if (step === 4) return fixedAssets.length > 0 || bankAccounts.length > 0 || personalAssets.length > 0 || personalLiabilities.length > 0 || otherJustifications.length > 0;
     if (step === 5) return Object.values(generalDeductions).some(val => val !== '0' && val !== '') || withholdings.length > 0 || axiDynamic.length > 0;
     if (step === 6) return true;
     return false;
@@ -252,6 +255,7 @@ export default function WizardPage() {
       personalDeductions,
       personalAssets,
       personalLiabilities,
+      otherJustifications,
       activoTotalInicio,
       pasivoTotalInicio,
       bienesNoComputablesInicio,
@@ -333,6 +337,7 @@ export default function WizardPage() {
       personalDeductions,
       personalAssets,
       personalLiabilities,
+      otherJustifications,
       activoTotalInicio,
       pasivoTotalInicio,
       bienesNoComputablesInicio,
@@ -420,6 +425,8 @@ export default function WizardPage() {
 
   const [personalLiabilities, setPersonalLiabilities] = useState<WizardPersonalLiability[]>([]);
 
+  const [otherJustifications, setOtherJustifications] = useState<WizardOtherJustification[]>([]);
+
   const resetWizardDetailState = React.useCallback(() => {
     setActivoTotalInicio('0');
     setPasivoTotalInicio('0');
@@ -454,6 +461,7 @@ export default function WizardPage() {
     });
     setPersonalAssets([]);
     setPersonalLiabilities([]);
+    setOtherJustifications([]);
     setAxiDynamic([]);
   }, []);
 
@@ -499,6 +507,8 @@ export default function WizardPage() {
         if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
         if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
         if (data.personalAssets) setPersonalAssets(data.personalAssets);
+        if (data.personalLiabilities) setPersonalLiabilities(data.personalLiabilities);
+        if (data.otherJustifications) setOtherJustifications(data.otherJustifications);
         if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
         if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
         if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
@@ -608,6 +618,7 @@ export default function WizardPage() {
               if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
               if (data.personalAssets) setPersonalAssets(data.personalAssets);
               if (data.personalLiabilities) setPersonalLiabilities(data.personalLiabilities);
+              if (data.otherJustifications) setOtherJustifications(data.otherJustifications);
               if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
               if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
               if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
@@ -649,6 +660,7 @@ export default function WizardPage() {
         personalDeductions,
         personalAssets,
         personalLiabilities,
+        otherJustifications,
         activoTotalInicio,
         pasivoTotalInicio,
         bienesNoComputablesInicio,
@@ -697,7 +709,7 @@ export default function WizardPage() {
     activeReturnId, cuit, clientName, fiscalYear, currentStep, taxParameterSetId,
     sales, purchases, fixedAssets, initialStock, finalStock,
     bankAccounts, withholdings, generalDeductions, personalDeductions,
-    personalAssets, personalLiabilities, activoTotalInicio, pasivoTotalInicio,
+    personalAssets, personalLiabilities, otherJustifications, activoTotalInicio, pasivoTotalInicio,
     bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic
   ]);
 
@@ -872,7 +884,7 @@ export default function WizardPage() {
   // ==========================================
   // PROCEDIMIENTO DE CARGA MANUAL (ADD/DELETE ROWS)
   // ==========================================
-  const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'axiDynamic') => {
+  const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') {
       setSales([...sales, { date: `${fiscalYear}-01-01`, netAmount: '0', isExempt: false }]);
     } else if (type === 'purchases') {
@@ -888,12 +900,14 @@ export default function WizardPage() {
       setBankAccounts([...bankAccounts, { id: `bank-${bankAccounts.length + 1}`, name: 'Nuevo Banco', cuitBank: '', accountNumber: '', accountType: 'Cuenta Corriente', currency: 'ARS', nominalInitial: '0', nominalFinal: '0', tcInitial: '1', tcFinal: '1', interests: '0' }]);
     } else if (type === 'personalLiabilities') {
       setPersonalLiabilities([...personalLiabilities, { description: 'Nuevo Pasivo', valueInitial: '0', valueFinal: '0' }]);
+    } else if (type === 'otherJustifications') {
+      setOtherJustifications([...otherJustifications, buildDefaultWizardOtherJustification()]);
     } else if (type === 'axiDynamic') {
       setAxiDynamic([...axiDynamic, { concept: 'Nuevo Ajuste', type: 'RetiroSocio', amount: '0', date: `${fiscalYear}-01-01` }]);
     }
   };
 
-  const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'axiDynamic') => {
+  const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') setSales(sales.filter((_, i) => i !== index));
     if (type === 'purchases') setPurchases(purchases.filter((_, i) => i !== index));
     if (type === 'assets') setFixedAssets(fixedAssets.filter((_, i) => i !== index));
@@ -901,10 +915,11 @@ export default function WizardPage() {
     if (type === 'personalAssets') setPersonalAssets(personalAssets.filter((_, i) => i !== index));
     if (type === 'bankAccounts') setBankAccounts(bankAccounts.filter((_, i) => i !== index));
     if (type === 'personalLiabilities') setPersonalLiabilities(personalLiabilities.filter((_, i) => i !== index));
+    if (type === 'otherJustifications') setOtherJustifications(otherJustifications.filter((_, i) => i !== index));
     if (type === 'axiDynamic') setAxiDynamic(axiDynamic.filter((_, i) => i !== index));
   };
 
-  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'axiDynamic') => {
+  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') {
       const updated = [...sales];
       updated[index][field] = value;
@@ -937,6 +952,10 @@ export default function WizardPage() {
       const updated = [...personalLiabilities];
       updated[index][field] = value;
       setPersonalLiabilities(updated);
+    } else if (type === 'otherJustifications') {
+      const updated = [...otherJustifications];
+      updated[index][field] = field === 'column' ? coerceWizardOtherJustificationColumn(value as string | number | null | undefined) : value;
+      setOtherJustifications(updated);
     } else if (type === 'axiDynamic') {
       const updated = [...axiDynamic];
       updated[index][field] = value;
@@ -1059,6 +1078,7 @@ export default function WizardPage() {
     personalDeductions,
     personalAssets,
     personalLiabilities,
+    otherJustifications,
     activoTotalInicio,
     bienesNoComputablesInicio,
     pasivoTotalInicio,
@@ -2514,6 +2534,110 @@ export default function WizardPage() {
                   <Plus className="h-4 w-4 stroke-[3.5]" />
                   Añadir Pasivo / Deuda
                 </button>
+              </div>
+
+              {/* SECCIÓN 5: OTRAS JUSTIFICACIONES PATRIMONIALES */}
+              <div className="pt-6 border-t border-zinc-800 space-y-4">
+                {(() => {
+                  const columnOneTotal = otherJustifications
+                    .filter(item => item.column === 1)
+                    .reduce((sum, item) => sum.add(new Decimal(item.amount || 0)), new Decimal(0));
+                  const columnTwoTotal = otherJustifications
+                    .filter(item => item.column !== 1)
+                    .reduce((sum, item) => sum.add(new Decimal(item.amount || 0)), new Decimal(0));
+
+                  return (
+                    <>
+                      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div>
+                          <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Otras Justificaciones Patrimoniales</h3>
+                          <p className="text-zinc-400 text-[11px] mt-1">
+                            Cargue conceptos que explican la variación patrimonial y no surgen de activos, pasivos o bancos. Use columna I para erogaciones/PN final y columna II para conceptos que justifican recursos/PN inicial.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 min-w-64">
+                          <div className="rounded-lg border border-zinc-800 bg-[#09090b]/70 px-3 py-2">
+                            <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Columna I</span>
+                            <span className="block text-xs font-mono text-amber-300">{formatDecimal(columnOneTotal)}</span>
+                          </div>
+                          <div className="rounded-lg border border-zinc-800 bg-[#09090b]/70 px-3 py-2">
+                            <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Columna II</span>
+                            <span className="block text-xs font-mono text-emerald-300">{formatDecimal(columnTwoTotal)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                              <th className="px-4 py-3">Concepto</th>
+                              <th className="px-4 py-3 text-center">Columna JVP</th>
+                              <th className="px-4 py-3 text-right">Importe ($)</th>
+                              <th className="px-4 py-3 text-right">Eliminar</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-850/50">
+                            {otherJustifications.map((justification, index) => (
+                              <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                                <td className="px-4 py-2">
+                                  <input
+                                    type="text"
+                                    value={justification.concept || ''}
+                                    onChange={(e) => handleCellChange(index, 'concept', e.target.value, 'otherJustifications')}
+                                    className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold"
+                                    placeholder="Ej: Herencia recibida, donación, gasto no deducible..."
+                                  />
+                                </td>
+                                <td className="px-4 py-2 text-center">
+                                  <select
+                                    value={justification.column ?? 2}
+                                    onChange={(e) => handleCellChange(index, 'column', e.target.value, 'otherJustifications')}
+                                    className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
+                                  >
+                                    <option value={1}>Columna I - Erogaciones / PN final</option>
+                                    <option value={2}>Columna II - Justifica / PN inicial</option>
+                                  </select>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <input
+                                    type="number"
+                                    value={justification.amount ?? ''}
+                                    onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'otherJustifications')}
+                                    className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                                  />
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <button
+                                    onClick={() => deleteRow(index, 'otherJustifications')}
+                                    className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {otherJustifications.length === 0 && (
+                              <tr>
+                                <td colSpan={4} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                                  Sin otras justificaciones patrimoniales. Agregue solo los conceptos necesarios para explicar el consumo.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <button
+                        onClick={() => addRow('otherJustifications')}
+                        className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
+                      >
+                        <Plus className="h-4 w-4 stroke-[3.5]" />
+                        Añadir Justificación JVP
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* PILAR 4: PRE-CONCILIACIÓN PATRIMONIAL EN PASO 4 */}

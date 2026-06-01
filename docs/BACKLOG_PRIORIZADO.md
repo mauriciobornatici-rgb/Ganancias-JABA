@@ -160,6 +160,8 @@ Avance 2026-06-01:
 - Test agregado: `jvpIntegration.test.ts`.
 - Segundo corte backend aplicado: `otherJustifications` se mapea al motor, se persiste en `PatrimonialJustification`, se guarda en snapshot y se reabre por API.
 - Tests agregados/extendidos: `calculationInputMapper.test.ts`, `taxReturnDetailsPersistence.test.ts`, `taxReturnReadMapper.test.ts`.
+- Tercer corte UI aplicado: Paso 4 del wizard permite cargar otras justificaciones JVP con concepto, columna I/II e importe.
+- La carga participa de autosave, guardado, reapertura local y preview.
 
 Criterio de cierre:
 
@@ -168,8 +170,8 @@ Criterio de cierre:
 
 Pendiente para cerrar P4:
 
-- Agregar UI agil para otros conceptos de columna I/II.
 - Mapear creditos/pasivos personales contra las hojas auxiliares de la planilla.
+- Validar rubros de `otherJustifications` contra filas relevantes de hoja `JVP`.
 
 ## P5 - H3: deducciones generales remanentes
 

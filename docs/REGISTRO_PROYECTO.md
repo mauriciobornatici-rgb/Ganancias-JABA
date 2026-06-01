@@ -1792,3 +1792,55 @@ Pendiente:
 
 - Agregar UI agil para cargar otras justificaciones JVP desde el wizard.
 - Validar el reflejo contra filas relevantes de hoja `JVP` y definir rubros sugeridos para columna I/II.
+
+### 2026-06-01 - Fase 1, P4 tercer corte: UI agil para otras justificaciones JVP
+
+Se agrego carga manual de otras justificaciones patrimoniales en el Paso 4 del wizard.
+
+Objetivo:
+
+- Que un estudio chico pueda cargar conceptos JVP adicionales sin depender de campos genericos ocultos.
+- Mantener la carga simple: concepto, columna e importe.
+- Evitar automatismos opacos; la columna se elige explicitamente como I o II.
+
+Decision de UX:
+
+- Ubicar la grilla en Paso 4, junto a activos, bancos y pasivos personales, porque forma parte de la justificacion patrimonial.
+- Mostrar totales por columna para que el contador vea rapidamente el efecto de la carga.
+- Usar una fila por defecto con columna II e importe cero, pensando en conceptos que justifican recursos o PN inicial.
+- Mantener los datos dentro del mismo payload usado por autosave, guardado, localStorage y preview.
+
+Archivos modificados:
+
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- El wizard permite agregar, editar y eliminar `otherJustifications`.
+- Cada fila guarda `concept`, `column` e `amount`.
+- `column` se normaliza a `1` o `2` para evitar valores ambiguos.
+- La informacion participa del calculo local/backend porque se incluye en `calculationData`.
+- La informacion se conserva en autosave, guardado manual y reapertura desde localStorage/API.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo inicialmente porque no existia `coerceWizardOtherJustificationColumn`.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 5 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre wizard, tipos de estado y test nuevo: OK.
+- `next build --webpack`: OK.
+
+Limitacion de entorno:
+
+- No se pudo completar inspeccion visual automatizada: `node_repl` fallo al lanzar Chromium por sandbox y no hay `npx` disponible para usar el wrapper local de Playwright.
+- Se deja pendiente una recorrida visual manual/automatizada del Paso 4 cuando el entorno Browser/Chrome este disponible.
+
+Pendiente:
+
+- Validar rubros y comportamiento contra filas relevantes de hoja `JVP`.
+- Mapear creditos/pasivos personales contra hojas auxiliares `Creditos`, `Pasivo` y `Banco`.

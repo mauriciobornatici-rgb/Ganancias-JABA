@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDefaultWizardOtherJustification,
   coerceWizardPersonalDeductionType,
+  coerceWizardOtherJustificationColumn,
   isWizardPersonalDeductionType,
   resolveWizardRouteReturnId,
   shouldRequestActiveTaxParameters,
@@ -27,6 +29,17 @@ describe('wizardStateTypes', () => {
     expect(wizardMoneyToString(undefined)).toBe('0');
     expect(wizardMoneyToNumber('15.5')).toBe(15.5);
     expect(wizardMoneyToNumber('sin-dato', 7)).toBe(7);
+  });
+
+  it('normaliza filas de otras justificaciones patrimoniales para carga agil JVP', () => {
+    expect(coerceWizardOtherJustificationColumn('1')).toBe(1);
+    expect(coerceWizardOtherJustificationColumn(2)).toBe(2);
+    expect(coerceWizardOtherJustificationColumn('sin-dato')).toBe(2);
+    expect(buildDefaultWizardOtherJustification()).toEqual({
+      concept: 'Nueva justificacion patrimonial',
+      column: 2,
+      amount: '0',
+    });
   });
 
   it('resuelve ids de ruta y condiciones de carga sin depender de efectos sincronicos', () => {

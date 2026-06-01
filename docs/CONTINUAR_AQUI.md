@@ -120,7 +120,7 @@ Avance:
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: activo, segundo corte backend aplicado.
+Estado: activo, tercer corte UI aplicado.
 
 Objetivo:
 
@@ -137,11 +137,13 @@ Avance:
 - El mapper de calculo ahora levanta `otherJustifications` con concepto, columna e importe.
 - La persistencia guarda/recrea `PatrimonialJustification` y conserva `otherJustifications` en `variablesSnapshot`.
 - La reapertura de DDJJ devuelve `otherJustifications` desde la relacion persistida, con fallback al snapshot para datos previos.
+- El Paso 4 del wizard incorpora una grilla agil para cargar otras justificaciones JVP con concepto, columna I/II e importe.
+- La grilla participa de autosave, guardado, localStorage y preview.
 
 Siguiente corte recomendado:
 
-- Agregar UI agil para cargar `otherJustifications` sin volver pesada la pantalla.
 - Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
+- Mapear creditos/pasivos personales contra hojas auxiliares `Creditos`, `Pasivo` y `Banco`.
 
 ## Reglas de continuidad
 

@@ -474,6 +474,7 @@ export async function persistTaxReturnDetails({
 
   const extraStateData = {
     currentStep: currentStep || 1,
+    taxParameterSetId: dbParamSet.id,
     generalDeductions,
     personalDeductions,
     activoTotalInicio,

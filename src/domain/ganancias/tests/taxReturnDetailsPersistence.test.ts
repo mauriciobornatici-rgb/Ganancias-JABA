@@ -131,6 +131,7 @@ describe('persistTaxReturnDetails', () => {
 
     expect(captures.calculationCreate).toBeDefined();
     const snapshot = JSON.parse(captures.calculationCreate?.data.variablesSnapshot || '{}');
+    expect(snapshot.taxParameterSetId).toBe('params-2025');
     expect(snapshot.sales[0]).toMatchObject({
       invoiceNumber: '0003-00001529',
       counterpartyCuit: '24300000000',

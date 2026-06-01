@@ -22,6 +22,7 @@ export function buildInitialTaxReturnSnapshot(payload: unknown): RawRecord {
   };
 
   [
+    'taxParameterSetId',
     'generalDeductions',
     'personalDeductions',
     'sales',

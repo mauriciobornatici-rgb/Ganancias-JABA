@@ -5,6 +5,7 @@ describe('buildInitialTaxReturnSnapshot', () => {
   it('incluye toda la carga operativa disponible al crear una DDJJ', () => {
     const snapshot = buildInitialTaxReturnSnapshot({
       currentStep: 5,
+      taxParameterSetId: 'params-2025',
       generalDeductions: { autonomos: '1000' },
       personalDeductions: { tipoDeduccionEspecial: 'Autonomo' },
       sales: [{ date: '2025-01-01', netAmount: '5000', isExempt: false }],
@@ -23,6 +24,7 @@ describe('buildInitialTaxReturnSnapshot', () => {
     });
 
     expect(snapshot.currentStep).toBe(5);
+    expect(snapshot.taxParameterSetId).toBe('params-2025');
     expect(snapshot.generalDeductions).toEqual({ autonomos: '1000' });
     expect(snapshot.sales).toHaveLength(1);
     expect(snapshot.purchases).toHaveLength(1);

@@ -94,6 +94,8 @@ Avance 2026-06-01:
 - Esto evita que una DDJJ se cierre silenciosamente con posible diferencia entre vista local y recalculo servidor.
 - Segundo corte aplicado: persistencia ahora conserva `esJubiladoOchoHaberes` al reconstruir deducciones personales.
 - Se agrego prueba que compara el resultado persistido con el preview backend para el caso jubilado con 8 haberes.
+- Tercer corte aplicado: `variablesSnapshot` conserva `taxParameterSetId` efectivo en altas minimas y calculos persistidos.
+- Esto mejora trazabilidad de la resolucion usada por cada corrida de calculo.
 
 Criterio de cierre:
 

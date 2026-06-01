@@ -511,6 +511,46 @@ Pendiente:
 
 - Seguir revisando P2 para confirmar parametros efectivos y resultado persistido contra preview en otros casos sensibles.
 
+### 2026-06-01 - P2 tercer corte: resolucion efectiva en snapshot de calculo
+
+Se reforzo la trazabilidad de parametros usados por cada corrida de calculo.
+
+Riesgo mitigado:
+
+- La DDJJ guardaba `taxParameterSetId`, pero el snapshot de `CalculationRun` no dejaba trazada la resolucion efectiva de esa corrida.
+- Si luego se cambia una resolucion o se revisa un calculo historico, conviene saber que parametros se usaron en esa ejecucion.
+- Para presentaciones de Ganancias, la trazabilidad de la escala/parametros es tan importante como el resultado final.
+
+Archivos modificados:
+
+- `src/domain/ganancias/persistence/taxReturnSnapshot.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/tests/taxReturnSnapshot.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- `buildInitialTaxReturnSnapshot` conserva `taxParameterSetId` cuando la DDJJ se crea con payload minimo.
+- `persistTaxReturnDetails` guarda en `variablesSnapshot.taxParameterSetId` el id efectivo de parametros usado por el calculo persistido.
+- La prueba de persistencia verifica que el snapshot de calculo use `params-2025`.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxReturnSnapshot.test.ts` y `taxReturnDetailsPersistence.test.ts` fallaron inicialmente porque `taxParameterSetId` no estaba en snapshot.
+- `vitest run src/domain/ganancias/tests/taxReturnSnapshot.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`: 2 archivos, 4 tests, todo OK.
+- `vitest run`: 21 archivos, 65 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre snapshot/persistencia/tests: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo advertencias CRLF esperadas de Git en Windows.
+
+Pendiente:
+
+- Evaluar cierre de P2 o agregar una prueba general de equivalencia preview/persistencia con parametros reales.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

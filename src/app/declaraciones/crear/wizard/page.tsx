@@ -13,7 +13,6 @@ import {
   AlertTriangle, 
   CheckCircle, 
   FileSpreadsheet, 
-  Info,
   DollarSign
 } from 'lucide-react';
 import Link from 'next/link';
@@ -24,6 +23,7 @@ import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calcu
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
+import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import {
   buildTaxReturnPreviewStatus,
   buildTaxReturnPreviewRequest,
@@ -1154,12 +1154,6 @@ export default function WizardPage() {
     ? (dbDeclaraciones.find(r => r.cuit === cuit && r.year === fiscalYear - 1 && r.status === 'Cerrada') || 
        mockTaxReturns.find(r => r.clientId === clientObj.id && r.year === fiscalYear - 1 && r.status === 'Cerrada'))
     : null;
-
-  const formatDecimal = (val: any) => {
-    if (!val) return '$0';
-    const num = typeof val.toNumber === 'function' ? val.toNumber() : Number(val);
-    return isNaN(num) ? '$0' : '$' + num.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  };
 
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200">
@@ -2572,14 +2566,9 @@ export default function WizardPage() {
 
               {/* SECCIÓN 1: DEDUCCIONES GENERALES */}
               {(() => {
-                const formatVal = (val: any) => {
-                  const num = Number(val);
-                  return isNaN(num) ? '$0,00' : '$' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                };
-                
                 const getTope = (key: string, def: string) => {
                   if (activeParams?.parameterSet && activeParams.parameterSet[key] !== undefined) {
-                    return formatVal(activeParams.parameterSet[key]);
+                    return formatCurrencyCents(activeParams.parameterSet[key]);
                   }
                   return def;
                 };

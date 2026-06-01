@@ -302,6 +302,48 @@ Pendiente:
 - Mantener estos documentos actualizados en cada cierre de bloque.
 - Continuar por P1: reducir riesgo operativo/deuda del wizard.
 
+### 2026-06-01 - P1 primer corte: formato monetario fuera del wizard
+
+Se inicio la reduccion incremental de deuda del wizard sin reescribir la pantalla completa.
+
+Riesgo mitigado:
+
+- El wizard tenia helpers inline con `any`, mezclando presentacion, formato y UI.
+- Cada cambio en esa pantalla aumenta riesgo si no se extraen piezas testeables.
+- El objetivo de P1 es mejorar verificabilidad por cortes chicos, no una refactorizacion masiva.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/moneyFormat.ts`.
+- `src/domain/ganancias/tests/moneyFormat.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- Se agregaron `formatCurrencyWhole` y `formatCurrencyCents`.
+- Se retiro del wizard el helper local `formatDecimal` con `any`.
+- Se retiro el helper local `formatVal` usado para topes con centavos.
+- Se elimino el import no usado `Info`.
+- El comportamiento de formato queda cubierto por tests.
+
+Verificacion:
+
+- TDD rojo confirmado: `moneyFormat.test.ts` fallo inicialmente porque el helper no existia.
+- `vitest run src/domain/ganancias/tests/moneyFormat.test.ts`: 1 archivo, 3 tests, todo OK.
+- `vitest run`: 20 archivos, 58 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevo: OK.
+- `next build --webpack`: OK.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx`: sigue fallando por deuda previa, ahora con 31 problemas (26 errores, 5 warnings).
+
+Pendiente:
+
+- Siguiente subcorte recomendado: tipar o extraer bloque de carga/cache inicial del wizard.
+- Resolver progresivamente reglas de hooks (`setState` en efectos) y `Date.now` en creacion de filas.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

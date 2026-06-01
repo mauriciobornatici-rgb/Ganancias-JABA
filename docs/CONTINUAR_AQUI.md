@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo commit remoto conocido antes de esta unidad: `95eadfc Show imported invoice trace in wizard`.
+- Ultimo checkpoint documentado: P1 primer corte, helper de formato monetario extraido del wizard.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -58,6 +58,16 @@ Primer corte recomendado:
 - Extraer o tipar helpers puros del wizard en archivos testeables.
 - Reducir `any` y logica inline solo donde se toque.
 - Mantener `next build --webpack`, `tsc --noEmit` y tests verdes.
+
+Avance:
+
+- Corte 1 aplicado: `formatCurrencyWhole` y `formatCurrencyCents` en `src/domain/ganancias/presentation/moneyFormat.ts`.
+- El wizard ya no define helpers monetarios inline con `any`.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx` baja a 31 problemas: 26 errores y 5 warnings.
+
+Siguiente subcorte sugerido:
+
+- Tipar o extraer el bloque de carga/cache inicial del wizard antes de tocar calculo fiscal.
 
 ## Reglas de continuidad
 

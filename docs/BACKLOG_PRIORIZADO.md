@@ -50,6 +50,13 @@ Accion recomendada:
 - Tipar datos de ventas/compras/bancos/retenciones por etapas.
 - Reducir efectos que derivan estado cuando pueda calcularse durante render o inicializacion.
 
+Avance 2026-06-01:
+
+- Primer corte aplicado: formato monetario extraido a `src/domain/ganancias/presentation/moneyFormat.ts`.
+- Test agregado: `src/domain/ganancias/tests/moneyFormat.test.ts`.
+- `eslint` del wizard baja de 34 problemas registrados a 31 problemas actuales.
+- Se elimino un import no usado (`Info`).
+
 Criterio de cierre:
 
 - Definir cortes pequenos.

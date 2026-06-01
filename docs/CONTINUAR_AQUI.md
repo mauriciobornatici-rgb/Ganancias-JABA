@@ -120,13 +120,25 @@ Avance:
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: activo.
+Estado: activo, primer corte aplicado.
 
 Objetivo:
 
 - Mapear JVP contra hojas `JVP`, `Creditos`, `Pasivo`, `Banco`.
 - Agregar rubros patrimoniales/justificativos suficientes para casos reales sin volver lenta la carga.
 - Mantener una explicacion clara del consumo/variacion patrimonial.
+
+Avance:
+
+- Se detecto que existia `calculatePatrimonialJustification`, pero `calculateTaxReturn` usaba una logica JVP paralela y mas simple.
+- La liquidacion principal ahora reutiliza `calculatePatrimonialJustification` e incluye bancos y patrimonio comercial como componentes patrimoniales.
+- Se propagan advertencias de auditoria JVP, incluyendo consumo nulo.
+- Test agregado: `jvpIntegration.test.ts`.
+
+Siguiente corte recomendado:
+
+- Agregar carga/persistencia de `otherJustifications` para otros conceptos de columna I/II.
+- Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
 
 ## Reglas de continuidad
 

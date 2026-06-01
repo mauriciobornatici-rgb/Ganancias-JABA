@@ -1691,3 +1691,50 @@ Cierre P3:
 
 - P3 queda resuelto: AXI estatico/dinamico esta alineado con los coeficientes utiles de la planilla y los coeficientes usados quedan auditables.
 - Siguiente prioridad: P4 patrimonio y justificacion patrimonial.
+
+### 2026-06-01 - Fase 1, P4 primer corte: JVP unificada en la liquidacion principal
+
+Se inicio el frente de patrimonio y justificacion patrimonial.
+
+Hallazgo:
+
+- Existia `calculatePatrimonialJustification` como funcion pura de dominio.
+- `calculateTaxReturn` no la usaba; tenia una implementacion paralela mas simple para patrimonio, columnas y consumo.
+- Esa duplicacion hacia que algunas advertencias de auditoria patrimonial, como consumo nulo, no llegaran al wizard aunque la funcion JVP las contemplaba.
+
+Decision de arquitectura:
+
+- `calculateTaxReturn` ahora delega la JVP en `calculatePatrimonialJustification`.
+- Para no cambiar la semantica de totales existentes, se arman componentes patrimoniales equivalentes:
+- Activos personales cargados por el usuario.
+- Cuentas bancarias convertidas a pesos con tipo de cambio inicial/final.
+- Patrimonio comercial calculado desde AXI estatico, resultado comercial y retiros/aportes.
+- Pasivos personales cargados por el usuario.
+
+Archivos modificados:
+
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/tests/jvpIntegration.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- La liquidacion principal usa una sola funcion auditable para JVP.
+- Se mantienen `patrimonioInicioTotal`, `patrimonioCierreTotal` y `consumoDiferencial` como campos publicos del resultado.
+- Las advertencias de JVP se propagan a `warnings`, por lo que el wizard puede alertar consumos nulos o negativos.
+
+Verificacion:
+
+- TDD rojo confirmado: `jvpIntegration.test.ts` fallo inicialmente porque `calculateTaxReturn` no propagaba `Consumo Nulo`.
+- `vitest run src/domain/ganancias/tests/jvpIntegration.test.ts src/domain/ganancias/tests/golden.test.ts src/domain/ganancias/tests/deduccionesGenerales.test.ts src/domain/ganancias/tests/taxReturnPreview.test.ts`: 4 archivos, 12 tests, todo OK.
+- `vitest run`: 25 archivos, 74 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre determinacion, JVP y test nuevo: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Persistir/reabrir `otherJustifications`, que hoy el mapper deja vacio.
+- Agregar UI agil para otros conceptos de columna I/II y mapearlos contra `JVP`.

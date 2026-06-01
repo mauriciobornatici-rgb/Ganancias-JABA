@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { calculateTotalDepreciation } from './amortizaciones';
 import { calculateTotalAxi } from './ajustePorInflacion';
+import { calculatePatrimonialJustification } from './justificacionPatrimonial';
 
 /**
  * Aplica la escala progresiva del Artículo 94 para determinar el impuesto correspondiente.
@@ -362,27 +363,6 @@ export function calculateTaxReturn(
   // ==========================================
   // 11. JUSTIFICACIÓN PATRIMONIAL (JVP INTEGRADA)
   // ==========================================
-  let personalAssetsInitialTotal = new Decimal(0);
-  let personalAssetsFinalTotal = new Decimal(0);
-  input.personalAssets.forEach(a => {
-    personalAssetsInitialTotal = personalAssetsInitialTotal.add(a.valueInitial);
-    personalAssetsFinalTotal = personalAssetsFinalTotal.add(a.valueFinal);
-  });
-
-  let bankAccountsInitialTotal = new Decimal(0);
-  let bankAccountsFinalTotal = new Decimal(0);
-  input.bankAccounts.forEach(b => {
-    bankAccountsInitialTotal = bankAccountsInitialTotal.add(b.nominalInitial.mul(b.tcInitial ?? 1));
-    bankAccountsFinalTotal = bankAccountsFinalTotal.add(b.nominalFinal.mul(b.tcFinal ?? 1));
-  });
-
-  let personalLiabilitiesInitialTotal = new Decimal(0);
-  let personalLiabilitiesFinalTotal = new Decimal(0);
-  input.personalLiabilities.forEach(l => {
-    personalLiabilitiesInitialTotal = personalLiabilitiesInitialTotal.add(l.valueInitial);
-    personalLiabilitiesFinalTotal = personalLiabilitiesFinalTotal.add(l.valueFinal);
-  });
-
   const patrimonioComercialInicio = new Decimal(input.axiStatic.activoTotalInicio || 0)
     .sub(input.axiStatic.pasivoTotalInicio || 0);
 
@@ -401,36 +381,32 @@ export function calculateTaxReturn(
     .sub(totalRetiros)
     .add(totalAportes);
 
-  const patrimonioInicioTotal = personalAssetsInitialTotal
-    .add(bankAccountsInitialTotal)
-    .sub(personalLiabilitiesInitialTotal)
-    .add(patrimonioComercialInicio);
-  const patrimonioCierreTotal = personalAssetsFinalTotal
-    .add(bankAccountsFinalTotal)
-    .sub(personalLiabilitiesFinalTotal)
-    .add(patrimonioComercialCierre);
+  const jvpAssets = [
+    ...input.personalAssets,
+    ...input.bankAccounts.map((account) => ({
+      description: `Banco ${account.id}`,
+      type: 'Banco',
+      valueInitial: account.nominalInitial.mul(account.tcInitial ?? 1),
+      valueFinal: account.nominalFinal.mul(account.tcFinal ?? 1),
+    })),
+    {
+      description: 'Patrimonio comercial',
+      type: 'Comercial',
+      valueInitial: patrimonioComercialInicio,
+      valueFinal: patrimonioComercialCierre,
+    },
+  ];
 
-  // JVP Column Balance
-  let colII = patrimonioInicioTotal.add(resultadoComercialNeto.isPositive() ? resultadoComercialNeto : 0)
-    .add(ventasExentas)
-    .add(amortizacionesBienesDeUso);
-  
-  let colI = patrimonioCierreTotal.add(gastosNoDeducibles)
-    .add(resultadoComercialNeto.isNegative() ? resultadoComercialNeto.abs() : 0);
-
-  input.otherJustifications.forEach(j => {
-    if (j.column === 1) {
-      colI = colI.add(j.amount);
-    } else {
-      colII = colII.add(j.amount);
-    }
+  const jvpResult = calculatePatrimonialJustification({
+    personalAssets: jvpAssets,
+    personalLiabilities: input.personalLiabilities,
+    resultadoImpositivo: resultadoComercialNeto,
+    amortizaciones: amortizacionesBienesDeUso,
+    ingresosExentos: ventasExentas,
+    gastosNoDeducibles,
+    otrasJustificaciones: input.otherJustifications,
   });
-
-  // Consumo por diferencia
-  const consumoDiferencial = colII.sub(colI);
-  if (consumoDiferencial.isNegative()) {
-    warnings.push(`Inconsistencia impositiva (JVP): El consumo anual calculado es negativo ($${consumoDiferencial.toFixed(2)}). El contribuyente posee variaciones patrimoniales no justificadas.`);
-  }
+  warnings.push(...jvpResult.warnings);
 
   // ==========================================
   // 12. PROYECCIÓN DE ANTICIPOS EJERCICIO SIGUIENTE
@@ -500,9 +476,9 @@ export function calculateTaxReturn(
     anticiposSiguientePeriodo,
     saldoAFavorAnterior: saldoAFavorAnterior.round(),
     impuestoAPagarOARCA: impuestoAPagarOARCA.round(),
-    patrimonioInicioTotal: patrimonioInicioTotal.round(),
-    patrimonioCierreTotal: patrimonioCierreTotal.round(),
-    consumoDiferencial: consumoDiferencial.round(),
+    patrimonioInicioTotal: jvpResult.patrimonioInicio,
+    patrimonioCierreTotal: jvpResult.patrimonioCierre,
+    consumoDiferencial: jvpResult.consumoDiferencial,
     warnings,
     errors,
   };

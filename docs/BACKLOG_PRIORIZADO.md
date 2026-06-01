@@ -152,10 +152,23 @@ Accion recomendada:
 - Agregar rubros en carga sin volver lenta la pantalla.
 - Mostrar papel de trabajo claro.
 
+Avance 2026-06-01:
+
+- Primer corte aplicado: `calculateTaxReturn` reutiliza `calculatePatrimonialJustification` en vez de mantener una formula JVP paralela simplificada.
+- Bancos y patrimonio comercial se incorporan como componentes patrimoniales para conservar los totales existentes.
+- La liquidacion principal propaga advertencias JVP de auditoria, incluyendo consumo nulo.
+- Test agregado: `jvpIntegration.test.ts`.
+
 Criterio de cierre:
 
 - Consumo/variacion patrimonial se explica por rubros.
 - La carga patrimonial no depende de campos genericos opacos.
+
+Pendiente para cerrar P4:
+
+- Persistir y reabrir `otherJustifications`.
+- Agregar UI agil para otros conceptos de columna I/II.
+- Mapear creditos/pasivos personales contra las hojas auxiliares de la planilla.
 
 ## P5 - H3: deducciones generales remanentes
 

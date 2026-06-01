@@ -389,6 +389,48 @@ Pendiente:
 - Proximo subcorte P1: extraer/ordenar carga inicial, localStorage y reset de contribuyente para resolver los 5 problemas restantes de hooks.
 - No tocar calculo fiscal, AXI ni JVP hasta cerrar ese subcorte o aceptar conscientemente el riesgo.
 
+### 2026-06-01 - P1 tercer corte: wizard sin deuda focal de ESLint
+
+Se cerro P1 corrigiendo la deuda remanente del wizard sin modificar formulas fiscales.
+
+Riesgo mitigado:
+
+- El wizard aun tenia efectos que sincronizaban estado de forma fragil (`persistedReturnId`, carga inicial, reset por cambio de contribuyente y parametros activos).
+- Esos efectos podian generar renders en cascada o borrar datos por efectos secundarios poco visibles.
+- Para una carga agil y confiable, los resets deben ocurrir por accion del usuario y los estados derivados deben calcularse, no duplicarse.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- `activeReturnId` ahora se deriva del id de ruta normalizado y del id persistido luego de crear, sin efecto sincronico extra.
+- `isLoadingData` ahora se deriva de la carga de ruta y del import historico, evitando setear `true` dentro del efecto inicial.
+- El reset de datos de detalle se movio al evento real de cambio de nombre/CUIT del contribuyente, manteniendo la proteccion contra contaminacion de datos sin efecto reactivo opaco.
+- Los parametros activos se guardan con la clave de resolucion consultada; si no hay resolucion, el valor visible deriva a `null` sin setState sincronico.
+- Se agregaron helpers testeados para resolver id de ruta, decidir reset de detalle y decidir si corresponde pedir parametros activos.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx` pasa limpio.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo inicialmente porque faltaban helpers de flujo (`resolveWizardRouteReturnId`, `shouldResetWizardDetailsOnIdentityChange`, `shouldRequestActiveTaxParameters`).
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 4 tests, todo OK.
+- `vitest run`: 21 archivos, 62 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx`: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo advertencias CRLF esperadas de Git en Windows.
+
+Pendiente:
+
+- P2 queda como prioridad activa: consolidar calculo backend/frontend para evitar diferencias silenciosas entre preview, guardado y papel de trabajo.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

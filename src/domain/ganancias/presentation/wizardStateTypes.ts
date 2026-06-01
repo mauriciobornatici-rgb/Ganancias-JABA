@@ -32,6 +32,24 @@ export function wizardMoneyToNumber(value: WizardMoneyValue | null | undefined, 
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export function resolveWizardRouteReturnId(routeId: string | null | undefined): string {
+  return routeId && routeId !== 'crear' ? routeId : '';
+}
+
+export function shouldResetWizardDetailsOnIdentityChange({
+  activeReturnId,
+  hasSavedState,
+}: {
+  activeReturnId: string;
+  hasSavedState: boolean;
+}): boolean {
+  return !activeReturnId && !hasSavedState;
+}
+
+export function shouldRequestActiveTaxParameters(taxParameterSetId: string): boolean {
+  return taxParameterSetId.trim() !== '';
+}
+
 export type TaxResolutionOption = WizardEditableRecord & {
   id: string;
   resolution: string;

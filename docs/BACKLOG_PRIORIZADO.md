@@ -35,7 +35,7 @@ Criterio de cierre:
 
 ## P1 - Reducir riesgo operativo del wizard
 
-Estado: Activo.
+Estado: Resuelto.
 
 Problema:
 
@@ -61,6 +61,8 @@ Avance 2026-06-01:
 - Se eliminaron los `any` explicitos del estado principal del wizard y de handlers/mapeos tocados.
 - Se reemplazaron dos `Date.now()` de alta manual por ids deterministas basados en cantidad actual de filas.
 - `eslint` del wizard baja a 5 problemas actuales: 4 errores y 1 warning, concentrados en efectos de React/carga inicial.
+- Tercer corte aplicado: se elimino la sincronizacion artificial de `persistedReturnId`, se derivo `isLoadingData`, se ordeno `activeParams` por clave de resolucion y el reset de datos se movio al evento real de cambio de identidad.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx`: OK.
 
 Criterio de cierre:
 
@@ -68,11 +70,11 @@ Criterio de cierre:
 - Lograr que al menos una zona del wizard quede sin nuevos `any`.
 - Mantener `vitest run`, `tsc --noEmit` y `next build --webpack` verdes.
 - Registrar deuda remanente con conteo o secciones afectadas.
-- Proximo subcorte: resolver efectos de carga/cache inicial y reset de contribuyente sin cambiar formulas fiscales.
+- P1 queda resuelto; no queda deuda focal de ESLint en el wizard.
 
 ## P2 - H6: consolidar calculo backend/frontend
 
-Estado: Siguiente despues de P1 o en paralelo solo si el wizard esta estable.
+Estado: Activo.
 
 Problema:
 

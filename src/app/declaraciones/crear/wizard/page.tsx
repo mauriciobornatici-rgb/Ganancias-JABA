@@ -26,6 +26,9 @@ import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoic
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import {
   coerceWizardPersonalDeductionType,
+  resolveWizardRouteReturnId,
+  shouldRequestActiveTaxParameters,
+  shouldResetWizardDetailsOnIdentityChange,
   wizardMoneyToNumber,
   wizardMoneyToString,
   type ActiveTaxParameters,
@@ -140,26 +143,25 @@ function errorMessage(err: unknown): string {
 export default function WizardPage() {
   const params = useParams();
   const id = params?.id as string;
-  const [persistedReturnId, setPersistedReturnId] = useState(id && id !== 'crear' ? id : '');
-  const activeReturnId = persistedReturnId || (id && id !== 'crear' ? id : '');
+  const routeReturnId = resolveWizardRouteReturnId(id);
+  const [persistedReturnId, setPersistedReturnId] = useState('');
+  const activeReturnId = persistedReturnId || routeReturnId;
   const initialCuitRef = React.useRef<string | null>(null);
   const isCreatingRef = React.useRef(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [maxVisitedStep, setMaxVisitedStep] = useState(1);
 
-  useEffect(() => {
-    setPersistedReturnId(id && id !== 'crear' ? id : '');
-  }, [id]);
-
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [isLoadingData, setIsLoadingData] = useState(false);
+  const [loadedRouteReturnId, setLoadedRouteReturnId] = useState('');
+  const [isHistoryImportLoading, setIsHistoryImportLoading] = useState(false);
+  const isLoadingData = isHistoryImportLoading || (routeReturnId !== '' && loadedRouteReturnId !== routeReturnId);
 
-  const updateCurrentStep = (nextStep: number) => {
+  const updateCurrentStep = React.useCallback((nextStep: number) => {
     const boundedStep = Math.max(1, Math.min(6, nextStep));
     setCurrentStep(boundedStep);
     setMaxVisitedStep(prev => Math.max(prev, boundedStep));
-  };
+  }, []);
 
   // ==========================================
   // DATOS DE ESTADO DE LA DECLARACIÓN (WIZARD STATE)
@@ -169,7 +171,11 @@ export default function WizardPage() {
   const [fiscalYear, setFiscalYear] = useState(2025);
   const [taxParameterSetId, setTaxParameterSetId] = useState<string>('');
   const [resolutions, setResolutions] = useState<TaxResolutionOption[]>([]);
-  const [activeParams, setActiveParams] = useState<ActiveTaxParameters | null>(null);
+  const [activeParamsState, setActiveParamsState] = useState<{
+    taxParameterSetId: string;
+    params: ActiveTaxParameters | null;
+  }>({ taxParameterSetId: '', params: null });
+  const activeParams = activeParamsState.taxParameterSetId === taxParameterSetId ? activeParamsState.params : null;
   const [backendPreview, setBackendPreview] = useState<{
     key: string;
     result: ReturnType<typeof calculateTaxReturn>;
@@ -222,141 +228,6 @@ export default function WizardPage() {
     if (step === 5) return Object.values(generalDeductions).some(val => val !== '0' && val !== '') || withholdings.length > 0 || axiDynamic.length > 0;
     if (step === 6) return true;
     return false;
-  };
-
-  const loadFromLocalStorage = () => {
-    if (!id || id === 'crear') {
-      setCuit('');
-      setClientName('');
-      setFiscalYear(2025);
-      setTaxParameterSetId('');
-      setActivoTotalInicio('0');
-      setPasivoTotalInicio('0');
-      setBienesNoComputablesInicio('0');
-      setInitialStock('0');
-      setFinalStock('0');
-      setSales([]);
-      setPurchases([]);
-      setFixedAssets([]);
-      setBankAccounts([]);
-      setWithholdings([]);
-      setGeneralDeductions({
-        autonomos: '0',
-        servicioDomestico: '0',
-        seguroVida: '0',
-        seguroRetiro: '0',
-        gastosSepelio: '0',
-        interesesHipoteca: '0',
-        gastosEducativos: '0',
-        alquilerCasaHabitacion: '0',
-        deduccionLocadorLocatario: '0',
-        donaciones: '0',
-        medicosAsistencial: '0',
-        honorariosMedicos: '0',
-      });
-      setPersonalDeductions({
-        tieneConyuge: false,
-        cantidadHijos: 0,
-        cantidadHijosIncapacitados: 0,
-        tipoDeduccionEspecial: 'Ninguna',
-        esJubiladoOchoHaberes: false,
-      });
-      setPersonalAssets([]);
-      updateCurrentStep(1);
-      return;
-    }
-
-    const saved = localStorage.getItem(`jaba_wizard_state_${id}`);
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.cuit) {
-          setCuit(data.cuit);
-          initialCuitRef.current = data.cuit;
-        }
-        if (data.clientName) setClientName(data.clientName);
-        if (data.fiscalYear) setFiscalYear(data.fiscalYear);
-        if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-        if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
-        if (data.sales) setSales(data.sales);
-        if (data.purchases) setPurchases(data.purchases);
-        if (data.fixedAssets) setFixedAssets(data.fixedAssets);
-        if (data.initialStock) setInitialStock(data.initialStock);
-        if (data.finalStock) setFinalStock(data.finalStock);
-        if (data.bankAccounts) setBankAccounts(data.bankAccounts);
-        if (data.withholdings) setWithholdings(data.withholdings);
-        if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
-        if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
-        if (data.personalAssets) setPersonalAssets(data.personalAssets);
-        if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
-        if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
-        if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
-        if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
-        if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
-        if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
-        return;
-      } catch (e) {
-        console.error("Failed parsing wizard state from localStorage", e);
-      }
-    }
-    
-    // Fallback a carga estática por defecto si es return-2 (Maria Luz Gomez) sin cache anterior
-    if (id === 'return-2') {
-      setCuit('27-95430211-3');
-      initialCuitRef.current = '27-95430211-3';
-      setClientName('Maria Luz Gomez');
-      setFiscalYear(2025);
-      setSales([
-        { date: '2025-04-12', netAmount: '12400000', isExempt: false },
-        { date: '2025-07-20', netAmount: '150000', isExempt: true }
-      ]);
-      setPurchases([
-        { date: '2025-03-14', netAmount: '8000000', isDeductible: true, isExempt: false, expenseType: 'MateriaPrima' },
-        { date: '2025-06-18', netAmount: '1200000', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' }
-      ]);
-      setBankAccounts([
-        { id: 'bank-2', name: 'Banco Nación', cuitBank: '30-50001091-2', accountNumber: '00344-9-122-3', accountType: 'Caja de Ahorro', currency: 'ARS', nominalInitial: '100005', nominalFinal: '350000', tcInitial: '1', tcFinal: '1', interests: '800' }
-      ]);
-      setWithholdings([
-        { amount: '150000', taxCode: 'Ganancias' }
-      ]);
-      setGeneralDeductions({
-        autonomos: '200005',
-        servicioDomestico: '0',
-        seguroVida: '50000',
-        seguroRetiro: '0',
-        gastosSepelio: '0',
-        interesesHipoteca: '0',
-        gastosEducativos: '200000',
-        alquilerCasaHabitacion: '0',
-        deduccionLocadorLocatario: '0',
-        donaciones: '0',
-        medicosAsistencial: '0',
-        honorariosMedicos: '0',
-      });
-      setPersonalDeductions({
-        tieneConyuge: false,
-        cantidadHijos: 0,
-        cantidadHijosIncapacitados: 0,
-        tipoDeduccionEspecial: 'Autonomo',
-        esJubiladoOchoHaberes: false,
-      });
-      setPersonalAssets([
-        { description: 'Inmueble Particular', type: 'Inmueble', valueInitial: '8000000', valueFinal: '8000000' }
-      ]);
-      updateCurrentStep(1);
-    } else {
-      const targetReturn = mockTaxReturns.find(r => r.id === id);
-      if (targetReturn) {
-        setCuit(targetReturn.cuit);
-        initialCuitRef.current = targetReturn.cuit;
-        setClientName(targetReturn.clientName);
-        setFiscalYear(targetReturn.year);
-        if (targetReturn.currentStep) {
-          updateCurrentStep(Math.min(6, targetReturn.currentStep));
-        }
-      }
-    }
   };
 
   const saveToServer = (targetStep: number) => {
@@ -543,6 +414,156 @@ export default function WizardPage() {
 
   const [personalLiabilities, setPersonalLiabilities] = useState<WizardPersonalLiability[]>([]);
 
+  const resetWizardDetailState = React.useCallback(() => {
+    setActivoTotalInicio('0');
+    setPasivoTotalInicio('0');
+    setBienesNoComputablesInicio('0');
+    setInitialStock('0');
+    setFinalStock('0');
+    setSales([]);
+    setPurchases([]);
+    setFixedAssets([]);
+    setBankAccounts([]);
+    setWithholdings([]);
+    setGeneralDeductions({
+      autonomos: '0',
+      servicioDomestico: '0',
+      seguroVida: '0',
+      seguroRetiro: '0',
+      gastosSepelio: '0',
+      interesesHipoteca: '0',
+      gastosEducativos: '0',
+      alquilerCasaHabitacion: '0',
+      deduccionLocadorLocatario: '0',
+      donaciones: '0',
+      medicosAsistencial: '0',
+      honorariosMedicos: '0',
+    });
+    setPersonalDeductions({
+      tieneConyuge: false,
+      cantidadHijos: 0,
+      cantidadHijosIncapacitados: 0,
+      tipoDeduccionEspecial: 'Ninguna',
+      esJubiladoOchoHaberes: false,
+    });
+    setPersonalAssets([]);
+    setPersonalLiabilities([]);
+    setAxiDynamic([]);
+  }, []);
+
+  const resetWizardDetailsAfterIdentityChange = React.useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const hasSavedState = Boolean(localStorage.getItem(`jaba_wizard_state_${activeReturnId || id}`));
+    if (shouldResetWizardDetailsOnIdentityChange({ activeReturnId, hasSavedState })) {
+      resetWizardDetailState();
+    }
+  }, [activeReturnId, id, resetWizardDetailState]);
+
+  const loadFromLocalStorage = React.useCallback(() => {
+    if (!routeReturnId) {
+      setCuit('');
+      setClientName('');
+      setFiscalYear(2025);
+      setTaxParameterSetId('');
+      resetWizardDetailState();
+      updateCurrentStep(1);
+      return;
+    }
+
+    const saved = localStorage.getItem(`jaba_wizard_state_${routeReturnId}`);
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.cuit) {
+          setCuit(data.cuit);
+          initialCuitRef.current = data.cuit;
+        }
+        if (data.clientName) setClientName(data.clientName);
+        if (data.fiscalYear) setFiscalYear(data.fiscalYear);
+        if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
+        if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
+        if (data.sales) setSales(data.sales);
+        if (data.purchases) setPurchases(data.purchases);
+        if (data.fixedAssets) setFixedAssets(data.fixedAssets);
+        if (data.initialStock) setInitialStock(data.initialStock);
+        if (data.finalStock) setFinalStock(data.finalStock);
+        if (data.bankAccounts) setBankAccounts(data.bankAccounts);
+        if (data.withholdings) setWithholdings(data.withholdings);
+        if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
+        if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
+        if (data.personalAssets) setPersonalAssets(data.personalAssets);
+        if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
+        if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
+        if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
+        if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
+        if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
+        if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
+        return;
+      } catch (e) {
+        console.error("Failed parsing wizard state from localStorage", e);
+      }
+    }
+
+    // Fallback a carga estatica por defecto si es return-2 (Maria Luz Gomez) sin cache anterior
+    if (routeReturnId === 'return-2') {
+      setCuit('27-95430211-3');
+      initialCuitRef.current = '27-95430211-3';
+      setClientName('Maria Luz Gomez');
+      setFiscalYear(2025);
+      setSales([
+        { date: '2025-04-12', netAmount: '12400000', isExempt: false },
+        { date: '2025-07-20', netAmount: '150000', isExempt: true }
+      ]);
+      setPurchases([
+        { date: '2025-03-14', netAmount: '8000000', isDeductible: true, isExempt: false, expenseType: 'MateriaPrima' },
+        { date: '2025-06-18', netAmount: '1200000', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' }
+      ]);
+      setBankAccounts([
+        { id: 'bank-2', name: 'Banco Nación', cuitBank: '30-50001091-2', accountNumber: '00344-9-122-3', accountType: 'Caja de Ahorro', currency: 'ARS', nominalInitial: '100005', nominalFinal: '350000', tcInitial: '1', tcFinal: '1', interests: '800' }
+      ]);
+      setWithholdings([
+        { amount: '150000', taxCode: 'Ganancias' }
+      ]);
+      setGeneralDeductions({
+        autonomos: '200005',
+        servicioDomestico: '0',
+        seguroVida: '50000',
+        seguroRetiro: '0',
+        gastosSepelio: '0',
+        interesesHipoteca: '0',
+        gastosEducativos: '200000',
+        alquilerCasaHabitacion: '0',
+        deduccionLocadorLocatario: '0',
+        donaciones: '0',
+        medicosAsistencial: '0',
+        honorariosMedicos: '0',
+      });
+      setPersonalDeductions({
+        tieneConyuge: false,
+        cantidadHijos: 0,
+        cantidadHijosIncapacitados: 0,
+        tipoDeduccionEspecial: 'Autonomo',
+        esJubiladoOchoHaberes: false,
+      });
+      setPersonalAssets([
+        { description: 'Inmueble Particular', type: 'Inmueble', valueInitial: '8000000', valueFinal: '8000000' }
+      ]);
+      updateCurrentStep(1);
+    } else {
+      const targetReturn = mockTaxReturns.find(r => r.id === routeReturnId);
+      if (targetReturn) {
+        setCuit(targetReturn.cuit);
+        initialCuitRef.current = targetReturn.cuit;
+        setClientName(targetReturn.clientName);
+        setFiscalYear(targetReturn.year);
+        if (targetReturn.currentStep) {
+          updateCurrentStep(Math.min(6, targetReturn.currentStep));
+        }
+      }
+    }
+  }, [routeReturnId, resetWizardDetailState, updateCurrentStep]);
+
   // Hook 1: Cargar estado persistido al iniciar (Mount) e inicializar padrón de contribuyentes
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -556,9 +577,8 @@ export default function WizardPage() {
       })
       .catch(err => console.error("Error al cargar padrón de base de datos:", err));
 
-      if (id && id !== 'crear') {
-        setIsLoadingData(true);
-        fetch(`/api/declaraciones/${id}`)
+      if (routeReturnId) {
+        fetch(`/api/declaraciones/${routeReturnId}`)
           .then(res => res.json())
           .then(res => {
             if (res.success && res.data) {
@@ -597,13 +617,11 @@ export default function WizardPage() {
             loadFromLocalStorage();
           })
           .finally(() => {
-            setIsLoadingData(false);
+            setLoadedRouteReturnId(routeReturnId);
           });
-      } else {
-        loadFromLocalStorage();
       }
     }
-  }, [id]);
+  }, [loadFromLocalStorage, routeReturnId, updateCurrentStep]);
 
   // Hook 2: Auto-Guardar progreso del Wizard en tiempo real (reaccionando a cualquier cambio de estado)
   useEffect(() => {
@@ -677,52 +695,6 @@ export default function WizardPage() {
     bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic
   ]);
 
-  // Hook 3: Limpiar los campos si se cambia el contribuyente para evitar contaminación de datos
-  useEffect(() => {
-    // Si ya existe una declaración guardada en localStorage para este id, no sobreescribir con valores vacíos
-    const saved = localStorage.getItem(`jaba_wizard_state_${activeReturnId || id}`);
-    if (saved) return;
-
-    // Solo limpiar si no se está cargando un borrador del servidor
-    if (activeReturnId) return;
-
-    // Si se cambia de cliente, vaciar todos los campos a su estado inicial en blanco
-    setActivoTotalInicio('0');
-    setPasivoTotalInicio('0');
-    setBienesNoComputablesInicio('0');
-    setInitialStock('0');
-    setFinalStock('0');
-    setSales([]);
-    setPurchases([]);
-    setFixedAssets([]);
-    setBankAccounts([]);
-    setWithholdings([]);
-    setGeneralDeductions({
-      autonomos: '0',
-      servicioDomestico: '0',
-      seguroVida: '0',
-      seguroRetiro: '0',
-      gastosSepelio: '0',
-      interesesHipoteca: '0',
-      gastosEducativos: '0',
-      alquilerCasaHabitacion: '0',
-      deduccionLocadorLocatario: '0',
-      donaciones: '0',
-      medicosAsistencial: '0',
-      honorariosMedicos: '0',
-    });
-    setPersonalDeductions({
-      tieneConyuge: false,
-      cantidadHijos: 0,
-      cantidadHijosIncapacitados: 0,
-      tipoDeduccionEspecial: 'Ninguna',
-      esJubiladoOchoHaberes: false,
-    });
-    setPersonalAssets([]);
-    setPersonalLiabilities([]);
-    setAxiDynamic([]);
-  }, [activeReturnId, cuit, clientName, id]);
-
   // Hook 4: Buscar resoluciones para el año seleccionado
   useEffect(() => {
     fetch(`/api/parametros?year=${fiscalYear}&listResolutions=true`)
@@ -749,23 +721,20 @@ export default function WizardPage() {
 
   // Hook 5: Cargar detalles de la resolución/parámetros activa para cálculos en tiempo real en el front
   useEffect(() => {
-    if (taxParameterSetId) {
-      fetch(`/api/parametros?year=${fiscalYear}&resolutionId=${taxParameterSetId}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.success && res.data) {
-            setActiveParams(res.data as ActiveTaxParameters);
-          } else {
-            setActiveParams(null);
-          }
-        })
-        .catch(err => {
-          console.error("Error al obtener detalles de la resolución:", err);
-          setActiveParams(null);
+    if (!shouldRequestActiveTaxParameters(taxParameterSetId)) return;
+
+    fetch(`/api/parametros?year=${fiscalYear}&resolutionId=${taxParameterSetId}`)
+      .then(res => res.json())
+      .then(res => {
+        setActiveParamsState({
+          taxParameterSetId,
+          params: res.success && res.data ? res.data as ActiveTaxParameters : null,
         });
-    } else {
-      setActiveParams(null);
-    }
+      })
+      .catch(err => {
+        console.error("Error al obtener detalles de la resolución:", err);
+        setActiveParamsState({ taxParameterSetId, params: null });
+      });
   }, [fiscalYear, taxParameterSetId]);
 
   const loadClientHistory = (targetCuit: string, targetName: string, targetYear: number) => {
@@ -1332,6 +1301,7 @@ export default function WizardPage() {
                       value={clientName || ''}
                       onChange={(e) => {
                         setClientName(e.target.value);
+                        resetWizardDetailsAfterIdentityChange();
                         setIsDropdownOpen(true);
                       }}
                       onFocus={() => setIsDropdownOpen(true)}
@@ -1370,6 +1340,7 @@ export default function WizardPage() {
                             onClick={() => {
                               setClientName(client.name);
                               setCuit(client.cuit);
+                              resetWizardDetailsAfterIdentityChange();
                               setIsDropdownOpen(false);
                               loadClientHistory(client.cuit, client.name, fiscalYear);
                             }}
@@ -1388,7 +1359,10 @@ export default function WizardPage() {
                   <input 
                     type="text" 
                     value={cuit || ''}
-                    onChange={(e) => setCuit(formatCuit(e.target.value))}
+                    onChange={(e) => {
+                      setCuit(formatCuit(e.target.value));
+                      resetWizardDetailsAfterIdentityChange();
+                    }}
                     onBlur={() => loadClientHistory(cuit, clientName, fiscalYear)}
                     className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                     placeholder="Ej: 20-34590216-4"
@@ -1535,7 +1509,7 @@ export default function WizardPage() {
                           ]);
                           alert(`¡Saldos del ejercicio anterior (${fiscalYear - 1}) importados con éxito! Los saldos iniciales y existencias se han cargado en el patrimonio de inicio.`);
                         } else {
-                          setIsLoadingData(true);
+                          setIsHistoryImportLoading(true);
                           fetch(`/api/declaraciones/${previousReturnObj.id}`)
                             .then(res => res.json())
                             .then(res => {
@@ -1609,7 +1583,7 @@ export default function WizardPage() {
                               console.error("Error al importar DDJJ histórica:", err);
                               alert("No se pudo importar automáticamente la DDJJ del período anterior.");
                             })
-                            .finally(() => setIsLoadingData(false));
+                            .finally(() => setIsHistoryImportLoading(false));
                         }
                       }}
                       className="px-4 h-9 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors shrink-0 cursor-pointer"

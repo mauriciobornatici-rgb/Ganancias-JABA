@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   coerceWizardPersonalDeductionType,
   isWizardPersonalDeductionType,
+  resolveWizardRouteReturnId,
+  shouldRequestActiveTaxParameters,
+  shouldResetWizardDetailsOnIdentityChange,
   wizardMoneyToNumber,
   wizardMoneyToString,
 } from '../presentation/wizardStateTypes';
@@ -24,5 +27,15 @@ describe('wizardStateTypes', () => {
     expect(wizardMoneyToString(undefined)).toBe('0');
     expect(wizardMoneyToNumber('15.5')).toBe(15.5);
     expect(wizardMoneyToNumber('sin-dato', 7)).toBe(7);
+  });
+
+  it('resuelve ids de ruta y condiciones de carga sin depender de efectos sincronicos', () => {
+    expect(resolveWizardRouteReturnId('crear')).toBe('');
+    expect(resolveWizardRouteReturnId('return-123')).toBe('return-123');
+    expect(shouldResetWizardDetailsOnIdentityChange({ activeReturnId: '', hasSavedState: false })).toBe(true);
+    expect(shouldResetWizardDetailsOnIdentityChange({ activeReturnId: 'return-123', hasSavedState: false })).toBe(false);
+    expect(shouldResetWizardDetailsOnIdentityChange({ activeReturnId: '', hasSavedState: true })).toBe(false);
+    expect(shouldRequestActiveTaxParameters('')).toBe(false);
+    expect(shouldRequestActiveTaxParameters('param-123')).toBe(true);
   });
 });

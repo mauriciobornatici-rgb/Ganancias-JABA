@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P1 segundo corte, tipos de estado del wizard y helpers de valores editables.
+- Ultimo checkpoint documentado: P1 cerrado, wizard sin deuda de ESLint focal y carga inicial ordenada.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -46,10 +46,12 @@ Criterio de cierre:
 
 ### P1 - Reducir riesgo operativo del wizard
 
+Estado: resuelto.
+
 Motivo:
 
 - El wizard es la pantalla critica de carga.
-- El build pasa, pero `eslint src/app/declaraciones/crear/wizard/page.tsx` sigue fallando por deuda previa.
+- El build pasaba, pero `eslint src/app/declaraciones/crear/wizard/page.tsx` fallaba por deuda previa.
 - Mientras el wizard no tenga una estructura mas verificable, cada mejora de carga corre mas riesgo de romper UX o comportamiento.
 
 Primer corte recomendado:
@@ -63,13 +65,20 @@ Avance:
 
 - Corte 1 aplicado: `formatCurrencyWhole` y `formatCurrencyCents` en `src/domain/ganancias/presentation/moneyFormat.ts`.
 - Corte 2 aplicado: tipos de estado del wizard en `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- Corte 3 aplicado: carga inicial, reset de contribuyente y parametros activos ordenados sin efectos sincronicos fragiles.
 - El wizard ya no tiene `any` explicitos en sus estados principales de resoluciones, parametros, padron, ventas, compras, bienes, bancos, retenciones, patrimonio y AXI.
 - Se agregaron helpers para normalizar valores editables monetarios sin casts inseguros.
-- `eslint src/app/declaraciones/crear/wizard/page.tsx` baja a 5 problemas: 4 errores y 1 warning, todos relacionados con efectos de React/carga inicial.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx` pasa limpio.
 
-Siguiente subcorte sugerido:
+## Prioridad siguiente
 
-- Extraer/ordenar el bloque de carga inicial y reset de contribuyente del wizard para resolver los 5 problemas restantes de hooks sin tocar calculo fiscal.
+### P2 - H6: consolidar calculo backend/frontend
+
+Objetivo:
+
+- Revisar que el resultado visible en el wizard, el preview backend, el guardado y el papel de trabajo usen el mismo criterio.
+- Evitar diferencias silenciosas entre calculo local de respaldo y calculo backend.
+- Mantener el fallback local solo si queda claramente identificado como modo degradado.
 
 ## Reglas de continuidad
 

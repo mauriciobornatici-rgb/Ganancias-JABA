@@ -34,6 +34,60 @@ export function wizardMoneyToNumber(value: WizardMoneyValue | null | undefined, 
 
 export type WizardOtherJustificationColumn = 1 | 2;
 
+export type WizardOtherJustificationPresetKey =
+  | 'herenciaDonacion'
+  | 'gastoNoDeducible'
+  | 'gananciaExenta'
+  | 'amortizacionTercera'
+  | 'axiPositivo'
+  | 'axiNegativo';
+
+export type WizardOtherJustificationPreset = {
+  key: WizardOtherJustificationPresetKey;
+  label: string;
+  concept: string;
+  column: WizardOtherJustificationColumn;
+};
+
+export const WIZARD_OTHER_JUSTIFICATION_PRESETS = [
+  {
+    key: 'herenciaDonacion',
+    label: 'Herencia / donacion',
+    concept: 'Bienes recibidos por herencia, legado o donacion',
+    column: 2,
+  },
+  {
+    key: 'gastoNoDeducible',
+    label: 'Gasto no deducible',
+    concept: 'Otros conceptos que no justifican erogaciones o aumentos patrimoniales',
+    column: 1,
+  },
+  {
+    key: 'gananciaExenta',
+    label: 'Ganancia exenta',
+    concept: 'Ganancias exentas o no gravadas',
+    column: 2,
+  },
+  {
+    key: 'amortizacionTercera',
+    label: 'Amortizacion 3ra',
+    concept: 'Amortizacion tercera categoria',
+    column: 2,
+  },
+  {
+    key: 'axiPositivo',
+    label: 'AXI positivo',
+    concept: 'Ajuste por inflacion positivo',
+    column: 1,
+  },
+  {
+    key: 'axiNegativo',
+    label: 'AXI negativo',
+    concept: 'Ajuste por inflacion negativo',
+    column: 2,
+  },
+] as const satisfies readonly WizardOtherJustificationPreset[];
+
 export function coerceWizardOtherJustificationColumn(value: WizardMoneyValue | null | undefined): WizardOtherJustificationColumn {
   return Number(value) === 1 ? 1 : 2;
 }
@@ -42,6 +96,18 @@ export function buildDefaultWizardOtherJustification(): WizardOtherJustification
   return {
     concept: 'Nueva justificacion patrimonial',
     column: 2,
+    amount: '0',
+  };
+}
+
+export function buildWizardOtherJustificationFromPreset(
+  key: WizardOtherJustificationPresetKey
+): WizardOtherJustification {
+  const preset = WIZARD_OTHER_JUSTIFICATION_PRESETS.find(item => item.key === key);
+
+  return {
+    concept: preset?.concept || 'Nueva justificacion patrimonial',
+    column: preset?.column || 2,
     amount: '0',
   };
 }

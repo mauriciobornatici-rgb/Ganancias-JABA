@@ -26,11 +26,13 @@ import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoic
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import {
   buildDefaultWizardOtherJustification,
+  buildWizardOtherJustificationFromPreset,
   coerceWizardOtherJustificationColumn,
   coerceWizardPersonalDeductionType,
   resolveWizardRouteReturnId,
   shouldRequestActiveTaxParameters,
   shouldResetWizardDetailsOnIdentityChange,
+  WIZARD_OTHER_JUSTIFICATION_PRESETS,
   wizardMoneyToNumber,
   wizardMoneyToString,
   type ActiveTaxParameters,
@@ -41,6 +43,7 @@ import {
   type WizardClient,
   type WizardFixedAsset,
   type WizardOtherJustification,
+  type WizardOtherJustificationPresetKey,
   type WizardPersonalAsset,
   type WizardPersonalDeductionType,
   type WizardPersonalLiability,
@@ -917,6 +920,10 @@ export default function WizardPage() {
     if (type === 'personalLiabilities') setPersonalLiabilities(personalLiabilities.filter((_, i) => i !== index));
     if (type === 'otherJustifications') setOtherJustifications(otherJustifications.filter((_, i) => i !== index));
     if (type === 'axiDynamic') setAxiDynamic(axiDynamic.filter((_, i) => i !== index));
+  };
+
+  const addOtherJustificationPreset = (key: WizardOtherJustificationPresetKey) => {
+    setOtherJustifications([...otherJustifications, buildWizardOtherJustificationFromPreset(key)]);
   };
 
   const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
@@ -2564,6 +2571,24 @@ export default function WizardPage() {
                             <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Columna II</span>
                             <span className="block text-xs font-mono text-emerald-300">{formatDecimal(columnTwoTotal)}</span>
                           </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-lg border border-zinc-800 bg-[#09090b]/45 p-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mr-1">
+                            Presets rápidos:
+                          </span>
+                          {WIZARD_OTHER_JUSTIFICATION_PRESETS.map(preset => (
+                            <button
+                              key={preset.key}
+                              onClick={() => addOtherJustificationPreset(preset.key)}
+                              className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:border-teal-500/60 hover:text-teal-300 hover:bg-teal-500/5 transition-colors"
+                              title={`${preset.concept} - Columna ${preset.column === 1 ? 'I' : 'II'}`}
+                            >
+                              {preset.label} · Col {preset.column === 1 ? 'I' : 'II'}
+                            </button>
+                          ))}
                         </div>
                       </div>
 

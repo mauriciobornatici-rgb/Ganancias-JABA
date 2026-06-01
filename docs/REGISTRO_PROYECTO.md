@@ -1887,3 +1887,41 @@ Pendiente:
 Nota de continuidad:
 
 - Se creo `docs/MAPEO_JVP_EXCEL.md` con el mapa de hojas, formulas y brechas detectadas contra la planilla base.
+
+### 2026-06-01 - Fase 1, P4 quinto corte: presets rapidos para JVP
+
+Se agregaron presets de carga para conceptos habituales de otras justificaciones patrimoniales.
+
+Objetivo de carga:
+
+- Reducir tipeo repetitivo en un estudio chico.
+- No esconder criterio contable: cada preset muestra la columna sugerida antes de cargar.
+- Mantener editable concepto, columna e importe despues de insertar la fila.
+
+Presets iniciales:
+
+- Herencia / donacion: columna II.
+- Gasto no deducible: columna I.
+- Ganancia exenta: columna II.
+- Amortizacion 3ra: columna II.
+- AXI positivo: columna I.
+- AXI negativo: columna II.
+
+Archivos modificados:
+
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo inicialmente porque no existia `buildWizardOtherJustificationFromPreset`.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 6 tests, todo OK.
+- `tsc --noEmit`: OK.
+
+Pendiente:
+
+- Ajustar o ampliar presets luego de validar casos reales contra `JVP`.

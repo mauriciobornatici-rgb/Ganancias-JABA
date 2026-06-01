@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildWizardOtherJustificationFromPreset,
   buildDefaultWizardOtherJustification,
   coerceWizardPersonalDeductionType,
   coerceWizardOtherJustificationColumn,
@@ -38,6 +39,19 @@ describe('wizardStateTypes', () => {
     expect(buildDefaultWizardOtherJustification()).toEqual({
       concept: 'Nueva justificacion patrimonial',
       column: 2,
+      amount: '0',
+    });
+  });
+
+  it('crea filas JVP desde presets explicitos basados en la planilla', () => {
+    expect(buildWizardOtherJustificationFromPreset('herenciaDonacion')).toEqual({
+      concept: 'Bienes recibidos por herencia, legado o donacion',
+      column: 2,
+      amount: '0',
+    });
+    expect(buildWizardOtherJustificationFromPreset('gastoNoDeducible')).toEqual({
+      concept: 'Otros conceptos que no justifican erogaciones o aumentos patrimoniales',
+      column: 1,
       amount: '0',
     });
   });

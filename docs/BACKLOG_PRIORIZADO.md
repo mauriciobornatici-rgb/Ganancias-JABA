@@ -163,6 +163,7 @@ Avance 2026-06-01:
 - Tercer corte UI aplicado: Paso 4 del wizard permite cargar otras justificaciones JVP con concepto, columna I/II e importe.
 - La carga participa de autosave, guardado, reapertura local y preview.
 - Cuarto corte de formula aplicado: JVP usa `resultadoImpositivoNeto`, equivalente a `IG 25!F38`, para recursos del periodo.
+- Quinto corte de agilidad aplicado: presets rapidos para conceptos JVP frecuentes, siempre mostrando columna I/II.
 
 Criterio de cierre:
 

@@ -140,6 +140,7 @@ Avance:
 - El Paso 4 del wizard incorpora una grilla agil para cargar otras justificaciones JVP con concepto, columna I/II e importe.
 - La grilla participa de autosave, guardado, localStorage y preview.
 - La JVP principal ahora usa `resultadoImpositivoNeto` como equivalente a `IG 25!F38`, en lugar de `resultadoComercialNeto`.
+- La grilla JVP incluye presets rapidos de conceptos frecuentes con columna visible para acelerar carga sin ocultar criterio.
 
 Siguiente corte recomendado:
 

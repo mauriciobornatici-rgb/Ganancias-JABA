@@ -1636,3 +1636,58 @@ Pendiente:
 
 - Mapear AXI dinamico contra planilla, especialmente movimientos que usan coeficiente promedio anual.
 - Evaluar aviso visible cuando no existe diciembre del anio anterior y el sistema cae al fallback `dic/ene`.
+
+### 2026-06-01 - Fase 1, P3 segundo corte: AXI dinamico con coeficiente promedio anual
+
+Se alineo el AXI dinamico con las filas agregadas de la planilla.
+
+Hallazgo contra Excel:
+
+- En `AXI Inflacion IMPOSITIVO Comercial 2025.xlsx`, hoja `AXI.Dinamico`, la fila `Retiros de los socios` usa `D86/AVERAGE(D75:D86)`.
+- La fila `Aportes y aumentos de capital historico` usa el mismo coeficiente promedio anual.
+- El motor venia usando `IPC diciembre / IPC del mes de la fecha` para todos los movimientos.
+- Por eso un retiro cargado al 31/12 daba coeficiente `1` y ajuste `0`, mientras la planilla da coeficiente `1.1288404539857682` y ajuste aproximado `$502.654` sobre `$3.901.371,69`.
+
+Decision de arquitectura:
+
+- Para `RetiroSocio` y `AporteCapital`, el motor usa `usefulCoefficients.currentYearAverage` cuando esta disponible.
+- Para movimientos `Otro`, se conserva el criterio mensual por fecha.
+- Si falta coeficiente promedio anual, el motor emite una advertencia visible en el wizard de cierre/calculo.
+- La persistencia dejo de recalcular AXI dinamico con una formula duplicada y ahora reutiliza `calculateAxiDynamic`.
+
+Archivos modificados:
+
+- `src/domain/ganancias/calculations/ajustePorInflacion.ts`.
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/persistence/taxReturnReadMapper.ts`.
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/axiDynamicAverageCoefficient.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `src/domain/ganancias/tests/taxReturnReadMapper.test.ts`.
+
+Resultado funcional:
+
+- AXI dinamico de retiros/aportes agregados replica el criterio de coeficiente promedio anual de la planilla.
+- AXI dinamico de movimientos no agregados conserva coeficiente mensual.
+- `AxiDynamicItem` guarda el mismo `coef` y `computedAxi` que calcula el motor.
+- Al reabrir una DDJJ, la API devuelve coeficiente, factor y ajuste calculado.
+- El wizard muestra columnas read-only `Coef.` y `Ajuste` para controlar la carga guardada.
+- La grilla AXI ahora soporta scroll horizontal para no romper pantallas chicas.
+
+Verificacion:
+
+- TDD rojo confirmado: `axiDynamicAverageCoefficient.test.ts` fallo inicialmente porque un retiro al 31/12 usaba coeficiente `1`.
+- TDD rojo confirmado: `taxReturnDetailsPersistence.test.ts` fallo inicialmente porque `AxiDynamicItem` se guardaba con `coef = 1`.
+- TDD rojo confirmado: `taxReturnReadMapper.test.ts` fallo inicialmente porque no existia un mapper que conservara `coef`, `factor` y `computedAxi`.
+- `vitest run src/domain/ganancias/tests/axiDynamicAverageCoefficient.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts src/domain/ganancias/tests/taxReturnReadMapper.test.ts`: 3 archivos, 12 tests, todo OK.
+- `vitest run`: 24 archivos, 73 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre calculo AXI, determinacion, persistencia, mapper de lectura, endpoint `[id]`, wizard y tests nuevos: OK.
+
+Cierre P3:
+
+- P3 queda resuelto: AXI estatico/dinamico esta alineado con los coeficientes utiles de la planilla y los coeficientes usados quedan auditables.
+- Siguiente prioridad: P4 patrimonio y justificacion patrimonial.

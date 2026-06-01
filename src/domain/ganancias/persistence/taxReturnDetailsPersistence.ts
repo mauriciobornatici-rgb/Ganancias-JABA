@@ -1,8 +1,10 @@
 import { Decimal } from 'decimal.js';
 import { calculateFixedAssetDepreciation } from '../calculations/amortizaciones';
+import { calculateAxiDynamic } from '../calculations/ajustePorInflacion';
 import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMapper';
 import { buildUsefulCoefficientsFromIndexes } from '../mappers/taxParameterUsefulCoefficients';
+import type { AxiDynamicInput } from '../types';
 
 type NumericValue = string | number;
 type DateValue = string | number | Date;
@@ -176,6 +178,14 @@ function dateInput(value: DateValue | undefined): Date {
 
 function fixedAssetType(value: string | undefined): FixedAssetType {
   if (value === 'Rodado' || value === 'Inmueble' || value === 'Equipamiento' || value === 'Otro') {
+    return value;
+  }
+
+  return 'Otro';
+}
+
+function axiDynamicType(value: string | undefined): AxiDynamicInput['type'] {
+  if (value === 'RetiroSocio' || value === 'AporteCapital' || value === 'Dividendo' || value === 'Otro') {
     return value;
   }
 
@@ -453,30 +463,34 @@ export async function persistTaxReturnDetails({
     });
   }
 
-  for (const item of axiDynamic) {
-    let coef = 1.0;
-    if (dbIpcIndices.length > 0) {
-      const decIpc = dbIpcIndices.find(index => index.monthIndex === 12);
-      const movementMonth = dateInput(item.date).getMonth() + 1;
-      const movementIpc = dbIpcIndices.find(index => index.monthIndex === movementMonth);
-      if (decIpc && movementIpc) {
-        coef = Number(decIpc.ipcValue) / Number(movementIpc.ipcValue);
-      }
-    }
-    const amountNum = numberInput(item.amount);
-    const factor = item.type === 'AporteCapital' ? -1 : 1;
-    const computedAxi = amountNum * (coef - 1) * factor;
+  const normalizedAxiDynamic: AxiDynamicInput[] = axiDynamic.map(item => ({
+    concept: stringInput(item.concept),
+    type: axiDynamicType(item.type),
+    date: dateInput(item.date),
+    amount: new Decimal(numberInput(item.amount)),
+  }));
+  const persistedAxiDynamic = calculateAxiDynamic(
+    normalizedAxiDynamic,
+    dbIpcIndices.map(index => ({
+      monthIndex: index.monthIndex,
+      ipcValue: new Decimal(index.ipcValue.toString()),
+    })),
+    usefulCoefficients
+  );
 
+  for (const [index, item] of normalizedAxiDynamic.entries()) {
+    const calculatedLine = persistedAxiDynamic.lines[index];
+    const factor = item.type === 'AporteCapital' ? -1 : 1;
     await db.axiDynamicItem.create({
       data: {
         taxReturnId,
-        concept: stringInput(item.concept),
-        type: stringInput(item.type, 'Otro'),
-        date: dateInput(item.date),
-        amount: amountNum,
-        coef,
+        concept: calculatedLine.concept,
+        type: item.type,
+        date: item.date,
+        amount: calculatedLine.amount.toNumber(),
+        coef: calculatedLine.factorActualizacion.toNumber(),
         factor,
-        computedAxi,
+        computedAxi: calculatedLine.computedAxi.toNumber(),
       },
     });
   }

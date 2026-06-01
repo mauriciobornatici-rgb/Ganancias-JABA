@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { formatDateForWizardInput, snapshotStringAt } from '../persistence/taxReturnReadMapper';
+import {
+  formatDateForWizardInput,
+  mapAxiDynamicItemForWizard,
+  snapshotStringAt,
+} from '../persistence/taxReturnReadMapper';
 
 describe('formatDateForWizardInput', () => {
   it('formatea fechas validas para inputs date del wizard', () => {
@@ -29,5 +33,29 @@ describe('snapshotStringAt', () => {
     expect(snapshotStringAt(null, 0, 'counterpartyCuit')).toBe('');
     expect(snapshotStringAt([{ counterpartyCuit: 123 }], 0, 'counterpartyCuit')).toBe('');
     expect(snapshotStringAt([], 0, 'counterpartyCuit')).toBe('');
+  });
+});
+
+describe('mapAxiDynamicItemForWizard', () => {
+  it('conserva coeficiente y ajuste calculado para auditoria al reabrir la DDJJ', () => {
+    const mapped = mapAxiDynamicItemForWizard({
+      concept: 'Retiros de los socios',
+      type: 'RetiroSocio',
+      amount: { toString: () => '3901371.69' },
+      date: new Date('2025-12-31T00:00:00.000Z'),
+      coef: { toString: () => '1.128840' },
+      factor: { toString: () => '1.0000' },
+      computedAxi: { toString: () => '502654.00' },
+    });
+
+    expect(mapped).toEqual({
+      concept: 'Retiros de los socios',
+      type: 'RetiroSocio',
+      amount: '3901371.69',
+      date: '2025-12-31',
+      coef: '1.128840',
+      factor: '1.0000',
+      computedAxi: '502654.00',
+    });
   });
 });

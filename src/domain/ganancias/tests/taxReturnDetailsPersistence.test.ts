@@ -264,4 +264,71 @@ describe('persistTaxReturnDetails', () => {
 
     expect(captures.calculationCreate?.data.axiStaticResult).toBe(-315488);
   });
+
+  it('guarda el detalle AXI dinamico con coeficiente promedio anual para retiros agregados', async () => {
+    const captures: {
+      axiDynamicCreate?: {
+        data: Record<string, unknown>;
+      };
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model({
+        findMany: async () => [
+          { monthIndex: 1, ipcValue: '7864.1257' },
+          { monthIndex: 2, ipcValue: '8052.9927' },
+          { monthIndex: 3, ipcValue: '8353.3158' },
+          { monthIndex: 4, ipcValue: '8585.6078' },
+          { monthIndex: 5, ipcValue: '8714.4871' },
+          { monthIndex: 6, ipcValue: '8855.5681' },
+          { monthIndex: 7, ipcValue: '9023.973' },
+          { monthIndex: 8, ipcValue: '9193.2441' },
+          { monthIndex: 9, ipcValue: '9384.0922' },
+          { monthIndex: 10, ipcValue: '9603.8623' },
+          { monthIndex: 11, ipcValue: '9841.3581' },
+          { monthIndex: 12, ipcValue: '10121.3715' },
+        ],
+        findFirst: async () => ({ monthIndex: 12, ipcValue: '7694.0075' }),
+      }),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model({ create: async (args: unknown) => { captures.axiDynamicCreate = args as { data: Record<string, unknown> }; } }),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-axi-dynamic',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente AXI', cuit: '20-33333333-3' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        axiDynamic: [{
+          concept: 'Retiros de los socios',
+          type: 'RetiroSocio',
+          amount: '3901371.69',
+          date: '2025-12-31',
+        }],
+      },
+    });
+
+    expect(Number(captures.axiDynamicCreate?.data.coef)).toBeCloseTo(1.1288404539857682, 10);
+    expect(captures.axiDynamicCreate?.data.computedAxi).toBe(502654);
+    expect(captures.calculationCreate?.data.axiDynamicResult).toBe(502654);
+  });
 });

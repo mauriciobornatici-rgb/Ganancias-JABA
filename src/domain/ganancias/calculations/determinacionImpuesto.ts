@@ -131,7 +131,13 @@ export function calculateTaxReturn(
   if (!calculatedStaticInflationRate) {
     warnings.push('AXI Estático: No se encontraron índices IPC de enero y/o diciembre. La tasa de inflación estática se fijó en 0.');
   }
-  const axiResult = calculateTotalAxi(input.axiStatic, input.axiDynamic, staticInflationRate, input.params.indicesIPC);
+  const axiResult = calculateTotalAxi(
+    input.axiStatic,
+    input.axiDynamic,
+    staticInflationRate,
+    input.params.indicesIPC,
+    input.params.usefulCoefficients
+  );
   const resultadoAjustePorInflacion = axiResult.netAxiResult;
   // Propagar advertencias del cálculo de AXI dinámico
   warnings.push(...axiResult.warnings);

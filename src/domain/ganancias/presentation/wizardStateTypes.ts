@@ -170,6 +170,9 @@ export type WizardAxiDynamic = WizardEditableRecord & {
   type?: string;
   amount?: WizardMoneyValue;
   date?: string;
+  coef?: WizardMoneyValue;
+  factor?: WizardMoneyValue;
+  computedAxi?: WizardMoneyValue;
 };
 
 export type WizardPreviousReturnData = WizardEditableRecord & {

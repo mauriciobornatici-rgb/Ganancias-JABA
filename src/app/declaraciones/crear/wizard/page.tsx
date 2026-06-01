@@ -2099,8 +2099,8 @@ export default function WizardPage() {
                   <span className="text-[10px] text-zinc-450 italic">Generan amortizaciones deducibles comercialmente</span>
                 </div>
 
-                <div className="border border-zinc-800 rounded-lg overflow-hidden">
-                  <table className="w-full text-left border-collapse">
+                <div className="border border-zinc-800 rounded-lg overflow-x-auto">
+                  <table className="w-full min-w-[920px] text-left border-collapse">
                     <thead>
                       <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
                         <th className="px-4 py-3">Nombre del Bien</th>
@@ -2894,6 +2894,8 @@ export default function WizardPage() {
                         <th className="px-4 py-3">Concepto / Descripción</th>
                         <th className="px-4 py-3 text-center">Tipo de Movimiento</th>
                         <th className="px-4 py-3 text-right">Monto ($)</th>
+                        <th className="px-4 py-3 text-right">Coef.</th>
+                        <th className="px-4 py-3 text-right">Ajuste</th>
                         <th className="px-4 py-3 text-right">Eliminar</th>
                       </tr>
                     </thead>
@@ -2936,6 +2938,16 @@ export default function WizardPage() {
                               className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
                             />
                           </td>
+                          <td className="px-4 py-2 text-right w-28 text-[11px] font-mono text-zinc-350">
+                            {item.coef !== undefined && item.coef !== ''
+                              ? Number(item.coef).toLocaleString('es-AR', { minimumFractionDigits: 6, maximumFractionDigits: 6 })
+                              : 'Al guardar'}
+                          </td>
+                          <td className="px-4 py-2 text-right w-32 text-[11px] font-mono text-zinc-350">
+                            {item.computedAxi !== undefined && item.computedAxi !== ''
+                              ? formatDecimal(item.computedAxi)
+                              : 'Al guardar'}
+                          </td>
                           <td className="px-4 py-2 text-right">
                             <button 
                               onClick={() => deleteRow(index, 'axiDynamic')}
@@ -2948,7 +2960,7 @@ export default function WizardPage() {
                       ))}
                       {axiDynamic.length === 0 && (
                         <tr>
-                          <td colSpan={5} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                          <td colSpan={7} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
                             Sin variaciones del capital computable declaradas para el AXI dinámico.
                           </td>
                         </tr>

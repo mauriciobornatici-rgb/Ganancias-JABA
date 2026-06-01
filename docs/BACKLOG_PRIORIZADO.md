@@ -106,7 +106,7 @@ Criterio de cierre:
 
 ## P3 - H4/H2: AXI e indices utiles
 
-Estado: Activo.
+Estado: Resuelto.
 
 Problema:
 
@@ -126,6 +126,10 @@ Avance 2026-06-01:
 - La API de parametros deriva `decPreviousToDecCurrent` y `currentYearAverage` on demand desde indices persistidos.
 - El mapper conserva `usefulCoefficients` y el motor los usa antes del fallback historico `dic/ene`.
 - La persistencia detallada tambien deriva el coeficiente util para que el resultado guardado coincida con el preview.
+- Segundo corte aplicado: AXI dinamico usa coeficiente promedio anual para `RetiroSocio` y `AporteCapital`, como las filas agregadas de la planilla.
+- Los movimientos `Otro` conservan coeficiente mensual por fecha.
+- La persistencia de `AxiDynamicItem` reutiliza `calculateAxiDynamic`, guarda el coeficiente efectivo y el ajuste calculado.
+- El endpoint de reapertura conserva `coef`, `factor` y `computedAxi`; el wizard los muestra como columnas read-only para auditoria de la carga guardada.
 - Verificaciones focales y suite completa quedaron verdes.
 
 Criterio de cierre:
@@ -133,14 +137,9 @@ Criterio de cierre:
 - AXI estatico y dinamico tienen carga guiada y trazable.
 - Coeficientes usados en calculo pueden auditarse.
 
-Pendiente para cerrar P3:
-
-- Confirmar AXI dinamico contra planilla: retiros, aportes y movimientos con coeficiente promedio anual.
-- Mostrar o auditar en la UI/papel de trabajo que coeficiente se uso y si hubo fallback.
-
 ## P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: Pendiente.
+Estado: Activo.
 
 Problema:
 

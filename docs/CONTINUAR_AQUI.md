@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P3 primer corte, AXI estatico alineado con coeficiente dic-anterior/dic-actual.
+- Ultimo checkpoint documentado: P3 resuelto, AXI estatico/dinamico alineado con indices utiles y planilla.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -94,7 +94,7 @@ Avance:
 
 ### P3 - H4/H2: AXI e indices utiles
 
-Estado: activo, primer corte aplicado.
+Estado: resuelto.
 
 Objetivo:
 
@@ -110,11 +110,23 @@ Avance:
 - `/api/parametros` devuelve `usefulCoefficients` con `decPreviousToDecCurrent` y `currentYearAverage`.
 - Preview/motor y persistencia usan el coeficiente util para AXI estatico cuando esta disponible.
 - Tests agregados: `axiInflationRate.test.ts`, `taxParameterUsefulCoefficients.test.ts`, mas regresiones en importador, mapper y persistencia.
+- AXI dinamico usa coeficiente promedio anual para `RetiroSocio` y `AporteCapital`, igual que las filas agregadas de la planilla.
+- Los demas movimientos dinamicos conservan coeficiente mensual por fecha.
+- La persistencia de `AxiDynamicItem` reutiliza el motor para guardar `coef` y `computedAxi`.
+- Al reabrir la DDJJ, la API devuelve `coef`, `factor` y `computedAxi`; el wizard muestra coeficiente y ajuste como control read-only.
+- Tests agregados: `axiDynamicAverageCoefficient.test.ts` y regresiones en `taxReturnDetailsPersistence.test.ts` y `taxReturnReadMapper.test.ts`.
 
-Siguiente corte recomendado:
+## Prioridad siguiente
 
-- Mapear AXI dinamico contra las filas reales de la planilla, especialmente retiros/aportes que usan coeficiente promedio anual.
-- Revisar si la UI debe mostrar el coeficiente aplicado y advertir cuando se usa fallback por falta de diciembre anterior.
+### P4 - H7: patrimonio y justificacion patrimonial
+
+Estado: activo.
+
+Objetivo:
+
+- Mapear JVP contra hojas `JVP`, `Creditos`, `Pasivo`, `Banco`.
+- Agregar rubros patrimoniales/justificativos suficientes para casos reales sin volver lenta la carga.
+- Mantener una explicacion clara del consumo/variacion patrimonial.
 
 ## Reglas de continuidad
 

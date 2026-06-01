@@ -16,3 +16,29 @@ export function snapshotStringAt(records: unknown, index: number, key: string): 
   const value = (record as Record<string, unknown>)[key];
   return typeof value === 'string' ? value : '';
 }
+
+type DecimalLike = {
+  toString(): string;
+};
+
+type AxiDynamicReadItem = {
+  concept: string;
+  type: string;
+  amount: DecimalLike;
+  date: Date | string | number | null;
+  coef: DecimalLike;
+  factor: DecimalLike;
+  computedAxi: DecimalLike;
+};
+
+export function mapAxiDynamicItemForWizard(item: AxiDynamicReadItem) {
+  return {
+    concept: item.concept,
+    type: item.type,
+    amount: item.amount.toString(),
+    date: formatDateForWizardInput(item.date),
+    coef: item.coef.toString(),
+    factor: item.factor.toString(),
+    computedAxi: item.computedAxi.toString(),
+  };
+}

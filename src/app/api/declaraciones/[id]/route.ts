@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
-import { formatDateForWizardInput, snapshotStringAt } from '@/domain/ganancias/persistence/taxReturnReadMapper';
+import {
+  formatDateForWizardInput,
+  mapAxiDynamicItemForWizard,
+  snapshotStringAt,
+} from '@/domain/ganancias/persistence/taxReturnReadMapper';
 
 export async function GET(
   req: NextRequest,
@@ -152,12 +156,7 @@ export async function GET(
       bienesNoComputablesInicio: extraState.bienesNoComputablesInicio || '0',
       saldoAFavorAnterior: extraState.saldoAFavorAnterior || '0',
       quebrantosAnteriores: extraState.quebrantosAnteriores || '0',
-      axiDynamic: (taxReturn.axiDynamicItems || []).map(a => ({
-        concept: a.concept,
-        type: a.type,
-        amount: a.amount.toString(),
-        date: formatDateForWizardInput(a.date)
-      })),
+      axiDynamic: (taxReturn.axiDynamicItems || []).map(mapAxiDynamicItemForWizard),
     };
 
     return NextResponse.json({ success: true, data: payload });

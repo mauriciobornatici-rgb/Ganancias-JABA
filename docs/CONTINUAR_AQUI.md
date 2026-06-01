@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P1 cerrado, wizard sin deuda de ESLint focal y carga inicial ordenada.
+- Ultimo checkpoint documentado: P2 primer corte, advertencia de cierre sin preview backend vigente.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -79,6 +79,15 @@ Objetivo:
 - Revisar que el resultado visible en el wizard, el preview backend, el guardado y el papel de trabajo usen el mismo criterio.
 - Evitar diferencias silenciosas entre calculo local de respaldo y calculo backend.
 - Mantener el fallback local solo si queda claramente identificado como modo degradado.
+
+Avance:
+
+- Corte 1 aplicado: si el usuario intenta cerrar con preview pendiente, fallback local o sin backend vigente, el wizard pide confirmacion explicita antes de cerrar.
+- `buildTaxReturnCloseConsistencyWarning` queda testeado en `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+
+Siguiente subcorte sugerido:
+
+- Comparar y documentar/asegurar que preview backend y persistencia usan el mismo mapper y los mismos parametros de resolucion antes de cerrar P2.
 
 ## Reglas de continuidad
 

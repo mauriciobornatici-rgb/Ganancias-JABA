@@ -154,6 +154,12 @@ export function buildTaxReturnPreviewStatus({
   };
 }
 
+export function buildTaxReturnCloseConsistencyWarning(status: TaxReturnPreviewStatus): string | null {
+  if (status.kind === 'backend') return null;
+
+  return 'Esta por cerrar la DDJJ sin un preview backend vigente. El cierre recalcula en servidor y podria diferir del resultado local visible; espere la confirmacion backend o continue solo si verifico conscientemente.';
+}
+
 export function hydrateTaxReturnPreviewResult(value: ReturnType<typeof serializeTaxCalculationResult>): TaxCalculationResult {
   return {
     clientName: value.clientName,

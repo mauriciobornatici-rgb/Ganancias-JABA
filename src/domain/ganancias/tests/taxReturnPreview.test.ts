@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildTaxReturnCloseConsistencyWarning,
   buildTaxReturnPreviewRequest,
   buildTaxReturnPreviewStatus,
   buildTaxReturnPreview,
@@ -127,6 +128,40 @@ describe('buildTaxReturnPreviewStatus', () => {
 
     expect(status.kind).toBe('fallback');
     expect(status.detail).toContain('Error de red');
+  });
+});
+
+describe('buildTaxReturnCloseConsistencyWarning', () => {
+  it('no advierte si el cierre usa un preview backend vigente', () => {
+    const status = buildTaxReturnPreviewStatus({
+      hasRequiredPreviewIdentity: true,
+      calculationRequestKey: 'payload-vigente',
+      backendPreviewKey: 'payload-vigente',
+      isBackendPreviewPending: false,
+      backendPreviewError: null,
+    });
+
+    expect(buildTaxReturnCloseConsistencyWarning(status)).toBeNull();
+  });
+
+  it('advierte si se intenta cerrar con fallback local o backend pendiente', () => {
+    const pending = buildTaxReturnPreviewStatus({
+      hasRequiredPreviewIdentity: true,
+      calculationRequestKey: 'payload-nuevo',
+      backendPreviewKey: 'payload-anterior',
+      isBackendPreviewPending: true,
+      backendPreviewError: null,
+    });
+    const fallback = buildTaxReturnPreviewStatus({
+      hasRequiredPreviewIdentity: true,
+      calculationRequestKey: 'payload-vigente',
+      backendPreviewKey: null,
+      isBackendPreviewPending: false,
+      backendPreviewError: 'Error de red',
+    });
+
+    expect(buildTaxReturnCloseConsistencyWarning(pending)).toContain('backend');
+    expect(buildTaxReturnCloseConsistencyWarning(fallback)).toContain('backend');
   });
 });
 

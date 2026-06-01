@@ -48,6 +48,7 @@ import {
   type WizardWithholding,
 } from '@/domain/ganancias/presentation/wizardStateTypes';
 import {
+  buildTaxReturnCloseConsistencyWarning,
   buildTaxReturnPreviewStatus,
   buildTaxReturnPreviewRequest,
   hydrateTaxReturnPreviewResult,
@@ -298,6 +299,11 @@ export default function WizardPage() {
 
   const handleSaveAction = (type: 'borrador' | 'cerrar') => {
     if (type === 'cerrar') {
+      const previewWarning = buildTaxReturnCloseConsistencyWarning(previewStatus);
+      if (previewWarning && !window.confirm(`${previewWarning}\n\n¿Desea continuar y cerrar igualmente?`)) {
+        return;
+      }
+
       const warning = buildTaxParameterClosureWarning({ taxParameterSetId }, activeParams);
       if (warning && !window.confirm(`${warning}\n\n¿Desea continuar y cerrar igualmente?`)) {
         return;

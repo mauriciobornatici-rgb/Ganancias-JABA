@@ -431,6 +431,47 @@ Pendiente:
 
 - P2 queda como prioridad activa: consolidar calculo backend/frontend para evitar diferencias silenciosas entre preview, guardado y papel de trabajo.
 
+### 2026-06-01 - P2 primer corte: advertencia de cierre sin preview backend vigente
+
+Se inicio P2 reduciendo el riesgo de diferencias silenciosas entre el resultado visible y el resultado que se recalcula al guardar/cerrar.
+
+Riesgo mitigado:
+
+- El wizard muestra resultado backend cuando esta vigente, pero tambien puede mostrar fallback local si el backend esta pendiente o fallo.
+- Al cerrar una DDJJ, el backend vuelve a calcular y persiste el resultado; si el usuario ve fallback local, podria cerrar creyendo que ese valor esta confirmado.
+- Para un estudio chico, la agilidad no debe ocultar que el numero visible aun no fue confirmado por el motor backend.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/taxReturnPreview.ts`.
+- `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- Se agrego `buildTaxReturnCloseConsistencyWarning`.
+- Si el preview vigente es backend, el cierre no agrega advertencia extra.
+- Si el preview esta pendiente, en fallback local o sin backend vigente, el wizard pide confirmacion explicita antes de cerrar.
+- El guardado como borrador no se bloquea; la advertencia se concentra en el acto sensible de cierre.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxReturnPreview.test.ts` fallo inicialmente porque `buildTaxReturnCloseConsistencyWarning` no existia.
+- `vitest run src/domain/ganancias/tests/taxReturnPreview.test.ts`: 1 archivo, 8 tests, todo OK.
+- `vitest run`: 21 archivos, 64 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre preview/test/wizard: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo advertencias CRLF esperadas de Git en Windows.
+
+Pendiente:
+
+- Siguiente subcorte P2: asegurar con test o documentacion tecnica que preview backend y persistencia usan el mismo mapper y parametros efectivos.
+- Revisar si conviene bloquear el cierre hasta tener backend vigente en lugar de solo pedir confirmacion.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

@@ -87,6 +87,12 @@ Accion recomendada:
 - Definir si el calculo local queda solo como modo degradado visible o se elimina.
 - Cubrir con tests de presentacion/preview antes de tocar UI.
 
+Avance 2026-06-01:
+
+- Primer corte aplicado: `buildTaxReturnCloseConsistencyWarning` advierte cuando se intenta cerrar sin preview backend vigente.
+- El wizard pide confirmacion explicita si el resultado visible esta pendiente de backend o es fallback local.
+- Esto evita que una DDJJ se cierre silenciosamente con posible diferencia entre vista local y recalculo servidor.
+
 Criterio de cierre:
 
 - La UI indica claramente fuente del resultado.

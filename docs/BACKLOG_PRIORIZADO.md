@@ -92,6 +92,8 @@ Avance 2026-06-01:
 - Primer corte aplicado: `buildTaxReturnCloseConsistencyWarning` advierte cuando se intenta cerrar sin preview backend vigente.
 - El wizard pide confirmacion explicita si el resultado visible esta pendiente de backend o es fallback local.
 - Esto evita que una DDJJ se cierre silenciosamente con posible diferencia entre vista local y recalculo servidor.
+- Segundo corte aplicado: persistencia ahora conserva `esJubiladoOchoHaberes` al reconstruir deducciones personales.
+- Se agrego prueba que compara el resultado persistido con el preview backend para el caso jubilado con 8 haberes.
 
 Criterio de cierre:
 

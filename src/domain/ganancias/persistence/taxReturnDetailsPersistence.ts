@@ -112,6 +112,7 @@ type PersonalDeductionsPayload = {
   cantidadHijos?: NumericValue;
   cantidadHijosIncapacitados?: NumericValue;
   tipoDeduccionEspecial?: string;
+  esJubiladoOchoHaberes?: boolean;
   [key: string]: unknown;
 };
 
@@ -268,6 +269,7 @@ export async function persistTaxReturnDetails({
       cantidadHijos: integerInput(personalDeductions?.cantidadHijos),
       cantidadHijosIncapacitados: integerInput(personalDeductions?.cantidadHijosIncapacitados),
       tipoDeduccionEspecial: personalDeductions?.tipoDeduccionEspecial || 'Ninguna',
+      esJubiladoOchoHaberes: personalDeductions?.esJubiladoOchoHaberes || false,
     },
     personalAssets,
     personalLiabilities,

@@ -472,6 +472,45 @@ Pendiente:
 - Siguiente subcorte P2: asegurar con test o documentacion tecnica que preview backend y persistencia usan el mismo mapper y parametros efectivos.
 - Revisar si conviene bloquear el cierre hasta tener backend vigente en lugar de solo pedir confirmacion.
 
+### 2026-06-01 - P2 segundo corte: jubilado consistente entre preview y persistencia
+
+Se corrigio una diferencia funcional entre el preview backend y el calculo persistido.
+
+Riesgo mitigado:
+
+- El preview/backend recibia `personalDeductions.esJubiladoOchoHaberes` y aplicaba la deduccion especifica de 8 haberes.
+- La persistencia reconstruia `personalDeductions` antes de recalcular, pero omitía esa marca.
+- En un caso jubilado, la DDJJ podia mostrar un resultado y guardar otro al cerrar o actualizar.
+
+Archivos modificados:
+
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- `persistTaxReturnDetails` ahora conserva `esJubiladoOchoHaberes` al reconstruir deducciones personales.
+- Se agrego una prueba que calcula el preview y compara el resultado persistido (`totalPersonalDeductions` y `finalBalance`) para un contribuyente jubilado.
+- El caso que antes guardaba deduccion personal `0` ahora guarda la deduccion de 8 haberes que corresponde al motor.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxReturnDetailsPersistence.test.ts` fallo con `totalPersonalDeductions` persistido en `0` contra preview `24800000`.
+- `vitest run src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`: 1 archivo, 2 tests, todo OK.
+- `vitest run src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts src/domain/ganancias/tests/taxReturnPreview.test.ts`: 2 archivos, 10 tests, todo OK.
+- `vitest run`: 19 archivos OK y 2 omitidos; 62 tests OK y 3 omitidos.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre persistencia/test: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo advertencias CRLF esperadas de Git en Windows.
+
+Pendiente:
+
+- Seguir revisando P2 para confirmar parametros efectivos y resultado persistido contra preview en otros casos sensibles.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

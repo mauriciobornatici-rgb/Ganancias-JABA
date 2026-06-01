@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { persistTaxReturnDetails } from '../persistence/taxReturnDetailsPersistence';
+import { buildTaxReturnPreview } from '../presentation/taxReturnPreview';
 
 function model(overrides: Record<string, unknown> = {}) {
   return {
@@ -44,7 +45,7 @@ type CreateManyCapture = {
 };
 
 type CalculationCreateCapture = {
-  data: {
+  data: Record<string, unknown> & {
     variablesSnapshot: string;
   };
 };
@@ -138,5 +139,79 @@ describe('persistTaxReturnDetails', () => {
       invoiceNumber: '0004-00000243',
       counterpartyCuit: '307141419',
     });
+  });
+
+  it('mantiene la marca de jubilado para que la persistencia coincida con el preview backend', async () => {
+    const captures: {
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model({ createMany: async () => undefined }),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    const payload = {
+      clientName: 'Cliente Jubilado',
+      cuit: '20-12345678-9',
+      fiscalYear: 2025,
+      sales: [{ date: '2025-01-01', netAmount: '30000000', isExempt: false }],
+      purchases: [],
+      fixedAssets: [],
+      initialStock: '0',
+      finalStock: '0',
+      bankAccounts: [],
+      withholdings: [],
+      generalDeductions: {},
+      personalDeductions: {
+        tieneConyuge: false,
+        cantidadHijos: 0,
+        cantidadHijosIncapacitados: 0,
+        tipoDeduccionEspecial: 'Dependiente',
+        esJubiladoOchoHaberes: true,
+      },
+      personalAssets: [],
+      personalLiabilities: [],
+      activoTotalInicio: '0',
+      bienesNoComputablesInicio: '0',
+      pasivoTotalInicio: '0',
+      axiDynamic: [],
+      saldoAFavorAnterior: '0',
+      quebrantosAnteriores: '0',
+    };
+
+    const preview = buildTaxReturnPreview(payload, {
+      parameterSet,
+      brackets: [bracket],
+      indices: [],
+    });
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-123',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente Jubilado', cuit: '20-12345678-9' },
+        fiscalYear: { year: 2025 },
+      },
+      payload,
+    });
+
+    expect(captures.calculationCreate?.data.totalPersonalDeductions).toBe(preview.deduccionesPersonales.totalDeduccionesPersonalesAdmitidas);
+    expect(captures.calculationCreate?.data.finalBalance).toBe(preview.impuestoAPagarOARCA);
   });
 });

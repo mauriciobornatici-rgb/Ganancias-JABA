@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P2 primer corte, advertencia de cierre sin preview backend vigente.
+- Ultimo checkpoint documentado: P2 segundo corte, persistencia respeta deduccion especial de jubilado igual que preview.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -84,10 +84,12 @@ Avance:
 
 - Corte 1 aplicado: si el usuario intenta cerrar con preview pendiente, fallback local o sin backend vigente, el wizard pide confirmacion explicita antes de cerrar.
 - `buildTaxReturnCloseConsistencyWarning` queda testeado en `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- Corte 2 aplicado: `persistTaxReturnDetails` conserva `esJubiladoOchoHaberes` al reconstruir `personalDeductions`, evitando diferencias entre preview backend y calculo persistido.
+- Test agregado en `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
 
 Siguiente subcorte sugerido:
 
-- Comparar y documentar/asegurar que preview backend y persistencia usan el mismo mapper y los mismos parametros de resolucion antes de cerrar P2.
+- Revisar otros campos de `personalDeductions`/parametros efectivos que puedan perderse entre payload, preview y persistencia antes de cerrar P2.
 
 ## Reglas de continuidad
 

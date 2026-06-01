@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P2 resuelto, calculo visible/guardado protegido y trazable.
+- Ultimo checkpoint documentado: P3 primer corte, AXI estatico alineado con coeficiente dic-anterior/dic-actual.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -94,11 +94,27 @@ Avance:
 
 ### P3 - H4/H2: AXI e indices utiles
 
+Estado: activo, primer corte aplicado.
+
 Objetivo:
 
 - Mapear el uso real de indices/coeficientes contra la planilla.
 - Confirmar si los coeficientes se calculan on demand o se persisten.
 - Agregar pruebas antes de tocar formulas de AXI.
+
+Avance:
+
+- Se verifico contra `AXI Inflacion IMPOSITIVO Comercial 2025.xlsx` que el AXI estatico usa `IPC dic-2025 / IPC dic-2024 - 1`, no `IPC dic-2025 / IPC ene-2025 - 1`.
+- Se decidio calcular coeficientes utiles on demand desde indices persistidos: diciembre del anio anterior + meses del anio actual.
+- El importador de indices ahora detecta diciembre del anio anterior para poder persistirlo como `UpdateIndex` de ese ejercicio.
+- `/api/parametros` devuelve `usefulCoefficients` con `decPreviousToDecCurrent` y `currentYearAverage`.
+- Preview/motor y persistencia usan el coeficiente util para AXI estatico cuando esta disponible.
+- Tests agregados: `axiInflationRate.test.ts`, `taxParameterUsefulCoefficients.test.ts`, mas regresiones en importador, mapper y persistencia.
+
+Siguiente corte recomendado:
+
+- Mapear AXI dinamico contra las filas reales de la planilla, especialmente retiros/aportes que usan coeficiente promedio anual.
+- Revisar si la UI debe mostrar el coeficiente aplicado y advertir cuando se usa fallback por falta de diciembre anterior.
 
 ## Reglas de continuidad
 

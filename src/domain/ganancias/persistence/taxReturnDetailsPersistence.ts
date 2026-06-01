@@ -2,6 +2,7 @@ import { Decimal } from 'decimal.js';
 import { calculateFixedAssetDepreciation } from '../calculations/amortizaciones';
 import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMapper';
+import { buildUsefulCoefficientsFromIndexes } from '../mappers/taxParameterUsefulCoefficients';
 
 type NumericValue = string | number;
 type DateValue = string | number | Date;
@@ -152,7 +153,7 @@ type TaxReturnPersistencePayload = {
 type DbParameterSet = RawRecord & { id: string };
 type DbIpcIndex = {
   monthIndex: number;
-  ipcValue: unknown;
+  ipcValue: Decimal | number | string | { toString(): string };
 };
 
 function numberInput(value: NumericValue | undefined, fallback = 0): number {
@@ -251,6 +252,13 @@ export async function persistTaxReturnDetails({
     where: { fiscalYearId: existingReturn.fiscalYearId },
     orderBy: { monthIndex: 'asc' },
   }) as DbIpcIndex[];
+  const previousDecemberIndex = await db.updateIndex.findFirst({
+    where: {
+      fiscalYear: { year: fiscalYearNumber - 1 },
+      monthIndex: 12,
+    },
+  }) as DbIpcIndex | null;
+  const usefulCoefficients = buildUsefulCoefficientsFromIndexes(dbIpcIndices, previousDecemberIndex);
 
   const calculationInput = buildTaxReturnCalculationInput({
     clientName: clientName || existingReturn.client.name,
@@ -283,6 +291,7 @@ export async function persistTaxReturnDetails({
     parameterSet: dbParamSet,
     brackets: dbBrackets,
     indices: dbIpcIndices,
+    usefulCoefficients,
   });
 
   const calcResult = calculateTaxReturn(calculationInput);

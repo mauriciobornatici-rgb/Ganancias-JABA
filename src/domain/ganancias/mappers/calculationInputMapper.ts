@@ -45,6 +45,21 @@ function decimalValue(value: unknown, fallback: string | number = 0): Decimal {
   return new Decimal(fallback);
 }
 
+function optionalDecimalValue(value: unknown): Decimal | undefined {
+  if (value === null || value === undefined || value === '') return undefined;
+  return decimalValue(value);
+}
+
+function usefulCoefficientValues(value: unknown): { decPreviousToDecCurrent?: Decimal; currentYearAverage?: Decimal } | undefined {
+  const raw = asRecord(value);
+  const coefficients = {
+    decPreviousToDecCurrent: optionalDecimalValue(raw.decPreviousToDecCurrent),
+    currentYearAverage: optionalDecimalValue(raw.currentYearAverage),
+  };
+
+  return coefficients.decPreviousToDecCurrent || coefficients.currentYearAverage ? coefficients : undefined;
+}
+
 function dateValue(value: unknown): Date {
   const candidate = value instanceof Date
     ? value
@@ -90,6 +105,7 @@ export function buildTaxReturnCalculationInput(
   const parameterSet = asRecord(params.parameterSet);
   const taxValues = Object.keys(parameterSet).length > 0 ? parameterSet : params;
   const ipcValues = params.ipcIndices ?? params.indices;
+  const usefulCoefficients = usefulCoefficientValues(params.usefulCoefficients);
   const generalDeductions = asRecord(data.generalDeductions);
   const personalDeductions = asRecord(data.personalDeductions);
 
@@ -131,6 +147,7 @@ export function buildTaxReturnCalculationInput(
         monthIndex: numberValue(index.monthIndex),
         ipcValue: decimalValue(index.ipcValue),
       })),
+      ...(usefulCoefficients ? { usefulCoefficients } : {}),
     },
     sales: asRecordArray(data.sales).map(sale => ({
       date: dateValue(sale.date),

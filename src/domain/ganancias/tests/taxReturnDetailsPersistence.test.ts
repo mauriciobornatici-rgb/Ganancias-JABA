@@ -215,4 +215,53 @@ describe('persistTaxReturnDetails', () => {
     expect(captures.calculationCreate?.data.totalPersonalDeductions).toBe(preview.deduccionesPersonales.totalDeduccionesPersonalesAdmitidas);
     expect(captures.calculationCreate?.data.finalBalance).toBe(preview.impuestoAPagarOARCA);
   });
+
+  it('usa diciembre del anio anterior para el AXI estatico persistido cuando existe indice previo', async () => {
+    const captures: {
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model({
+        findMany: async () => [
+          { monthIndex: 1, ipcValue: '7864.1257' },
+          { monthIndex: 12, ipcValue: '10121.3715' },
+        ],
+        findFirst: async () => ({ monthIndex: 12, ipcValue: '7694.0075' }),
+      }),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-axi',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente AXI', cuit: '20-33333333-3' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        activoTotalInicio: '1000000',
+        bienesNoComputablesInicio: '0',
+        pasivoTotalInicio: '0',
+      },
+    });
+
+    expect(captures.calculationCreate?.data.axiStaticResult).toBe(-315488);
+  });
 });

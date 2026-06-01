@@ -4,7 +4,8 @@ import {
   TaxCalculationResult,
   GeneralDeductionsOutput,
   PersonalDeductionsOutput,
-  Art94Bracket
+  Art94Bracket,
+  TaxParameters
 } from '../types';
 import { calculateTotalDepreciation } from './amortizaciones';
 import { calculateTotalAxi } from './ajustePorInflacion';
@@ -39,6 +40,21 @@ export function calculateArt94Tax(
   // Fórmula: Impuesto = Importe Fijo + (Ganancia Neta - Excedente) * Alícuota
   const tax = fixed.add(taxableIncome.sub(excess).mul(pct));
   return tax.round();
+}
+
+function calculateAxiStaticInflationRate(params: TaxParameters): Decimal | null {
+  const usefulStaticCoefficient = params.usefulCoefficients?.decPreviousToDecCurrent;
+  if (usefulStaticCoefficient && usefulStaticCoefficient.gt(0)) {
+    return new Decimal(usefulStaticCoefficient).sub(1);
+  }
+
+  const ipcEnero = params.indicesIPC.find(i => i.monthIndex === 1);
+  const ipcDiciembre = params.indicesIPC.find(i => i.monthIndex === 12);
+  if (ipcEnero && ipcDiciembre) {
+    return new Decimal(ipcDiciembre.ipcValue).div(new Decimal(ipcEnero.ipcValue)).sub(1);
+  }
+
+  return null;
 }
 
 /**
@@ -109,13 +125,10 @@ export function calculateTaxReturn(
   // ==========================================
   // 4. AJUSTE POR INFLACIÓN IMPOSITIVO (AXI)
   // ==========================================
-  // Coeficiente anual de inflación para el AXI Estático: (IPC_diciembre / IPC_enero) - 1
-  let staticInflationRate = new Decimal(0);
-  const ipcEnero = input.params.indicesIPC.find(i => i.monthIndex === 1);
-  const ipcDiciembre = input.params.indicesIPC.find(i => i.monthIndex === 12);
-  if (ipcEnero && ipcDiciembre) {
-    staticInflationRate = new Decimal(ipcDiciembre.ipcValue).div(new Decimal(ipcEnero.ipcValue)).sub(1);
-  } else {
+  // AXI estático según planilla: coeficiente dic. anterior a dic. actual menos 1.
+  const calculatedStaticInflationRate = calculateAxiStaticInflationRate(input.params);
+  const staticInflationRate = calculatedStaticInflationRate ?? new Decimal(0);
+  if (!calculatedStaticInflationRate) {
     warnings.push('AXI Estático: No se encontraron índices IPC de enero y/o diciembre. La tasa de inflación estática se fijó en 0.');
   }
   const axiResult = calculateTotalAxi(input.axiStatic, input.axiDynamic, staticInflationRate, input.params.indicesIPC);

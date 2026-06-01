@@ -1,6 +1,12 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { Decimal } from 'decimal.js';
+import type { Prisma } from '@/generated/client/client';
+import { buildUsefulCoefficientsFromIndexes } from '@/domain/ganancias/mappers/taxParameterUsefulCoefficients';
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Error desconocido';
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -30,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     // Si solo queremos listar las resoluciones de este año
     if (listResolutions) {
-      const list = fiscalYear.parameterSets.map((ps: any) => ({
+      const list = fiscalYear.parameterSets.map((ps) => ({
         id: ps.id,
         version: ps.version,
         resolution: ps.sourceLaw || `Resolución v${ps.version}`,
@@ -41,15 +47,15 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Determinar la resolución (parameterSet)
-    let parameterSet = null;
+    let parameterSet: (typeof fiscalYear.parameterSets)[number] | null = null;
     if (resolutionId && resolutionId !== 'default') {
-      parameterSet = fiscalYear.parameterSets.find((ps: any) => ps.id === resolutionId) || null;
+      parameterSet = fiscalYear.parameterSets.find((ps) => ps.id === resolutionId) || null;
     } else {
       parameterSet = fiscalYear.parameterSets[0] || null; // el primero ya que están por versión desc
     }
 
     // 3. Cargar brackets específicos
-    let brackets = [];
+    let brackets: Awaited<ReturnType<typeof prisma.taxArt94Bracket.findMany>> = [];
     if (parameterSet) {
       brackets = await prisma.taxArt94Bracket.findMany({
         where: {
@@ -64,6 +70,14 @@ export async function GET(req: NextRequest) {
         where: { fiscalYearId: fiscalYear.id, taxParameterSetId: null }
       });
     }
+
+    const previousDecemberIndex = await prisma.updateIndex.findFirst({
+      where: {
+        fiscalYear: { year: year - 1 },
+        monthIndex: 12,
+      },
+    });
+    const usefulCoefficients = buildUsefulCoefficientsFromIndexes(fiscalYear.indices, previousDecemberIndex);
 
     const payload = {
       year: fiscalYear.year,
@@ -87,7 +101,7 @@ export async function GET(req: NextRequest) {
         sourceLaw: parameterSet.sourceLaw || `Resolución v${parameterSet.version}`,
         updatedAt: parameterSet.updatedAt.toISOString()
       } : null,
-      brackets: brackets.map((b: any) => ({
+      brackets: brackets.map((b) => ({
         id: b.id,
         fromAmount: b.fromAmount.toString(),
         toAmount: b.toAmount ? b.toAmount.toString() : null,
@@ -95,18 +109,26 @@ export async function GET(req: NextRequest) {
         percentage: b.percentage.toString(),
         excessOf: b.excessOf.toString()
       })),
-      indices: fiscalYear.indices.map((i: any) => ({
+      indices: fiscalYear.indices.map((i) => ({
         monthIndex: i.monthIndex,
         monthName: i.monthName,
         ipcValue: i.ipcValue.toString()
-      })).sort((a: any, b: any) => a.monthIndex - b.monthIndex)
+      })).sort((a, b) => a.monthIndex - b.monthIndex),
+      usefulCoefficients: {
+        ...(usefulCoefficients.decPreviousToDecCurrent
+          ? { decPreviousToDecCurrent: usefulCoefficients.decPreviousToDecCurrent.toString() }
+          : {}),
+        ...(usefulCoefficients.currentYearAverage
+          ? { currentYearAverage: usefulCoefficients.currentYearAverage.toString() }
+          : {}),
+      },
     };
 
     return NextResponse.json({ success: true, data: payload });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json({
       success: false,
-      error: `Error al obtener parámetros: ${err.message}`
+      error: `Error al obtener parámetros: ${errorMessage(err)}`
     }, { status: 500 });
   }
 }
@@ -126,7 +148,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Año fiscal no encontrado' }, { status: 404 });
     }
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Guardar o actualizar deducciones
       if (parameterSet) {
         const latestSet = fiscalYear.parameterSets[0];
@@ -172,10 +194,10 @@ export async function PUT(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Parámetros actualizados con éxito en la base de datos.' });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json({
       success: false,
-      error: `Error al actualizar parámetros: ${err.message}`
+      error: `Error al actualizar parámetros: ${errorMessage(err)}`
     }, { status: 500 });
   }
 }
@@ -277,7 +299,7 @@ export async function POST(req: NextRequest) {
       excessOf: Math.round(b.excessOf * multiplier * 100) / 100
     }));
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Upsert deducciones
       await tx.taxParameterSet.upsert({
         where: {
@@ -343,10 +365,10 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `Parámetros base internos del Período Fiscal ${targetYear} cargados. Verificar contra normativa oficial antes de presentar.`
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json({
       success: false,
-      error: `Error al cargar parámetros base internos: ${err.message}`
+      error: `Error al cargar parámetros base internos: ${errorMessage(err)}`
     }, { status: 500 });
   }
 }

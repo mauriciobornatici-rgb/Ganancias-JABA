@@ -36,12 +36,18 @@ export interface UpdateIndexValue {
   ipcValue: Decimal;
 }
 
+export interface UsefulTaxCoefficients {
+  decPreviousToDecCurrent?: Decimal;
+  currentYearAverage?: Decimal;
+}
+
 export interface TaxParameters {
   year: number;
   deduccionesArt30: TaxDeductionsArt30;
   topesDeduccionesGenerales: TaxGeneralDeductionsCaps;
   escalaArt94: Art94Bracket[];
   indicesIPC: UpdateIndexValue[];
+  usefulCoefficients?: UsefulTaxCoefficients;
 }
 
 // ==========================================

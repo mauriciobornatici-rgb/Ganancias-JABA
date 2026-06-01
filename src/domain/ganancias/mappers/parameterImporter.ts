@@ -41,6 +41,7 @@ export interface ParsedTaxParameterWorkbook {
   deductions: ParsedDeductions;
   brackets: ParsedArt94Bracket[];
   ipc: ParsedIpcIndex[];
+  previousYearDecemberIndex?: ParsedIpcIndex;
   usefulCoefficients: ParsedUsefulCoefficients;
   warnings: string[];
 }
@@ -83,7 +84,7 @@ export function parseTaxParameterWorkbook(workbook: xlsx.WorkBook, fiscalYear: n
   const warnings: string[] = [];
   const deductions = parseDeductions(workbook);
   const brackets = parseArt94Brackets(workbook);
-  const { ipc, usefulCoefficients, warnings: ipcWarnings } = parseIpcIndexes(workbook, fiscalYear);
+  const { ipc, previousYearDecemberIndex, usefulCoefficients, warnings: ipcWarnings } = parseIpcIndexes(workbook, fiscalYear);
 
   warnings.push(...ipcWarnings);
 
@@ -91,6 +92,7 @@ export function parseTaxParameterWorkbook(workbook: xlsx.WorkBook, fiscalYear: n
     deductions,
     brackets,
     ipc,
+    previousYearDecemberIndex,
     usefulCoefficients,
     warnings,
   };
@@ -165,7 +167,12 @@ function parseArt94Brackets(workbook: xlsx.WorkBook): ParsedArt94Bracket[] {
 function parseIpcIndexes(
   workbook: xlsx.WorkBook,
   fiscalYear: number
-): { ipc: ParsedIpcIndex[]; usefulCoefficients: ParsedUsefulCoefficients; warnings: string[] } {
+): {
+  ipc: ParsedIpcIndex[];
+  previousYearDecemberIndex?: ParsedIpcIndex;
+  usefulCoefficients: ParsedUsefulCoefficients;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const usefulCoefficients: ParsedUsefulCoefficients = {};
   const sheetName = findSheetName(workbook, ['ipc', 'indic', 'coeficiente']) ?? workbook.SheetNames[2];
@@ -181,9 +188,15 @@ function parseIpcIndexes(
   });
 
   const currentYearRows = new Map<number, ParsedIpcIndex>();
+  let previousYearDecemberIndex: ParsedIpcIndex | undefined;
 
   for (const row of rows) {
     captureUsefulCoefficients(row, usefulCoefficients);
+
+    const previousYearIndex = parseDatedIpcRow(row, fiscalYear - 1);
+    if (previousYearIndex?.monthIndex === 12) {
+      previousYearDecemberIndex = previousYearIndex;
+    }
 
     const datedIndex = parseDatedIpcRow(row, fiscalYear);
     if (datedIndex) {
@@ -203,7 +216,7 @@ function parseIpcIndexes(
     warnings.push(`Se encontraron ${ipc.length} indices IPC para ${fiscalYear}; se esperaban 12 meses.`);
   }
 
-  return { ipc, usefulCoefficients, warnings };
+  return { ipc, previousYearDecemberIndex, usefulCoefficients, warnings };
 }
 
 function parseDatedIpcRow(row: CellRow, fiscalYear: number): ParsedIpcIndex | null {
@@ -341,4 +354,3 @@ function isOpenEndedValue(value: unknown): boolean {
   const label = normalizeLabel(value);
   return label === '' || label.includes('y mas') || label.includes('en adelante');
 }
-

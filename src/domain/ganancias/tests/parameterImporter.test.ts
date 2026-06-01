@@ -31,6 +31,20 @@ describe('JABA Tax Parameter Workbook Importer', () => {
     expect(parsed.ipc.find((item) => item.monthIndex === 12)?.ipcValue).toBeCloseTo(10121.3715, 4);
     expect(parsed.usefulCoefficients.decPreviousToDecCurrent).toBeCloseTo(1.3154876051, 10);
     expect(parsed.usefulCoefficients.currentYearAverage).toBeCloseTo(1.128840454, 9);
+    const workbookWithPriorIndex = parsed as typeof parsed & {
+      previousYearDecemberIndex?: {
+        monthIndex: number;
+        monthName: string;
+        ipcValue: number;
+        sourceYear?: number;
+      };
+    };
+
+    expect(workbookWithPriorIndex.previousYearDecemberIndex).toMatchObject({
+      monthIndex: 12,
+      monthName: 'Diciembre',
+      sourceYear: 2024,
+    });
+    expect(workbookWithPriorIndex.previousYearDecemberIndex?.ipcValue).toBeCloseTo(7694.0075, 4);
   });
 });
-

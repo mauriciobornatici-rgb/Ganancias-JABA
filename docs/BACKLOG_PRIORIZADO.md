@@ -119,10 +119,24 @@ Accion recomendada:
 - Mapear AXI estatico/dinamico contra planilla.
 - Agregar pruebas contra archivo real antes de cambiar formulas.
 
+Avance 2026-06-01:
+
+- Primer corte aplicado: AXI estatico usa coeficiente `dic-anterior / dic-actual` importado/derivado desde indices utiles, igual que la planilla.
+- El importador detecta diciembre del anio anterior y la importacion lo persiste como indice del ejercicio anterior.
+- La API de parametros deriva `decPreviousToDecCurrent` y `currentYearAverage` on demand desde indices persistidos.
+- El mapper conserva `usefulCoefficients` y el motor los usa antes del fallback historico `dic/ene`.
+- La persistencia detallada tambien deriva el coeficiente util para que el resultado guardado coincida con el preview.
+- Verificaciones focales y suite completa quedaron verdes.
+
 Criterio de cierre:
 
 - AXI estatico y dinamico tienen carga guiada y trazable.
 - Coeficientes usados en calculo pueden auditarse.
+
+Pendiente para cerrar P3:
+
+- Confirmar AXI dinamico contra planilla: retiros, aportes y movimientos con coeficiente promedio anual.
+- Mostrar o auditar en la UI/papel de trabajo que coeficiente se uso y si hubo fallback.
 
 ## P4 - H7: patrimonio y justificacion patrimonial
 

@@ -1573,3 +1573,66 @@ Pendiente:
 
 - Hacer una pasada visual manual o con navegador disponible para revisar densidad de columnas en desktop/mobile.
 - Si la pantalla queda muy cargada, evaluar un modo compacto/expandible por fila para detalle del comprobante.
+
+### 2026-06-01 - Fase 1, P3 primer corte: AXI estatico con coeficiente util de indices
+
+Se corrigio el criterio de coeficiente para el ajuste por inflacion impositivo estatico.
+
+Hallazgo contra Excel:
+
+- En `AXI Inflacion IMPOSITIVO Comercial 2025.xlsx`, hoja `AXI.Estatico`, el coeficiente estatico surge de `IPC dic-2025 / IPC dic-2024 - 1`.
+- El motor venia usando `IPC dic-2025 / IPC ene-2025 - 1`.
+- Con los indices del archivo, la tasa correcta es `1.3154876051264572 - 1`; el criterio anterior daba aproximadamente `0.2870307375681953`.
+- Para un capital computable inicial de `$1.000.000`, el AXI estatico correcto es `-315.488`, no `-287.031`.
+
+Decision de arquitectura:
+
+- No se agrego una migracion nueva para guardar coeficientes derivados.
+- Se calcula on demand desde indices persistidos:
+- `decPreviousToDecCurrent`: IPC diciembre anio actual / IPC diciembre anio anterior.
+- `currentYearAverage`: IPC diciembre anio actual / promedio IPC mensual del anio actual.
+- El importador de Excel ahora detecta diciembre del anio anterior y la importacion lo guarda como `UpdateIndex` del ejercicio anterior.
+
+Archivos modificados:
+
+- `src/domain/ganancias/mappers/parameterImporter.ts`.
+- `src/domain/ganancias/mappers/taxParameterUsefulCoefficients.ts`.
+- `src/domain/ganancias/mappers/calculationInputMapper.ts`.
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/app/api/parametros/import/route.ts`.
+- `src/app/api/parametros/route.ts`.
+- `src/domain/ganancias/types.ts`.
+- `src/domain/ganancias/tests/parameterImporter.test.ts`.
+- `src/domain/ganancias/tests/taxParameterUsefulCoefficients.test.ts`.
+- `src/domain/ganancias/tests/calculationInputMapper.test.ts`.
+- `src/domain/ganancias/tests/axiInflationRate.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+
+Resultado funcional:
+
+- El parser de indices conserva los 12 IPC del anio fiscal y ademas expone diciembre del anio anterior.
+- La importacion persiste diciembre del anio anterior como indice del ejercicio previo.
+- `/api/parametros` devuelve `usefulCoefficients` derivados desde la base.
+- El mapper pasa esos coeficientes al motor de calculo.
+- `calculateTaxReturn` usa el coeficiente util para AXI estatico cuando esta disponible.
+- `persistTaxReturnDetails` deriva los mismos coeficientes antes de calcular y guardar, evitando diferencia entre preview y calculo persistido.
+- Se elimino deuda focal de `any` en `src/app/api/parametros/route.ts` al tocar la ruta.
+
+Verificacion:
+
+- TDD rojo confirmado: `axiInflationRate.test.ts` fallo inicialmente porque el AXI estatico daba `-287031` en vez de `-315488`.
+- TDD rojo confirmado: `calculationInputMapper.test.ts` fallo inicialmente porque no preservaba `usefulCoefficients`.
+- TDD rojo confirmado: `parameterImporter.test.ts` fallo inicialmente porque no exponia diciembre del anio anterior.
+- TDD rojo confirmado: `taxParameterUsefulCoefficients.test.ts` fallo inicialmente porque el helper no existia.
+- `vitest run src/domain/ganancias/tests/axiInflationRate.test.ts src/domain/ganancias/tests/calculationInputMapper.test.ts src/domain/ganancias/tests/parameterImporter.test.ts src/domain/ganancias/tests/taxParameterUsefulCoefficients.test.ts`: 4 archivos, 7 tests, todo OK.
+- `vitest run src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts src/domain/ganancias/tests/axiInflationRate.test.ts src/domain/ganancias/tests/taxParameterUsefulCoefficients.test.ts`: 3 archivos, 5 tests, todo OK.
+- `vitest run`: 23 archivos, 69 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre calculo, mappers, persistencia y rutas de parametros: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Mapear AXI dinamico contra planilla, especialmente movimientos que usan coeficiente promedio anual.
+- Evaluar aviso visible cuando no existe diciembre del anio anterior y el sistema cae al fallback `dic/ene`.

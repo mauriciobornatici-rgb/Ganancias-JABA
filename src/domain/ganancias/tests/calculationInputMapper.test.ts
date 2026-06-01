@@ -121,6 +121,49 @@ describe('buildTaxReturnCalculationInput', () => {
     expect(input.params.indicesIPC[0].ipcValue.toNumber()).toBe(315);
   });
 
+  it('preserva coeficientes utiles de indices para el calculo AXI', () => {
+    const input = buildTaxReturnCalculationInput(
+      {
+        clientName: 'Cliente AXI',
+        cuit: '20-33333333-3',
+        fiscalYear: 2025,
+      },
+      {
+        parameterSet: {
+          minimoNoImponible: '0',
+          conyuge: '0',
+          hijo: '0',
+          hijoIncapacitado: '0',
+          especialAutonomo: '0',
+          especialEmprendedor: '0',
+          especialDependiente: '0',
+          topeServicioDomestico: '0',
+          topeSeguroVida: '0',
+          topeSeguroRetiro: '0',
+          topeGastosSepelio: '0',
+          topeInteresHipoteca: '0',
+          topeGastosEducativos: '0',
+        },
+        brackets: [],
+        indices: [],
+        usefulCoefficients: {
+          decPreviousToDecCurrent: '1.3154876051264572',
+          currentYearAverage: '1.1288404539857682',
+        },
+      }
+    );
+
+    const paramsWithUsefulCoefficients = input.params as typeof input.params & {
+      usefulCoefficients?: {
+        decPreviousToDecCurrent?: { toNumber: () => number };
+        currentYearAverage?: { toNumber: () => number };
+      };
+    };
+
+    expect(paramsWithUsefulCoefficients.usefulCoefficients?.decPreviousToDecCurrent?.toNumber()).toBeCloseTo(1.3154876051264572, 10);
+    expect(paramsWithUsefulCoefficients.usefulCoefficients?.currentYearAverage?.toNumber()).toBeCloseTo(1.1288404539857682, 10);
+  });
+
   it('acepta valores decimales tipo Prisma que exponen toString', () => {
     const decimalLike = { toString: () => '1234.56' };
     const input = buildTaxReturnCalculationInput(

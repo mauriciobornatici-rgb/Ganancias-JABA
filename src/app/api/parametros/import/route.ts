@@ -124,6 +124,38 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      if (parsedWorkbook.previousYearDecemberIndex) {
+        const previousIndex = parsedWorkbook.previousYearDecemberIndex;
+        const previousYearNumber = previousIndex.sourceYear ?? year - 1;
+        let previousFiscalYear = await tx.fiscalYear.findUnique({
+          where: { year: previousYearNumber },
+        });
+        if (!previousFiscalYear) {
+          previousFiscalYear = await tx.fiscalYear.create({
+            data: { year: previousYearNumber, isEnabled: true },
+          });
+        }
+
+        await tx.updateIndex.upsert({
+          where: {
+            fiscalYearId_monthIndex: {
+              fiscalYearId: previousFiscalYear.id,
+              monthIndex: previousIndex.monthIndex,
+            },
+          },
+          update: {
+            monthName: previousIndex.monthName,
+            ipcValue: new Decimal(previousIndex.ipcValue),
+          },
+          create: {
+            fiscalYearId: previousFiscalYear.id,
+            monthIndex: previousIndex.monthIndex,
+            monthName: previousIndex.monthName,
+            ipcValue: new Decimal(previousIndex.ipcValue),
+          },
+        });
+      }
+
       const auditLog = await tx.auditLog.create({
         data: {
           action: 'IMPORT',

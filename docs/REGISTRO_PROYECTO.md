@@ -1204,3 +1204,45 @@ Pendiente:
 
 - Evaluar migracion para agregar `counterpartyCuit` como columna propia en `SalesInvoice` y `PurchaseInvoice` si se necesitara filtrar/reportar por CUIT.
 - Mejorar la grilla del wizard para mostrar comprobante/contraparte de forma visible y editable, no solo conservarlo internamente.
+
+### 2026-05-31 - Fase 1, vigesimo octavo cambio: trazabilidad visible en grillas del wizard
+
+Se hizo visible en las grillas de ventas y compras el detalle importado de comprobante y contraparte.
+
+Riesgo mitigado:
+
+- Conservar el detalle en base no alcanza si el usuario no puede reconocer rapidamente que renglones importo.
+- La carga agil necesita control visual inmediato sin abrir pantallas auxiliares.
+- La grilla no debe obligar a editar datos tecnicos, pero si debe mostrar la referencia auditable basica.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/invoiceTrace.ts`.
+- `src/domain/ganancias/tests/invoiceTrace.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- Se agrego `buildInvoiceTraceSummary` para armar una referencia legible con comprobante, contraparte, CUIT, IVA y total.
+- La tabla de ventas muestra una columna `Comprobante / Contraparte`.
+- La tabla de compras muestra una columna `Comprobante / Proveedor`.
+- Las filas manuales se identifican como `Carga manual` y `Sin contraparte importada`, evitando confundir datos no importados con datos perdidos.
+- Las grillas usan scroll horizontal si el ancho no alcanza, manteniendo usabilidad en pantallas chicas.
+
+Verificacion:
+
+- TDD rojo confirmado: `invoiceTrace.test.ts` fallo inicialmente porque el helper no existia.
+- `vitest run src/domain/ganancias/tests/invoiceTrace.test.ts`: 1 archivo, 2 tests, todo OK.
+- `vitest run`: 19 archivos, 55 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test nuevo: OK.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx`: sigue fallando por deuda previa del componente (`setState` en efectos, `Date.now`, `any` antiguos y warnings).
+- `next build --webpack`: OK.
+- Verificacion HTTP local de `/declaraciones/crear/wizard`: OK, respondio `200`.
+- Verificacion visual con Browser integrado: bloqueada por sandbox de Windows; fallback Playwright CLI no disponible porque no hay `npx` en el runtime.
+
+Pendiente:
+
+- Hacer una pasada visual manual o con navegador disponible para revisar densidad de columnas en desktop/mobile.
+- Si la pantalla queda muy cargada, evaluar un modo compacto/expandible por fila para detalle del comprobante.

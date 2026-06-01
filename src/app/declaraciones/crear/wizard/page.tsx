@@ -23,6 +23,7 @@ import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/am
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
+import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import {
   buildTaxReturnPreviewStatus,
   buildTaxReturnPreviewRequest,
@@ -1709,7 +1710,7 @@ export default function WizardPage() {
               )}
 
               {/* GRILLA INTERACTIVA EDITABLE (STITCH INTERACTIVE TABLE) */}
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
+              <div className="border border-zinc-800 rounded-lg overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
@@ -1722,13 +1723,24 @@ export default function WizardPage() {
                         />
                       </th>
                       <th className="px-4 py-3">Fecha</th>
+                      <th className="px-4 py-3">Comprobante / Contraparte</th>
                       <th className="px-4 py-3 text-right">Importe Neto ($)</th>
                       <th className="px-4 py-3 text-center">Tipo de Ingreso</th>
                       <th className="px-4 py-3 text-right">Eliminar</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
-                    {sales.map((sale, index) => (
+                    {sales.map((sale, index) => {
+                      const invoiceTrace = buildInvoiceTraceSummary({
+                        invoiceType: sale.invoiceType,
+                        invoiceNumber: sale.invoiceNumber,
+                        counterpartyName: sale.customerName,
+                        counterpartyCuit: sale.counterpartyCuit,
+                        ivaAmount: sale.ivaAmount,
+                        totalAmount: sale.totalAmount,
+                      });
+
+                      return (
                       <tr key={index} className={`hover:bg-zinc-800/10 transition-colors ${selectedSales.includes(index) ? 'bg-teal-500/5' : ''}`}>
                         <td className="px-4 py-2 text-center">
                           <input 
@@ -1747,6 +1759,19 @@ export default function WizardPage() {
                             onKeyDown={(e) => handleSalesKeyDown(e, index, 'date')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
                           />
+                        </td>
+                        <td className="px-4 py-2 min-w-[230px]">
+                          <div className={invoiceTrace.hasTrace ? 'text-[11px] font-bold text-zinc-200' : 'text-[11px] font-semibold text-zinc-500'}>
+                            {invoiceTrace.primary}
+                          </div>
+                          <div className="text-[10px] text-zinc-500 truncate" title={invoiceTrace.secondary}>
+                            {invoiceTrace.secondary}
+                          </div>
+                          {invoiceTrace.amounts && (
+                            <div className="text-[10px] text-teal-400/80 font-mono mt-0.5">
+                              {invoiceTrace.amounts}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-2 text-right">
                           <input 
@@ -1777,7 +1802,8 @@ export default function WizardPage() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1879,7 +1905,7 @@ export default function WizardPage() {
                 </div>
               )}
 
-              <div className="border border-zinc-800 rounded-lg overflow-hidden">
+              <div className="border border-zinc-800 rounded-lg overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
@@ -1892,6 +1918,7 @@ export default function WizardPage() {
                         />
                       </th>
                       <th className="px-4 py-3">Fecha</th>
+                      <th className="px-4 py-3">Comprobante / Proveedor</th>
                       <th className="px-4 py-3 text-right">Importe Neto ($)</th>
                       <th className="px-4 py-3 text-center">Tratamiento</th>
                       <th className="px-4 py-3 text-center">Tipo Gasto</th>
@@ -1899,7 +1926,17 @@ export default function WizardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
-                    {purchases.map((purchase, index) => (
+                    {purchases.map((purchase, index) => {
+                      const invoiceTrace = buildInvoiceTraceSummary({
+                        invoiceType: purchase.invoiceType,
+                        invoiceNumber: purchase.invoiceNumber,
+                        counterpartyName: purchase.vendorName,
+                        counterpartyCuit: purchase.counterpartyCuit,
+                        ivaAmount: purchase.ivaAmount,
+                        totalAmount: purchase.totalAmount,
+                      });
+
+                      return (
                       <tr key={index} className={`hover:bg-zinc-800/10 transition-colors ${selectedPurchases.includes(index) ? 'bg-teal-500/5' : ''}`}>
                         <td className="px-4 py-2 text-center">
                           <input 
@@ -1918,6 +1955,19 @@ export default function WizardPage() {
                             onKeyDown={(e) => handlePurchasesKeyDown(e, index, 'date')}
                             className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
                           />
+                        </td>
+                        <td className="px-4 py-2 min-w-[230px]">
+                          <div className={invoiceTrace.hasTrace ? 'text-[11px] font-bold text-zinc-200' : 'text-[11px] font-semibold text-zinc-500'}>
+                            {invoiceTrace.primary}
+                          </div>
+                          <div className="text-[10px] text-zinc-500 truncate" title={invoiceTrace.secondary}>
+                            {invoiceTrace.secondary}
+                          </div>
+                          {invoiceTrace.amounts && (
+                            <div className="text-[10px] text-teal-400/80 font-mono mt-0.5">
+                              {invoiceTrace.amounts}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-2 text-right">
                           <input 
@@ -1960,7 +2010,8 @@ export default function WizardPage() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

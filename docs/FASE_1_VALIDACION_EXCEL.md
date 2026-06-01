@@ -158,6 +158,7 @@ Avance 2026-05-30:
 - El wizard ya consume el preview backend con debounce, cancelacion y fallback local para mantener carga agil mientras se valida la fuente backend.
 - La UI ahora informa si el resultado visible esta confirmado por backend, pendiente de confirmacion o usando preview local de respaldo.
 - El importador AFIP/ARCA de ventas y compras ahora conserva comprobante, contraparte, CUIT, IVA y total desde el Excel hasta la persistencia/reapertura de la DDJJ.
+- Las grillas del wizard muestran la referencia de comprobante/contraparte importada para control visual inmediato.
 
 ## Criterios de aceptacion
 

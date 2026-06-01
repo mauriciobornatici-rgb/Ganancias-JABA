@@ -114,7 +114,8 @@ Avance 2026-05-30:
 - Se creo `src/domain/ganancias/mappers/parameterImporter.ts`.
 - Se conecto `/api/parametros/import` al parser de dominio.
 - La API devuelve `warnings` y `usefulCoefficients` en la respuesta de importacion.
-- Pendiente: guardar trazabilidad de fuente/fecha en el modelo de datos.
+- La importacion ahora registra un `AuditLog` transaccional con archivo, resolucion, conteos, warnings y coeficientes utiles, sin requerir una migracion nueva.
+- Pendiente: decidir si en una fase posterior conviene promover parte de esa metadata a columnas propias de `TaxParameterSet`.
 
 ### Paso C - Comparacion app vs Excel
 

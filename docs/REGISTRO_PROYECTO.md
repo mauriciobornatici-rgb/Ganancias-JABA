@@ -1114,3 +1114,42 @@ Verificacion:
 Pendiente:
 
 - Validar visualmente con navegador cuando el conector/browser local este disponible; el intento en esta sesion quedo bloqueado por entorno de automatizacion.
+
+### 2026-05-31 - Fase 1, vigesimo sexto cambio: auditoria de importacion de parametros
+
+Se agrego trazabilidad persistida para la carga de parametros e indices desde Excel.
+
+Riesgo mitigado:
+
+- El importador devolvia `warnings` y `usefulCoefficients` en la respuesta HTTP, pero esa informacion podia perderse al cerrar la pantalla.
+- Para un estudio contable, cada carga de indices/parametros debe poder rastrearse por archivo, resolucion, periodo y resultado de parsing.
+- Se evito abrir una migracion nueva en esta etapa usando `AuditLog`, que ya existe en el modelo y cumple la funcion de bitacora operativa.
+
+Archivos modificados:
+
+- `src/app/api/parametros/import/route.ts`.
+- `src/domain/ganancias/persistence/taxParameterImportAudit.ts`.
+- `src/domain/ganancias/tests/taxParameterImportAudit.test.ts`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- El endpoint `/api/parametros/import` crea un `AuditLog` dentro de la misma transaccion que crea el `TaxParameterSet`.
+- El detalle auditable queda en JSON estable con archivo, tamanio, MIME, anio fiscal, resolucion, version, conteo de tramos, conteo de IPC, warnings y coeficientes utiles.
+- La respuesta de importacion devuelve `auditLogId` para rastrear la operacion.
+- No se agrega migracion de base; se aprovecha la tabla de auditoria existente.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxParameterImportAudit.test.ts` fallo inicialmente porque el helper no existia.
+- `vitest run src/domain/ganancias/tests/taxParameterImportAudit.test.ts`: 1 test, todo OK.
+- `vitest run`: 17 archivos, 50 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre helper/test/endpoint de importacion: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar con una importacion real desde la pantalla de parametros y revisar el evento en `/api/auditoria?action=IMPORT&entityType=TaxParameterSet`.
+- Definir mas adelante si algun dato auditable debe pasar de `AuditLog.details` a columnas propias de `TaxParameterSet`.

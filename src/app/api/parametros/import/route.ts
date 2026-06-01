@@ -4,6 +4,7 @@ import type { Prisma } from '@/generated/client/client';
 import { Decimal } from 'decimal.js';
 import * as xlsx from 'xlsx';
 import { parseTaxParameterWorkbook } from '@/domain/ganancias/mappers/parameterImporter';
+import { buildTaxParameterImportAuditDetails } from '@/domain/ganancias/persistence/taxParameterImportAudit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -123,8 +124,31 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const auditLog = await tx.auditLog.create({
+        data: {
+          action: 'IMPORT',
+          entityType: 'TaxParameterSet',
+          entityId: parameterSet.id,
+          fiscalYear: year,
+          details: buildTaxParameterImportAuditDetails({
+            fileName: file.name,
+            fileSize: file.size,
+            mimeType: file.type || 'application/octet-stream',
+            fiscalYear: year,
+            resolutionName,
+            parameterSetId: parameterSet.id,
+            version: parameterSet.version,
+            bracketsCount: parsedBrackets.length,
+            ipcCount: parsedIpc.length,
+            warnings: parsedWorkbook.warnings,
+            usefulCoefficients: parsedWorkbook.usefulCoefficients,
+          }),
+        },
+      });
+
       return {
         parameterSet,
+        auditLogId: auditLog.id,
         bracketsCount: parsedBrackets.length,
         ipcCount: parsedIpc.length
       };
@@ -138,6 +162,7 @@ export async function POST(req: NextRequest) {
         year: year,
         version: result.parameterSet.version,
         resolution: result.parameterSet.sourceLaw,
+        auditLogId: result.auditLogId,
         bracketsLoaded: result.bracketsCount,
         ipcLoaded: result.ipcCount,
         warnings: parsedWorkbook.warnings,

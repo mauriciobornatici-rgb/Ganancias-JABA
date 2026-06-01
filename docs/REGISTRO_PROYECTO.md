@@ -1,6 +1,12 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-05-31
+Ultima actualizacion: 2026-06-01
+
+## Para Retomar Rapido
+
+Leer primero `docs/CONTINUAR_AQUI.md`.
+
+Ese archivo resume estado actual, prioridad activa, comandos utiles y la regla de continuidad. Este registro queda como bitacora historica larga y evidencia de decisiones, pero no como punto de entrada principal.
 
 ## Objetivo
 
@@ -121,7 +127,7 @@ Accion esperada:
 
 ### H5 - El importador pierde detalle auditable
 
-Estado: abierto.
+Estado: parcialmente resuelto.
 
 Ventas, compras y retenciones importadas se reducen a pocos campos genericos.
 
@@ -234,6 +240,19 @@ Este archivo funcionara como bitacora y estado vivo del proyecto. Cada bloque de
 - Que queda pendiente.
 - Riesgos o decisiones abiertas.
 
+### D4 - La continuidad operativa se gestiona desde un tablero corto
+
+Fecha: 2026-06-01
+
+Se decide que `docs/CONTINUAR_AQUI.md` es la puerta de entrada para retomar el proyecto. `docs/BACKLOG_PRIORIZADO.md` define el orden de trabajo y `docs/REGISTRO_PROYECTO.md` queda como bitacora historica detallada.
+
+Regla operativa:
+
+- Al retomar, no recorrer todo el proyecto.
+- Leer `CONTINUAR_AQUI`.
+- Tomar el primer item activo/siguiente del backlog.
+- Al cerrar una unidad, actualizar registro, verificar, commitear y pushear.
+
 ## Plan inmediato
 
 Fase 1 - Validacion Excel y parametros:
@@ -245,6 +264,43 @@ Fase 1 - Validacion Excel y parametros:
 - No tocar formulas fiscales complejas sin una prueba que exponga la diferencia.
 
 ## Bitacora
+
+### 2026-06-01 - Control operativo de continuidad
+
+Se agrego una capa de continuidad para retomar el proyecto sin reconstruir contexto desde cero.
+
+Riesgo mitigado:
+
+- La bitacora historica ya contiene mucha informacion y obliga a releer demasiado para saber por donde seguir.
+- Habia frentes abiertos en distinto grado de avance, con pendientes viejos mezclados con pendientes reales.
+- Retomar sin un tablero corto aumenta el riesgo de duplicar trabajo o abrir nuevos frentes sin cerrar los activos.
+
+Archivos modificados:
+
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/superpowers/plans/2026-06-01-continuidad-operativa.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- `CONTINUAR_AQUI` queda como puerta de entrada para proximas sesiones.
+- `BACKLOG_PRIORIZADO` ordena los frentes por prioridad y estado.
+- El registro historico enlaza al tablero corto y conserva la evidencia larga.
+- H5 se reclasifico como parcialmente resuelto porque ventas/compras ya conservan detalle importado, aunque quedan mejoras de CUIT en columna propia y retenciones.
+- Al cerrar esta unidad, P0 queda resuelto y la prioridad activa pasa a P1: reducir riesgo operativo/deuda del wizard.
+
+Verificacion prevista:
+
+- Lectura de los documentos nuevos.
+- Busqueda de enlaces y prioridades.
+- `git diff --check`.
+
+Pendiente:
+
+- Mantener estos documentos actualizados en cada cierre de bloque.
+- Continuar por P1: reducir riesgo operativo/deuda del wizard.
 
 ### 2026-05-30 - Auditoria inicial
 

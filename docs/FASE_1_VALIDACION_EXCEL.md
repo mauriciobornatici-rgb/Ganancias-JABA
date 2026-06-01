@@ -1,12 +1,14 @@
 # Fase 1 - Validacion contra Excel y parametros
 
-Ultima actualizacion: 2026-05-31
+Ultima actualizacion: 2026-06-01
 
 ## Objetivo
 
 Construir una base verificable para que la aplicacion pueda compararse contra la planilla Excel usada actualmente por el estudio.
 
 La meta no es copiar ciegamente toda la planilla, sino usarla como referencia para detectar diferencias relevantes, decidir si son errores o mejoras intencionales, y dejar cada decision documentada.
+
+Para retomar el trabajo operativo sin recorrer toda la bitacora, leer primero `docs/CONTINUAR_AQUI.md` y luego `docs/BACKLOG_PRIORIZADO.md`.
 
 ## Alcance inicial
 

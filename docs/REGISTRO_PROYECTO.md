@@ -551,6 +551,28 @@ Pendiente:
 
 - Evaluar cierre de P2 o agregar una prueba general de equivalencia preview/persistencia con parametros reales.
 
+### 2026-06-01 - P2 cierre operativo
+
+Se da por resuelto P2 y se mueve la prioridad activa a P3.
+
+Motivo:
+
+- El wizard ya indicaba fuente de resultado y ahora ademas advierte antes de cerrar si no hay preview backend vigente.
+- Se corrigio una diferencia real entre preview y persistencia para jubilados con 8 haberes.
+- Se agrego trazabilidad de `taxParameterSetId` efectivo en snapshots de calculo.
+- La persistencia y el preview comparten el mapper `buildTaxReturnCalculationInput`; el caso sensible detectado quedo cubierto por test.
+
+Verificacion acumulada de P2:
+
+- `taxReturnPreview.test.ts` cubre estado de preview, request backend, hidratacion y advertencia de cierre.
+- `taxReturnDetailsPersistence.test.ts` cubre detalle importado y equivalencia preview/persistencia para jubilado.
+- `taxReturnSnapshot.test.ts` cubre conservacion de `taxParameterSetId`.
+- Full suite y build fueron ejecutados en los cortes de P2.
+
+Siguiente prioridad:
+
+- P3 - H4/H2: AXI e indices utiles. Antes de tocar formulas, mapear estado actual contra planilla e indices disponibles.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

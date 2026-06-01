@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P2 tercer corte, snapshot de calculo conserva la resolucion efectiva.
+- Ultimo checkpoint documentado: P2 resuelto, calculo visible/guardado protegido y trazable.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -74,6 +74,8 @@ Avance:
 
 ### P2 - H6: consolidar calculo backend/frontend
 
+Estado: resuelto.
+
 Objetivo:
 
 - Revisar que el resultado visible en el wizard, el preview backend, el guardado y el papel de trabajo usen el mismo criterio.
@@ -88,9 +90,15 @@ Avance:
 - Test agregado en `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
 - Corte 3 aplicado: `variablesSnapshot` conserva `taxParameterSetId` efectivo tanto en altas minimas como en persistencia detallada.
 
-Siguiente subcorte sugerido:
+## Prioridad siguiente
 
-- Revisar si P2 puede cerrarse o si conviene agregar una comparacion adicional de preview vs persistencia para un caso general con parametros reales.
+### P3 - H4/H2: AXI e indices utiles
+
+Objetivo:
+
+- Mapear el uso real de indices/coeficientes contra la planilla.
+- Confirmar si los coeficientes se calculan on demand o se persisten.
+- Agregar pruebas antes de tocar formulas de AXI.
 
 ## Reglas de continuidad
 

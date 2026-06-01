@@ -74,7 +74,7 @@ Criterio de cierre:
 
 ## P2 - H6: consolidar calculo backend/frontend
 
-Estado: Activo.
+Estado: Resuelto.
 
 Problema:
 
@@ -102,10 +102,11 @@ Criterio de cierre:
 - La UI indica claramente fuente del resultado.
 - No hay diferencias silenciosas entre resultado visible y guardado.
 - El papel de trabajo y guardado usan el mismo mapper/motor.
+- P2 queda cerrado con advertencia de cierre, prueba de jubilado contra preview y trazabilidad de resolucion efectiva en snapshot.
 
 ## P3 - H4/H2: AXI e indices utiles
 
-Estado: Pendiente.
+Estado: Activo.
 
 Problema:
 

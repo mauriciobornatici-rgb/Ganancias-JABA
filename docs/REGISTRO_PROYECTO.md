@@ -106,7 +106,7 @@ Accion esperada:
 
 ### H4 - AXI esta simplificado frente a la planilla
 
-Estado: abierto.
+Estado: parcialmente resuelto.
 
 La planilla de AXI tiene apertura estatica y dinamica mucho mas detallada que el modelo actual.
 
@@ -133,6 +133,8 @@ Riesgo:
 Accion esperada:
 
 - Preservar datos relevantes: fecha, comprobante, punto de venta, numero, CUIT, razon social, moneda, tipo de cambio, IVA, no gravado, exento, total, regimen/certificado de retencion, etc.
+- Avance aplicado: ventas y compras importadas conservan comprobante, numero, contraparte, CUIT, IVA y total durante importacion, carga en wizard, persistencia relacional y reapertura.
+- Limitacion vigente: el CUIT de contraparte queda en `variablesSnapshot` porque las tablas `SalesInvoice` y `PurchaseInvoice` no tienen columna propia para ese dato. Queda pendiente evaluar migracion si se quiere consulta directa por CUIT.
 
 ### H6 - Doble calculo entre frontend y backend
 
@@ -1153,3 +1155,52 @@ Pendiente:
 
 - Validar con una importacion real desde la pantalla de parametros y revisar el evento en `/api/auditoria?action=IMPORT&entityType=TaxParameterSet`.
 - Definir mas adelante si algun dato auditable debe pasar de `AuditLog.details` a columnas propias de `TaxParameterSet`.
+
+### 2026-05-31 - Fase 1, vigesimo septimo cambio: detalle auditable en importacion AFIP/ARCA
+
+Se corrigio la perdida de detalle en ventas y compras importadas desde Excel AFIP/ARCA.
+
+Riesgo mitigado:
+
+- La carga importada llegaba al wizard con importes, pero se perdian comprobante, contraparte, IVA y total al persistir o reabrir la DDJJ.
+- Para un estudio chico, la importacion debe ahorrar carga manual sin convertir la DDJJ en una caja negra.
+- Ante revision, el usuario necesita volver a ver de que comprobante y contraparte salio cada renglon.
+
+Archivos modificados:
+
+- `src/domain/ganancias/mappers/afipImporter.ts`.
+- `src/domain/ganancias/types.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/persistence/taxReturnReadMapper.ts`.
+- `src/domain/ganancias/tests/importer.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `src/domain/ganancias/tests/taxReturnReadMapper.test.ts`.
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/REGISTRO_PROYECTO.md`.
+- `docs/FASE_1_VALIDACION_EXCEL.md`.
+
+Resultado funcional:
+
+- El parser de ventas/compras ahora extrae tipo de comprobante, punto de venta, numero, razon social, CUIT de contraparte, IVA y total.
+- El wizard conserva esos campos al importar y los envia dentro del payload de guardado.
+- La persistencia relacional guarda comprobante, numero, nombre de cliente/proveedor, IVA y total en `SalesInvoice` y `PurchaseInvoice`.
+- El CUIT de contraparte se conserva en `variablesSnapshot` porque el esquema actual no tiene columna propia en esas tablas.
+- Al reabrir una DDJJ, la API devuelve nuevamente el CUIT de contraparte desde el snapshot y el resto del detalle desde las tablas relacionales.
+- Se tiparon las capturas del importador y del endpoint tocado para no agregar deuda nueva de `any`.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxReturnDetailsPersistence.test.ts` fallo inicialmente porque `variablesSnapshot` no incluia ventas/compras.
+- TDD rojo confirmado: `taxReturnReadMapper.test.ts` fallo inicialmente porque `snapshotStringAt` no existia.
+- `vitest run src/domain/ganancias/tests/importer.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts src/domain/ganancias/tests/taxReturnReadMapper.test.ts`: 3 archivos, 10 tests, todo OK.
+- `vitest run`: 18 archivos, 53 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre importador, persistencia, mapper de lectura, endpoint `[id]` y tests nuevos: OK.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx`: sigue fallando por deuda previa del componente (`setState` en efectos, `Date.now`, `any` antiguos y warnings), sin bloquear TypeScript ni build.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Evaluar migracion para agregar `counterpartyCuit` como columna propia en `SalesInvoice` y `PurchaseInvoice` si se necesitara filtrar/reportar por CUIT.
+- Mejorar la grilla del wizard para mostrar comprobante/contraparte de forma visible y editable, no solo conservarlo internamente.

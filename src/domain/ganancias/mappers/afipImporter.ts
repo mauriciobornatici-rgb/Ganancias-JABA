@@ -2,6 +2,9 @@ import * as xlsx from 'xlsx';
 import { Decimal } from 'decimal.js';
 import { SalesInput, PurchaseInput, TaxWithholdingInput } from '../types';
 
+type SheetCell = string | number | boolean | Date | null | undefined;
+type SheetRow = SheetCell[];
+
 export interface ImportedDataSummary {
   fileType: 'MisRetenciones' | 'LibroIVAVentas' | 'LibroIVACompras' | 'Desconocido';
   withholdings?: TaxWithholdingInput[];
@@ -21,26 +24,26 @@ export function parseAfipExportFile(
   fileName: string
 ): ImportedDataSummary {
   const errors: string[] = [];
-  let totalAmount = new Decimal(0);
+  const totalAmount = new Decimal(0);
   
   try {
     // 1. Leer el libro utilizando sheetjs
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
+    const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
     
     if (!sheet) {
       return { fileType: 'Desconocido', totalRecords: 0, totalAmount, errors: ['El archivo no posee hojas válidas'] };
     }
 
     // Convertir a matriz de JSON con valores limpios
-    const rawData = xlsx.utils.sheet_to_json<any>(sheet, { header: 1, defval: '' });
+    const rawData = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as SheetRow[];
     if (rawData.length === 0) {
       return { fileType: 'Desconocido', totalRecords: 0, totalAmount, errors: ['La hoja de cálculo se encuentra vacía'] };
     }
 
     // 2. Detectar tipo de archivo en base a los encabezados de las primeras filas
-    const headers = rawData[0].map((h: any) => String(h).trim().toLowerCase());
+    const headers = (rawData[0] || []).map(h => String(h).trim().toLowerCase());
     
     // CASO A: "Mis Retenciones" (AFIP)
     // Encabezados estándar: CUIT Agente Ret./Perc., Denominación o Razón Social, Impuesto, Régimen, Fecha, Número Certificado, Importe...
@@ -95,9 +98,9 @@ export function parseAfipExportFile(
       return parseLibroCompras(rawData, headers, errors);
     } else {
       // Intento secundario: Si la primera fila es vacía, buscar encabezado en fila 2 o 3
-      const alternateHeaders = rawData.slice(1, 3).find(row => row.some((c: any) => String(c).toLowerCase().includes('cuit') || String(c).toLowerCase().includes('fecha')));
+      const alternateHeaders = rawData.slice(1, 3).find(row => row.some(c => String(c).toLowerCase().includes('cuit') || String(c).toLowerCase().includes('fecha')));
       if (alternateHeaders) {
-        const altHeadersClean = alternateHeaders.map((h: any) => String(h).trim().toLowerCase());
+        const altHeadersClean = alternateHeaders.map(h => String(h).trim().toLowerCase());
         if (altHeadersClean.some((h: string) => h.includes('cuit agente') || h.includes('agente ret'))) {
           return parseMisRetenciones(rawData.slice(1), altHeadersClean, errors);
         }
@@ -110,12 +113,12 @@ export function parseAfipExportFile(
         errors: [`No se pudo detectar el formato oficial de AFIP para el archivo: ${fileName}. Verifique los encabezados.`]
       };
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     return {
       fileType: 'Desconocido',
       totalRecords: 0,
       totalAmount,
-      errors: [`Error crítico al parsear el archivo: ${err.message}`]
+      errors: [`Error crítico al parsear el archivo: ${errorMessage(err)}`]
     };
   }
 }
@@ -124,7 +127,7 @@ export function parseAfipExportFile(
  * Parsea e importa retenciones y percepciones (Mis Retenciones)
  */
 function parseMisRetenciones(
-  rows: any[][],
+  rows: SheetRow[],
   headers: string[],
   errors: string[]
 ): ImportedDataSummary {
@@ -159,8 +162,8 @@ function parseMisRetenciones(
         });
         totalAmount = totalAmount.add(amountVal);
       }
-    } catch (err: any) {
-      errors.push(`Fila ${i + 1}: Error al parsear importe '${row[amountIndex]}': ${err.message}`);
+    } catch (err: unknown) {
+      errors.push(`Fila ${i + 1}: Error al parsear importe '${row[amountIndex]}': ${errorMessage(err)}`);
     }
   }
 
@@ -184,11 +187,34 @@ function findColumnIndex(headers: string[], options: string[]): number {
   return -1;
 }
 
+function textCell(row: SheetRow, index: number, fallback = ''): string {
+  if (index === -1) return fallback;
+  const value = row[index];
+  if (value === undefined || value === null) return fallback;
+  return String(value).trim();
+}
+
+function moneyCell(row: SheetRow, index: number): Decimal {
+  return index !== -1 ? parseSpanishDecimal(row[index] || 0) : new Decimal(0);
+}
+
+function buildInvoiceNumber(row: SheetRow, pointOfSaleIndex: number, numberIndex: number): string | undefined {
+  const rawNumber = textCell(row, numberIndex);
+  if (!rawNumber) return undefined;
+
+  const rawPointOfSale = textCell(row, pointOfSaleIndex);
+  if (!rawPointOfSale) return rawNumber;
+
+  const pointOfSale = rawPointOfSale.padStart(4, '0');
+  const number = rawNumber.padStart(8, '0');
+  return `${pointOfSale}-${number}`;
+}
+
 /**
  * Parsea e importa ventas e ingresos (Libro de IVA Ventas / Comprobantes Emitidos)
  */
 function parseLibroVentas(
-  rows: any[][],
+  rows: SheetRow[],
   headers: string[],
   errors: string[]
 ): ImportedDataSummary {
@@ -196,7 +222,14 @@ function parseLibroVentas(
   let totalAmount = new Decimal(0);
 
   const dateIndex = findColumnIndex(headers, ['fecha de em', 'fecha']);
+  const invoiceTypeIndex = findColumnIndex(headers, ['tipo de comprobante', 'tipo de com']);
+  const pointOfSaleIndex = findColumnIndex(headers, ['punto de ve', 'pto. vta', 'punto de venta']);
+  const invoiceNumberIndex = findColumnIndex(headers, ['nro. comprobante', 'numero de c', 'número de c']);
+  const customerNameIndex = findColumnIndex(headers, ['cliente', 'denominacia', 'denominacion', 'denominaci']);
+  const customerCuitIndex = findColumnIndex(headers, ['nro. doc. co', 'doc. co']);
   const netIndex = findColumnIndex(headers, ['total neto g', 'total neto', 'importe neto', 'neto', 'gravado']);
+  const ivaIndex = findColumnIndex(headers, ['total iva', 'iva liquidado', 'importe iva']);
+  const totalIndex = findColumnIndex(headers, ['importe total', 'importe tota']);
   const exemptIndex = findColumnIndex(headers, ['importe ex', 'exento']);
   const noGravadoIndex = headers.findIndex(h => 
     h.includes('importe no') || 
@@ -223,13 +256,22 @@ function parseLibroVentas(
       const netVal = netIndex !== -1 ? parseSpanishDecimal(row[netIndex] || 0) : new Decimal(0);
       const exemptVal = exemptIndex !== -1 ? parseSpanishDecimal(row[exemptIndex] || 0) : new Decimal(0);
       const noGravadoVal = noGravadoIndex !== -1 ? parseSpanishDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
+      const importedDetail = {
+        invoiceType: textCell(row, invoiceTypeIndex) || undefined,
+        invoiceNumber: buildInvoiceNumber(row, pointOfSaleIndex, invoiceNumberIndex),
+        customerName: textCell(row, customerNameIndex) || undefined,
+        counterpartyCuit: textCell(row, customerCuitIndex) || undefined,
+        ivaAmount: moneyCell(row, ivaIndex),
+        totalAmount: moneyCell(row, totalIndex),
+      };
 
       // Si tiene importe neto gravado
       if (netVal.gt(0)) {
         sales.push({
           date: dateVal,
           netAmount: netVal,
-          isExempt: false
+          isExempt: false,
+          ...importedDetail,
         });
         totalAmount = totalAmount.add(netVal);
       }
@@ -240,12 +282,13 @@ function parseLibroVentas(
         sales.push({
           date: dateVal,
           netAmount: totalExemptVal,
-          isExempt: true // Marcado como ingreso exento, cumpliendo con la coexistencia solicitada
+          isExempt: true, // Marcado como ingreso exento, cumpliendo con la coexistencia solicitada
+          ...importedDetail,
         });
         totalAmount = totalAmount.add(totalExemptVal);
       }
-    } catch (err: any) {
-      errors.push(`Fila ${i + 1}: Error de procesamiento: ${err.message}`);
+    } catch (err: unknown) {
+      errors.push(`Fila ${i + 1}: Error de procesamiento: ${errorMessage(err)}`);
     }
   }
 
@@ -262,7 +305,7 @@ function parseLibroVentas(
  * Parsea e importa compras y egresos (Libro de IVA Compras / Comprobantes Recibidos)
  */
 function parseLibroCompras(
-  rows: any[][],
+  rows: SheetRow[],
   headers: string[],
   errors: string[]
 ): ImportedDataSummary {
@@ -270,7 +313,14 @@ function parseLibroCompras(
   let totalAmount = new Decimal(0);
 
   const dateIndex = findColumnIndex(headers, ['fecha de em', 'fecha']);
+  const invoiceTypeIndex = findColumnIndex(headers, ['tipo de comprobante', 'tipo de com']);
+  const pointOfSaleIndex = findColumnIndex(headers, ['punto de ve', 'pto. vta', 'punto de venta']);
+  const invoiceNumberIndex = findColumnIndex(headers, ['nro. comprobante', 'numero de c', 'número de c']);
+  const vendorNameIndex = findColumnIndex(headers, ['proveedor', 'emisor', 'vendedor', 'denominaci']);
+  const vendorCuitIndex = findColumnIndex(headers, ['nro. doc. ve', 'doc. ve']);
   const netIndex = findColumnIndex(headers, ['total neto g', 'total neto', 'importe neto', 'neto', 'gravado']);
+  const ivaIndex = findColumnIndex(headers, ['total iva', 'credito fisc', 'crédito fisc', 'importe iva']);
+  const totalIndex = findColumnIndex(headers, ['importe total', 'importe tota']);
   const exemptIndex = findColumnIndex(headers, ['importe ex', 'exento']);
   const noGravadoIndex = headers.findIndex(h => 
     h.includes('importe no') || 
@@ -297,13 +347,22 @@ function parseLibroCompras(
       const netVal = netIndex !== -1 ? parseSpanishDecimal(row[netIndex] || 0) : new Decimal(0);
       const exemptVal = exemptIndex !== -1 ? parseSpanishDecimal(row[exemptIndex] || 0) : new Decimal(0);
       const noGravadoVal = noGravadoIndex !== -1 ? parseSpanishDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
+      const importedDetail = {
+        invoiceType: textCell(row, invoiceTypeIndex) || undefined,
+        invoiceNumber: buildInvoiceNumber(row, pointOfSaleIndex, invoiceNumberIndex),
+        vendorName: textCell(row, vendorNameIndex) || undefined,
+        counterpartyCuit: textCell(row, vendorCuitIndex) || undefined,
+        ivaAmount: moneyCell(row, ivaIndex),
+        totalAmount: moneyCell(row, totalIndex),
+      };
 
       if (netVal.gt(0)) {
         purchases.push({
           date: dateVal,
           netAmount: netVal,
           isDeductible: true,
-          isExempt: false
+          isExempt: false,
+          ...importedDetail,
         });
         totalAmount = totalAmount.add(netVal);
       }
@@ -314,12 +373,13 @@ function parseLibroCompras(
           date: dateVal,
           netAmount: totalExemptVal,
           isDeductible: false, // Por defecto no deducible en ganancias comunes si es exento
-          isExempt: true       // Marcado como egreso exento
+          isExempt: true,      // Marcado como egreso exento
+          ...importedDetail,
         });
         totalAmount = totalAmount.add(totalExemptVal);
       }
-    } catch (err: any) {
-      errors.push(`Fila ${i + 1}: Error de procesamiento: ${err.message}`);
+    } catch (err: unknown) {
+      errors.push(`Fila ${i + 1}: Error de procesamiento: ${errorMessage(err)}`);
     }
   }
 
@@ -335,7 +395,7 @@ function parseLibroCompras(
 /**
  * Helper para parsear números decimales del formato local argentino (coma para decimales, punto para miles)
  */
-function parseSpanishDecimal(val: any): Decimal {
+function parseSpanishDecimal(val: unknown): Decimal {
   if (val instanceof Decimal) return val;
   if (typeof val === 'number') return new Decimal(val);
   
@@ -369,7 +429,7 @@ function parseSpanishDecimal(val: any): Decimal {
 /**
  * Helper para parsear fechas de Excel (ya sean strings o seriales numéricos de Excel)
  */
-function parseExcelDate(val: any): Date {
+function parseExcelDate(val: unknown): Date {
   if (val instanceof Date) return val;
   
   // Si es un número serial de Excel (ej: 45657)
@@ -397,4 +457,8 @@ function parseExcelDate(val: any): Date {
     throw new Error(`Fecha inválida o irreconocible: ${val}`);
   }
   return parsed;
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

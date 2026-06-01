@@ -18,7 +18,22 @@ type PersistenceModel = {
   update(args: unknown): Promise<unknown>;
 };
 
-type PersistenceDb = Record<string, PersistenceModel>;
+type PersistenceDb = {
+  taxParameterSet: PersistenceModel;
+  taxArt94Bracket: PersistenceModel;
+  updateIndex: PersistenceModel;
+  salesInvoice: PersistenceModel;
+  purchaseInvoice: PersistenceModel;
+  fixedAsset: PersistenceModel;
+  inventoryValue: PersistenceModel;
+  bankAccountBalance: PersistenceModel;
+  taxWithholding: PersistenceModel;
+  personalAsset: PersistenceModel;
+  personalLiability: PersistenceModel;
+  axiDynamicItem: PersistenceModel;
+  calculationRun: PersistenceModel;
+  taxReturn: PersistenceModel;
+};
 
 type ExistingTaxReturn = {
   taxParameterSetId?: string | null;
@@ -37,11 +52,18 @@ type SalesPayload = {
   date?: DateValue;
   netAmount?: NumericValue;
   isExempt?: boolean;
+  invoiceType?: string;
+  invoiceNumber?: string;
+  customerName?: string;
+  counterpartyCuit?: string;
+  ivaAmount?: NumericValue;
+  totalAmount?: NumericValue;
 };
 
 type PurchasePayload = SalesPayload & {
   isDeductible?: boolean;
   expenseType?: string;
+  vendorName?: string;
 };
 
 type FixedAssetPayload = {
@@ -279,12 +301,12 @@ export async function persistTaxReturnDetails({
       data: sales.map(s => ({
         taxReturnId,
         date: dateInput(s.date),
-        invoiceType: 'Factura',
-        invoiceNumber: '00000000',
-        customerName: 'Cliente General',
+        invoiceType: stringInput(s.invoiceType, 'Factura'),
+        invoiceNumber: stringInput(s.invoiceNumber, '00000000'),
+        customerName: stringInput(s.customerName, 'Cliente General'),
         netAmount: numberInput(s.netAmount),
-        ivaAmount: 0,
-        totalAmount: numberInput(s.netAmount),
+        ivaAmount: numberInput(s.ivaAmount),
+        totalAmount: numberInput(s.totalAmount, numberInput(s.netAmount)),
         isExempt: s.isExempt || false,
       })),
     });
@@ -295,12 +317,12 @@ export async function persistTaxReturnDetails({
       data: purchases.map(p => ({
         taxReturnId,
         date: dateInput(p.date),
-        invoiceType: 'Factura',
-        invoiceNumber: '00000000',
-        vendorName: 'Proveedor General',
+        invoiceType: stringInput(p.invoiceType, 'Factura'),
+        invoiceNumber: stringInput(p.invoiceNumber, '00000000'),
+        vendorName: stringInput(p.vendorName, 'Proveedor General'),
         netAmount: numberInput(p.netAmount),
-        ivaAmount: 0,
-        totalAmount: numberInput(p.netAmount),
+        ivaAmount: numberInput(p.ivaAmount),
+        totalAmount: numberInput(p.totalAmount, numberInput(p.netAmount)),
         isDeductible: p.isDeductible !== false,
         isExempt: p.isExempt || false,
         expenseType: p.expenseType || 'GastosGenerales',
@@ -457,6 +479,9 @@ export async function persistTaxReturnDetails({
     bienesNoComputablesInicio,
     saldoAFavorAnterior,
     quebrantosAnteriores,
+    sales,
+    purchases,
+    withholdings,
     axiDynamic,
   };
 

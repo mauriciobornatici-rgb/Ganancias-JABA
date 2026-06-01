@@ -74,6 +74,48 @@ function formatCuit(cuit: string): string {
   return `${clean.slice(0, 2)}-${clean.slice(2, 10)}-${clean.slice(10, 11)}`;
 }
 
+type ImportedDate = string | number | Date;
+
+type ImportedInvoiceRow = {
+  date: ImportedDate;
+  netAmount: string | number;
+  isExempt?: boolean;
+  invoiceType?: string;
+  invoiceNumber?: string;
+  counterpartyCuit?: string;
+  ivaAmount?: string | number;
+  totalAmount?: string | number;
+};
+
+type ImportedSaleRow = ImportedInvoiceRow & {
+  customerName?: string;
+};
+
+type ImportedPurchaseRow = ImportedInvoiceRow & {
+  isDeductible?: boolean;
+  expenseType?: string;
+  vendorName?: string;
+};
+
+type ImportedWithholdingRow = {
+  amount: string | number;
+  taxCode: string;
+};
+
+type ImportResponse = {
+  success: boolean;
+  error?: string;
+  data?: {
+    sales?: ImportedSaleRow[];
+    purchases?: ImportedPurchaseRow[];
+    withholdings?: ImportedWithholdingRow[];
+  };
+};
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 export default function WizardPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -913,39 +955,51 @@ export default function WizardPage() {
         body: formData,
       });
 
-      const result = await response.json();
+      const result = await response.json() as ImportResponse;
 
       if (!result.success) {
         throw new Error(result.error || 'No se pudo procesar el archivo Excel.');
       }
 
       // Incorporar dinámicamente los registros cargados para que el usuario los verifique en pantalla
-      if (type === 'sales' && result.data.sales) {
-        const parsed = result.data.sales.map((s: any) => ({
+      if (type === 'sales' && result.data?.sales) {
+        const parsed = result.data.sales.map(s => ({
           date: new Date(s.date).toISOString().split('T')[0],
           netAmount: s.netAmount,
-          isExempt: s.isExempt
+          isExempt: s.isExempt,
+          invoiceType: s.invoiceType,
+          invoiceNumber: s.invoiceNumber,
+          customerName: s.customerName,
+          counterpartyCuit: s.counterpartyCuit,
+          ivaAmount: s.ivaAmount,
+          totalAmount: s.totalAmount,
         }));
         setSales([...sales, ...parsed]);
-      } else if (type === 'purchases' && result.data.purchases) {
-        const parsed = result.data.purchases.map((p: any) => ({
+      } else if (type === 'purchases' && result.data?.purchases) {
+        const parsed = result.data.purchases.map(p => ({
           date: new Date(p.date).toISOString().split('T')[0],
           netAmount: p.netAmount,
           isDeductible: p.isDeductible,
           isExempt: p.isExempt,
-          expenseType: 'GastosGenerales'
+          expenseType: p.expenseType || 'GastosGenerales',
+          invoiceType: p.invoiceType,
+          invoiceNumber: p.invoiceNumber,
+          vendorName: p.vendorName,
+          counterpartyCuit: p.counterpartyCuit,
+          ivaAmount: p.ivaAmount,
+          totalAmount: p.totalAmount,
         }));
         setPurchases([...purchases, ...parsed]);
-      } else if (type === 'withholdings' && result.data.withholdings) {
-        const parsed = result.data.withholdings.map((w: any) => ({
+      } else if (type === 'withholdings' && result.data?.withholdings) {
+        const parsed = result.data.withholdings.map(w => ({
           amount: w.amount,
           taxCode: w.taxCode
         }));
         setWithholdings([...withholdings, ...parsed]);
       }
 
-    } catch (err: any) {
-      setUploadError(err.message);
+    } catch (err: unknown) {
+      setUploadError(errorMessage(err));
     } finally {
       setIsUploading(false);
     }

@@ -84,10 +84,17 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     const sale1 = summary.sales![0];
     expect(sale1.netAmount.toNumber()).toBe(150000);
     expect(sale1.isExempt).toBe(false);
+    expect(sale1.invoiceType).toBe('Factura A');
+    expect(sale1.invoiceNumber).toBe('0001-00002345');
+    expect(sale1.customerName).toBe('Comercializadora SA');
+    expect(sale1.ivaAmount?.toNumber()).toBe(31500);
+    expect(sale1.totalAmount?.toNumber()).toBe(181500);
 
     const sale2 = summary.sales![1];
     expect(sale2.netAmount.toNumber()).toBe(45000);
     expect(sale2.isExempt).toBe(true); // Exento correctamente detectado
+    expect(sale2.invoiceNumber).toBe('0001-00000120');
+    expect(sale2.customerName).toBe('Juan Perez');
   });
 
   it('Debe ser compatible con el formato truncado real de ventas de AFIP/ARCA', () => {
@@ -140,9 +147,16 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
 
     expect(summary.sales![0].netAmount.toNumber()).toBe(9256.2);
     expect(summary.sales![0].isExempt).toBe(false);
+    expect(summary.sales![0].invoiceType).toBe('1');
+    expect(summary.sales![0].invoiceNumber).toBe('0003-00001529');
+    expect(summary.sales![0].customerName).toBe('OIMASTI LUCIANO');
+    expect(summary.sales![0].counterpartyCuit).toBe('24300000000');
+    expect(summary.sales![0].ivaAmount?.toNumber()).toBe(1943.8);
+    expect(summary.sales![0].totalAmount?.toNumber()).toBe(11200);
 
     expect(summary.sales![1].netAmount.toNumber()).toBe(5000);
     expect(summary.sales![1].isExempt).toBe(true);
+    expect(summary.sales![1].invoiceNumber).toBe('0003-00001530');
   });
 
   it('Debe ser compatible con el formato truncado real de compras de AFIP/ARCA', () => {
@@ -195,8 +209,15 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
 
     expect(summary.purchases![0].netAmount.toNumber()).toBe(21250);
     expect(summary.purchases![0].isExempt).toBe(false);
+    expect(summary.purchases![0].invoiceType).toBe('1');
+    expect(summary.purchases![0].invoiceNumber).toBe('0004-00000243');
+    expect(summary.purchases![0].vendorName).toBe('VAVCOMS.P');
+    expect(summary.purchases![0].counterpartyCuit).toBe('307141419');
+    expect(summary.purchases![0].ivaAmount?.toNumber()).toBe(3118.75);
+    expect(summary.purchases![0].totalAmount?.toNumber()).toBe(25833.75);
 
     expect(summary.purchases![1].netAmount.toNumber()).toBe(1200);
     expect(summary.purchases![1].isExempt).toBe(true);
+    expect(summary.purchases![1].invoiceNumber).toBe('0004-00000244');
   });
 });

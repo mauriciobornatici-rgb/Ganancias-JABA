@@ -157,6 +157,7 @@ Avance 2026-05-30:
 - El preview backend ya tiene serializacion JSON y rehidratacion a `Decimal` para integrarse con la UI actual del wizard.
 - El wizard ya consume el preview backend con debounce, cancelacion y fallback local para mantener carga agil mientras se valida la fuente backend.
 - La UI ahora informa si el resultado visible esta confirmado por backend, pendiente de confirmacion o usando preview local de respaldo.
+- El importador AFIP/ARCA de ventas y compras ahora conserva comprobante, contraparte, CUIT, IVA y total desde el Excel hasta la persistencia/reapertura de la DDJJ.
 
 ## Criterios de aceptacion
 

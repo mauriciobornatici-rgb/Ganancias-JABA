@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
-import { formatDateForWizardInput } from '@/domain/ganancias/persistence/taxReturnReadMapper';
+import { formatDateForWizardInput, snapshotStringAt } from '@/domain/ganancias/persistence/taxReturnReadMapper';
 
 export async function GET(
   req: NextRequest,
@@ -41,7 +41,7 @@ export async function GET(
     }
 
     const latestCalc = taxReturn.calculations[0] || null;
-    let extraState: any = {};
+    let extraState: Record<string, unknown> = {};
 
     if (latestCalc && latestCalc.variablesSnapshot) {
       try {
@@ -63,19 +63,31 @@ export async function GET(
       taxParameterSetId: taxReturn.taxParameterSetId,
       updatedAt: taxReturn.updatedAt.toISOString(),
       currentStep: extraState.currentStep || 1,
-      sales: taxReturn.sales.map((s: any) => ({
+      sales: taxReturn.sales.map((s, index) => ({
         date: formatDateForWizardInput(s.date),
         netAmount: s.netAmount.toString(),
         isExempt: s.isExempt,
+        invoiceType: s.invoiceType,
+        invoiceNumber: s.invoiceNumber,
+        customerName: s.customerName,
+        counterpartyCuit: snapshotStringAt(extraState.sales, index, 'counterpartyCuit'),
+        ivaAmount: s.ivaAmount.toString(),
+        totalAmount: s.totalAmount.toString(),
       })),
-      purchases: taxReturn.purchases.map((p: any) => ({
+      purchases: taxReturn.purchases.map((p, index) => ({
         date: formatDateForWizardInput(p.date),
         netAmount: p.netAmount.toString(),
         isDeductible: p.isDeductible,
         isExempt: p.isExempt,
         expenseType: p.expenseType || 'GastosGenerales',
+        invoiceType: p.invoiceType,
+        invoiceNumber: p.invoiceNumber,
+        vendorName: p.vendorName,
+        counterpartyCuit: snapshotStringAt(extraState.purchases, index, 'counterpartyCuit'),
+        ivaAmount: p.ivaAmount.toString(),
+        totalAmount: p.totalAmount.toString(),
       })),
-      fixedAssets: taxReturn.fixedAssets.map((a: any) => ({
+      fixedAssets: taxReturn.fixedAssets.map(a => ({
         id: a.id,
         name: a.name,
         type: a.type,
@@ -87,7 +99,7 @@ export async function GET(
       })),
       initialStock: taxReturn.inventory[0]?.initialStock.toString() || '0',
       finalStock: taxReturn.inventory[0]?.finalStock.toString() || '0',
-      bankAccounts: taxReturn.bankAccounts.map((b: any) => ({
+      bankAccounts: taxReturn.bankAccounts.map(b => ({
         id: b.id,
         name: b.bankName,
         cuitBank: b.cuitBank || '',
@@ -100,17 +112,17 @@ export async function GET(
         tcFinal: b.tcFinal.toString(),
         interests: b.interests.toString(),
       })),
-      withholdings: taxReturn.withholdings.map((w: any) => ({
+      withholdings: taxReturn.withholdings.map(w => ({
         amount: w.amount.toString(),
         taxCode: w.taxCode,
       })),
-      personalAssets: taxReturn.personalAssets.map((a: any) => ({
+      personalAssets: taxReturn.personalAssets.map(a => ({
         description: a.description,
         type: a.type,
         valueInitial: a.valueInitial.toString(),
         valueFinal: a.valueFinal.toString(),
       })),
-      personalLiabilities: taxReturn.personalLiabilities.map((l: any) => ({
+      personalLiabilities: taxReturn.personalLiabilities.map(l => ({
         description: l.description,
         valueInitial: l.valueInitial.toString(),
         valueFinal: l.valueFinal.toString(),
@@ -140,7 +152,7 @@ export async function GET(
       bienesNoComputablesInicio: extraState.bienesNoComputablesInicio || '0',
       saldoAFavorAnterior: extraState.saldoAFavorAnterior || '0',
       quebrantosAnteriores: extraState.quebrantosAnteriores || '0',
-      axiDynamic: (taxReturn.axiDynamicItems || []).map((a: any) => ({
+      axiDynamic: (taxReturn.axiDynamicItems || []).map(a => ({
         concept: a.concept,
         type: a.type,
         amount: a.amount.toString(),
@@ -149,9 +161,9 @@ export async function GET(
     };
 
     return NextResponse.json({ success: true, data: payload });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al obtener declaración: ${err.message}` },
+      { success: false, error: `Error al obtener declaración: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -179,7 +191,7 @@ export async function PUT(
       );
     }
 
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async tx => {
       await persistTaxReturnDetails({
         db: tx,
         taxReturnId: id,
@@ -199,9 +211,9 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, message: 'Declaración actualizada con éxito en la base de datos.' });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al actualizar declaración: ${err.message}` },
+      { success: false, error: `Error al actualizar declaración: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -241,10 +253,14 @@ export async function DELETE(
       success: true,
       message: 'Declaración jurada eliminada con éxito de la base de datos.'
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al eliminar la declaración jurada: ${err.message}` },
+      { success: false, error: `Error al eliminar la declaración jurada: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

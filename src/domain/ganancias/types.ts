@@ -52,6 +52,12 @@ export interface SalesInput {
   date: Date;
   netAmount: Decimal;
   isExempt: boolean; // Ingresos Exentos (Monotributo / Exenciones impositivas)
+  invoiceType?: string;
+  invoiceNumber?: string;
+  customerName?: string;
+  counterpartyCuit?: string;
+  ivaAmount?: Decimal;
+  totalAmount?: Decimal;
 }
 
 export interface PurchaseInput {
@@ -60,6 +66,12 @@ export interface PurchaseInput {
   isDeductible: boolean;
   isExempt: boolean; // Egresos no gravados / exentos
   expenseType?: string; // e.g., 'MateriaPrima', 'GastosGenerales'
+  invoiceType?: string;
+  invoiceNumber?: string;
+  vendorName?: string;
+  counterpartyCuit?: string;
+  ivaAmount?: Decimal;
+  totalAmount?: Decimal;
 }
 
 export interface FixedAssetInput {

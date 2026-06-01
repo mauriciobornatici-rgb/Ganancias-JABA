@@ -553,7 +553,7 @@ export async function persistTaxReturnDetails({
       totalPaymentsOnAccount: calcResult.retencionesYPercepciones.toNumber(),
       finalBalance: calcResult.impuestoAPagarOARCA.toNumber(),
       computedConsumo: calcResult.consumoDiferencial.toNumber(),
-      justificationDiff: 0,
+      justificationDiff: calcResult.jvpJustificationDiff.toNumber(),
       axiStaticResult: calcResult.axiStaticResult.toNumber(),
       axiDynamicResult: calcResult.axiDynamicResult.toNumber(),
       axiNetAdjustment: calcResult.resultadoAjustePorInflacion.toNumber(),

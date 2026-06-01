@@ -171,6 +171,11 @@ export function downloadTaxReturnExcel(
   const amortizacionesBienesDeUsoVal = toNumber(calculationResult?.amortizacionesBienesDeUso);
   const ingresosExentosVal = toNumber(calculationResult?.ventasExentas);
   const consumoVal = toNumber(calculationResult?.consumoDiferencial);
+  const totalColumnaIVal = toNumber(calculationResult?.jvpTotalColumnaI)
+    || patrimonioCierreVal + gastosNoDeduciblesVal + (resultadoImpositivoVal < 0 ? Math.abs(resultadoImpositivoVal) : 0) + consumoVal;
+  const totalColumnaIIVal = toNumber(calculationResult?.jvpTotalColumnaII)
+    || patrimonioInicioVal + (resultadoImpositivoVal > 0 ? resultadoImpositivoVal : 0) + ingresosExentosVal + amortizacionesBienesDeUsoVal;
+  const jvpDiffVal = toNumber(calculationResult?.jvpJustificationDiff);
 
   const jvpRows = [
     [
@@ -205,9 +210,15 @@ export function downloadTaxReturnExcel(
     ],
     [
       'TOTAL COLUMNA I', 
-      patrimonioCierreVal + gastosNoDeduciblesVal + (resultadoImpositivoVal < 0 ? Math.abs(resultadoImpositivoVal) : 0) + consumoVal, 
+      totalColumnaIVal,
       'TOTAL COLUMNA II', 
-      patrimonioInicioVal + (resultadoImpositivoVal > 0 ? resultadoImpositivoVal : 0) + ingresosExentosVal + amortizacionesBienesDeUsoVal
+      totalColumnaIIVal
+    ],
+    [
+      'CUADRE JVP',
+      jvpDiffVal,
+      '',
+      0
     ]
   ];
 

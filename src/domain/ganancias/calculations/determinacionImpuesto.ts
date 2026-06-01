@@ -479,6 +479,9 @@ export function calculateTaxReturn(
     patrimonioInicioTotal: jvpResult.patrimonioInicio,
     patrimonioCierreTotal: jvpResult.patrimonioCierre,
     consumoDiferencial: jvpResult.consumoDiferencial,
+    jvpTotalColumnaI: jvpResult.totalColumnaI,
+    jvpTotalColumnaII: jvpResult.totalColumnaII,
+    jvpJustificationDiff: jvpResult.justificationDiff,
     warnings,
     errors,
   };

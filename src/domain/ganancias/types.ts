@@ -317,6 +317,9 @@ export interface TaxCalculationResult {
   patrimonioInicioTotal: Decimal;
   patrimonioCierreTotal: Decimal;
   consumoDiferencial: Decimal; // El "Consumo" final obtenido
+  jvpTotalColumnaI: Decimal;
+  jvpTotalColumnaII: Decimal;
+  jvpJustificationDiff: Decimal;
   
   // Alertas e inconsistencias
   warnings: string[];

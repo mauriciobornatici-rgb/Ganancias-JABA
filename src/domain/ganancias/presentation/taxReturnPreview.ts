@@ -81,6 +81,9 @@ export function serializeTaxCalculationResult(result: TaxCalculationResult) {
     patrimonioInicioTotal: decimalToNumber(result.patrimonioInicioTotal),
     patrimonioCierreTotal: decimalToNumber(result.patrimonioCierreTotal),
     consumoDiferencial: decimalToNumber(result.consumoDiferencial),
+    jvpTotalColumnaI: decimalToNumber(result.jvpTotalColumnaI),
+    jvpTotalColumnaII: decimalToNumber(result.jvpTotalColumnaII),
+    jvpJustificationDiff: decimalToNumber(result.jvpJustificationDiff),
     warnings: result.warnings,
     errors: result.errors,
   };
@@ -210,6 +213,9 @@ export function hydrateTaxReturnPreviewResult(value: ReturnType<typeof serialize
     patrimonioInicioTotal: numberToDecimal(value.patrimonioInicioTotal),
     patrimonioCierreTotal: numberToDecimal(value.patrimonioCierreTotal),
     consumoDiferencial: numberToDecimal(value.consumoDiferencial),
+    jvpTotalColumnaI: numberToDecimal(value.jvpTotalColumnaI),
+    jvpTotalColumnaII: numberToDecimal(value.jvpTotalColumnaII),
+    jvpJustificationDiff: numberToDecimal(value.jvpJustificationDiff),
     warnings: value.warnings,
     errors: value.errors,
   };

@@ -69,6 +69,9 @@ describe('buildTaxReturnPreview', () => {
     expect(preview.impuestoDeterminado).toBe(50);
     expect(preview.impuestoAPagarOARCA).toBe(50);
     expect(preview.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas).toBe(0);
+    expect(preview.jvpTotalColumnaI).toBe(1000);
+    expect(preview.jvpTotalColumnaII).toBe(1000);
+    expect(preview.jvpJustificationDiff).toBe(0);
     expect(preview.anticiposSiguientePeriodo).toEqual([10, 10, 10, 10, 10]);
   });
 });
@@ -216,12 +219,18 @@ describe('hydrateTaxReturnPreviewResult', () => {
       patrimonioInicioTotal: 0,
       patrimonioCierreTotal: 1000,
       consumoDiferencial: 0,
+      jvpTotalColumnaI: 1000,
+      jvpTotalColumnaII: 1000,
+      jvpJustificationDiff: 0,
       warnings: [],
       errors: [],
     });
 
     expect(hydrated.resultadoComercialNeto.toNumber()).toBe(1000);
     expect(hydrated.impuestoAPagarOARCA.isPositive()).toBe(true);
+    expect(hydrated.jvpTotalColumnaI.toNumber()).toBe(1000);
+    expect(hydrated.jvpTotalColumnaII.toNumber()).toBe(1000);
+    expect(hydrated.jvpJustificationDiff.toNumber()).toBe(0);
     expect(hydrated.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber()).toBe(0);
     expect(hydrated.anticiposSiguientePeriodo.map(anticipo => anticipo.toNumber())).toEqual([10, 10, 10, 10, 10]);
   });

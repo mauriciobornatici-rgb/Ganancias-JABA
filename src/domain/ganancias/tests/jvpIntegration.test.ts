@@ -92,5 +92,8 @@ describe('JVP integration in calculateTaxReturn', () => {
     expect(result.resultadoComercialNeto.toNumber()).toBe(1000);
     expect(result.resultadoImpositivoNeto.toNumber()).toBe(800);
     expect(result.consumoDiferencial.toNumber()).toBe(-200);
+    expect(result.jvpTotalColumnaI.toNumber()).toBe(800);
+    expect(result.jvpTotalColumnaII.toNumber()).toBe(800);
+    expect(result.jvpJustificationDiff.toNumber()).toBe(0);
   });
 });

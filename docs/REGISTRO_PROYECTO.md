@@ -1925,3 +1925,45 @@ Verificacion:
 Pendiente:
 
 - Ajustar o ampliar presets luego de validar casos reales contra `JVP`.
+
+### 2026-06-01 - Fase 1, P4 sexto corte: totales JVP auditables
+
+Se expusieron los totales de columna I, columna II y cuadre JVP desde el motor hacia las capas de presentacion.
+
+Problema:
+
+- `calculatePatrimonialJustification` ya calculaba `totalColumnaI`, `totalColumnaII` y `justificationDiff`.
+- `calculateTaxReturn` solo devolvia patrimonio inicio/cierre y consumo.
+- La persistencia guardaba `justificationDiff` como `0` fijo.
+- La UI y el exportador no podian mostrar el cuadre real del papel de trabajo.
+
+Decision:
+
+- Agregar al resultado principal `jvpTotalColumnaI`, `jvpTotalColumnaII` y `jvpJustificationDiff`.
+- Serializar/hidratar esos campos en preview backend/local.
+- Persistir `jvpJustificationDiff` calculado.
+- Mostrar totales de columnas y cuadre en el panel de auditoria del Paso 6.
+- Usar esos totales en el exportador de Excel cuando esten disponibles.
+
+Archivos modificados:
+
+- `src/domain/ganancias/types.ts`.
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/presentation/taxReturnPreview.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/exports/excelGenerator.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/tests/jvpIntegration.test.ts`.
+- `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `jvpIntegration.test.ts` y `taxReturnPreview.test.ts` fallaron inicialmente porque los campos no existian.
+- `vitest run src/domain/ganancias/tests/jvpIntegration.test.ts src/domain/ganancias/tests/taxReturnPreview.test.ts`: 2 archivos, 10 tests, todo OK.
+
+Pendiente:
+
+- Validar visualmente el panel de auditoria cuando el entorno Browser/Chrome vuelva a estar disponible.

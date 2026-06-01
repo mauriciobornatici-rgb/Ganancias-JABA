@@ -164,6 +164,7 @@ Avance 2026-06-01:
 - La carga participa de autosave, guardado, reapertura local y preview.
 - Cuarto corte de formula aplicado: JVP usa `resultadoImpositivoNeto`, equivalente a `IG 25!F38`, para recursos del periodo.
 - Quinto corte de agilidad aplicado: presets rapidos para conceptos JVP frecuentes, siempre mostrando columna I/II.
+- Sexto corte de auditoria aplicado: resultado, preview, persistencia, UI y exportacion exponen totales JVP columna I/II y cuadre.
 
 Criterio de cierre:
 

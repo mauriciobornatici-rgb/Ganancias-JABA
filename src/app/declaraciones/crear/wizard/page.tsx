@@ -3166,7 +3166,7 @@ export default function WizardPage() {
                 <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Control de Consistencia y Auditoría Impositiva</h3>
                 
                 {/* Cuadre Consumo JVP */}
-                <div className="p-5 rounded-xl bg-[#09090b] border border-zinc-800 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-5 rounded-xl bg-[#09090b] border border-zinc-800 grid grid-cols-1 md:grid-cols-5 gap-6">
                   <div>
                     <span className="text-xs text-zinc-500 block">Patrimonio al Inicio</span>
                     <span className="text-base font-bold font-mono text-zinc-300 block">${calculationResult.patrimonioInicioTotal.toNumber().toLocaleString('es-AR')}</span>
@@ -3174,6 +3174,15 @@ export default function WizardPage() {
                   <div>
                     <span className="text-xs text-zinc-500 block">Patrimonio al Cierre</span>
                     <span className="text-base font-bold font-mono text-zinc-300 block">${calculationResult.patrimonioCierreTotal.toNumber().toLocaleString('es-AR')}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-zinc-500 block">Total JVP Col. I</span>
+                    <span className="text-base font-bold font-mono text-amber-300 block">${calculationResult.jvpTotalColumnaI.toNumber().toLocaleString('es-AR')}</span>
+                  </div>
+                  <div>
+                    <span className="text-xs text-zinc-500 block">Total JVP Col. II</span>
+                    <span className="text-base font-bold font-mono text-emerald-300 block">${calculationResult.jvpTotalColumnaII.toNumber().toLocaleString('es-AR')}</span>
+                    <span className="text-[10px] text-zinc-600 block">Cuadre: ${calculationResult.jvpJustificationDiff.toNumber().toLocaleString('es-AR')}</span>
                   </div>
                   <div className="border-l border-zinc-800 pl-6">
                     <span className="text-xs text-teal-400 block font-semibold">Consumo Anual por Diferencia</span>

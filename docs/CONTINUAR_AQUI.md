@@ -120,7 +120,7 @@ Avance:
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: activo, tercer corte UI aplicado.
+Estado: activo, cuarto corte de formula JVP aplicado.
 
 Objetivo:
 
@@ -139,6 +139,7 @@ Avance:
 - La reapertura de DDJJ devuelve `otherJustifications` desde la relacion persistida, con fallback al snapshot para datos previos.
 - El Paso 4 del wizard incorpora una grilla agil para cargar otras justificaciones JVP con concepto, columna I/II e importe.
 - La grilla participa de autosave, guardado, localStorage y preview.
+- La JVP principal ahora usa `resultadoImpositivoNeto` como equivalente a `IG 25!F38`, en lugar de `resultadoComercialNeto`.
 
 Siguiente corte recomendado:
 

@@ -1844,3 +1844,42 @@ Pendiente:
 
 - Validar rubros y comportamiento contra filas relevantes de hoja `JVP`.
 - Mapear creditos/pasivos personales contra hojas auxiliares `Creditos`, `Pasivo` y `Banco`.
+
+### 2026-06-01 - Fase 1, P4 cuarto corte: resultado JVP alineado con IG 25!F38
+
+Se contrasto la hoja `JVP` contra la planilla base y se corrigio la fuente del resultado del periodo usado para justificar recursos.
+
+Hallazgo en Excel:
+
+- `JVP!D14` referencia `IG 25!F38`.
+- `IG 25!F38` es `Resultado Neto`, calculado como resultado impositivo antes de quebrantos menos quebrantos anteriores.
+- La app estaba pasando `resultadoComercialNeto` a la funcion JVP.
+
+Decision contable:
+
+- Usar `resultadoImpositivoNeto` en JVP porque es el equivalente funcional de `IG 25!F38`.
+- Mantener el patrimonio comercial de cierre calculado desde resultado comercial, porque representa la variacion patrimonial de la explotacion.
+- Documentar que, cuando las deducciones generales reducen el resultado impositivo sin reflejo patrimonial, el consumo puede volverse negativo igual que en la estructura de la planilla si no se carga el concepto compensatorio correspondiente.
+
+Archivos modificados:
+
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/tests/jvpIntegration.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- `calculateTaxReturn` envia `resultadoImpositivoNet` a `calculatePatrimonialJustification`.
+- La JVP queda mas cerca de la hoja Excel para la fila `Resultado impositivo de periodo (beneficio)`.
+
+Verificacion:
+
+- TDD rojo confirmado: `jvpIntegration.test.ts` fallo inicialmente porque el consumo seguia en `0` al usar resultado comercial.
+- `vitest run src/domain/ganancias/tests/jvpIntegration.test.ts`: 1 archivo, 2 tests, todo OK.
+
+Pendiente:
+
+- Completar mapeo fino de filas `JVP!C8`, `JVP!D13` y auxiliares para conceptos que no surgen automaticamente.
+- Revisar si conviene agregar presets de conceptos frecuentes para columna I/II sin automatizar la decision contable.

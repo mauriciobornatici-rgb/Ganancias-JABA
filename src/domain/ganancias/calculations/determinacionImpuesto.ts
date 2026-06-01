@@ -400,7 +400,7 @@ export function calculateTaxReturn(
   const jvpResult = calculatePatrimonialJustification({
     personalAssets: jvpAssets,
     personalLiabilities: input.personalLiabilities,
-    resultadoImpositivo: resultadoComercialNeto,
+    resultadoImpositivo: resultadoImpositivoNet,
     amortizaciones: amortizacionesBienesDeUso,
     ingresosExentos: ventasExentas,
     gastosNoDeducibles,

@@ -162,6 +162,7 @@ Avance 2026-06-01:
 - Tests agregados/extendidos: `calculationInputMapper.test.ts`, `taxReturnDetailsPersistence.test.ts`, `taxReturnReadMapper.test.ts`.
 - Tercer corte UI aplicado: Paso 4 del wizard permite cargar otras justificaciones JVP con concepto, columna I/II e importe.
 - La carga participa de autosave, guardado, reapertura local y preview.
+- Cuarto corte de formula aplicado: JVP usa `resultadoImpositivoNeto`, equivalente a `IG 25!F38`, para recursos del periodo.
 
 Criterio de cierre:
 

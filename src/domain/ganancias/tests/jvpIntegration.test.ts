@@ -68,4 +68,29 @@ describe('JVP integration in calculateTaxReturn', () => {
     expect(result.consumoDiferencial.toNumber()).toBe(0);
     expect(result.warnings.some((warning) => warning.includes('Consumo Nulo'))).toBe(true);
   });
+
+  it('usa el resultado impositivo neto de IG 25 para justificar recursos en JVP', () => {
+    const input = baseInput();
+    input.sales = [{ date: new Date('2025-01-01'), netAmount: new Decimal(1000), isExempt: false }];
+    input.generalDeductions = [{
+      autonomos: new Decimal(200),
+      servicioDomestico: new Decimal(0),
+      seguroVida: new Decimal(0),
+      seguroRetiro: new Decimal(0),
+      gastosSepelio: new Decimal(0),
+      interesesHipoteca: new Decimal(0),
+      gastosEducativos: new Decimal(0),
+      alquilerCasaHabitacion: new Decimal(0),
+      deduccionLocadorLocatario: new Decimal(0),
+      donaciones: new Decimal(0),
+      medicosAsistencial: new Decimal(0),
+      honorariosMedicos: new Decimal(0),
+    }];
+
+    const result = calculateTaxReturn(input);
+
+    expect(result.resultadoComercialNeto.toNumber()).toBe(1000);
+    expect(result.resultadoImpositivoNeto.toNumber()).toBe(800);
+    expect(result.consumoDiferencial.toNumber()).toBe(-200);
+  });
 });

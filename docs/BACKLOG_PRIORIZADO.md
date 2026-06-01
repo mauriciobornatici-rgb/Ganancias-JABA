@@ -56,6 +56,11 @@ Avance 2026-06-01:
 - Test agregado: `src/domain/ganancias/tests/moneyFormat.test.ts`.
 - `eslint` del wizard baja de 34 problemas registrados a 31 problemas actuales.
 - Se elimino un import no usado (`Info`).
+- Segundo corte aplicado: tipos de estado del wizard extraidos a `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- Test agregado: `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- Se eliminaron los `any` explicitos del estado principal del wizard y de handlers/mapeos tocados.
+- Se reemplazaron dos `Date.now()` de alta manual por ids deterministas basados en cantidad actual de filas.
+- `eslint` del wizard baja a 5 problemas actuales: 4 errores y 1 warning, concentrados en efectos de React/carga inicial.
 
 Criterio de cierre:
 
@@ -63,6 +68,7 @@ Criterio de cierre:
 - Lograr que al menos una zona del wizard quede sin nuevos `any`.
 - Mantener `vitest run`, `tsc --noEmit` y `next build --webpack` verdes.
 - Registrar deuda remanente con conteo o secciones afectadas.
+- Proximo subcorte: resolver efectos de carga/cache inicial y reset de contribuyente sin cambiar formulas fiscales.
 
 ## P2 - H6: consolidar calculo backend/frontend
 

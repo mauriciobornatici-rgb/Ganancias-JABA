@@ -25,6 +25,26 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import {
+  coerceWizardPersonalDeductionType,
+  wizardMoneyToNumber,
+  wizardMoneyToString,
+  type ActiveTaxParameters,
+  type TaxResolutionOption,
+  type WizardAxiDynamic,
+  type WizardBankAccount,
+  type WizardCellValue,
+  type WizardClient,
+  type WizardFixedAsset,
+  type WizardPersonalAsset,
+  type WizardPersonalDeductionType,
+  type WizardPersonalLiability,
+  type WizardPreviousReturnData,
+  type WizardPurchase,
+  type WizardSale,
+  type WizardTaxReturnSummary,
+  type WizardWithholding,
+} from '@/domain/ganancias/presentation/wizardStateTypes';
+import {
   buildTaxReturnPreviewStatus,
   buildTaxReturnPreviewRequest,
   hydrateTaxReturnPreviewResult,
@@ -131,14 +151,15 @@ export default function WizardPage() {
     setPersistedReturnId(id && id !== 'crear' ? id : '');
   }, [id]);
 
-  // Sync highest step visited
-  useEffect(() => {
-    setMaxVisitedStep(prev => Math.max(prev, currentStep));
-  }, [currentStep]);
-
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(false);
+
+  const updateCurrentStep = (nextStep: number) => {
+    const boundedStep = Math.max(1, Math.min(6, nextStep));
+    setCurrentStep(boundedStep);
+    setMaxVisitedStep(prev => Math.max(prev, boundedStep));
+  };
 
   // ==========================================
   // DATOS DE ESTADO DE LA DECLARACIÓN (WIZARD STATE)
@@ -147,8 +168,8 @@ export default function WizardPage() {
   const [clientName, setClientName] = useState('');
   const [fiscalYear, setFiscalYear] = useState(2025);
   const [taxParameterSetId, setTaxParameterSetId] = useState<string>('');
-  const [resolutions, setResolutions] = useState<any[]>([]);
-  const [activeParams, setActiveParams] = useState<any>(null);
+  const [resolutions, setResolutions] = useState<TaxResolutionOption[]>([]);
+  const [activeParams, setActiveParams] = useState<ActiveTaxParameters | null>(null);
   const [backendPreview, setBackendPreview] = useState<{
     key: string;
     result: ReturnType<typeof calculateTaxReturn>;
@@ -162,7 +183,7 @@ export default function WizardPage() {
   const [bienesNoComputablesInicio, setBienesNoComputablesInicio] = useState('0');
   const [saldoAFavorAnterior, setSaldoAFavorAnterior] = useState('0');
   const [quebrantosAnteriores, setQuebrantosAnteriores] = useState('0');
-  const [axiDynamic, setAxiDynamic] = useState<any[]>([]);
+  const [axiDynamic, setAxiDynamic] = useState<WizardAxiDynamic[]>([]);
 
   // Control de Modales de Persistencia y Cierre
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -176,8 +197,8 @@ export default function WizardPage() {
   // Searchable contribuyente dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const [dbClients, setDbClients] = useState<any[]>([]);
-  const [dbDeclaraciones, setDbDeclaraciones] = useState<any[]>([]);
+  const [dbClients, setDbClients] = useState<WizardClient[]>([]);
+  const [dbDeclaraciones, setDbDeclaraciones] = useState<WizardTaxReturnSummary[]>([]);
 
   const checkIfStepHasData = (step: number): boolean => {
     if (step === 1) {
@@ -241,7 +262,7 @@ export default function WizardPage() {
         esJubiladoOchoHaberes: false,
       });
       setPersonalAssets([]);
-      setCurrentStep(1);
+      updateCurrentStep(1);
       return;
     }
 
@@ -256,7 +277,7 @@ export default function WizardPage() {
         if (data.clientName) setClientName(data.clientName);
         if (data.fiscalYear) setFiscalYear(data.fiscalYear);
         if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-        if (data.currentStep) setCurrentStep(Math.min(6, data.currentStep));
+        if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
         if (data.sales) setSales(data.sales);
         if (data.purchases) setPurchases(data.purchases);
         if (data.fixedAssets) setFixedAssets(data.fixedAssets);
@@ -323,7 +344,7 @@ export default function WizardPage() {
       setPersonalAssets([
         { description: 'Inmueble Particular', type: 'Inmueble', valueInitial: '8000000', valueFinal: '8000000' }
       ]);
-      setCurrentStep(1);
+      updateCurrentStep(1);
     } else {
       const targetReturn = mockTaxReturns.find(r => r.id === id);
       if (targetReturn) {
@@ -332,7 +353,7 @@ export default function WizardPage() {
         setClientName(targetReturn.clientName);
         setFiscalYear(targetReturn.year);
         if (targetReturn.currentStep) {
-          setCurrentStep(Math.min(6, targetReturn.currentStep));
+          updateCurrentStep(Math.min(6, targetReturn.currentStep));
         }
       }
     }
@@ -389,18 +410,18 @@ export default function WizardPage() {
     if (newStep > 1) {
       if (!validateCuit(cuit)) {
         setStep1Error('El CUIT ingresado posee un formato o dígito verificador inválido. Por favor, ingrese un CUIT válido (formato XX-XXXXXXXX-X).');
-        setCurrentStep(1);
+        updateCurrentStep(1);
         return;
       }
       const isRegisteredClient = dbClients.some(c => c.cuit === cuit);
       if (!isRegisteredClient) {
         setStep1Error('El contribuyente ingresado no se encuentra registrado en el padrón de Clientes. Para proceder, debe seleccionar un contribuyente existente o registrarlo previamente en la sección de Clientes.');
-        setCurrentStep(1);
+        updateCurrentStep(1);
         return;
       }
     }
     setStep1Error(null);
-    setCurrentStep(newStep);
+    updateCurrentStep(newStep);
     saveToServer(newStep);
   };
 
@@ -476,18 +497,18 @@ export default function WizardPage() {
     });
   };
   
-  const [sales, setSales] = useState<any[]>([]);
+  const [sales, setSales] = useState<WizardSale[]>([]);
 
-  const [purchases, setPurchases] = useState<any[]>([]);
+  const [purchases, setPurchases] = useState<WizardPurchase[]>([]);
 
-  const [fixedAssets, setFixedAssets] = useState<any[]>([]);
+  const [fixedAssets, setFixedAssets] = useState<WizardFixedAsset[]>([]);
 
   const [initialStock, setInitialStock] = useState('0');
   const [finalStock, setFinalStock] = useState('0');
 
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<WizardBankAccount[]>([]);
 
-  const [withholdings, setWithholdings] = useState<any[]>([]);
+  const [withholdings, setWithholdings] = useState<WizardWithholding[]>([]);
 
   const [generalDeductions, setGeneralDeductions] = useState({
     autonomos: '0',
@@ -504,17 +525,23 @@ export default function WizardPage() {
     honorariosMedicos: '0',
   });
 
-  const [personalDeductions, setPersonalDeductions] = useState({
+  const [personalDeductions, setPersonalDeductions] = useState<{
+    tieneConyuge: boolean;
+    cantidadHijos: number;
+    cantidadHijosIncapacitados: number;
+    tipoDeduccionEspecial: WizardPersonalDeductionType;
+    esJubiladoOchoHaberes: boolean;
+  }>({
     tieneConyuge: false,
     cantidadHijos: 0,
     cantidadHijosIncapacitados: 0,
-    tipoDeduccionEspecial: 'Ninguna' as 'Autonomo' | 'Emprendedor' | 'Dependiente' | 'Ninguna',
+    tipoDeduccionEspecial: 'Ninguna',
     esJubiladoOchoHaberes: false,
   });
 
-  const [personalAssets, setPersonalAssets] = useState<any[]>([]);
+  const [personalAssets, setPersonalAssets] = useState<WizardPersonalAsset[]>([]);
 
-  const [personalLiabilities, setPersonalLiabilities] = useState<any[]>([]);
+  const [personalLiabilities, setPersonalLiabilities] = useState<WizardPersonalLiability[]>([]);
 
   // Hook 1: Cargar estado persistido al iniciar (Mount) e inicializar padrón de contribuyentes
   useEffect(() => {
@@ -524,8 +551,8 @@ export default function WizardPage() {
         fetch('/api/declaraciones').then(res => res.json())
       ])
       .then(([clientsRes, returnsRes]) => {
-        if (clientsRes.success) setDbClients(clientsRes.data);
-        if (returnsRes.success) setDbDeclaraciones(returnsRes.data);
+        if (clientsRes.success) setDbClients(clientsRes.data as WizardClient[]);
+        if (returnsRes.success) setDbDeclaraciones(returnsRes.data as WizardTaxReturnSummary[]);
       })
       .catch(err => console.error("Error al cargar padrón de base de datos:", err));
 
@@ -543,7 +570,7 @@ export default function WizardPage() {
               if (data.clientName) setClientName(data.clientName);
               if (data.fiscalYear) setFiscalYear(data.fiscalYear);
               if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-              if (data.currentStep) setCurrentStep(Math.min(6, data.currentStep));
+              if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
               if (data.sales) setSales(data.sales);
               if (data.purchases) setPurchases(data.purchases);
               if (data.fixedAssets) setFixedAssets(data.fixedAssets);
@@ -702,12 +729,13 @@ export default function WizardPage() {
       .then(res => res.json())
       .then(res => {
         if (res.success && res.data) {
-          setResolutions(res.data);
+          const resolutionData = res.data as TaxResolutionOption[];
+          setResolutions(resolutionData);
           // Si el taxParameterSetId actual no está en la lista de resoluciones del nuevo año,
           // o está vacío, asignar la primera por defecto (que es la última versión en orden desc)
-          const found = res.data.find((r: any) => r.id === taxParameterSetId);
-          if (!found && res.data.length > 0) {
-            setTaxParameterSetId(res.data[0].id);
+          const found = resolutionData.find(r => r.id === taxParameterSetId);
+          if (!found && resolutionData.length > 0) {
+            setTaxParameterSetId(resolutionData[0].id);
           }
         } else {
           setResolutions([]);
@@ -717,7 +745,7 @@ export default function WizardPage() {
         console.error("Error al obtener resoluciones:", err);
         setResolutions([]);
       });
-  }, [fiscalYear]);
+  }, [fiscalYear, taxParameterSetId]);
 
   // Hook 5: Cargar detalles de la resolución/parámetros activa para cálculos en tiempo real en el front
   useEffect(() => {
@@ -726,7 +754,7 @@ export default function WizardPage() {
         .then(res => res.json())
         .then(res => {
           if (res.success && res.data) {
-            setActiveParams(res.data);
+            setActiveParams(res.data as ActiveTaxParameters);
           } else {
             setActiveParams(null);
           }
@@ -741,6 +769,9 @@ export default function WizardPage() {
   }, [fiscalYear, taxParameterSetId]);
 
   const loadClientHistory = (targetCuit: string, targetName: string, targetYear: number) => {
+    void targetCuit;
+    void targetName;
+    void targetYear;
     // Ya no inyectamos mock data en el onBlur del input, Hook 3 y el detector dinámico de JVP en la UI manejan la importación de saldos del año anterior.
   };
 
@@ -873,13 +904,13 @@ export default function WizardPage() {
       setPurchases([...purchases, { date: `${fiscalYear}-01-01`, netAmount: '0', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' }]);
     } else if (type === 'assets') {
       const purchaseDate = `${fiscalYear}-01-01`;
-      setFixedAssets([...fixedAssets, { id: `asset-${Date.now()}`, name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate, originalCost: '0', usefulLife: 10, yearsElapsed: calculateYearsElapsedAtClose(purchaseDate, fiscalYear), customReexpIndex: '1.0' }]);
+      setFixedAssets([...fixedAssets, { id: `asset-${fixedAssets.length + 1}`, name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate, originalCost: '0', usefulLife: 10, yearsElapsed: calculateYearsElapsedAtClose(purchaseDate, fiscalYear), customReexpIndex: '1.0' }]);
     } else if (type === 'withholdings') {
       setWithholdings([...withholdings, { amount: '0', taxCode: 'Ganancias' }]);
     } else if (type === 'personalAssets') {
       setPersonalAssets([...personalAssets, { description: 'Nuevo Activo', type: 'Otros', valueInitial: '0', valueFinal: '0' }]);
     } else if (type === 'bankAccounts') {
-      setBankAccounts([...bankAccounts, { id: `bank-${Date.now()}`, name: 'Nuevo Banco', cuitBank: '', accountNumber: '', accountType: 'Cuenta Corriente', currency: 'ARS', nominalInitial: '0', nominalFinal: '0', tcInitial: '1', tcFinal: '1', interests: '0' }]);
+      setBankAccounts([...bankAccounts, { id: `bank-${bankAccounts.length + 1}`, name: 'Nuevo Banco', cuitBank: '', accountNumber: '', accountType: 'Cuenta Corriente', currency: 'ARS', nominalInitial: '0', nominalFinal: '0', tcInitial: '1', tcFinal: '1', interests: '0' }]);
     } else if (type === 'personalLiabilities') {
       setPersonalLiabilities([...personalLiabilities, { description: 'Nuevo Pasivo', valueInitial: '0', valueFinal: '0' }]);
     } else if (type === 'axiDynamic') {
@@ -898,7 +929,7 @@ export default function WizardPage() {
     if (type === 'axiDynamic') setAxiDynamic(axiDynamic.filter((_, i) => i !== index));
   };
 
-  const handleCellChange = (index: number, field: string, value: any, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'axiDynamic') => {
+  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'axiDynamic') => {
     if (type === 'sales') {
       const updated = [...sales];
       updated[index][field] = value;
@@ -911,7 +942,8 @@ export default function WizardPage() {
       const updated = [...fixedAssets];
       updated[index][field] = value;
       if (field === 'purchaseDate') {
-        updated[index].yearsElapsed = calculateYearsElapsedAtClose(value, fiscalYear);
+        const purchaseDate = value instanceof Date || typeof value === 'string' || value == null ? value : String(value);
+        updated[index].yearsElapsed = calculateYearsElapsedAtClose(purchaseDate, fiscalYear);
       }
       setFixedAssets(updated);
     } else if (type === 'withholdings') {
@@ -1028,8 +1060,8 @@ export default function WizardPage() {
   const calculationParams = activeParams
     ? {
         ...activeParams,
-        brackets: activeParams.brackets?.length > 0 ? activeParams.brackets : escala2025BracketMock,
-        indices: activeParams.indices || [],
+        brackets: activeParams.brackets && activeParams.brackets.length > 0 ? activeParams.brackets : escala2025BracketMock,
+        indices: activeParams.indices ?? [],
       }
     : {
         parameterSet: fallbackParameterSet,
@@ -1388,7 +1420,7 @@ export default function WizardPage() {
                     className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                   >
                     {resolutions.length > 0 ? (
-                      resolutions.map((res: any) => (
+                      resolutions.map(res => (
                         <option key={res.id} value={res.id}>
                           {res.resolution} (v{res.version})
                         </option>
@@ -1461,7 +1493,7 @@ export default function WizardPage() {
                     <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Tipo de Deducción Especial (Art. 30)</label>
                     <select 
                       value={personalDeductions.tipoDeduccionEspecial}
-                      onChange={(e) => setPersonalDeductions({...personalDeductions, tipoDeduccionEspecial: e.target.value as any})}
+                      onChange={(e) => setPersonalDeductions({...personalDeductions, tipoDeduccionEspecial: coerceWizardPersonalDeductionType(e.target.value)})}
                       className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                     >
                       <option value="Autonomo">Autónomos General (1.5x MNI)</option>
@@ -1508,16 +1540,16 @@ export default function WizardPage() {
                             .then(res => res.json())
                             .then(res => {
                               if (res.success && res.data) {
-                                const prevData = res.data;
+                                const prevData = res.data as WizardPreviousReturnData;
                                 let totalActivosCierre = new Decimal(0);
 
                                 // Existencias
                                 const stockFinal = new Decimal(prevData.finalStock || 0);
                                 totalActivosCierre = totalActivosCierre.plus(stockFinal);
-                                setInitialStock(prevData.finalStock || '0');
+                                setInitialStock(wizardMoneyToString(prevData.finalStock));
 
                                 // Disponibilidades
-                                const bankMapped = (prevData.bankAccounts || []).map((b: any) => {
+                                const bankMapped = (prevData.bankAccounts || []).map(b => {
                                   const balFinal = new Decimal(b.nominalFinal || 0);
                                   const tcFinal = new Decimal(b.tcFinal || 1.0);
                                   totalActivosCierre = totalActivosCierre.plus(balFinal.mul(tcFinal));
@@ -1538,7 +1570,7 @@ export default function WizardPage() {
                                 setBankAccounts(bankMapped);
 
                                 // Activos Personales
-                                const assetsMapped = (prevData.personalAssets || []).map((a: any) => {
+                                const assetsMapped = (prevData.personalAssets || []).map(a => {
                                   const vFinal = new Decimal(a.valueFinal || 0);
                                   totalActivosCierre = totalActivosCierre.plus(vFinal);
                                   return {
@@ -1551,7 +1583,7 @@ export default function WizardPage() {
                                 setPersonalAssets(assetsMapped);
 
                                 // Bienes de Uso (Amortización)
-                                const fixedMapped = (prevData.fixedAssets || []).map((a: any) => {
+                                const fixedMapped = (prevData.fixedAssets || []).map(a => {
                                   totalActivosCierre = totalActivosCierre.plus(new Decimal(a.originalCost || 0));
                                   return {
                                     id: `asset-${Date.now()}-${Math.random()}`,
@@ -1560,7 +1592,7 @@ export default function WizardPage() {
                                     purchaseDate: a.purchaseDate,
                                     originalCost: a.originalCost,
                                     usefulLife: a.usefulLife,
-                                    yearsElapsed: (a.yearsElapsed || 0) + 1,
+                                    yearsElapsed: wizardMoneyToNumber(a.yearsElapsed) + 1,
                                     customReexpIndex: '1.0'
                                   };
                                 });
@@ -2270,7 +2302,7 @@ export default function WizardPage() {
                                     />
                                   </div>
                                   <span className="text-[10px] font-bold text-teal-400 font-mono">
-                                    ${(parseFloat(bank.nominalInitial || 0) * parseFloat(bank.tcInitial || 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
+                                    ${(wizardMoneyToNumber(bank.nominalInitial) * wizardMoneyToNumber(bank.tcInitial, 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
                                   </span>
                                 </div>
                               )}
@@ -2297,7 +2329,7 @@ export default function WizardPage() {
                                     />
                                   </div>
                                   <span className="text-[10px] font-bold text-teal-400 font-mono">
-                                    ${(parseFloat(bank.nominalFinal || 0) * parseFloat(bank.tcFinal || 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
+                                    ${(wizardMoneyToNumber(bank.nominalFinal) * wizardMoneyToNumber(bank.tcFinal, 1)).toLocaleString('es-AR', { minimumFractionDigits: 2 })} ARS
                                   </span>
                                 </div>
                               )}

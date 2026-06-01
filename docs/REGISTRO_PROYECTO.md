@@ -344,6 +344,51 @@ Pendiente:
 - Siguiente subcorte recomendado: tipar o extraer bloque de carga/cache inicial del wizard.
 - Resolver progresivamente reglas de hooks (`setState` en efectos) y `Date.now` en creacion de filas.
 
+### 2026-06-01 - P1 segundo corte: estado tipado del wizard
+
+Se avanzo sobre la deuda critica del wizard tipando sus estructuras principales sin modificar formulas fiscales.
+
+Riesgo mitigado:
+
+- Los `any` del estado principal permitian asignaciones opacas en ventas, compras, bancos, bienes, retenciones, patrimonio, AXI, resoluciones y parametros.
+- La pantalla de carga es el punto mas sensible para un estudio chico: debe ser rapida, pero tambien previsible y auditable.
+- Antes de tocar calculo, AXI o JVP conviene que el estado editable tenga nombres y tipos explicitos.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- Se agregaron tipos reutilizables para resoluciones, parametros activos, padron, declaraciones, ventas, compras, bienes de uso, bancos, retenciones, patrimonio personal, pasivos y movimientos AXI.
+- Se agrego `coerceWizardPersonalDeductionType` para evitar casts inseguros al cargar la deduccion especial.
+- Se agregaron helpers `wizardMoneyToString` y `wizardMoneyToNumber` para normalizar valores editables antes de usarlos en estado, parseos o JSX.
+- El wizard ya no contiene `any` explicitos en los estados y mapeos principales tocados.
+- Se reemplazaron dos `Date.now()` de altas manuales por ids deterministas basados en la cantidad actual de filas.
+- Se retiro el efecto derivado de `maxVisitedStep`; ahora se actualiza junto con el cambio de paso.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo inicialmente porque `wizardStateTypes` no existia.
+- TDD rojo confirmado: el test de helpers monetarios fallo inicialmente porque `wizardMoneyToString` y `wizardMoneyToNumber` no existian.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts src/domain/ganancias/tests/moneyFormat.test.ts`: 2 archivos, 6 tests, todo OK.
+- `vitest run`: 21 archivos, 61 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre `wizardStateTypes.ts` y su test: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo advertencias CRLF esperadas de Git en Windows.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx`: sigue fallando por deuda previa, pero baja a 5 problemas (4 errores, 1 warning), concentrados en efectos de React/carga inicial.
+
+Pendiente:
+
+- Proximo subcorte P1: extraer/ordenar carga inicial, localStorage y reset de contribuyente para resolver los 5 problemas restantes de hooks.
+- No tocar calculo fiscal, AXI ni JVP hasta cerrar ese subcorte o aceptar conscientemente el riesgo.
+
 ### 2026-05-30 - Auditoria inicial
 
 Se reviso estructura del proyecto, planillas Excel y calculos principales.

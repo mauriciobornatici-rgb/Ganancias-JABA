@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P1 primer corte, helper de formato monetario extraido del wizard.
+- Ultimo checkpoint documentado: P1 segundo corte, tipos de estado del wizard y helpers de valores editables.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -62,12 +62,14 @@ Primer corte recomendado:
 Avance:
 
 - Corte 1 aplicado: `formatCurrencyWhole` y `formatCurrencyCents` en `src/domain/ganancias/presentation/moneyFormat.ts`.
-- El wizard ya no define helpers monetarios inline con `any`.
-- `eslint src/app/declaraciones/crear/wizard/page.tsx` baja a 31 problemas: 26 errores y 5 warnings.
+- Corte 2 aplicado: tipos de estado del wizard en `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- El wizard ya no tiene `any` explicitos en sus estados principales de resoluciones, parametros, padron, ventas, compras, bienes, bancos, retenciones, patrimonio y AXI.
+- Se agregaron helpers para normalizar valores editables monetarios sin casts inseguros.
+- `eslint src/app/declaraciones/crear/wizard/page.tsx` baja a 5 problemas: 4 errores y 1 warning, todos relacionados con efectos de React/carga inicial.
 
 Siguiente subcorte sugerido:
 
-- Tipar o extraer el bloque de carga/cache inicial del wizard antes de tocar calculo fiscal.
+- Extraer/ordenar el bloque de carga inicial y reset de contribuyente del wizard para resolver los 5 problemas restantes de hooks sin tocar calculo fiscal.
 
 ## Reglas de continuidad
 

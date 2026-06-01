@@ -158,6 +158,7 @@ Siguiente corte recomendado:
 - Registro historico largo: `docs/REGISTRO_PROYECTO.md`.
 - Backlog ordenado: `docs/BACKLOG_PRIORIZADO.md`.
 - Plan de fase Excel: `docs/FASE_1_VALIDACION_EXCEL.md`.
+- Mapeo JVP contra Excel: `docs/MAPEO_JVP_EXCEL.md`.
 - Plan de esta mejora: `docs/superpowers/plans/2026-06-01-continuidad-operativa.md`.
 
 ## Comandos utiles en esta maquina

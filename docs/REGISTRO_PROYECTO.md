@@ -1883,3 +1883,7 @@ Pendiente:
 
 - Completar mapeo fino de filas `JVP!C8`, `JVP!D13` y auxiliares para conceptos que no surgen automaticamente.
 - Revisar si conviene agregar presets de conceptos frecuentes para columna I/II sin automatizar la decision contable.
+
+Nota de continuidad:
+
+- Se creo `docs/MAPEO_JVP_EXCEL.md` con el mapa de hojas, formulas y brechas detectadas contra la planilla base.

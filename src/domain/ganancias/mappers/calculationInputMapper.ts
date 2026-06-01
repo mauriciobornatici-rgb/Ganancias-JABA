@@ -96,6 +96,10 @@ function axiDynamicType(value: unknown): AxiDynamicInput['type'] {
   return 'Otro';
 }
 
+function patrimonialColumn(value: unknown): number {
+  return numberValue(value, 2) === 1 ? 1 : 2;
+}
+
 export function buildTaxReturnCalculationInput(
   declarationData: unknown,
   taxParameters: unknown
@@ -227,7 +231,11 @@ export function buildTaxReturnCalculationInput(
       valueInitial: decimalValue(liability.valueInitial),
       valueFinal: decimalValue(liability.valueFinal),
     })),
-    otherJustifications: [],
+    otherJustifications: asRecordArray(data.otherJustifications).map(justification => ({
+      concept: stringValue(justification.concept),
+      column: patrimonialColumn(justification.column),
+      amount: decimalValue(justification.amount),
+    })),
     axiStatic: {
       activoTotalInicio: decimalValue(data.activoTotalInicio),
       bienesNoComputablesInicio: decimalValue(data.bienesNoComputablesInicio),

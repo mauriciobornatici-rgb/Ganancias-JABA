@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   formatDateForWizardInput,
   mapAxiDynamicItemForWizard,
+  mapPatrimonialJustificationForWizard,
   snapshotStringAt,
 } from '../persistence/taxReturnReadMapper';
 
@@ -56,6 +57,22 @@ describe('mapAxiDynamicItemForWizard', () => {
       coef: '1.128840',
       factor: '1.0000',
       computedAxi: '502654.00',
+    });
+  });
+});
+
+describe('mapPatrimonialJustificationForWizard', () => {
+  it('conserva concepto, columna e importe para reabrir otras justificaciones JVP', () => {
+    const mapped = mapPatrimonialJustificationForWizard({
+      concept: 'Herencia recibida',
+      column: 2,
+      amount: { toString: () => '750000.00' },
+    });
+
+    expect(mapped).toEqual({
+      concept: 'Herencia recibida',
+      column: 2,
+      amount: '750000.00',
     });
   });
 });

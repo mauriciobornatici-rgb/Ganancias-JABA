@@ -33,6 +33,7 @@ type PersistenceDb = {
   taxWithholding: PersistenceModel;
   personalAsset: PersistenceModel;
   personalLiability: PersistenceModel;
+  patrimonialJustification?: PersistenceModel;
   axiDynamicItem: PersistenceModel;
   calculationRun: PersistenceModel;
   taxReturn: PersistenceModel;
@@ -110,6 +111,12 @@ type PersonalLiabilityPayload = {
   valueFinal?: NumericValue;
 };
 
+type OtherJustificationPayload = {
+  concept?: string;
+  column?: NumericValue;
+  amount?: NumericValue;
+};
+
 type PersonalDeductionsPayload = {
   tieneConyuge?: boolean;
   cantidadHijos?: NumericValue;
@@ -143,6 +150,7 @@ type TaxReturnPersistencePayload = {
   personalDeductions?: PersonalDeductionsPayload;
   personalAssets?: PersonalAssetPayload[];
   personalLiabilities?: PersonalLiabilityPayload[];
+  otherJustifications?: OtherJustificationPayload[];
   activoTotalInicio?: NumericValue;
   pasivoTotalInicio?: NumericValue;
   bienesNoComputablesInicio?: NumericValue;
@@ -192,6 +200,10 @@ function axiDynamicType(value: string | undefined): AxiDynamicInput['type'] {
   return 'Otro';
 }
 
+function patrimonialColumn(value: NumericValue | undefined): number {
+  return integerInput(value, 2) === 1 ? 1 : 2;
+}
+
 export async function persistTaxReturnDetails({
   db,
   taxReturnId,
@@ -220,6 +232,7 @@ export async function persistTaxReturnDetails({
     personalDeductions,
     personalAssets = [],
     personalLiabilities = [],
+    otherJustifications = [],
     activoTotalInicio = '0',
     pasivoTotalInicio = '0',
     bienesNoComputablesInicio = '0',
@@ -291,6 +304,7 @@ export async function persistTaxReturnDetails({
     },
     personalAssets,
     personalLiabilities,
+    otherJustifications,
     activoTotalInicio,
     bienesNoComputablesInicio,
     pasivoTotalInicio,
@@ -314,6 +328,7 @@ export async function persistTaxReturnDetails({
   await db.taxWithholding.deleteMany({ where: { taxReturnId } });
   await db.personalAsset.deleteMany({ where: { taxReturnId } });
   await db.personalLiability.deleteMany({ where: { taxReturnId } });
+  await db.patrimonialJustification?.deleteMany({ where: { taxReturnId } });
   await db.axiDynamicItem.deleteMany({ where: { taxReturnId } });
   await db.calculationRun.deleteMany({ where: { taxReturnId } });
 
@@ -463,6 +478,17 @@ export async function persistTaxReturnDetails({
     });
   }
 
+  if (db.patrimonialJustification && otherJustifications.length > 0) {
+    await db.patrimonialJustification.createMany({
+      data: otherJustifications.map(justification => ({
+        taxReturnId,
+        concept: stringInput(justification.concept),
+        column: patrimonialColumn(justification.column),
+        amount: numberInput(justification.amount),
+      })),
+    });
+  }
+
   const normalizedAxiDynamic: AxiDynamicInput[] = axiDynamic.map(item => ({
     concept: stringInput(item.concept),
     type: axiDynamicType(item.type),
@@ -508,6 +534,7 @@ export async function persistTaxReturnDetails({
     sales,
     purchases,
     withholdings,
+    otherJustifications,
     axiDynamic,
   };
 

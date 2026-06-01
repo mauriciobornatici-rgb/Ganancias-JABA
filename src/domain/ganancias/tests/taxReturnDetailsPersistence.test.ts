@@ -331,4 +331,62 @@ describe('persistTaxReturnDetails', () => {
     expect(captures.axiDynamicCreate?.data.computedAxi).toBe(502654);
     expect(captures.calculationCreate?.data.axiDynamicResult).toBe(502654);
   });
+
+  it('persiste otras justificaciones patrimoniales y las conserva en snapshot', async () => {
+    const captures: {
+      justificationsCreateMany?: CreateManyCapture;
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      patrimonialJustification: model({ createMany: async (args: unknown) => { captures.justificationsCreateMany = args as CreateManyCapture; } }),
+      axiDynamicItem: model(),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-jvp',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente JVP', cuit: '20-44444444-4' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        otherJustifications: [{
+          concept: 'Herencia recibida',
+          column: 2,
+          amount: '750000',
+        }],
+      },
+    });
+
+    expect(captures.justificationsCreateMany?.data[0]).toMatchObject({
+      taxReturnId: 'return-jvp',
+      concept: 'Herencia recibida',
+      column: 2,
+      amount: 750000,
+    });
+    const snapshot = JSON.parse(captures.calculationCreate?.data.variablesSnapshot || '{}');
+    expect(snapshot.otherJustifications[0]).toMatchObject({
+      concept: 'Herencia recibida',
+      column: 2,
+      amount: '750000',
+    });
+  });
 });

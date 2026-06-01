@@ -120,7 +120,7 @@ Avance:
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: activo, primer corte aplicado.
+Estado: activo, segundo corte backend aplicado.
 
 Objetivo:
 
@@ -134,10 +134,13 @@ Avance:
 - La liquidacion principal ahora reutiliza `calculatePatrimonialJustification` e incluye bancos y patrimonio comercial como componentes patrimoniales.
 - Se propagan advertencias de auditoria JVP, incluyendo consumo nulo.
 - Test agregado: `jvpIntegration.test.ts`.
+- El mapper de calculo ahora levanta `otherJustifications` con concepto, columna e importe.
+- La persistencia guarda/recrea `PatrimonialJustification` y conserva `otherJustifications` en `variablesSnapshot`.
+- La reapertura de DDJJ devuelve `otherJustifications` desde la relacion persistida, con fallback al snapshot para datos previos.
 
 Siguiente corte recomendado:
 
-- Agregar carga/persistencia de `otherJustifications` para otros conceptos de columna I/II.
+- Agregar UI agil para cargar `otherJustifications` sin volver pesada la pantalla.
 - Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
 
 ## Reglas de continuidad

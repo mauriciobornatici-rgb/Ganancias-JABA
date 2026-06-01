@@ -23,6 +23,13 @@ describe('buildTaxReturnCalculationInput', () => {
             valueFinal: '100000',
           },
         ],
+        otherJustifications: [
+          {
+            concept: 'Herencia recibida',
+            column: '2',
+            amount: '750000',
+          },
+        ],
         axiDynamic: [
           {
             concept: 'Retiro socio marzo',
@@ -67,6 +74,9 @@ describe('buildTaxReturnCalculationInput', () => {
     expect(input.generalDeductions[0].deduccionLocadorLocatario?.toNumber()).toBe(1_000_000);
     expect(input.personalLiabilities[0].valueInitial.toNumber()).toBe(250_000);
     expect(input.personalLiabilities[0].valueFinal.toNumber()).toBe(100_000);
+    expect(input.otherJustifications[0].concept).toBe('Herencia recibida');
+    expect(input.otherJustifications[0].column).toBe(2);
+    expect(input.otherJustifications[0].amount.toNumber()).toBe(750_000);
     expect(input.axiDynamic[0].amount.toNumber()).toBe(50_000);
     expect(input.axiDynamic[0].date.toISOString().startsWith('2025-03-15')).toBe(true);
     expect(input.params.escalaArt94[0].percentage.toNumber()).toBe(0.35);

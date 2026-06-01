@@ -5,6 +5,7 @@ import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxRetur
 import {
   formatDateForWizardInput,
   mapAxiDynamicItemForWizard,
+  mapPatrimonialJustificationForWizard,
   snapshotStringAt,
 } from '@/domain/ganancias/persistence/taxReturnReadMapper';
 
@@ -29,6 +30,7 @@ export async function GET(
         withholdings: true,
         personalAssets: true,
         personalLiabilities: true,
+        justifications: true,
         axiDynamicItems: true,
         calculations: {
           orderBy: { runDate: 'desc' },
@@ -156,6 +158,9 @@ export async function GET(
       bienesNoComputablesInicio: extraState.bienesNoComputablesInicio || '0',
       saldoAFavorAnterior: extraState.saldoAFavorAnterior || '0',
       quebrantosAnteriores: extraState.quebrantosAnteriores || '0',
+      otherJustifications: taxReturn.justifications.length > 0
+        ? taxReturn.justifications.map(mapPatrimonialJustificationForWizard)
+        : extraState.otherJustifications || [],
       axiDynamic: (taxReturn.axiDynamicItems || []).map(mapAxiDynamicItemForWizard),
     };
 

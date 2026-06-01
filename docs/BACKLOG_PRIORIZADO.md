@@ -158,6 +158,8 @@ Avance 2026-06-01:
 - Bancos y patrimonio comercial se incorporan como componentes patrimoniales para conservar los totales existentes.
 - La liquidacion principal propaga advertencias JVP de auditoria, incluyendo consumo nulo.
 - Test agregado: `jvpIntegration.test.ts`.
+- Segundo corte backend aplicado: `otherJustifications` se mapea al motor, se persiste en `PatrimonialJustification`, se guarda en snapshot y se reabre por API.
+- Tests agregados/extendidos: `calculationInputMapper.test.ts`, `taxReturnDetailsPersistence.test.ts`, `taxReturnReadMapper.test.ts`.
 
 Criterio de cierre:
 
@@ -166,7 +168,6 @@ Criterio de cierre:
 
 Pendiente para cerrar P4:
 
-- Persistir y reabrir `otherJustifications`.
 - Agregar UI agil para otros conceptos de columna I/II.
 - Mapear creditos/pasivos personales contra las hojas auxiliares de la planilla.
 

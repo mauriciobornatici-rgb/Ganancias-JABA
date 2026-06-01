@@ -31,6 +31,12 @@ type AxiDynamicReadItem = {
   computedAxi: DecimalLike;
 };
 
+type PatrimonialJustificationReadItem = {
+  concept: string;
+  column: number;
+  amount: DecimalLike;
+};
+
 export function mapAxiDynamicItemForWizard(item: AxiDynamicReadItem) {
   return {
     concept: item.concept,
@@ -40,5 +46,13 @@ export function mapAxiDynamicItemForWizard(item: AxiDynamicReadItem) {
     coef: item.coef.toString(),
     factor: item.factor.toString(),
     computedAxi: item.computedAxi.toString(),
+  };
+}
+
+export function mapPatrimonialJustificationForWizard(item: PatrimonialJustificationReadItem) {
+  return {
+    concept: item.concept,
+    column: item.column,
+    amount: item.amount.toString(),
   };
 }

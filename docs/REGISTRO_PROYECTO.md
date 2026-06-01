@@ -1738,3 +1738,57 @@ Pendiente:
 
 - Persistir/reabrir `otherJustifications`, que hoy el mapper deja vacio.
 - Agregar UI agil para otros conceptos de columna I/II y mapearlos contra `JVP`.
+
+### 2026-06-01 - Fase 1, P4 segundo corte: persistencia y reapertura de otras justificaciones JVP
+
+Se activo el circuito backend de `otherJustifications` para que las justificaciones patrimoniales cargadas queden guardadas en base y reaparezcan al abrir la DDJJ.
+
+Hallazgo:
+
+- El modelo Prisma `PatrimonialJustification` ya existia y estaba relacionado con `TaxReturn`.
+- El mapper de entrada dejaba `otherJustifications` vacio, por lo que el motor JVP no recibia conceptos manuales de columna I/II.
+- La persistencia no borraba ni recreaba la tabla `PatrimonialJustification`.
+- La API de reapertura no incluia `justifications`, por lo que aun guardando la tabla esos datos no volvian al wizard.
+
+Decision de arquitectura:
+
+- Mantener `PatrimonialJustification` como tabla auditora de conceptos JVP.
+- Normalizar la columna a `1` o `2` en mapper/persistencia para evitar valores ambiguos.
+- Conservar el payload original en `variablesSnapshot` para preservar la carga textual del usuario.
+- Reabrir desde la relacion persistida y usar el snapshot como fallback para declaraciones guardadas antes del cambio.
+
+Archivos modificados:
+
+- `src/domain/ganancias/mappers/calculationInputMapper.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/persistence/taxReturnReadMapper.ts`.
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/domain/ganancias/tests/calculationInputMapper.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `src/domain/ganancias/tests/taxReturnReadMapper.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Resultado funcional:
+
+- `buildTaxReturnCalculationInput` entrega `otherJustifications` al motor JVP.
+- `persistTaxReturnDetails` borra/recrea `PatrimonialJustification` por DDJJ y guarda concepto, columna e importe.
+- `CalculationRun.variablesSnapshot` conserva `otherJustifications`.
+- `GET /api/declaraciones/[id]` devuelve `otherJustifications` al wizard desde la base o desde snapshot como compatibilidad.
+
+Verificacion:
+
+- TDD rojo confirmado: `calculationInputMapper.test.ts` fallo inicialmente porque `otherJustifications[0]` era `undefined`.
+- TDD rojo confirmado: `taxReturnDetailsPersistence.test.ts` fallo inicialmente porque no se creaba `PatrimonialJustification`.
+- TDD rojo confirmado: `taxReturnReadMapper.test.ts` fallo inicialmente porque no existia `mapPatrimonialJustificationForWizard`.
+- `vitest run src/domain/ganancias/tests/calculationInputMapper.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts src/domain/ganancias/tests/taxReturnReadMapper.test.ts`: 3 archivos, 16 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `vitest run`: 25 archivos, 76 tests, todo OK.
+- `eslint` focalizado sobre mapper, persistencia, mapper de lectura, endpoint `[id]` y tests modificados: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Agregar UI agil para cargar otras justificaciones JVP desde el wizard.
+- Validar el reflejo contra filas relevantes de hoja `JVP` y definir rubros sugeridos para columna I/II.

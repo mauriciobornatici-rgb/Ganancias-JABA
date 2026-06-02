@@ -2140,6 +2140,51 @@ Pendiente:
 - Definir UI/importador para cargar `Efectivo`, `Creditos` y `Pasivo` sin sobrecargar la pantalla.
 - Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
 
+### 2026-06-02 - Fase 1, P4 noveno corte: UI colapsable para auxiliares ESP
+
+Se agrego carga visible en el wizard para los auxiliares ESP preparados en backend.
+
+Hallazgo:
+
+- El Paso 4 ya tenia bancos, bienes personales, pasivos personales y otras justificaciones JVP.
+- Los nuevos arrays `cashHoldings`, `receivables` y `liabilities` se preservaban en backend, pero no habia forma agil de cargarlos desde la pantalla.
+- Integrarlos automaticamente al patrimonio comercial agregado todavia puede generar doble computo si no se define la regla exacta contra `ESP`, AXI y JVP.
+
+Decision:
+
+- Agregar una seccion colapsable "Auxiliares ESP" en Paso 4.
+- Incluir mini-grillas para efectivo, creditos y pasivos comerciales.
+- Mostrar totales auxiliares de activo y patrimonio neto inicio/cierre como control operativo.
+- Incluir aviso visible: esos saldos se guardan y reabren, pero no automatizan todavia `activoTotalInicio`/`pasivoTotalInicio`.
+- Conectar estado, localStorage, preview payload, guardado y reapertura.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/MAPEO_JVP_EXCEL.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo porque `buildDefaultWizardCashHolding` no existia.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 7 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre wizard, tipos y test: OK.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts src/domain/ganancias/tests/calculationInputMapper.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts src/domain/ganancias/tests/taxReturnPayload.test.ts src/domain/ganancias/tests/taxReturnSnapshot.test.ts`: 5 archivos, 24 tests, todo OK.
+- `vitest run`: 25 archivos, 85 tests, todo OK.
+- `next build --webpack`: OK.
+- Validacion visual automatizada: bloqueada por entorno (`node_repl kernel exited unexpectedly`, `windows sandbox failed: spawn setup refresh`).
+
+Pendiente:
+
+- Definir regla de integracion automatica contra `activoTotalInicio` y `pasivoTotalInicio` sin doble computo.
+- Validar visualmente el Paso 4 cuando Browser/Chrome local este disponible.
+- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
+
 ### 2026-06-02 - Fase 1, P5 tercer corte: tope educativo derivado desde MNI
 
 Se resolvio la decision abierta sobre gastos educativos contra la planilla base.

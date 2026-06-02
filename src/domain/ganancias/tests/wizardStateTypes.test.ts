@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDefaultWizardCashHolding,
+  buildDefaultWizardLiability,
+  buildDefaultWizardReceivable,
   buildWizardOtherJustificationFromPreset,
   buildDefaultWizardOtherJustification,
   coerceWizardPersonalDeductionType,
@@ -53,6 +56,27 @@ describe('wizardStateTypes', () => {
       concept: 'Otros conceptos que no justifican erogaciones o aumentos patrimoniales',
       column: 1,
       amount: '0',
+    });
+  });
+
+  it('crea filas auxiliares ESP con defaults rapidos y auditables', () => {
+    expect(buildDefaultWizardCashHolding()).toEqual({
+      currency: 'ARS',
+      nominalInitial: '0',
+      nominalFinal: '0',
+      tcFinal: '1',
+    });
+    expect(buildDefaultWizardReceivable()).toEqual({
+      description: 'Nuevo credito',
+      type: 'Comercial',
+      balanceInitial: '0',
+      balanceFinal: '0',
+    });
+    expect(buildDefaultWizardLiability()).toEqual({
+      description: 'Nuevo pasivo comercial',
+      type: 'Otros',
+      balanceInitial: '0',
+      balanceFinal: '0',
     });
   });
 

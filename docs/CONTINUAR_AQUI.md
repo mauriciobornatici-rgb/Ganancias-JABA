@@ -144,6 +144,7 @@ Avance:
 - El resultado principal ahora expone totales JVP columna I/II y cuadre para UI, preview, persistencia y exportacion.
 - El alta inicial de DDJJ detecta `otherJustifications` como carga operativa y las conserva en snapshot/persistencia.
 - Backend P4 preparado para auxiliares ESP: `cashHoldings`, `receivables` y `liabilities` se mapean al motor, se detectan como carga operativa, se guardan en snapshot/tablas y se devuelven al reabrir.
+- El Paso 4 del wizard incorpora una seccion colapsable de auxiliares ESP para efectivo, creditos y pasivos comerciales, con totales de control y aviso de que aun no automatiza el patrimonio comercial agregado.
 - P5: los excedentes no admitidos de deducciones generales (`IG 25!E32`) se calculan y se llevan a JVP columna I con aviso visible.
 - P5: gastos educativos queda alineado a Excel; el importador deriva `topeGastosEducativos` como `MNI * 40%` cuando el tope no viene explicito.
 

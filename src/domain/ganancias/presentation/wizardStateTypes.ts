@@ -227,6 +227,54 @@ export type WizardBankAccount = WizardEditableRecord & {
   interests?: WizardMoneyValue;
 };
 
+export type WizardCashHolding = WizardEditableRecord & {
+  currency?: string;
+  nominalInitial?: WizardMoneyValue;
+  nominalFinal?: WizardMoneyValue;
+  tcFinal?: WizardMoneyValue;
+};
+
+export type WizardReceivable = WizardEditableRecord & {
+  description?: string;
+  type?: string;
+  balanceInitial?: WizardMoneyValue;
+  balanceFinal?: WizardMoneyValue;
+};
+
+export type WizardLiability = WizardEditableRecord & {
+  description?: string;
+  type?: string;
+  balanceInitial?: WizardMoneyValue;
+  balanceFinal?: WizardMoneyValue;
+};
+
+export function buildDefaultWizardCashHolding(): WizardCashHolding {
+  return {
+    currency: 'ARS',
+    nominalInitial: '0',
+    nominalFinal: '0',
+    tcFinal: '1',
+  };
+}
+
+export function buildDefaultWizardReceivable(): WizardReceivable {
+  return {
+    description: 'Nuevo credito',
+    type: 'Comercial',
+    balanceInitial: '0',
+    balanceFinal: '0',
+  };
+}
+
+export function buildDefaultWizardLiability(): WizardLiability {
+  return {
+    description: 'Nuevo pasivo comercial',
+    type: 'Otros',
+    balanceInitial: '0',
+    balanceFinal: '0',
+  };
+}
+
 export type WizardWithholding = WizardEditableRecord & {
   amount?: WizardMoneyValue;
   taxCode?: string;

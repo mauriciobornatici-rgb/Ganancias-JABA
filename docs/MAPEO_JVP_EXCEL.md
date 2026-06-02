@@ -97,7 +97,8 @@ Corte aplicado el 2026-06-02:
 - `Creditos`: se representa como `receivables`.
 - `Pasivo`: se representa como `liabilities`.
 - El backend ya preserva esos arrays desde payload hasta motor, snapshot, tablas relacionales y reapertura por API.
-- Queda pendiente agregar una UI agil/importador visible para cargar esos auxiliares sin hacer mas lenta la pantalla principal.
+- El Paso 4 del wizard ya tiene una seccion colapsable para cargar esos auxiliares con totales de control.
+- Queda pendiente decidir la regla de integracion automatica contra patrimonio comercial agregado (`activoTotalInicio`, `pasivoTotalInicio`) para que esos saldos impacten AXI/JVP sin doble computo.
 
 ## Pendientes de implementacion
 

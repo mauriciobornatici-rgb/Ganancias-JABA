@@ -167,6 +167,7 @@ Avance 2026-06-01:
 - Sexto corte de auditoria aplicado: resultado, preview, persistencia, UI y exportacion exponen totales JVP columna I/II y cuadre.
 - Septimo corte de persistencia aplicado: el alta inicial detecta `otherJustifications` como carga operativa y evita perderlas cuando la DDJJ se crea con datos JVP.
 - Octavo corte backend aplicado: efectivo, creditos y pasivos comerciales se preservan desde payload hasta motor, snapshot, tablas y reapertura.
+- Noveno corte UI aplicado: Paso 4 incluye una seccion colapsable de auxiliares ESP para efectivo, creditos y pasivos comerciales, con totales de control.
 
 Criterio de cierre:
 
@@ -175,7 +176,7 @@ Criterio de cierre:
 
 Pendiente para cerrar P4:
 
-- Mapear creditos/pasivos personales contra las hojas auxiliares de la planilla.
+- Integrar auxiliares ESP con patrimonio comercial agregado cuando se defina la regla exacta contra la planilla.
 - Validar rubros de `otherJustifications` contra filas relevantes de hoja `JVP`.
 
 ## P5 - H3: deducciones generales remanentes

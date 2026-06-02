@@ -25,7 +25,10 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import {
+  buildDefaultWizardCashHolding,
+  buildDefaultWizardLiability,
   buildDefaultWizardOtherJustification,
+  buildDefaultWizardReceivable,
   buildWizardOtherJustificationFromPreset,
   coerceWizardOtherJustificationColumn,
   coerceWizardPersonalDeductionType,
@@ -39,9 +42,11 @@ import {
   type TaxResolutionOption,
   type WizardAxiDynamic,
   type WizardBankAccount,
+  type WizardCashHolding,
   type WizardCellValue,
   type WizardClient,
   type WizardFixedAsset,
+  type WizardLiability,
   type WizardOtherJustification,
   type WizardOtherJustificationPresetKey,
   type WizardPersonalAsset,
@@ -49,6 +54,7 @@ import {
   type WizardPersonalLiability,
   type WizardPreviousReturnData,
   type WizardPurchase,
+  type WizardReceivable,
   type WizardSale,
   type WizardTaxReturnSummary,
   type WizardWithholding,
@@ -231,7 +237,16 @@ export default function WizardPage() {
     }
     if (step === 2) return sales.length > 0;
     if (step === 3) return purchases.length > 0 || (initialStock !== '0' && initialStock !== '') || (finalStock !== '0' && finalStock !== '');
-    if (step === 4) return fixedAssets.length > 0 || bankAccounts.length > 0 || personalAssets.length > 0 || personalLiabilities.length > 0 || otherJustifications.length > 0;
+    if (step === 4) {
+      return fixedAssets.length > 0 ||
+        bankAccounts.length > 0 ||
+        cashHoldings.length > 0 ||
+        receivables.length > 0 ||
+        liabilities.length > 0 ||
+        personalAssets.length > 0 ||
+        personalLiabilities.length > 0 ||
+        otherJustifications.length > 0;
+    }
     if (step === 5) return Object.values(generalDeductions).some(val => val !== '0' && val !== '') || withholdings.length > 0 || axiDynamic.length > 0;
     if (step === 6) return true;
     return false;
@@ -253,6 +268,9 @@ export default function WizardPage() {
       initialStock,
       finalStock,
       bankAccounts,
+      cashHoldings,
+      receivables,
+      liabilities,
       withholdings,
       generalDeductions,
       personalDeductions,
@@ -335,6 +353,9 @@ export default function WizardPage() {
       initialStock,
       finalStock,
       bankAccounts,
+      cashHoldings,
+      receivables,
+      liabilities,
       withholdings,
       generalDeductions,
       personalDeductions,
@@ -393,6 +414,12 @@ export default function WizardPage() {
 
   const [bankAccounts, setBankAccounts] = useState<WizardBankAccount[]>([]);
 
+  const [cashHoldings, setCashHoldings] = useState<WizardCashHolding[]>([]);
+
+  const [receivables, setReceivables] = useState<WizardReceivable[]>([]);
+
+  const [liabilities, setLiabilities] = useState<WizardLiability[]>([]);
+
   const [withholdings, setWithholdings] = useState<WizardWithholding[]>([]);
 
   const [generalDeductions, setGeneralDeductions] = useState({
@@ -440,6 +467,9 @@ export default function WizardPage() {
     setPurchases([]);
     setFixedAssets([]);
     setBankAccounts([]);
+    setCashHoldings([]);
+    setReceivables([]);
+    setLiabilities([]);
     setWithholdings([]);
     setGeneralDeductions({
       autonomos: '0',
@@ -506,6 +536,9 @@ export default function WizardPage() {
         if (data.initialStock) setInitialStock(data.initialStock);
         if (data.finalStock) setFinalStock(data.finalStock);
         if (data.bankAccounts) setBankAccounts(data.bankAccounts);
+        if (data.cashHoldings) setCashHoldings(data.cashHoldings);
+        if (data.receivables) setReceivables(data.receivables);
+        if (data.liabilities) setLiabilities(data.liabilities);
         if (data.withholdings) setWithholdings(data.withholdings);
         if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
         if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
@@ -616,6 +649,9 @@ export default function WizardPage() {
               if (data.initialStock) setInitialStock(data.initialStock);
               if (data.finalStock) setFinalStock(data.finalStock);
               if (data.bankAccounts) setBankAccounts(data.bankAccounts);
+              if (data.cashHoldings) setCashHoldings(data.cashHoldings);
+              if (data.receivables) setReceivables(data.receivables);
+              if (data.liabilities) setLiabilities(data.liabilities);
               if (data.withholdings) setWithholdings(data.withholdings);
               if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
               if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
@@ -658,6 +694,9 @@ export default function WizardPage() {
         initialStock,
         finalStock,
         bankAccounts,
+        cashHoldings,
+        receivables,
+        liabilities,
         withholdings,
         generalDeductions,
         personalDeductions,
@@ -711,7 +750,7 @@ export default function WizardPage() {
   }, [
     activeReturnId, cuit, clientName, fiscalYear, currentStep, taxParameterSetId,
     sales, purchases, fixedAssets, initialStock, finalStock,
-    bankAccounts, withholdings, generalDeductions, personalDeductions,
+    bankAccounts, cashHoldings, receivables, liabilities, withholdings, generalDeductions, personalDeductions,
     personalAssets, personalLiabilities, otherJustifications, activoTotalInicio, pasivoTotalInicio,
     bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic
   ]);
@@ -887,7 +926,7 @@ export default function WizardPage() {
   // ==========================================
   // PROCEDIMIENTO DE CARGA MANUAL (ADD/DELETE ROWS)
   // ==========================================
-  const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+  const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') {
       setSales([...sales, { date: `${fiscalYear}-01-01`, netAmount: '0', isExempt: false }]);
     } else if (type === 'purchases') {
@@ -901,6 +940,12 @@ export default function WizardPage() {
       setPersonalAssets([...personalAssets, { description: 'Nuevo Activo', type: 'Otros', valueInitial: '0', valueFinal: '0' }]);
     } else if (type === 'bankAccounts') {
       setBankAccounts([...bankAccounts, { id: `bank-${bankAccounts.length + 1}`, name: 'Nuevo Banco', cuitBank: '', accountNumber: '', accountType: 'Cuenta Corriente', currency: 'ARS', nominalInitial: '0', nominalFinal: '0', tcInitial: '1', tcFinal: '1', interests: '0' }]);
+    } else if (type === 'cashHoldings') {
+      setCashHoldings([...cashHoldings, buildDefaultWizardCashHolding()]);
+    } else if (type === 'receivables') {
+      setReceivables([...receivables, buildDefaultWizardReceivable()]);
+    } else if (type === 'liabilities') {
+      setLiabilities([...liabilities, buildDefaultWizardLiability()]);
     } else if (type === 'personalLiabilities') {
       setPersonalLiabilities([...personalLiabilities, { description: 'Nuevo Pasivo', valueInitial: '0', valueFinal: '0' }]);
     } else if (type === 'otherJustifications') {
@@ -910,13 +955,16 @@ export default function WizardPage() {
     }
   };
 
-  const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+  const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') setSales(sales.filter((_, i) => i !== index));
     if (type === 'purchases') setPurchases(purchases.filter((_, i) => i !== index));
     if (type === 'assets') setFixedAssets(fixedAssets.filter((_, i) => i !== index));
     if (type === 'withholdings') setWithholdings(withholdings.filter((_, i) => i !== index));
     if (type === 'personalAssets') setPersonalAssets(personalAssets.filter((_, i) => i !== index));
     if (type === 'bankAccounts') setBankAccounts(bankAccounts.filter((_, i) => i !== index));
+    if (type === 'cashHoldings') setCashHoldings(cashHoldings.filter((_, i) => i !== index));
+    if (type === 'receivables') setReceivables(receivables.filter((_, i) => i !== index));
+    if (type === 'liabilities') setLiabilities(liabilities.filter((_, i) => i !== index));
     if (type === 'personalLiabilities') setPersonalLiabilities(personalLiabilities.filter((_, i) => i !== index));
     if (type === 'otherJustifications') setOtherJustifications(otherJustifications.filter((_, i) => i !== index));
     if (type === 'axiDynamic') setAxiDynamic(axiDynamic.filter((_, i) => i !== index));
@@ -926,7 +974,7 @@ export default function WizardPage() {
     setOtherJustifications([...otherJustifications, buildWizardOtherJustificationFromPreset(key)]);
   };
 
-  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') {
       const updated = [...sales];
       updated[index][field] = value;
@@ -955,6 +1003,18 @@ export default function WizardPage() {
       const updated = [...bankAccounts];
       updated[index][field] = value;
       setBankAccounts(updated);
+    } else if (type === 'cashHoldings') {
+      const updated = [...cashHoldings];
+      updated[index][field] = value;
+      setCashHoldings(updated);
+    } else if (type === 'receivables') {
+      const updated = [...receivables];
+      updated[index][field] = value;
+      setReceivables(updated);
+    } else if (type === 'liabilities') {
+      const updated = [...liabilities];
+      updated[index][field] = value;
+      setLiabilities(updated);
     } else if (type === 'personalLiabilities') {
       const updated = [...personalLiabilities];
       updated[index][field] = value;
@@ -1080,6 +1140,9 @@ export default function WizardPage() {
     initialStock,
     finalStock,
     bankAccounts,
+    cashHoldings,
+    receivables,
+    liabilities,
     withholdings,
     generalDeductions,
     personalDeductions,
@@ -2379,6 +2442,239 @@ export default function WizardPage() {
                   Añadir Cuenta Bancaria
                 </button>
               </div>
+
+              {/* SECCIÓN 2B: AUXILIARES ESP */}
+              <details className="pt-6 border-t border-zinc-800 group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-xl border border-zinc-800 bg-[#09090b]/70 px-4 py-3 transition-colors hover:border-teal-500/40">
+                  <div>
+                    <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Auxiliares ESP: efectivo, creditos y pasivos</h3>
+                    <p className="text-zinc-400 text-[11px] mt-1">
+                      Carga agregada para controlar las hojas `Efectivo`, `Creditos` y `Pasivo`. Sirve como respaldo operativo; el patrimonio comercial agregado sigue cargandose en Paso 1.
+                    </p>
+                  </div>
+                  <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold group-open:text-teal-300">
+                    Abrir / cerrar
+                  </span>
+                </summary>
+
+                <div className="mt-4 space-y-6 rounded-xl border border-zinc-850 bg-[#09090b]/35 p-4">
+                  {(() => {
+                    const cashInitial = cashHoldings.reduce((sum, cash) => sum.add(new Decimal(cash.nominalInitial || 0).mul(new Decimal(cash.tcFinal || 1))), new Decimal(0));
+                    const cashFinal = cashHoldings.reduce((sum, cash) => sum.add(new Decimal(cash.nominalFinal || 0).mul(new Decimal(cash.tcFinal || 1))), new Decimal(0));
+                    const receivablesInitial = receivables.reduce((sum, item) => sum.add(new Decimal(item.balanceInitial || 0)), new Decimal(0));
+                    const receivablesFinal = receivables.reduce((sum, item) => sum.add(new Decimal(item.balanceFinal || 0)), new Decimal(0));
+                    const liabilitiesInitial = liabilities.reduce((sum, item) => sum.add(new Decimal(item.balanceInitial || 0)), new Decimal(0));
+                    const liabilitiesFinal = liabilities.reduce((sum, item) => sum.add(new Decimal(item.balanceFinal || 0)), new Decimal(0));
+                    const espAssetsInitial = cashInitial.add(receivablesInitial);
+                    const espAssetsFinal = cashFinal.add(receivablesFinal);
+                    const espNetInitial = espAssetsInitial.sub(liabilitiesInitial);
+                    const espNetFinal = espAssetsFinal.sub(liabilitiesFinal);
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. inicio</span>
+                          <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAssetsInitial)}</span>
+                        </div>
+                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. cierre</span>
+                          <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAssetsFinal)}</span>
+                        </div>
+                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. inicio</span>
+                          <span className="block text-xs font-mono text-teal-300">{formatDecimal(espNetInitial)}</span>
+                        </div>
+                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. cierre</span>
+                          <span className="block text-xs font-mono text-teal-300">{formatDecimal(espNetFinal)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[11px] text-amber-100/80">
+                    Estos saldos quedan guardados y reabren con la DDJJ. Para que impacten AXI/JVP automaticamente falta el proximo corte de integracion con `activoTotalInicio`, `pasivoTotalInicio` y ESP.
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h4 className="text-xs font-extrabold text-zinc-200 uppercase tracking-wider">Efectivo</h4>
+                      <button
+                        onClick={() => addRow('cashHoldings')}
+                        className="flex items-center gap-1.5 text-[10px] text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5 stroke-[3.5]" />
+                        Añadir efectivo
+                      </button>
+                    </div>
+                    <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                            <th className="px-4 py-3 text-center">Moneda</th>
+                            <th className="px-4 py-3 text-right">Nominal inicial</th>
+                            <th className="px-4 py-3 text-right">Nominal cierre</th>
+                            <th className="px-4 py-3 text-right">TC cierre</th>
+                            <th className="px-4 py-3 text-right">Eliminar</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-850/50">
+                          {cashHoldings.map((cash, index) => (
+                            <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                              <td className="px-4 py-2 text-center">
+                                <select
+                                  value={cash.currency || 'ARS'}
+                                  onChange={(e) => handleCellChange(index, 'currency', e.target.value, 'cashHoldings')}
+                                  className="bg-zinc-900 text-white text-xs font-bold rounded border border-zinc-800 focus:outline-none focus:ring-1 focus:ring-teal-500 py-1 px-2 cursor-pointer"
+                                >
+                                  <option value="ARS">ARS</option>
+                                  <option value="USD">USD</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <input type="number" value={cash.nominalInitial ?? ''} onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right" />
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <input type="number" value={cash.nominalFinal ?? ''} onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <input type="number" step="0.01" value={cash.tcFinal ?? '1'} onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-teal-300 text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <button onClick={() => deleteRow(index, 'cashHoldings')} className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer">
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {cashHoldings.length === 0 && (
+                            <tr>
+                              <td colSpan={5} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                                Sin efectivo auxiliar cargado.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-xs font-extrabold text-zinc-200 uppercase tracking-wider">Creditos</h4>
+                        <button onClick={() => addRow('receivables')} className="flex items-center gap-1.5 text-[10px] text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer">
+                          <Plus className="h-3.5 w-3.5 stroke-[3.5]" />
+                          Añadir credito
+                        </button>
+                      </div>
+                      <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                              <th className="px-4 py-3">Concepto</th>
+                              <th className="px-4 py-3 text-center">Tipo</th>
+                              <th className="px-4 py-3 text-right">Inicial</th>
+                              <th className="px-4 py-3 text-right">Cierre</th>
+                              <th className="px-4 py-3 text-right">Eliminar</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-850/50">
+                            {receivables.map((receivable, index) => (
+                              <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                                <td className="px-4 py-2">
+                                  <input type="text" value={receivable.description || ''} onChange={(e) => handleCellChange(index, 'description', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold" placeholder="IVA saldo tecnico, clientes..." />
+                                </td>
+                                <td className="px-4 py-2 text-center">
+                                  <select value={receivable.type || 'Comercial'} onChange={(e) => handleCellChange(index, 'type', e.target.value, 'receivables')} className="bg-zinc-900 text-white text-xs rounded border border-zinc-800 py-1 px-2 focus:outline-none">
+                                    <option value="Comercial">Comercial</option>
+                                    <option value="Fiscal">Fiscal</option>
+                                    <option value="Financiero">Financiero</option>
+                                  </select>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <input type="number" value={receivable.balanceInitial ?? ''} onChange={(e) => handleCellChange(index, 'balanceInitial', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right" />
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <input type="number" value={receivable.balanceFinal ?? ''} onChange={(e) => handleCellChange(index, 'balanceFinal', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <button onClick={() => deleteRow(index, 'receivables')} className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer">
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {receivables.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                                  Sin creditos auxiliares cargados.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-xs font-extrabold text-zinc-200 uppercase tracking-wider">Pasivos comerciales</h4>
+                        <button onClick={() => addRow('liabilities')} className="flex items-center gap-1.5 text-[10px] text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer">
+                          <Plus className="h-3.5 w-3.5 stroke-[3.5]" />
+                          Añadir pasivo
+                        </button>
+                      </div>
+                      <div className="border border-zinc-800 rounded-lg overflow-hidden">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                              <th className="px-4 py-3">Concepto</th>
+                              <th className="px-4 py-3 text-center">Tipo</th>
+                              <th className="px-4 py-3 text-right">Inicial</th>
+                              <th className="px-4 py-3 text-right">Cierre</th>
+                              <th className="px-4 py-3 text-right">Eliminar</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-850/50">
+                            {liabilities.map((liability, index) => (
+                              <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
+                                <td className="px-4 py-2">
+                                  <input type="text" value={liability.description || ''} onChange={(e) => handleCellChange(index, 'description', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-sans focus:ring-0 focus:outline-none w-full font-bold" placeholder="Proveedores, otros pasivos..." />
+                                </td>
+                                <td className="px-4 py-2 text-center">
+                                  <select value={liability.type || 'Otros'} onChange={(e) => handleCellChange(index, 'type', e.target.value, 'liabilities')} className="bg-zinc-900 text-white text-xs rounded border border-zinc-800 py-1 px-2 focus:outline-none">
+                                    <option value="Proveedores">Proveedores</option>
+                                    <option value="Otros">Otros</option>
+                                  </select>
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <input type="number" value={liability.balanceInitial ?? ''} onChange={(e) => handleCellChange(index, 'balanceInitial', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right" />
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <input type="number" value={liability.balanceFinal ?? ''} onChange={(e) => handleCellChange(index, 'balanceFinal', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                                </td>
+                                <td className="px-4 py-2 text-right">
+                                  <button onClick={() => deleteRow(index, 'liabilities')} className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer">
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            {liabilities.length === 0 && (
+                              <tr>
+                                <td colSpan={5} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                                  Sin pasivos comerciales auxiliares cargados.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
 
               {/* SECCIÓN 3: BIENES Y ACTIVOS PERSONALES */}
               <div className="pt-6 border-t border-zinc-800 space-y-4">

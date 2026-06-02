@@ -236,7 +236,7 @@ Criterio de cierre:
 
 ## P7 - Validaciones visuales/manuales
 
-Estado: Bloqueado parcialmente.
+Estado: Activo.
 
 Problema:
 
@@ -245,12 +245,33 @@ Problema:
 
 Accion recomendada:
 
-- Validar manualmente pantalla de wizard cuando el navegador este disponible.
+- Validar manualmente pantalla de wizard usando `docs/GUIA_PRUEBA_PILOTO.md`.
 - Si se instala/disponibiliza Playwright CLI, agregar capturas de pasos criticos.
 
 Criterio de cierre:
 
 - Flujo visual de alta/guardado/importacion validado con caso real o fixture realista.
+
+## P8 - Preparacion de prueba piloto reproducible
+
+Estado: Resuelto.
+
+Problema:
+
+- El desarrollo tecnico estaba cerrado, pero faltaba una pista de prueba concreta para empezar a usar la app sin reconstruir datos de memoria.
+
+Accion aplicada:
+
+- Se agrego `src/domain/ganancias/fixtures/pilotTaxReturnFixture.ts`.
+- Se agrego `src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts`.
+- El fixture cubre calculo end-to-end y persistencia critica de ventas, compras, ESP, retenciones, JVP y snapshot.
+- Se agrego `docs/GUIA_PRUEBA_PILOTO.md` con recorrido manual y checklist.
+
+Criterio de cierre:
+
+- Prueba automatizada focal verde.
+- Guia manual disponible para iniciar el piloto.
+- Pendiente externo queda limitado a ejecutar la prueba manual/real y registrar diferencias.
 
 ## Cierre de desarrollo tecnico
 

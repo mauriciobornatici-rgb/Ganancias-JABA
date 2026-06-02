@@ -1,6 +1,6 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-01
+Ultima actualizacion: 2026-06-02
 
 ## Para Retomar Rapido
 
@@ -2421,3 +2421,46 @@ Verificacion:
 Pendiente:
 
 - Validacion visual sigue bloqueada por el entorno del navegador integrado.
+
+### 2026-06-02 - Fase 1, P8: preparacion de prueba piloto reproducible
+
+Se preparo el puente operativo entre el cierre tecnico del MVP y la prueba manual/real del estudio.
+
+Hallazgo:
+
+- El desarrollo tecnico estaba cerrado, pero el siguiente paso practico necesitaba una guia concreta.
+- Sin fixture ni checklist, cada retomada obligaba a reconstruir datos de prueba y aumentaba el riesgo de dejar frentes abiertos.
+- El usuario remarco que la declaracion y la informacion cargada deben quedar en base de datos; por eso el caso piloto no podia limitarse a calcular, tambien debia verificar persistencia critica.
+
+Decision:
+
+- Crear un fixture piloto realista con importes como strings, igual que llegan desde formularios/importadores.
+- Cubrir calculo end-to-end con el mapper y el motor real.
+- Cubrir persistencia critica con mocks de tablas/snapshot: ventas, compras, efectivo, creditos, pasivos, retenciones, otras justificaciones JVP y calculationRun.
+- Documentar un recorrido manual para poder empezar a probar sin depender de memoria.
+
+Archivos modificados:
+
+- `src/domain/ganancias/fixtures/pilotTaxReturnFixture.ts`.
+- `src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts`.
+- `docs/GUIA_PRUEBA_PILOTO.md`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/ESTADO_FINAL_DESARROLLO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `pilotTaxReturnFixture.test.ts` fallo porque `buildPilotTaxReturnFixture` no existia.
+- TDD rojo confirmado: el fixture tenia 3 indices y la prueba exigio 12 indices mensuales.
+- `vitest run src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts`: 1 archivo, 2 tests, todo OK.
+- `vitest run`: 26 archivos, 90 tests, todo OK.
+- `eslint` focalizado sobre fixture y test piloto: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `next build --webpack`: OK.
+- `tsc --noEmit`: OK.
+
+Pendiente externo:
+
+- Ejecutar `docs/GUIA_PRUEBA_PILOTO.md` manualmente en navegador.
+- Comparar una DDJJ real ya resuelta contra Excel y registrar diferencias si aparecen.

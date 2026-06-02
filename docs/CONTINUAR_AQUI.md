@@ -7,24 +7,41 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: desarrollo tecnico MVP cerrado al 100% sobre P0-P6.
-- Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
+- Ultimo checkpoint documentado: prueba piloto reproducible preparada sobre desarrollo tecnico MVP P0-P6.
+- Fase activa: Fase 1 - Prueba piloto controlada contra Excel y carga real.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: listo para piloto controlado con DDJJ real/fixture realista; validacion visual automatizada bloqueada por entorno.
+- Estado de uso: listo para iniciar piloto controlado con guia y fixture tecnico reproducible; validacion visual automatizada bloqueada por entorno.
 
 ## Como retomar en 5 minutos
 
 1. Ejecutar `git status --short --branch`.
 2. Leer esta pagina completa.
-3. Abrir `docs/BACKLOG_PRIORIZADO.md`.
-4. Tomar el primer item con estado `Activo` o `Siguiente`.
-5. No abrir un nuevo frente si hay uno `En curso`, salvo instruccion explicita del usuario.
-6. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
-7. Correr verificacion fresca antes de decir que algo quedo terminado.
-8. Hacer commit y push a GitHub al cerrar cada bloque util.
+3. Abrir `docs/GUIA_PRUEBA_PILOTO.md`.
+4. Abrir `docs/BACKLOG_PRIORIZADO.md`.
+5. Tomar el primer item con estado `Activo` o `Siguiente`.
+6. No abrir un nuevo frente si hay uno `En curso`, salvo instruccion explicita del usuario.
+7. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
+8. Correr verificacion fresca antes de decir que algo quedo terminado.
+9. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P8 - Preparacion de prueba piloto
+
+Estado: resuelto.
+
+Objetivo inmediato:
+
+- Dejar un caso piloto reproducible para validar calculo, persistencia y reapertura critica.
+- Dejar una guia manual para comenzar a probar sin reconstruir contexto.
+
+Criterio de cierre:
+
+- `src/domain/ganancias/fixtures/pilotTaxReturnFixture.ts` existe.
+- `src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts` cubre calculo y persistencia critica del fixture.
+- `docs/GUIA_PRUEBA_PILOTO.md` documenta recorrido manual y checklist.
+- Cambios verificados, commiteados y pusheados.
 
 ### P0 - Control operativo de continuidad
 

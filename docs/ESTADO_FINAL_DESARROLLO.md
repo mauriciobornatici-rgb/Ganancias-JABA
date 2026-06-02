@@ -16,7 +16,7 @@ No se declara validacion operativa real al 100% porque quedan dos dependencias e
 - Desarrollo tecnico implementado: 100%.
 - Verificacion automatizada local: 100% en tests, TypeScript, ESLint focal y build.
 - Validacion externa/manual: pendiente.
-- Preparacion para uso piloto: 95%, sujeto a prueba con caso real.
+- Preparacion para uso piloto: 98%, sujeto a prueba con caso real.
 
 ## Frentes cerrados
 
@@ -32,7 +32,7 @@ No se declara validacion operativa real al 100% porque quedan dos dependencias e
 
 Ultimo corte verificado con:
 
-- `vitest run`: 25 archivos, 88 tests, todo OK.
+- `vitest run`: 26 archivos, 90 tests, todo OK.
 - `eslint` focalizado sobre los archivos tocados: OK.
 - `git diff --check`: OK, solo avisos CRLF habituales.
 - `next build --webpack`: OK.
@@ -54,6 +54,13 @@ Nota: no ejecutar `tsc --noEmit` en paralelo con `next build`, porque Next regen
    - Guardado/reapertura.
 3. Si el estudio requiere reportes por CUIT de contraparte desde DB:
    - Migrar `counterpartyCuit` desde snapshot a columnas propias en `SalesInvoice` y `PurchaseInvoice`.
+
+## Preparacion piloto agregada
+
+- Fixture tecnico disponible: `src/domain/ganancias/fixtures/pilotTaxReturnFixture.ts`.
+- Prueba automatizada focal: `src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts`.
+- Guia manual de uso: `docs/GUIA_PRUEBA_PILOTO.md`.
+- El fixture valida calculo, retenciones auditables, auxiliares ESP, otras justificaciones JVP y persistencia critica de snapshot/tablas.
 
 ## Recomendacion de uso
 

@@ -39,6 +39,7 @@ import {
   resolveWizardRouteReturnId,
   shouldRequestActiveTaxParameters,
   shouldResetWizardDetailsOnIdentityChange,
+  splitWizardImportDuplicates,
   WIZARD_OTHER_JUSTIFICATION_PRESETS,
   wizardMoneyToNumber,
   wizardMoneyToString,
@@ -175,6 +176,16 @@ type ImportResponse = {
   };
 };
 
+type ImportSummary = {
+  type: 'sales' | 'purchases' | 'withholdings';
+  totalFiles: number;
+  totalRecords: number;
+  acceptedRecords: number;
+  duplicateRecords: number;
+  fileResults: ImportedFileResult[];
+  warnings: string[];
+};
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
@@ -192,6 +203,7 @@ export default function WizardPage() {
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSummary, setUploadSummary] = useState<ImportSummary | null>(null);
   const [loadedRouteReturnId, setLoadedRouteReturnId] = useState('');
   const [isHistoryImportLoading, setIsHistoryImportLoading] = useState(false);
   const isLoadingData = isHistoryImportLoading || (routeReturnId !== '' && loadedRouteReturnId !== routeReturnId);
@@ -1065,6 +1077,7 @@ export default function WizardPage() {
 
     setIsUploading(true);
     setUploadError(null);
+    setUploadSummary(null);
 
     const formData = new FormData();
     selectedFiles.forEach(file => {
@@ -1085,6 +1098,10 @@ export default function WizardPage() {
         throw new Error(`${result.error || 'No se pudieron procesar los archivos Excel.'}${details}`);
       }
 
+      let acceptedRecords = 0;
+      let duplicateRecords = 0;
+      let duplicateLabels: string[] = [];
+
       // Incorporar dinámicamente los registros cargados para que el usuario los verifique en pantalla
       if (type === 'sales' && result.data?.sales) {
         const parsed = result.data.sales.map(s => ({
@@ -1098,7 +1115,15 @@ export default function WizardPage() {
           ivaAmount: s.ivaAmount,
           totalAmount: s.totalAmount,
         }));
-        setSales(currentSales => [...currentSales, ...parsed]);
+        const duplicateResult = splitWizardImportDuplicates({
+          kind: 'sales',
+          existingRows: sales,
+          incomingRows: parsed,
+        });
+        acceptedRecords = duplicateResult.acceptedRows.length;
+        duplicateRecords = duplicateResult.duplicateCount;
+        duplicateLabels = duplicateResult.duplicateLabels;
+        setSales(currentSales => [...currentSales, ...duplicateResult.acceptedRows]);
       } else if (type === 'purchases' && result.data?.purchases) {
         const parsed = result.data.purchases.map(p => ({
           date: new Date(p.date).toISOString().split('T')[0],
@@ -1113,7 +1138,15 @@ export default function WizardPage() {
           ivaAmount: p.ivaAmount,
           totalAmount: p.totalAmount,
         }));
-        setPurchases(currentPurchases => [...currentPurchases, ...parsed]);
+        const duplicateResult = splitWizardImportDuplicates({
+          kind: 'purchases',
+          existingRows: purchases,
+          incomingRows: parsed,
+        });
+        acceptedRecords = duplicateResult.acceptedRows.length;
+        duplicateRecords = duplicateResult.duplicateCount;
+        duplicateLabels = duplicateResult.duplicateLabels;
+        setPurchases(currentPurchases => [...currentPurchases, ...duplicateResult.acceptedRows]);
       } else if (type === 'withholdings' && result.data?.withholdings) {
         const parsed = result.data.withholdings.map(w => ({
           amount: w.amount,
@@ -1127,12 +1160,30 @@ export default function WizardPage() {
           certificateNumber: w.certificateNumber,
           operationDescription: w.operationDescription,
         }));
-        setWithholdings(currentWithholdings => [...currentWithholdings, ...parsed]);
+        const duplicateResult = splitWizardImportDuplicates({
+          kind: 'withholdings',
+          existingRows: withholdings,
+          incomingRows: parsed,
+        });
+        acceptedRecords = duplicateResult.acceptedRows.length;
+        duplicateRecords = duplicateResult.duplicateCount;
+        duplicateLabels = duplicateResult.duplicateLabels;
+        setWithholdings(currentWithholdings => [...currentWithholdings, ...duplicateResult.acceptedRows]);
       }
 
-      if (result.errors?.length) {
-        setUploadError(`Carga importada con advertencias: ${result.errors.join(' | ')}`);
-      }
+      const duplicateWarning = duplicateRecords > 0
+        ? [`Se omitieron ${duplicateRecords} duplicados: ${duplicateLabels.slice(0, 5).join(', ')}${duplicateLabels.length > 5 ? '...' : ''}`]
+        : [];
+
+      setUploadSummary({
+        type,
+        totalFiles: result.totalFiles || selectedFiles.length,
+        totalRecords: result.totalRecords || 0,
+        acceptedRecords,
+        duplicateRecords,
+        fileResults: result.fileResults || [],
+        warnings: [...(result.errors || []), ...duplicateWarning],
+      });
 
     } catch (err: unknown) {
       setUploadError(errorMessage(err));
@@ -1140,6 +1191,47 @@ export default function WizardPage() {
       setIsUploading(false);
       event.target.value = '';
     }
+  };
+
+  const renderUploadSummary = (type: ImportSummary['type']) => {
+    if (!uploadSummary || uploadSummary.type !== type) return null;
+
+    return (
+      <div className="p-4 rounded-lg bg-teal-500/10 border border-teal-500/20 space-y-3 animate-fadeIn">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-4 w-4 text-teal-400 shrink-0" />
+            <div>
+              <p className="text-xs font-bold text-teal-300 uppercase tracking-wider">Resumen de importacion AFIP</p>
+              <p className="text-[11px] text-zinc-400">
+                {uploadSummary.totalFiles} archivo(s), {uploadSummary.totalRecords} registro(s) leidos, {uploadSummary.acceptedRecords} incorporado(s), {uploadSummary.duplicateRecords} duplicado(s) omitido(s).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {uploadSummary.fileResults.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {uploadSummary.fileResults.map(file => (
+              <div key={file.fileName} className="flex items-center justify-between gap-3 px-3 py-2 rounded bg-[#09090b]/70 border border-zinc-800 text-[11px]">
+                <span className="truncate text-zinc-300">{file.fileName}</span>
+                <span className={file.accepted ? 'text-teal-300 font-mono shrink-0' : 'text-red-300 font-mono shrink-0'}>
+                  {file.accepted ? `${file.totalRecords} reg.` : 'rechazado'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {uploadSummary.warnings.length > 0 && (
+          <div className="rounded border border-amber-500/20 bg-amber-500/10 p-3 text-[11px] text-amber-200 space-y-1">
+            {uploadSummary.warnings.map((warning, index) => (
+              <p key={`${warning}-${index}`}>{warning}</p>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ==========================================
@@ -1828,6 +1920,8 @@ export default function WizardPage() {
                 </div>
               )}
 
+              {renderUploadSummary('sales')}
+
               {/* ACCIONES MASIVAS - BULK ACTIONS PANEL */}
               {selectedSales.length > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg bg-teal-500/10 border border-teal-500/25 mb-4 animate-fadeIn">
@@ -2008,6 +2102,15 @@ export default function WizardPage() {
                   </div>
                 </div>
               </div>
+
+              {uploadError && (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-xs">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>{uploadError}</span>
+                </div>
+              )}
+
+              {renderUploadSummary('purchases')}
 
               {/* ACCIONES MASIVAS - BULK ACTIONS PANEL */}
               {selectedPurchases.length > 0 && (
@@ -3314,6 +3417,15 @@ export default function WizardPage() {
                     </div>
                   </div>
                 </div>
+
+                {uploadError && (
+                  <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-400 text-xs">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>{uploadError}</span>
+                  </div>
+                )}
+
+                {renderUploadSummary('withholdings')}
 
                 <div className="border border-zinc-800 rounded-lg overflow-hidden">
                   <table className="w-full text-left border-collapse">

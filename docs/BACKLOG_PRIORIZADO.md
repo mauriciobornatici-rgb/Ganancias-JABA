@@ -295,6 +295,29 @@ Criterio de cierre:
 - Wizard preparado para seleccion multiple.
 - Pendiente externo: probar con los 12 archivos reales descargados de AFIP.
 
+## P10 - Verificacion por pantalla y duplicados en importacion
+
+Estado: Resuelto.
+
+Problema:
+
+- Importar varios meses facilita la carga, pero tambien aumenta el riesgo de subir dos veces un archivo o repetir un comprobante.
+- Sin resumen visible, el usuario no sabe rapidamente cuantos archivos/registros entraron ni si hubo duplicados.
+
+Accion aplicada:
+
+- Se agrego helper testeado para separar registros nuevos y duplicados.
+- Ventas/compras detectan duplicados por comprobante, CUIT contraparte, fecha e importe.
+- Retenciones detectan duplicados por certificado, CUIT agente, fecha e importe.
+- Filas sin datos suficientes para detectar duplicado no se bloquean automaticamente y quedan para revision manual.
+- El wizard muestra resumen de importacion por lote: archivos, registros leidos, incorporados, duplicados omitidos y detalle por archivo.
+
+Criterio de cierre:
+
+- Tests de duplicados verdes.
+- Feedback visible en ventas, compras y retenciones.
+- Pendiente externo: validar visualmente con archivos reales.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

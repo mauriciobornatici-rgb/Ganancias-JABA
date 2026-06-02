@@ -28,12 +28,13 @@ No se declara validacion operativa real al 100% porque quedan dos dependencias e
 - P5: deducciones generales agregadas y decision documental.
 - P6: auditoria importada para retenciones y snapshot documentado para CUIT de contraparte.
 - P9: importacion multiarchivo AFIP para ventas/compras mensuales sin consolidacion manual previa.
+- P10: resumen visual de importacion y omision de duplicados detectables.
 
 ## Verificacion tecnica acumulada
 
 Ultimo corte verificado con:
 
-- `vitest run`: 26 archivos, 92 tests, todo OK.
+- `vitest run`: 26 archivos, 95 tests, todo OK.
 - `eslint` focalizado sobre los archivos tocados: OK.
 - `git diff --check`: OK, solo avisos CRLF habituales.
 - `next build --webpack`: OK.
@@ -63,6 +64,7 @@ Nota: no ejecutar `tsc --noEmit` en paralelo con `next build`, porque Next regen
 - Guia manual de uso: `docs/GUIA_PRUEBA_PILOTO.md`.
 - El fixture valida calculo, retenciones auditables, auxiliares ESP, otras justificaciones JVP y persistencia critica de snapshot/tablas.
 - La prueba piloto contempla que ventas y compras puedan cargarse con varios archivos mensuales de AFIP.
+- El wizard informa archivos procesados, registros incorporados y duplicados omitidos al importar.
 
 ## Recomendacion de uso
 

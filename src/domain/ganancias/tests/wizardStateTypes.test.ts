@@ -6,6 +6,7 @@ import {
   buildWizardEspAuxiliarySummary,
   buildWizardOtherJustificationFromPreset,
   buildDefaultWizardOtherJustification,
+  splitWizardImportDuplicates,
   coerceWizardPersonalDeductionType,
   coerceWizardOtherJustificationColumn,
   isWizardPersonalDeductionType,
@@ -119,5 +120,81 @@ describe('wizardStateTypes', () => {
     expect(shouldResetWizardDetailsOnIdentityChange({ activeReturnId: '', hasSavedState: true })).toBe(false);
     expect(shouldRequestActiveTaxParameters('')).toBe(false);
     expect(shouldRequestActiveTaxParameters('param-123')).toBe(true);
+  });
+
+  it('omite duplicados importados de ventas por comprobante, CUIT, fecha e importe', () => {
+    const result = splitWizardImportDuplicates({
+      kind: 'sales',
+      existingRows: [{
+        date: '2025-01-10',
+        invoiceNumber: '0001-00000001',
+        counterpartyCuit: '30-11111111-1',
+        netAmount: '1000.00',
+      }],
+      incomingRows: [
+        {
+          date: '2025-01-10',
+          invoiceNumber: '0001-00000001',
+          counterpartyCuit: '30-11111111-1',
+          netAmount: '1000',
+        },
+        {
+          date: '2025-02-10',
+          invoiceNumber: '0001-00000002',
+          counterpartyCuit: '30-22222222-2',
+          netAmount: '2000',
+        },
+      ],
+    });
+
+    expect(result.acceptedRows).toHaveLength(1);
+    expect(result.acceptedRows[0].invoiceNumber).toBe('0001-00000002');
+    expect(result.duplicateRows).toHaveLength(1);
+    expect(result.duplicateCount).toBe(1);
+    expect(result.duplicateLabels[0]).toContain('0001-00000001');
+  });
+
+  it('no bloquea filas importadas sin comprobante suficiente para detectar duplicados', () => {
+    const result = splitWizardImportDuplicates({
+      kind: 'purchases',
+      existingRows: [{
+        date: '2025-01-10',
+        invoiceNumber: '',
+        counterpartyCuit: '30-11111111-1',
+        netAmount: '1000.00',
+      }],
+      incomingRows: [{
+        date: '2025-01-10',
+        invoiceNumber: '',
+        counterpartyCuit: '30-11111111-1',
+        netAmount: '1000.00',
+      }],
+    });
+
+    expect(result.acceptedRows).toHaveLength(1);
+    expect(result.duplicateRows).toHaveLength(0);
+    expect(result.duplicateCount).toBe(0);
+  });
+
+  it('omite retenciones duplicadas por certificado, agente, fecha e importe', () => {
+    const result = splitWizardImportDuplicates({
+      kind: 'withholdings',
+      existingRows: [{
+        certificateNumber: '12345',
+        cuitAgent: '30-70809010-9',
+        date: '2025-05-15',
+        amount: '12500.65',
+      }],
+      incomingRows: [{
+        certificateNumber: '12345',
+        cuitAgent: '30708090109',
+        date: '2025-05-15',
+        amount: '12500,65',
+      }],
+    });
+
+    expect(result.acceptedRows).toHaveLength(0);
+    expect(result.duplicateCount).toBe(1);
+    expect(result.duplicateLabels[0]).toContain('12345');
   });
 });

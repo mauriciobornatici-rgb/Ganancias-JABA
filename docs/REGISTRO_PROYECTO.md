@@ -2510,3 +2510,47 @@ Pendiente externo:
 
 - Probar en navegador con los 12 archivos reales de ventas y los 12 archivos reales de compras descargados de AFIP.
 - Confirmar que los totales compilados coinciden con el portal/Excel de control.
+
+### 2026-06-02 - Fase 1, P10: verificaciones por pantalla y duplicados
+
+Se agregaron controles operativos para que la carga multiarchivo sea segura en uso real.
+
+Hallazgo:
+
+- La carga multiarchivo resolvia el problema de consolidar manualmente 12 meses.
+- Faltaba evitar un riesgo nuevo: subir dos veces el mismo mes o repetir comprobantes.
+- Tambien faltaba feedback visible por lote para saber cuantos archivos/registros entraron y cuantos se omitieron.
+
+Decision:
+
+- Detectar duplicados importados en el wizard antes de incorporar filas al estado.
+- Ventas/compras usan comprobante, CUIT contraparte, fecha e importe como clave detectable.
+- Retenciones usan certificado, CUIT agente, fecha e importe.
+- Si una fila no tiene comprobante/certificado suficiente, no se bloquea automaticamente para no perder informacion; queda visible para revision manual.
+- Mostrar resumen en pantalla con archivos procesados, registros leidos, registros incorporados, duplicados omitidos y advertencias.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/GUIA_PRUEBA_PILOTO.md`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/ESTADO_FINAL_DESARROLLO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo porque `splitWizardImportDuplicates` no existia.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 11 tests, todo OK.
+- `vitest run`: 26 archivos, 95 tests, todo OK.
+- `eslint` focalizado sobre wizard, helper y test: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `next build --webpack`: OK.
+- `tsc --noEmit`: OK.
+
+Pendiente externo:
+
+- Validar visualmente con archivos reales que el resumen sea claro.
+- Probar repetir una importacion mensual y confirmar que los duplicados se omiten sin duplicar totales.

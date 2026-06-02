@@ -21,6 +21,7 @@ export type WizardCellValue = string | number | boolean | null | undefined | Dat
 export type WizardEditableRecord = Record<string, unknown>;
 export type WizardMoneyValue = string | number;
 export type WizardParameterScalar = string | number | null | undefined;
+export type WizardImportKind = 'sales' | 'purchases' | 'withholdings';
 
 export function wizardMoneyToString(value: WizardMoneyValue | null | undefined, fallback = '0'): string {
   if (value === null || value === undefined || value === '') return fallback;
@@ -365,6 +366,123 @@ export type WizardWithholding = WizardEditableRecord & {
   certificateNumber?: string;
   operationDescription?: string;
 };
+
+type WizardImportDuplicateRow = WizardSale | WizardPurchase | WizardWithholding;
+
+export type WizardImportDuplicateResult<T extends WizardImportDuplicateRow> = {
+  acceptedRows: T[];
+  duplicateRows: T[];
+  duplicateCount: number;
+  duplicateLabels: string[];
+};
+
+function normalizeImportText(value: unknown): string {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function normalizeImportCuit(value: unknown): string {
+  return String(value ?? '').replace(/\D/g, '');
+}
+
+function normalizeImportMoney(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const normalized = raw.includes(',') && raw.includes('.')
+    ? raw.replace(/\./g, '').replace(',', '.')
+    : raw.replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed.toFixed(2) : raw;
+}
+
+function normalizeImportDate(value: unknown): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? raw : date.toISOString().split('T')[0];
+}
+
+function buildWizardImportDuplicateKey(kind: WizardImportKind, row: WizardImportDuplicateRow): string | null {
+  if (kind === 'withholdings') {
+    const withholding = row as WizardWithholding;
+    const certificateNumber = normalizeImportText(withholding.certificateNumber);
+    const amount = normalizeImportMoney(withholding.amount);
+    if (!certificateNumber || !amount) return null;
+
+    return [
+      'withholding',
+      certificateNumber,
+      normalizeImportCuit(withholding.cuitAgent),
+      normalizeImportDate(withholding.date),
+      amount,
+    ].join('|');
+  }
+
+  const invoice = row as WizardSale | WizardPurchase;
+  const invoiceNumber = normalizeImportText(invoice.invoiceNumber);
+  const amount = normalizeImportMoney(invoice.netAmount);
+  if (!invoiceNumber || !amount) return null;
+
+  return [
+    kind,
+    invoiceNumber,
+    normalizeImportCuit(invoice.counterpartyCuit),
+    normalizeImportDate(invoice.date),
+    amount,
+  ].join('|');
+}
+
+function buildWizardImportDuplicateLabel(kind: WizardImportKind, row: WizardImportDuplicateRow): string {
+  if (kind === 'withholdings') {
+    const withholding = row as WizardWithholding;
+    return `certificado ${withholding.certificateNumber || 'sin certificado'} por $${wizardMoneyToString(withholding.amount)}`;
+  }
+
+  const invoice = row as WizardSale | WizardPurchase;
+  return `comprobante ${invoice.invoiceNumber || 'sin comprobante'} por $${wizardMoneyToString(invoice.netAmount)}`;
+}
+
+export function splitWizardImportDuplicates<T extends WizardImportDuplicateRow>({
+  kind,
+  existingRows,
+  incomingRows,
+}: {
+  kind: WizardImportKind;
+  existingRows: T[];
+  incomingRows: T[];
+}): WizardImportDuplicateResult<T> {
+  const knownKeys = new Set(
+    existingRows
+      .map(row => buildWizardImportDuplicateKey(kind, row))
+      .filter((key): key is string => Boolean(key))
+  );
+  const acceptedRows: T[] = [];
+  const duplicateRows: T[] = [];
+  const duplicateLabels: string[] = [];
+
+  incomingRows.forEach(row => {
+    const key = buildWizardImportDuplicateKey(kind, row);
+    if (!key) {
+      acceptedRows.push(row);
+      return;
+    }
+
+    if (knownKeys.has(key)) {
+      duplicateRows.push(row);
+      duplicateLabels.push(buildWizardImportDuplicateLabel(kind, row));
+      return;
+    }
+
+    knownKeys.add(key);
+    acceptedRows.push(row);
+  });
+
+  return {
+    acceptedRows,
+    duplicateRows,
+    duplicateCount: duplicateRows.length,
+    duplicateLabels,
+  };
+}
 
 export type WizardPersonalAsset = WizardEditableRecord & {
   description?: string;

@@ -140,6 +140,8 @@ Marcar como OK solo si se verifica en pantalla o reabriendo:
 
 - La DDJJ conserva ventas y compras cargadas.
 - La importacion acepta varios archivos mensuales sin exigir consolidacion manual previa.
+- La pantalla muestra resumen de importacion por archivo, registros incorporados y duplicados omitidos.
+- Si se vuelve a importar el mismo mes/comprobante, la app omite duplicados detectables por comprobante/contraparte/fecha/importe.
 - La DDJJ conserva retencion con agente, CUIT, regimen, fecha y certificado.
 - La DDJJ conserva efectivo, creditos y pasivos auxiliares ESP.
 - La DDJJ conserva otras justificaciones JVP y sus columnas.

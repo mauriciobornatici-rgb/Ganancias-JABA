@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: carga multiarchivo AFIP preparada para ventas/compras mensuales y prueba piloto reproducible.
+- Ultimo checkpoint documentado: carga multiarchivo AFIP con resumen en pantalla y control de duplicados.
 - Fase activa: Fase 1 - Prueba piloto controlada contra Excel y carga real.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -57,6 +57,21 @@ Criterio de cierre:
 - El importador compila multiples archivos con prueba automatizada.
 - `/api/import` acepta `files` multiple y conserva compatibilidad con `file`.
 - El wizard permite seleccion multiple en ventas, compras y retenciones.
+- Cambios verificados, commiteados y pusheados.
+
+### P10 - Verificacion visual de importacion y duplicados
+
+Estado: resuelto.
+
+Objetivo inmediato:
+
+- Mostrar en pantalla un resumen por lote importado.
+- Evitar duplicar comprobantes si se sube nuevamente el mismo archivo/mes.
+
+Criterio de cierre:
+
+- Helper testeado para separar registros nuevos y duplicados.
+- Wizard muestra archivos procesados, registros leidos, incorporados y duplicados omitidos.
 - Cambios verificados, commiteados y pusheados.
 
 ### P0 - Control operativo de continuidad

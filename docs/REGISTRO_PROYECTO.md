@@ -2352,6 +2352,27 @@ Pendiente:
 - Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
 - Validacion visual sigue bloqueada por el entorno del navegador integrado.
 
+### 2026-06-02 - Cierre tecnico MVP
+
+Se deja documentado el cierre tecnico del MVP funcional.
+
+Decision:
+
+- Considerar P0 a P6 cerrados como desarrollo tecnico del MVP.
+- Separar pendientes externos de validacion real/visual de los pendientes de desarrollo.
+- Crear `docs/ESTADO_FINAL_DESARROLLO.md` como resumen ejecutivo para retomar sin reconstruir todo el historial.
+
+Estado:
+
+- Desarrollo tecnico implementado: 100%.
+- Preparacion para uso piloto: 95%, sujeto a prueba con DDJJ real o fixture realista.
+- Validacion visual automatizada: bloqueada por entorno Browser/Windows.
+
+Pendiente externo:
+
+- Probar con una DDJJ real ya resuelta en Excel.
+- Validar visualmente wizard cuando el navegador integrado o Chrome local este disponible.
+
 ### 2026-06-02 - Fase 1, P6 primer corte: retenciones importadas auditables
 
 Se cerro la brecha remanente de auditoria importada para Mis Retenciones.

@@ -139,7 +139,7 @@ Criterio de cierre:
 
 ## P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: Activo.
+Estado: Resuelto como MVP tecnico.
 
 Problema:
 
@@ -176,7 +176,7 @@ Criterio de cierre:
 - Consumo/variacion patrimonial se explica por rubros.
 - La carga patrimonial no depende de campos genericos opacos.
 
-Pendiente para cerrar P4:
+Pendiente externo:
 
 - Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
 
@@ -251,6 +251,14 @@ Accion recomendada:
 Criterio de cierre:
 
 - Flujo visual de alta/guardado/importacion validado con caso real o fixture realista.
+
+## Cierre de desarrollo tecnico
+
+Estado: 100% tecnico MVP al 2026-06-02.
+
+- Los frentes P0 a P6 quedaron resueltos o resueltos como MVP con verificacion automatizada.
+- P7 no es un bloqueo de desarrollo sino de entorno/caso real.
+- Detalle de cierre: `docs/ESTADO_FINAL_DESARROLLO.md`.
 
 ## Pendientes resueltos que no deben reabrirse sin motivo
 

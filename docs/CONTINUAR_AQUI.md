@@ -7,10 +7,11 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: P3 resuelto, AXI estatico/dinamico alineado con indices utiles y planilla.
+- Ultimo checkpoint documentado: desarrollo tecnico MVP cerrado al 100% sobre P0-P6.
 - Fase activa: Fase 1 - Validacion contra Excel y estabilizacion de carga/persistencia.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
+- Estado de uso: listo para piloto controlado con DDJJ real/fixture realista; validacion visual automatizada bloqueada por entorno.
 
 ## Como retomar en 5 minutos
 
@@ -120,7 +121,7 @@ Avance:
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: activo, decimo corte ESP/JVP aplicado.
+Estado: resuelto como MVP tecnico.
 
 Objetivo:
 
@@ -157,6 +158,7 @@ Avance:
 Siguiente corte recomendado:
 
 - Validacion final: caso real o fixture realista de alta/guardado/reapertura y revision visual cuando el navegador este disponible.
+- Documento de cierre: `docs/ESTADO_FINAL_DESARROLLO.md`.
 
 ## Reglas de continuidad
 

@@ -36,4 +36,17 @@ describe('hasDetailedTaxReturnPayload', () => {
       },
     })).toBe(true);
   });
+
+  it('detecta carga operativa cuando solo hay otras justificaciones JVP', () => {
+    expect(hasDetailedTaxReturnPayload({
+      cuit: '20-12345678-9',
+      clientName: 'Cliente Demo',
+      fiscalYear: 2025,
+      otherJustifications: [{
+        concept: 'Venta de bien personal',
+        column: 2,
+        amount: '1500000',
+      }],
+    })).toBe(true);
+  });
 });

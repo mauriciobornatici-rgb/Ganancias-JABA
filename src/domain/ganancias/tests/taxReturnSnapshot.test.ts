@@ -15,6 +15,7 @@ describe('buildInitialTaxReturnSnapshot', () => {
       withholdings: [{ amount: '300' }],
       personalAssets: [{ description: 'Casa', valueFinal: '1000000' }],
       personalLiabilities: [{ description: 'Prestamo', valueFinal: '100000' }],
+      otherJustifications: [{ concept: 'Venta de bien personal', column: 2, amount: '1500000' }],
       axiDynamic: [{ concept: 'Retiro', amount: '50000' }],
       activoTotalInicio: '100',
       pasivoTotalInicio: '50',
@@ -33,6 +34,7 @@ describe('buildInitialTaxReturnSnapshot', () => {
     expect(snapshot.withholdings).toHaveLength(1);
     expect(snapshot.personalAssets).toHaveLength(1);
     expect(snapshot.personalLiabilities).toHaveLength(1);
+    expect(snapshot.otherJustifications).toHaveLength(1);
     expect(snapshot.axiDynamic).toHaveLength(1);
     expect(snapshot.activoTotalInicio).toBe('100');
   });

@@ -2045,6 +2045,48 @@ Pendiente:
 
 - Resolver decision de detalle documental por comprobante para deducciones generales.
 
+### 2026-06-02 - Fase 1, P4 septimo corte: JVP no se pierde en alta inicial
+
+Se corrigio una brecha chica pero sensible de persistencia para la carga JVP.
+
+Hallazgo:
+
+- `persistTaxReturnDetails` ya guardaba `otherJustifications` en relacion y snapshot cuando el flujo entraba por persistencia detallada.
+- El alta inicial decide si usa persistencia detallada con `hasDetailedTaxReturnPayload`.
+- `otherJustifications` no estaba incluido en ese detector ni en `buildInitialTaxReturnSnapshot`.
+- Si una DDJJ se creaba solo con datos JVP y sin otras estructuras operativas, esa informacion podia no quedar en la base.
+
+Decision:
+
+- Tratar `otherJustifications` como carga operativa detallada.
+- Incluir `otherJustifications` en el snapshot inicial para conservar compatibilidad con altas minimas y estados intermedios.
+- No crear una tabla nueva en este corte, porque ya existe `PatrimonialJustification` para el caso persistido completo.
+
+Archivos modificados:
+
+- `src/domain/ganancias/persistence/taxReturnPayload.ts`.
+- `src/domain/ganancias/persistence/taxReturnSnapshot.ts`.
+- `src/domain/ganancias/tests/taxReturnPayload.test.ts`.
+- `src/domain/ganancias/tests/taxReturnSnapshot.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `taxReturnPayload.test.ts` devolvia `false` para una carga con solo `otherJustifications`.
+- TDD rojo confirmado: `taxReturnSnapshot.test.ts` no encontraba `snapshot.otherJustifications`.
+- `vitest run src/domain/ganancias/tests/taxReturnPayload.test.ts src/domain/ganancias/tests/taxReturnSnapshot.test.ts`: 2 archivos, 6 tests, todo OK.
+- `vitest run`: 25 archivos, 82 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre payload, snapshot y tests: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Seguir con mapeo fino de creditos/pasivos y filas JVP.
+- Resolver decision de detalle documental por comprobante para deducciones generales.
+
 ### 2026-06-02 - Fase 1, P5 tercer corte: tope educativo derivado desde MNI
 
 Se resolvio la decision abierta sobre gastos educativos contra la planilla base.

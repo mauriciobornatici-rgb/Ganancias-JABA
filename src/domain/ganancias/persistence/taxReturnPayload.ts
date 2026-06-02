@@ -6,6 +6,7 @@ const DETAILED_ARRAY_FIELDS = [
   'withholdings',
   'personalAssets',
   'personalLiabilities',
+  'otherJustifications',
   'axiDynamic',
 ] as const;
 

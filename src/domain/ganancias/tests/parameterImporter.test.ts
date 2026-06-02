@@ -19,6 +19,21 @@ describe('JABA Tax Parameter Workbook Importer', () => {
   const indicesWorkbookPath = findReferenceWorkbook('Indices de actualiz');
   const runIfWorkbookExists = indicesWorkbookPath ? it : it.skip;
 
+  it('deriva el tope de gastos educativos como 40% del MNI cuando no viene explicito', () => {
+    const workbook = xlsx.utils.book_new();
+    const sheet = xlsx.utils.aoa_to_sheet([
+      ['Concepto', 'Importe'],
+      ['Minimo no imponible', 1_000_000],
+    ]);
+
+    xlsx.utils.book_append_sheet(workbook, sheet, 'Deducciones');
+
+    const parsed = parseTaxParameterWorkbook(workbook, 2025);
+
+    expect(parsed.deductions.minimoNoImponible).toBe(1_000_000);
+    expect(parsed.deductions.topeGastosEducativos).toBe(400_000);
+  });
+
   runIfWorkbookExists('normaliza fechas seriales de Excel a meses 1..12 para indices IPC 2025', () => {
     const workbook = xlsx.readFile(indicesWorkbookPath!, { cellDates: false });
 

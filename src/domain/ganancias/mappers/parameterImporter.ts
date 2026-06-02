@@ -116,8 +116,12 @@ function parseDeductions(workbook: xlsx.WorkBook): ParsedDeductions {
     }
   }
 
+  const minimoNoImponible = pickValue(rawValues, ['minimonoimponible', 'minimo no imponible', 'mni'], DEFAULT_DEDUCTIONS.minimoNoImponible);
+  const topeGastosEducativos = pickValueOrNull(rawValues, ['topegastoseducativos', 'gastos educativos'])
+    ?? roundCurrency(minimoNoImponible * 0.4);
+
   return {
-    minimoNoImponible: pickValue(rawValues, ['minimonoimponible', 'minimo no imponible', 'mni'], DEFAULT_DEDUCTIONS.minimoNoImponible),
+    minimoNoImponible,
     conyuge: pickValue(rawValues, ['conyuge'], DEFAULT_DEDUCTIONS.conyuge),
     hijo: pickValue(rawValues, ['hijo'], DEFAULT_DEDUCTIONS.hijo),
     hijoIncapacitado: pickValue(rawValues, ['hijoincapacitado', 'hijo incapacitado'], DEFAULT_DEDUCTIONS.hijoIncapacitado),
@@ -129,7 +133,7 @@ function parseDeductions(workbook: xlsx.WorkBook): ParsedDeductions {
     topeSeguroRetiro: pickValue(rawValues, ['topeseguroretiro', 'seguro de retiro'], DEFAULT_DEDUCTIONS.topeSeguroRetiro),
     topeGastosSepelio: pickValue(rawValues, ['topegastossepelio', 'gastos de sepelio'], DEFAULT_DEDUCTIONS.topeGastosSepelio),
     topeInteresHipoteca: pickValue(rawValues, ['topeintereshipoteca', 'intereses hipoteca'], DEFAULT_DEDUCTIONS.topeInteresHipoteca),
-    topeGastosEducativos: pickValue(rawValues, ['topegastoseducativos', 'gastos educativos'], DEFAULT_DEDUCTIONS.topeGastosEducativos),
+    topeGastosEducativos,
   };
 }
 
@@ -299,13 +303,21 @@ function findSheetName(workbook: xlsx.WorkBook, candidates: string[]): string | 
 }
 
 function pickValue(values: Map<string, number>, labels: string[], fallback: number): number {
+  return pickValueOrNull(values, labels) ?? fallback;
+}
+
+function pickValueOrNull(values: Map<string, number>, labels: string[]): number | null {
   for (const label of labels) {
     const normalized = normalizeLabel(label);
     const value = values.get(normalized);
     if (value !== undefined) return value;
   }
 
-  return fallback;
+  return null;
+}
+
+function roundCurrency(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function normalizeLabel(value: unknown): string {

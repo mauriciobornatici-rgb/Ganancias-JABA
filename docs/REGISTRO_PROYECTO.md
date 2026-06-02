@@ -2044,4 +2044,41 @@ Verificacion:
 Pendiente:
 
 - Resolver decision de detalle documental por comprobante para deducciones generales.
-- Confirmar fuente anual del tope parametrico de gastos educativos antes de tocar ese calculo.
+
+### 2026-06-02 - Fase 1, P5 tercer corte: tope educativo derivado desde MNI
+
+Se resolvio la decision abierta sobre gastos educativos contra la planilla base.
+
+Hallazgo:
+
+- `IG 25!D26 = E41 * 0.4`.
+- La app ya tenia `topeGastosEducativos` como parametro editable/importado.
+- Si el archivo de parametros trae MNI pero no trae el tope educativo explicito, el importador caia al default fijo 2025.
+
+Decision:
+
+- Mantener `topeGastosEducativos` como campo parametrico para permitir override auditable.
+- Derivar el tope como `minimoNoImponible * 0.4` cuando el workbook no trae tope educativo explicito.
+- No sumar gastos educativos a excedentes JVP, porque en la planilla `IG 25!E26` esta fijo en `0`.
+
+Archivos modificados:
+
+- `src/domain/ganancias/mappers/parameterImporter.ts`.
+- `src/domain/ganancias/tests/parameterImporter.test.ts`.
+- `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `parameterImporter.test.ts` fallo porque el importador devolvia `1803002.21` en lugar de `400000` cuando el workbook solo traia MNI `1000000`.
+- `vitest run src/domain/ganancias/tests/parameterImporter.test.ts`: 1 archivo, 2 tests, todo OK.
+- `vitest run`: 25 archivos, 81 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre importador y test: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Resolver decision de detalle documental por comprobante para deducciones generales.

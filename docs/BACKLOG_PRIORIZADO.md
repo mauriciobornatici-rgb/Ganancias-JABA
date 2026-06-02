@@ -195,7 +195,7 @@ Avance 2026-06-02:
 - La app cubre los rubros agregados de `IG 25!F20:F31`.
 - La app calcula excedentes no admitidos de `IG 25!E32` y los suma a JVP columna I con aviso visible.
 - Brecha detectada: `Ded. Gen.` contiene detalle por fecha/comprobante/concepto; la app hoy carga importes agregados por rubro.
-- Gastos educativos quedan como decision parametrica: Excel usa `MNI * 40%`, la app usa `topeGastosEducativos` importado/configurado.
+- Gastos educativos alineado: Excel usa `MNI * 40%`; la app conserva `topeGastosEducativos`, pero el importador lo deriva desde MNI si falta el tope explicito.
 
 Criterio de cierre:
 

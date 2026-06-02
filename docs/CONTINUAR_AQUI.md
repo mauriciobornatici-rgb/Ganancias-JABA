@@ -1,6 +1,6 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-01
+Ultima actualizacion: 2026-06-02
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
@@ -143,6 +143,7 @@ Avance:
 - La grilla JVP incluye presets rapidos de conceptos frecuentes con columna visible para acelerar carga sin ocultar criterio.
 - El resultado principal ahora expone totales JVP columna I/II y cuadre para UI, preview, persistencia y exportacion.
 - P5: los excedentes no admitidos de deducciones generales (`IG 25!E32`) se calculan y se llevan a JVP columna I con aviso visible.
+- P5: gastos educativos queda alineado a Excel; el importador deriva `topeGastosEducativos` como `MNI * 40%` cuando el tope no viene explicito.
 
 Siguiente corte recomendado:
 

@@ -26,7 +26,7 @@ Dejar una tabla rubro por rubro para el frente P5, indicando formula de planilla
 | F23 | Seguro de retiro | `Ded. Gen.!F47` | Tope fijo `573817.13` o parametro | `generalDeductions.seguroRetiro` + `topeSeguroRetiro` | Igual a Excel agregado |
 | F24 | Gastos de sepelio | `Ded. Gen.!F55` | Tope fijo `996.23` o parametro | `generalDeductions.gastosSepelio` + `topeGastosSepelio` | Igual a Excel agregado |
 | F25 | Intereses hipotecarios | `Ded. Gen.!F127` | Tope fijo `20000` o parametro | `generalDeductions.interesesHipoteca` + `topeInteresHipoteca` | Igual a Excel agregado |
-| F26 | Gastos educativos | `Ded. Gen.!F248` | Tope `IG 25!E41 * 0.4` en planilla; app usa parametro importado | `generalDeductions.gastosEducativos` + `topeGastosEducativos` | Decision parametrica; validar fuente legal anual |
+| F26 | Gastos educativos | `Ded. Gen.!F248` | Tope `IG 25!E41 * 0.4` en planilla | `generalDeductions.gastosEducativos` + `topeGastosEducativos` | Igual a Excel agregado; el importador deriva el tope como `MNI * 40%` si no viene explicito |
 | F27 | Alquiler casa habitacion | `Ded. Gen.!F208` | `MIN(IG 25!E42, C27*0.4)` | `generalDeductions.alquilerCasaHabitacion`; tope MNI | Igual a Excel agregado |
 | F28 | Locador / locatario | `Ded. Gen.!F216` | 10% del monto informado | `generalDeductions.deduccionLocadorLocatario` | Igual a Excel agregado, con test |
 | F29 | Cuota medico asistencial | `Ded. Gen.!F23` | Tope 5% con base encadenada `F17 - F20:F28`; si base negativa, 0 | `generalDeductions.medicosAsistencial` | Igual a Excel agregado, con test |
@@ -67,7 +67,7 @@ Ejemplos:
 
 - Si el estudio necesita auditoria comprobante por comprobante, conviene crear una tabla hija `GeneralDeductionItem` o conservar un snapshot estructurado por rubro.
 - Si se mantiene el enfoque agil, el agregado por rubro es suficiente para liquidar, pero no reemplaza el archivo de respaldo documental.
-- Gastos educativos: documentar fuente anual del tope parametrico, porque Excel lo expresa como `MNI * 40%` y la app lo recibe desde parametros.
+- Gastos educativos: fuente anual documentada. Excel lo expresa como `MNI * 40%`; la app conserva el campo parametrico `topeGastosEducativos`, pero el importador lo deriva desde MNI cuando el archivo no trae un tope explicito.
 
 ## Recomendacion
 

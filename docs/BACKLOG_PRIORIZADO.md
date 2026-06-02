@@ -169,6 +169,7 @@ Avance 2026-06-01:
 - Octavo corte backend aplicado: efectivo, creditos y pasivos comerciales se preservan desde payload hasta motor, snapshot, tablas y reapertura.
 - Noveno corte UI aplicado: Paso 4 incluye una seccion colapsable de auxiliares ESP para efectivo, creditos y pasivos comerciales, con totales de control.
 - Decimo corte de reconciliacion aplicado: los auxiliares ESP generan sugeridos testeados, detectan diferencias contra `activoTotalInicio` / `pasivoTotalInicio` y solo copian importes al agregado por accion explicita del usuario.
+- Undecimo corte de trazabilidad aplicado: presets de `otherJustifications` muestran referencia Excel (`JVP!C8`, `JVP!D9`, `JVP!D11`, `JVP!D13`) junto a columna I/II.
 
 Criterio de cierre:
 
@@ -177,7 +178,6 @@ Criterio de cierre:
 
 Pendiente para cerrar P4:
 
-- Validar rubros de `otherJustifications` contra filas relevantes de hoja `JVP`.
 - Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
 
 ## P5 - H3: deducciones generales remanentes

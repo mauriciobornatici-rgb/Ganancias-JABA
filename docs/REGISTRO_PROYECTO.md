@@ -2311,6 +2311,47 @@ Pendiente:
 
 - Validacion visual sigue bloqueada por el entorno del navegador integrado.
 
+### 2026-06-02 - Fase 1, P4 undecimo corte: referencias Excel en presets JVP
+
+Se cerro el pendiente tecnico de validar rubros frecuentes de `otherJustifications` contra filas relevantes de hoja `JVP`.
+
+Hallazgo:
+
+- `docs/MAPEO_JVP_EXCEL.md` ya documentaba las filas troncales `JVP!C8`, `JVP!D9`, `JVP!D11` y `JVP!D13`.
+- El wizard tenia presets rapidos por concepto y columna, pero no mostraba la referencia Excel.
+- Sin esa referencia, la carga era rapida pero menos auditable para revisar por que un concepto entra por columna I o II.
+
+Decision:
+
+- Agregar `reference` al catalogo `WIZARD_OTHER_JUSTIFICATION_PRESETS`.
+- Mostrar la referencia Excel en el boton del preset y en el tooltip.
+- Mantener el calculo sin cambios: la referencia guia la carga, no modifica importes ni columnas.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/MAPEO_JVP_EXCEL.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo porque el preset `herenciaDonacion` no tenia referencia `JVP!D11`.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 8 tests, todo OK.
+- `eslint` focalizado sobre wizard, tipos y test: OK.
+- `vitest run`: 25 archivos, 88 tests, todo OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
+- Validacion visual sigue bloqueada por el entorno del navegador integrado.
+
 ### 2026-06-02 - Fase 1, P6 primer corte: retenciones importadas auditables
 
 Se cerro la brecha remanente de auditoria importada para Mis Retenciones.

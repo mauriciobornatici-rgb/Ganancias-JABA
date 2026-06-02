@@ -106,5 +106,14 @@ Corte aplicado el 2026-06-02:
 ## Pendientes de implementacion
 
 - Evaluar si el estudio necesita grillas adicionales para bienes de cambio, bienes de uso u otros rubros ESP, o si el agregado actual alcanza por agilidad.
-- Agregar presets de conceptos JVP para filas `C8`, `D11` y `D13` si mejora la velocidad de carga sin ocultar criterio profesional.
 - Validar una DDJJ real contra `JVP!C17`, `JVP!D17` y `JVP!C19`.
+
+## Presets JVP en wizard
+
+Corte aplicado el 2026-06-02:
+
+- `Gasto no deducible` y `AXI positivo`: referencia `JVP!C8`, columna I.
+- `Ganancia exenta`: referencia `JVP!D9`, columna II.
+- `Herencia / donacion`: referencia `JVP!D11`, columna II.
+- `Amortizacion 3ra` y `AXI negativo`: referencia `JVP!D13`, columna II.
+- La UI muestra referencia Excel y columna junto a cada preset para acelerar carga sin ocultar criterio profesional.

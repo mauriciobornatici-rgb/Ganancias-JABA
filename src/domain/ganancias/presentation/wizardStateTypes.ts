@@ -47,6 +47,7 @@ export type WizardOtherJustificationPreset = {
   label: string;
   concept: string;
   column: WizardOtherJustificationColumn;
+  reference: string;
 };
 
 export const WIZARD_OTHER_JUSTIFICATION_PRESETS = [
@@ -55,36 +56,42 @@ export const WIZARD_OTHER_JUSTIFICATION_PRESETS = [
     label: 'Herencia / donacion',
     concept: 'Bienes recibidos por herencia, legado o donacion',
     column: 2,
+    reference: 'JVP!D11',
   },
   {
     key: 'gastoNoDeducible',
     label: 'Gasto no deducible',
     concept: 'Otros conceptos que no justifican erogaciones o aumentos patrimoniales',
     column: 1,
+    reference: 'JVP!C8',
   },
   {
     key: 'gananciaExenta',
     label: 'Ganancia exenta',
     concept: 'Ganancias exentas o no gravadas',
     column: 2,
+    reference: 'JVP!D9',
   },
   {
     key: 'amortizacionTercera',
     label: 'Amortizacion 3ra',
     concept: 'Amortizacion tercera categoria',
     column: 2,
+    reference: 'JVP!D13',
   },
   {
     key: 'axiPositivo',
     label: 'AXI positivo',
     concept: 'Ajuste por inflacion positivo',
     column: 1,
+    reference: 'JVP!C8',
   },
   {
     key: 'axiNegativo',
     label: 'AXI negativo',
     concept: 'Ajuste por inflacion negativo',
     column: 2,
+    reference: 'JVP!D13',
   },
 ] as const satisfies readonly WizardOtherJustificationPreset[];
 

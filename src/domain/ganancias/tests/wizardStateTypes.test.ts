@@ -12,6 +12,7 @@ import {
   resolveWizardRouteReturnId,
   shouldRequestActiveTaxParameters,
   shouldResetWizardDetailsOnIdentityChange,
+  WIZARD_OTHER_JUSTIFICATION_PRESETS,
   wizardMoneyToNumber,
   wizardMoneyToString,
 } from '../presentation/wizardStateTypes';
@@ -48,6 +49,9 @@ describe('wizardStateTypes', () => {
   });
 
   it('crea filas JVP desde presets explicitos basados en la planilla', () => {
+    expect(WIZARD_OTHER_JUSTIFICATION_PRESETS.find(preset => preset.key === 'herenciaDonacion')?.reference).toBe('JVP!D11');
+    expect(WIZARD_OTHER_JUSTIFICATION_PRESETS.find(preset => preset.key === 'gastoNoDeducible')?.reference).toBe('JVP!C8');
+    expect(WIZARD_OTHER_JUSTIFICATION_PRESETS.find(preset => preset.key === 'gananciaExenta')?.reference).toBe('JVP!D9');
     expect(buildWizardOtherJustificationFromPreset('herenciaDonacion')).toEqual({
       concept: 'Bienes recibidos por herencia, legado o donacion',
       column: 2,

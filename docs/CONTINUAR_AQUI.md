@@ -152,10 +152,10 @@ Avance:
 - P5: decision documental cerrada; la app mantiene carga agregada por rubro y el Paso 5 avisa que no reemplaza respaldo comprobante por comprobante.
 - P6: Mis Retenciones conserva agente, CUIT, regimen, fecha, certificado y operacion; se guarda en `TaxWithholding` y se reabre en el wizard.
 - P6: CUIT de contraparte en ventas/compras queda como snapshot documentado y reabierto; no se migra a columnas propias hasta necesitar reportes DB por CUIT.
+- P4: presets de otras justificaciones JVP ahora muestran referencia Excel (`JVP!C8`, `JVP!D9`, `JVP!D11`, `JVP!D13`) y columna I/II.
 
 Siguiente corte recomendado:
 
-- Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
 - Validacion final: caso real o fixture realista de alta/guardado/reapertura y revision visual cuando el navegador este disponible.
 
 ## Reglas de continuidad

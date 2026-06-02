@@ -2921,9 +2921,9 @@ export default function WizardPage() {
                               key={preset.key}
                               onClick={() => addOtherJustificationPreset(preset.key)}
                               className="rounded-full border border-zinc-700 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:border-teal-500/60 hover:text-teal-300 hover:bg-teal-500/5 transition-colors"
-                              title={`${preset.concept} - Columna ${preset.column === 1 ? 'I' : 'II'}`}
+                              title={`${preset.reference}: ${preset.concept} - Columna ${preset.column === 1 ? 'I' : 'II'}`}
                             >
-                              {preset.label} · Col {preset.column === 1 ? 'I' : 'II'}
+                              {preset.label} · {preset.reference} · Col {preset.column === 1 ? 'I' : 'II'}
                             </button>
                           ))}
                         </div>

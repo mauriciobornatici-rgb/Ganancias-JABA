@@ -210,7 +210,7 @@ Criterio de cierre:
 
 ## P6 - H5 remanente: auditoria importada completa
 
-Estado: Pendiente.
+Estado: Resuelto como MVP auditable.
 
 Problema:
 
@@ -222,9 +222,17 @@ Accion recomendada:
 - Definir si `counterpartyCuit` merece migracion a `SalesInvoice` y `PurchaseInvoice`.
 - Preservar regimen/certificado/agente en retenciones importadas.
 
+Avance 2026-06-02:
+
+- Retenciones importadas desde Mis Retenciones ahora conservan CUIT/agente, descripcion de impuesto, regimen, fecha, certificado y descripcion de operacion.
+- Persistencia guarda esos datos en `TaxWithholding` y la reapertura los devuelve al wizard.
+- El Paso 5 muestra columnas compactas de auditoria para agente/certificado y fecha/regimen.
+- Decision sobre CUIT contraparte: por ahora se mantiene en `variablesSnapshot` y se devuelve al reabrir; no se migra a columnas propias hasta que el estudio necesite consultas/reportes por CUIT desde DB.
+
 Criterio de cierre:
 
 - Datos importados necesarios para revision quedan en DB consultable o snapshot documentado.
+- P6 queda cerrado como MVP: retenciones en DB consultable; CUIT de ventas/compras en snapshot documentado.
 
 ## P7 - Validaciones visuales/manuales
 

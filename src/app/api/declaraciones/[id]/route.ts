@@ -142,6 +142,14 @@ export async function GET(
       withholdings: taxReturn.withholdings.map(w => ({
         amount: w.amount.toString(),
         taxCode: w.taxCode,
+        cuitAgent: w.cuitAgent || '',
+        agentName: w.agentName || '',
+        taxDescription: w.taxDescription || '',
+        regimeCode: w.regimeCode || '',
+        regimeDescription: w.regimeDescription || '',
+        date: formatDateForWizardInput(w.date),
+        certificateNumber: w.certificateNumber || '',
+        operationDescription: w.operationDescription || '',
       })),
       personalAssets: taxReturn.personalAssets.map(a => ({
         description: a.description,

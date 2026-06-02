@@ -120,6 +120,14 @@ type PayablePayload = {
 type WithholdingPayload = {
   taxCode?: string;
   amount?: NumericValue;
+  cuitAgent?: string;
+  agentName?: string;
+  taxDescription?: string;
+  regimeCode?: string;
+  regimeDescription?: string;
+  date?: DateValue;
+  certificateNumber?: string;
+  operationDescription?: string;
 };
 
 type PersonalAssetPayload = {
@@ -525,11 +533,15 @@ export async function persistTaxReturnDetails({
     await db.taxWithholding.createMany({
       data: withholdings.map(withholding => ({
         taxReturnId,
-        agentName: 'Agente Retencion',
+        cuitAgent: stringInput(withholding.cuitAgent) || undefined,
+        agentName: stringInput(withholding.agentName, 'Agente Retencion'),
         taxCode: withholding.taxCode || 'Ganancias',
-        taxDescription: 'Impuesto a las Ganancias',
-        date: new Date(),
-        certificateNumber: '00000000',
+        taxDescription: stringInput(withholding.taxDescription, withholding.taxCode === 'Otros' ? 'Otros Impuestos' : 'Impuesto a las Ganancias'),
+        regimeCode: stringInput(withholding.regimeCode) || undefined,
+        regimeDescription: stringInput(withholding.regimeDescription) || undefined,
+        date: dateInput(withholding.date),
+        certificateNumber: stringInput(withholding.certificateNumber, '00000000'),
+        operationDescription: stringInput(withholding.operationDescription) || undefined,
         amount: numberInput(withholding.amount),
       })),
     });

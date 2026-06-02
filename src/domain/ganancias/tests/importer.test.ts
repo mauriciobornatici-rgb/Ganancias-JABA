@@ -45,6 +45,14 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     const ret1 = summary.withholdings![0];
     expect(ret1.amount.toNumber()).toBe(12500.65);
     expect(ret1.taxCode).toBe('Ganancias');
+    expect(ret1.cuitAgent).toBe('30-70809010-9');
+    expect(ret1.agentName).toBe('Banco Galicia SA');
+    expect(ret1.taxDescription).toBe('RETENCIONES GANANCIAS');
+    expect(ret1.regimeCode).toBe('12');
+    expect(ret1.regimeDescription).toBe('RET-GANANCIAS REG-12');
+    expect(ret1.date?.toISOString().startsWith('2025-05-15')).toBe(true);
+    expect(ret1.certificateNumber).toBe('12345');
+    expect(ret1.operationDescription).toBe('Retención de cuenta');
 
     const ret2 = summary.withholdings![1];
     expect(ret2.amount.toNumber()).toBe(45800.35);

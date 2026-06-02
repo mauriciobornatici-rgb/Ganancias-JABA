@@ -229,6 +229,14 @@ export function buildTaxReturnCalculationInput(
     withholdings: asRecordArray(data.withholdings).map(withholding => ({
       amount: decimalValue(withholding.amount),
       taxCode: taxCode(withholding.taxCode),
+      cuitAgent: stringValue(withholding.cuitAgent) || undefined,
+      agentName: stringValue(withholding.agentName) || undefined,
+      taxDescription: stringValue(withholding.taxDescription) || undefined,
+      regimeCode: stringValue(withholding.regimeCode) || undefined,
+      regimeDescription: stringValue(withholding.regimeDescription) || undefined,
+      date: withholding.date ? dateValue(withholding.date) : undefined,
+      certificateNumber: stringValue(withholding.certificateNumber) || undefined,
+      operationDescription: stringValue(withholding.operationDescription) || undefined,
     })),
     generalDeductions: [
       {

@@ -233,6 +233,78 @@ describe('persistTaxReturnDetails', () => {
     expect(snapshot.liabilities[0].description).toBe('Proveedor local');
   });
 
+  it('preserva detalle importado de retenciones para auditoria y reapertura', async () => {
+    const captures: {
+      withholdingCreateMany?: CreateManyCapture;
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model({ createMany: async (args: unknown) => { captures.withholdingCreateMany = args as CreateManyCapture; } }),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-ret',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente Retenciones', cuit: '20-77777777-7' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        withholdings: [{
+          amount: '12500.65',
+          taxCode: 'Ganancias',
+          cuitAgent: '30-70809010-9',
+          agentName: 'Banco Galicia SA',
+          taxDescription: 'RETENCIONES GANANCIAS',
+          regimeCode: '12',
+          regimeDescription: 'RET-GANANCIAS REG-12',
+          date: '2025-05-15',
+          certificateNumber: '12345',
+          operationDescription: 'Retencion de cuenta',
+        }],
+      },
+    });
+
+    expect(captures.withholdingCreateMany?.data[0]).toMatchObject({
+      taxReturnId: 'return-ret',
+      cuitAgent: '30-70809010-9',
+      agentName: 'Banco Galicia SA',
+      taxCode: 'Ganancias',
+      taxDescription: 'RETENCIONES GANANCIAS',
+      regimeCode: '12',
+      regimeDescription: 'RET-GANANCIAS REG-12',
+      certificateNumber: '12345',
+      operationDescription: 'Retencion de cuenta',
+      amount: 12500.65,
+    });
+    expect(captures.withholdingCreateMany?.data[0].date).toEqual(new Date('2025-05-15'));
+
+    const snapshot = JSON.parse(captures.calculationCreate?.data.variablesSnapshot || '{}');
+    expect(snapshot.withholdings[0]).toMatchObject({
+      cuitAgent: '30-70809010-9',
+      agentName: 'Banco Galicia SA',
+      certificateNumber: '12345',
+    });
+  });
+
   it('mantiene la marca de jubilado para que la persistencia coincida con el preview backend', async () => {
     const captures: {
       calculationCreate?: CalculationCreateCapture;

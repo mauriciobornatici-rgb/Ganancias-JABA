@@ -150,11 +150,13 @@ Avance:
 - P5: los excedentes no admitidos de deducciones generales (`IG 25!E32`) se calculan y se llevan a JVP columna I con aviso visible.
 - P5: gastos educativos queda alineado a Excel; el importador deriva `topeGastosEducativos` como `MNI * 40%` cuando el tope no viene explicito.
 - P5: decision documental cerrada; la app mantiene carga agregada por rubro y el Paso 5 avisa que no reemplaza respaldo comprobante por comprobante.
+- P6: Mis Retenciones conserva agente, CUIT, regimen, fecha, certificado y operacion; se guarda en `TaxWithholding` y se reabre en el wizard.
+- P6: CUIT de contraparte en ventas/compras queda como snapshot documentado y reabierto; no se migra a columnas propias hasta necesitar reportes DB por CUIT.
 
 Siguiente corte recomendado:
 
 - Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
-- Avanzar P6: preservar regimen/certificado/agente en retenciones importadas y revisar si CUIT de contraparte debe quedar en tablas de ventas/compras.
+- Validacion final: caso real o fixture realista de alta/guardado/reapertura y revision visual cuando el navegador este disponible.
 
 ## Reglas de continuidad
 

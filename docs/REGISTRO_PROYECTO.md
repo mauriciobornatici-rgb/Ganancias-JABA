@@ -2310,3 +2310,52 @@ Verificacion:
 Pendiente:
 
 - Validacion visual sigue bloqueada por el entorno del navegador integrado.
+
+### 2026-06-02 - Fase 1, P6 primer corte: retenciones importadas auditables
+
+Se cerro la brecha remanente de auditoria importada para Mis Retenciones.
+
+Hallazgo:
+
+- El schema `TaxWithholding` ya tenia campos para CUIT/agente, regimen, certificado, fecha y operacion.
+- El importador leia Mis Retenciones pero reducia cada fila a `taxCode` e `amount`.
+- La persistencia guardaba valores genericos (`Agente Retencion`, `00000000`), perdiendo datos utiles para revision.
+- Ventas/compras ya preservan `counterpartyCuit` en `variablesSnapshot` y lo devuelven desde reapertura, aunque no esta migrado a columnas propias.
+
+Decision:
+
+- Preservar detalle de retenciones en el importador: CUIT/agente, descripcion de impuesto, regimen, fecha, certificado y operacion.
+- Guardar esos campos en `TaxWithholding` y devolverlos al reabrir.
+- Mostrar columnas compactas de auditoria en Paso 5 para revisar agente/certificado y fecha/regimen.
+- Mantener `counterpartyCuit` de ventas/compras en snapshot documentado por ahora; migrar a columnas solo si el estudio necesita consultas/reportes DB por CUIT.
+
+Archivos modificados:
+
+- `src/domain/ganancias/types.ts`.
+- `src/domain/ganancias/mappers/afipImporter.ts`.
+- `src/domain/ganancias/mappers/calculationInputMapper.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/tests/importer.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `importer.test.ts` fallo porque `cuitAgent` era `undefined`.
+- TDD rojo confirmado: `taxReturnDetailsPersistence.test.ts` fallo porque persistencia seguia usando agente/certificado genericos.
+- `vitest run src/domain/ganancias/tests/importer.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`: 2 archivos, 11 tests, todo OK.
+- `eslint` focalizado sobre importador, mapper, persistencia, wizard, endpoint y tests: OK.
+- `vitest run`: 25 archivos, 88 tests, todo OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+- Nota de verificacion: un primer `tsc --noEmit` fallo al correr en paralelo con `next build` porque `.next/types` estaba siendo regenerado; reejecutado aislado despues del build quedo OK.
+
+Pendiente:
+
+- Validacion visual sigue bloqueada por el entorno del navegador integrado.

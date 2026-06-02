@@ -130,6 +130,14 @@ export interface PayableInput {
 export interface TaxWithholdingInput {
   amount: Decimal;
   taxCode: 'Ganancias' | 'Otros';
+  cuitAgent?: string;
+  agentName?: string;
+  taxDescription?: string;
+  regimeCode?: string;
+  regimeDescription?: string;
+  date?: Date;
+  certificateNumber?: string;
+  operationDescription?: string;
 }
 
 export interface PersonalAssetInput {

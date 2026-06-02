@@ -349,6 +349,14 @@ export function buildWizardEspAuxiliarySummary({
 export type WizardWithholding = WizardEditableRecord & {
   amount?: WizardMoneyValue;
   taxCode?: string;
+  cuitAgent?: string;
+  agentName?: string;
+  taxDescription?: string;
+  regimeCode?: string;
+  regimeDescription?: string;
+  date?: string;
+  certificateNumber?: string;
+  operationDescription?: string;
 };
 
 export type WizardPersonalAsset = WizardEditableRecord & {

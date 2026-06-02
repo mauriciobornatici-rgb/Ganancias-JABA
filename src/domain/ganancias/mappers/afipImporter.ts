@@ -136,10 +136,18 @@ function parseMisRetenciones(
 
   // Buscar índices de las columnas clave
   const amountIndex = headers.findIndex(h => h.includes('importe') || h.includes('monto ret'));
+  const cuitAgentIndex = findColumnIndex(headers, ['cuit agente', 'agente ret']);
+  const agentNameIndex = findColumnIndex(headers, ['denominaci', 'razon social', 'razÃ³n social']);
+  const taxCodeIndex = headers.findIndex(h => h === 'impuesto' || h.includes('cod impuesto') || h.includes('cÃ³digo impuesto'));
   
   // Buscar primero la columna que contiene la descripción del impuesto, y si no, la del código del impuesto
   const descIndex = headers.findIndex(h => h.includes('descrip') && h.includes('impuesto'));
   const taxIndex = descIndex !== -1 ? descIndex : headers.findIndex(h => h.includes('impuesto') || h.includes('descrip'));
+  const regimeCodeIndex = headers.findIndex(h => h.includes('gimen') && !h.includes('descrip'));
+  const regimeDescriptionIndex = headers.findIndex(h => h.includes('descrip') && h.includes('gimen'));
+  const dateIndex = findColumnIndex(headers, ['fecha ret', 'fecha']);
+  const certificateIndex = findColumnIndex(headers, ['certificado']);
+  const operationDescriptionIndex = headers.findIndex(h => h.includes('operaci'));
 
   // Procesar filas de datos (excluyendo la primera fila de encabezado)
   for (let i = 1; i < rows.length; i++) {
@@ -153,12 +161,21 @@ function parseMisRetenciones(
       // Limpiar formato monetario español (coma para decimales, punto para miles)
       const amountVal = parseSpanishDecimal(rawAmount);
       const taxName = taxIndex !== -1 ? String(row[taxIndex]).trim() : 'Impuesto a las Ganancias';
+      const rawTaxCode = textCell(row, taxCodeIndex);
 
       if (amountVal.isPositive() && !amountVal.isZero()) {
-        const isGanancias = taxName.toLowerCase().includes('ganancias') || taxName === '787';
+        const isGanancias = taxName.toLowerCase().includes('ganancias') || rawTaxCode === '787' || taxName === '787';
         withholdings.push({
           amount: amountVal,
-          taxCode: isGanancias ? 'Ganancias' : 'Otros'
+          taxCode: isGanancias ? 'Ganancias' : 'Otros',
+          cuitAgent: textCell(row, cuitAgentIndex) || undefined,
+          agentName: textCell(row, agentNameIndex) || undefined,
+          taxDescription: taxName || undefined,
+          regimeCode: textCell(row, regimeCodeIndex) || undefined,
+          regimeDescription: textCell(row, regimeDescriptionIndex) || undefined,
+          date: dateIndex !== -1 ? parseExcelDate(row[dateIndex]) : undefined,
+          certificateNumber: textCell(row, certificateIndex) || undefined,
+          operationDescription: textCell(row, operationDescriptionIndex) || undefined,
         });
         totalAmount = totalAmount.add(amountVal);
       }

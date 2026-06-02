@@ -141,6 +141,14 @@ type ImportedPurchaseRow = ImportedInvoiceRow & {
 type ImportedWithholdingRow = {
   amount: string | number;
   taxCode: string;
+  cuitAgent?: string;
+  agentName?: string;
+  taxDescription?: string;
+  regimeCode?: string;
+  regimeDescription?: string;
+  date?: ImportedDate;
+  certificateNumber?: string;
+  operationDescription?: string;
 };
 
 type ImportResponse = {
@@ -1091,7 +1099,15 @@ export default function WizardPage() {
       } else if (type === 'withholdings' && result.data?.withholdings) {
         const parsed = result.data.withholdings.map(w => ({
           amount: w.amount,
-          taxCode: w.taxCode
+          taxCode: w.taxCode,
+          cuitAgent: w.cuitAgent,
+          agentName: w.agentName,
+          taxDescription: w.taxDescription,
+          regimeCode: w.regimeCode,
+          regimeDescription: w.regimeDescription,
+          date: w.date ? new Date(w.date).toISOString().split('T')[0] : undefined,
+          certificateNumber: w.certificateNumber,
+          operationDescription: w.operationDescription,
         }));
         setWithholdings([...withholdings, ...parsed]);
       }
@@ -3278,6 +3294,8 @@ export default function WizardPage() {
                     <thead>
                       <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
                         <th className="px-4 py-3">Concepto / Impuesto</th>
+                        <th className="px-4 py-3">Agente / Certificado</th>
+                        <th className="px-4 py-3">Fecha / Regimen</th>
                         <th className="px-4 py-3 text-right">Importe Retenido ($)</th>
                         <th className="px-4 py-3 text-right">Eliminar</th>
                       </tr>
@@ -3294,6 +3312,69 @@ export default function WizardPage() {
                               <option value="Ganancias">Impuesto a las Ganancias (Cómputo en cabecera)</option>
                               <option value="Otros">Otros Impuestos</option>
                             </select>
+                            <input
+                              type="text"
+                              value={withholding.taxDescription || ''}
+                              onChange={(e) => handleCellChange(index, 'taxDescription', e.target.value, 'withholdings')}
+                              placeholder="Descripcion impuesto"
+                              className="mt-1 bg-transparent border-0 text-[10px] text-zinc-500 focus:ring-0 focus:outline-none w-full"
+                            />
+                            <input
+                              type="text"
+                              value={withholding.operationDescription || ''}
+                              onChange={(e) => handleCellChange(index, 'operationDescription', e.target.value, 'withholdings')}
+                              placeholder="Operacion"
+                              className="bg-transparent border-0 text-[10px] text-zinc-500 focus:ring-0 focus:outline-none w-full"
+                            />
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="text"
+                              value={withholding.agentName || ''}
+                              onChange={(e) => handleCellChange(index, 'agentName', e.target.value, 'withholdings')}
+                              placeholder="Agente"
+                              className="bg-transparent border-0 text-white text-xs focus:ring-0 focus:outline-none w-full font-bold"
+                            />
+                            <div className="grid grid-cols-2 gap-2 mt-1">
+                              <input
+                                type="text"
+                                value={withholding.cuitAgent || ''}
+                                onChange={(e) => handleCellChange(index, 'cuitAgent', e.target.value, 'withholdings')}
+                                placeholder="CUIT"
+                                className="bg-transparent border-0 text-[10px] text-zinc-500 focus:ring-0 focus:outline-none w-full"
+                              />
+                              <input
+                                type="text"
+                                value={withholding.certificateNumber || ''}
+                                onChange={(e) => handleCellChange(index, 'certificateNumber', e.target.value, 'withholdings')}
+                                placeholder="Certificado"
+                                className="bg-transparent border-0 text-[10px] text-zinc-500 focus:ring-0 focus:outline-none w-full"
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-2">
+                            <input
+                              type="date"
+                              value={withholding.date || ''}
+                              onChange={(e) => handleCellChange(index, 'date', e.target.value, 'withholdings')}
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full"
+                            />
+                            <div className="grid grid-cols-[70px_1fr] gap-2 mt-1">
+                              <input
+                                type="text"
+                                value={withholding.regimeCode || ''}
+                                onChange={(e) => handleCellChange(index, 'regimeCode', e.target.value, 'withholdings')}
+                                placeholder="Reg."
+                                className="bg-transparent border-0 text-[10px] text-zinc-500 focus:ring-0 focus:outline-none w-full"
+                              />
+                              <input
+                                type="text"
+                                value={withholding.regimeDescription || ''}
+                                onChange={(e) => handleCellChange(index, 'regimeDescription', e.target.value, 'withholdings')}
+                                placeholder="Descripcion regimen"
+                                className="bg-transparent border-0 text-[10px] text-zinc-500 focus:ring-0 focus:outline-none w-full"
+                              />
+                            </div>
                           </td>
                           <td className="px-4 py-2 text-right">
                             <input 
@@ -3315,7 +3396,7 @@ export default function WizardPage() {
                       ))}
                       {withholdings.length === 0 && (
                         <tr>
-                          <td colSpan={3} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
+                          <td colSpan={5} className="px-4 py-4 text-center text-xs text-zinc-500 italic">
                             Sin retenciones ni percepciones declaradas.
                           </td>
                         </tr>

@@ -149,11 +149,12 @@ Avance:
 - Decision aplicada: no automatizar el impacto ESP sobre patrimonio comercial agregado para evitar doble computo si el agregado ya incluye otros rubros.
 - P5: los excedentes no admitidos de deducciones generales (`IG 25!E32`) se calculan y se llevan a JVP columna I con aviso visible.
 - P5: gastos educativos queda alineado a Excel; el importador deriva `topeGastosEducativos` como `MNI * 40%` cuando el tope no viene explicito.
+- P5: decision documental cerrada; la app mantiene carga agregada por rubro y el Paso 5 avisa que no reemplaza respaldo comprobante por comprobante.
 
 Siguiente corte recomendado:
 
 - Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
-- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP` para confirmar que el flujo de carga agil cubre el caso del estudio.
+- Avanzar P6: preservar regimen/certificado/agente en retenciones importadas y revisar si CUIT de contraparte debe quedar en tablas de ventas/compras.
 
 ## Reglas de continuidad
 

@@ -2268,3 +2268,45 @@ Pendiente:
 
 - Validar visualmente el Paso 4 cuando Browser/Chrome local este disponible.
 - Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
+
+### 2026-06-02 - Fase 1, P5 cuarto corte: decision documental de deducciones generales
+
+Se cerro la decision pendiente sobre detalle comprobante por comprobante en deducciones generales.
+
+Hallazgo:
+
+- La app ya cubre los rubros agregados que impactan `IG 25!F20:F31`.
+- La hoja `Ded. Gen.` conserva detalle por fecha/comprobante/concepto, pero cargarlo completo volveria mas lenta la operatoria de un estudio chico si la app no pretende ser repositorio documental.
+- El usuario pidio agilidad y automatizacion sin magia; por eso la carga agregada por rubro es adecuada como MVP de liquidacion.
+
+Decision:
+
+- Mantener deducciones generales como importes agregados por rubro.
+- No crear tabla `GeneralDeductionItem` en este corte.
+- Mostrar en Paso 5 un aviso visible: la app liquida por rubro y no reemplaza respaldo documental comprobante por comprobante.
+- Dejar el detalle documental como mejora futura solo si el estudio decide que la app tambien debe ser repositorio de auditoria.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/deductionsBreakdown.ts`.
+- `src/domain/ganancias/tests/deductionsBreakdown.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `deductionsBreakdown.test.ts` fallo porque `getGeneralDeductionsDocumentationNotice` no existia.
+- `vitest run src/domain/ganancias/tests/deductionsBreakdown.test.ts`: 1 archivo, 3 tests, todo OK.
+- `eslint` focalizado sobre wizard, helper y test: OK.
+- `vitest run`: 25 archivos, 87 tests, todo OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+- Nota de verificacion: un primer `tsc --noEmit` fallo al correr en paralelo con `next build` porque `.next/types` estaba siendo regenerado; reejecutado aislado despues del build quedo OK.
+
+Pendiente:
+
+- Validacion visual sigue bloqueada por el entorno del navegador integrado.

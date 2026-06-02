@@ -63,10 +63,12 @@ Ejemplos:
 - Preview y papel de trabajo muestran desglose por rubro admitido con referencia `IG 25`.
 - Wizard prioriza los rubros frecuentes y deja adicionales colapsados para no sobrecargar la carga.
 
-### Pendiente de decision
+### Decision documental aplicada
 
-- Si el estudio necesita auditoria comprobante por comprobante, conviene crear una tabla hija `GeneralDeductionItem` o conservar un snapshot estructurado por rubro.
-- Si se mantiene el enfoque agil, el agregado por rubro es suficiente para liquidar, pero no reemplaza el archivo de respaldo documental.
+- Para el MVP agil del estudio se mantiene carga agregada por rubro.
+- La app no sera, por ahora, repositorio documental comprobante por comprobante de `Ded. Gen.`.
+- El Paso 5 muestra un aviso operativo indicando que la carga agregada no reemplaza el respaldo documental.
+- Si mas adelante el estudio necesita auditoria comprobante por comprobante, conviene crear una tabla hija `GeneralDeductionItem` o conservar un snapshot estructurado por rubro.
 - Gastos educativos: fuente anual documentada. Excel lo expresa como `MNI * 40%`; la app conserva el campo parametrico `topeGastosEducativos`, pero el importador lo deriva desde MNI cuando el archivo no trae un tope explicito.
 
 ## Recomendacion

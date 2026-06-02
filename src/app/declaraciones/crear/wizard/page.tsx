@@ -20,7 +20,10 @@ import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/amortizaciones';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
-import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
+import {
+  buildGeneralDeductionsBreakdown,
+  getGeneralDeductionsDocumentationNotice,
+} from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
@@ -3064,6 +3067,7 @@ export default function WizardPage() {
                   (generalDeductions.honorariosMedicos && generalDeductions.honorariosMedicos !== '0');
 
                 const showSecondary = showAllDeductions || hasSecondaryDeductionsValue;
+                const documentationNotice = getGeneralDeductionsDocumentationNotice();
 
                 return (
                   <div className="space-y-4">
@@ -3073,6 +3077,18 @@ export default function WizardPage() {
                     </div>
 
                     <div className="p-5 rounded-xl bg-[#09090b] border border-zinc-850 space-y-6">
+                      <div className="rounded-lg border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-[11px] text-sky-100/85">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                          <div>
+                            <p className="font-extrabold uppercase tracking-wider text-sky-200">{documentationNotice.title}</p>
+                            <p className="mt-1">{documentationNotice.body}</p>
+                          </div>
+                          <span className="shrink-0 rounded-md border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-sky-200">
+                            {documentationNotice.reference}
+                          </span>
+                        </div>
+                      </div>
+
                       {/* Deducciones Principales */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">

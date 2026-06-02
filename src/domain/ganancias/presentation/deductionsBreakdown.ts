@@ -7,6 +7,20 @@ export interface GeneralDeductionsBreakdownItem {
   amount: Decimal;
 }
 
+export interface GeneralDeductionsDocumentationNotice {
+  title: string;
+  body: string;
+  reference: string;
+}
+
+export function getGeneralDeductionsDocumentationNotice(): GeneralDeductionsDocumentationNotice {
+  return {
+    title: 'Carga agregada por rubro',
+    body: 'La app liquida deducciones generales por importes agregados contra IG 25; no reemplaza el respaldo documental por comprobantes de la hoja Ded. Gen.',
+    reference: 'Ded. Gen.',
+  };
+}
+
 export function buildGeneralDeductionsBreakdown(
   deductions: GeneralDeductionsOutput | null | undefined
 ): GeneralDeductionsBreakdownItem[] {

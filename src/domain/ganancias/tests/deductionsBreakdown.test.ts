@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Decimal } from 'decimal.js';
 import { GeneralDeductionsOutput } from '../types';
-import { buildGeneralDeductionsBreakdown } from '../presentation/deductionsBreakdown';
+import {
+  buildGeneralDeductionsBreakdown,
+  getGeneralDeductionsDocumentationNotice,
+} from '../presentation/deductionsBreakdown';
 
 function createDeductionsOutput(): GeneralDeductionsOutput {
   return {
@@ -37,5 +40,13 @@ describe('buildGeneralDeductionsBreakdown', () => {
 
   it('devuelve una lista vacia si no hay calculo de deducciones', () => {
     expect(buildGeneralDeductionsBreakdown(null)).toEqual([]);
+  });
+
+  it('expone la decision operativa de respaldo documental para deducciones agregadas', () => {
+    const notice = getGeneralDeductionsDocumentationNotice();
+
+    expect(notice.title).toBe('Carga agregada por rubro');
+    expect(notice.body).toContain('no reemplaza el respaldo documental');
+    expect(notice.reference).toBe('Ded. Gen.');
   });
 });

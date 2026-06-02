@@ -182,7 +182,7 @@ Pendiente para cerrar P4:
 
 ## P5 - H3: deducciones generales remanentes
 
-Estado: En progreso, mapeo rubro por rubro realizado.
+Estado: Resuelto como MVP agil.
 
 Problema:
 
@@ -200,11 +200,13 @@ Avance 2026-06-02:
 - La app calcula excedentes no admitidos de `IG 25!E32` y los suma a JVP columna I con aviso visible.
 - Brecha detectada: `Ded. Gen.` contiene detalle por fecha/comprobante/concepto; la app hoy carga importes agregados por rubro.
 - Gastos educativos alineado: Excel usa `MNI * 40%`; la app conserva `topeGastosEducativos`, pero el importador lo deriva desde MNI si falta el tope explicito.
+- Decision documental aplicada: se mantiene carga agregada por rubro y se agrega aviso visible en Paso 5 indicando que no reemplaza el respaldo documental comprobante por comprobante.
 
 Criterio de cierre:
 
 - Cada deduccion tiene estado: igual a Excel, decision intencional o pendiente normativo.
 - Si se decide mantener agregado por rubro, documentar que la app no reemplaza respaldo documental comprobante por comprobante.
+- P5 queda cerrado: los rubros agregados estan mapeados, el tope educativo esta alineado y la decision documental queda visible/testeada.
 
 ## P6 - H5 remanente: auditoria importada completa
 

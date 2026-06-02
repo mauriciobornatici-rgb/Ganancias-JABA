@@ -15,6 +15,27 @@ export interface ImportedDataSummary {
   errors: string[];
 }
 
+export type AfipExportFileInput = {
+  fileName: string;
+  fileBuffer: Buffer;
+};
+
+export type AfipExpectedFileType = ImportedDataSummary['fileType'];
+
+export type ImportedFileResult = {
+  fileName: string;
+  fileType: ImportedDataSummary['fileType'];
+  totalRecords: number;
+  totalAmount: Decimal;
+  errors: string[];
+  accepted: boolean;
+};
+
+export type ImportedMultiFileSummary = ImportedDataSummary & {
+  totalFiles: number;
+  fileResults: ImportedFileResult[];
+};
+
 /**
  * Parsea un buffer de archivo Excel (XLS/XLSX) o CSV exportado desde los portales de ARCA/AFIP
  * y mapea dinámicamente las columnas al formato del sistema de JABA.
@@ -121,6 +142,69 @@ export function parseAfipExportFile(
       errors: [`Error crítico al parsear el archivo: ${errorMessage(err)}`]
     };
   }
+}
+
+export function parseAfipExportFiles(
+  files: AfipExportFileInput[],
+  options: { expectedFileType?: AfipExpectedFileType } = {}
+): ImportedMultiFileSummary {
+  const expectedFileType = options.expectedFileType;
+  const withholdings: TaxWithholdingInput[] = [];
+  const sales: SalesInput[] = [];
+  const purchases: PurchaseInput[] = [];
+  const fileResults: ImportedFileResult[] = [];
+  const errors: string[] = [];
+  let totalAmount = new Decimal(0);
+  let totalRecords = 0;
+  let detectedFileType: ImportedDataSummary['fileType'] = expectedFileType || 'Desconocido';
+
+  files.forEach(file => {
+    const summary = parseAfipExportFile(file.fileBuffer, file.fileName);
+    const fileErrors = summary.errors.map(error => `${file.fileName}: ${error}`);
+    const isRecognized = summary.fileType !== 'Desconocido';
+    const matchesExpected = !expectedFileType || summary.fileType === expectedFileType;
+    const accepted = isRecognized && matchesExpected;
+
+    if (!isRecognized) {
+      errors.push(...fileErrors);
+    } else if (!matchesExpected) {
+      errors.push(
+        `${file.fileName}: el archivo detectado como ${summary.fileType} no coincide con el tipo esperado ${expectedFileType}.`
+      );
+    } else {
+      if (!expectedFileType && detectedFileType === 'Desconocido') {
+        detectedFileType = summary.fileType;
+      }
+
+      withholdings.push(...(summary.withholdings || []));
+      sales.push(...(summary.sales || []));
+      purchases.push(...(summary.purchases || []));
+      totalRecords += summary.totalRecords;
+      totalAmount = totalAmount.add(summary.totalAmount);
+      errors.push(...fileErrors);
+    }
+
+    fileResults.push({
+      fileName: file.fileName,
+      fileType: summary.fileType,
+      totalRecords: summary.totalRecords,
+      totalAmount: summary.totalAmount,
+      errors: fileErrors,
+      accepted,
+    });
+  });
+
+  return {
+    fileType: detectedFileType,
+    withholdings,
+    sales,
+    purchases,
+    totalFiles: files.length,
+    fileResults,
+    totalRecords,
+    totalAmount,
+    errors,
+  };
 }
 
 /**

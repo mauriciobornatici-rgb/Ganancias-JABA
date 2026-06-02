@@ -27,12 +27,13 @@ No se declara validacion operativa real al 100% porque quedan dos dependencias e
 - P4: patrimonio, JVP, auxiliares ESP y referencias Excel.
 - P5: deducciones generales agregadas y decision documental.
 - P6: auditoria importada para retenciones y snapshot documentado para CUIT de contraparte.
+- P9: importacion multiarchivo AFIP para ventas/compras mensuales sin consolidacion manual previa.
 
 ## Verificacion tecnica acumulada
 
 Ultimo corte verificado con:
 
-- `vitest run`: 26 archivos, 90 tests, todo OK.
+- `vitest run`: 26 archivos, 92 tests, todo OK.
 - `eslint` focalizado sobre los archivos tocados: OK.
 - `git diff --check`: OK, solo avisos CRLF habituales.
 - `next build --webpack`: OK.
@@ -61,6 +62,7 @@ Nota: no ejecutar `tsc --noEmit` en paralelo con `next build`, porque Next regen
 - Prueba automatizada focal: `src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts`.
 - Guia manual de uso: `docs/GUIA_PRUEBA_PILOTO.md`.
 - El fixture valida calculo, retenciones auditables, auxiliares ESP, otras justificaciones JVP y persistencia critica de snapshot/tablas.
+- La prueba piloto contempla que ventas y compras puedan cargarse con varios archivos mensuales de AFIP.
 
 ## Recomendacion de uso
 

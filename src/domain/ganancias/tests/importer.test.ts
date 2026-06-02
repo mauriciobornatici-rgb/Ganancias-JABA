@@ -1,6 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import * as xlsx from 'xlsx';
-import { parseAfipExportFile } from '../mappers/afipImporter';
+import { parseAfipExportFile, parseAfipExportFiles } from '../mappers/afipImporter';
+
+function workbookBuffer(data: unknown[][], sheetName = 'AFIP') {
+  const worksheet = xlsx.utils.aoa_to_sheet(data);
+  const workbook = xlsx.utils.book_new();
+  xlsx.utils.book_append_sheet(workbook, worksheet, sheetName);
+  return xlsx.write(workbook, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
+}
 
 describe('JABA AFIP Spreadsheet Importer Tests', () => {
   
@@ -227,5 +234,63 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(summary.purchases![1].netAmount.toNumber()).toBe(1200);
     expect(summary.purchases![1].isExempt).toBe(true);
     expect(summary.purchases![1].invoiceNumber).toBe('0004-00000244');
+  });
+
+  it('compila varios archivos mensuales de ventas AFIP como una sola importacion', () => {
+    const headers = [
+      'Fecha',
+      'Tipo de comprobante',
+      'Nro. Comprobante',
+      'Cliente',
+      'Neto Gravado',
+      'IVA Liquidado',
+      'Importe Exento',
+      'Importe Total'
+    ];
+
+    const enero = workbookBuffer([
+      headers,
+      ['10/01/2025', 'Factura A', '0001-00000001', 'Cliente Enero SA', '1000.00', '210.00', '0.00', '1210.00'],
+    ], 'Ventas Enero');
+    const febrero = workbookBuffer([
+      headers,
+      ['10/02/2025', 'Factura A', '0001-00000002', 'Cliente Febrero SA', '2000.00', '420.00', '0.00', '2420.00'],
+    ], 'Ventas Febrero');
+
+    const summary = parseAfipExportFiles([
+      { fileName: 'ventas_01_2025.xlsx', fileBuffer: enero },
+      { fileName: 'ventas_02_2025.xlsx', fileBuffer: febrero },
+    ], { expectedFileType: 'LibroIVAVentas' });
+
+    expect(summary.fileType).toBe('LibroIVAVentas');
+    expect(summary.totalFiles).toBe(2);
+    expect(summary.totalRecords).toBe(2);
+    expect(summary.totalAmount.toNumber()).toBe(3000);
+    expect(summary.fileResults.map(result => result.accepted)).toEqual([true, true]);
+    expect(summary.sales?.map(sale => sale.customerName)).toEqual(['Cliente Enero SA', 'Cliente Febrero SA']);
+  });
+
+  it('rechaza el archivo mensual que no coincide con el tipo esperado de importacion', () => {
+    const ventas = workbookBuffer([
+      ['Fecha', 'Tipo de comprobante', 'Nro. Comprobante', 'Cliente', 'Neto Gravado', 'IVA Liquidado', 'Importe Total'],
+      ['10/01/2025', 'Factura A', '0001-00000001', 'Cliente Enero SA', '1000.00', '210.00', '1210.00'],
+    ], 'Ventas Enero');
+    const compras = workbookBuffer([
+      ['Fecha', 'Tipo de comprobante', 'Nro. Comprobante', 'Proveedor', 'Neto Gravado', 'Credito Fiscal', 'Importe Total'],
+      ['10/02/2025', 'Factura A', '0001-00000002', 'Proveedor Febrero SA', '2000.00', '420.00', '2420.00'],
+    ], 'Compras Febrero');
+
+    const summary = parseAfipExportFiles([
+      { fileName: 'ventas_01_2025.xlsx', fileBuffer: ventas },
+      { fileName: 'compras_02_2025.xlsx', fileBuffer: compras },
+    ], { expectedFileType: 'LibroIVAVentas' });
+
+    expect(summary.totalFiles).toBe(2);
+    expect(summary.totalRecords).toBe(1);
+    expect(summary.sales).toHaveLength(1);
+    expect(summary.fileResults[0]).toMatchObject({ fileName: 'ventas_01_2025.xlsx', accepted: true });
+    expect(summary.fileResults[1]).toMatchObject({ fileName: 'compras_02_2025.xlsx', fileType: 'LibroIVACompras', accepted: false });
+    expect(summary.errors[0]).toContain('compras_02_2025.xlsx');
+    expect(summary.errors[0]).toContain('no coincide');
   });
 });

@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: prueba piloto reproducible preparada sobre desarrollo tecnico MVP P0-P6.
+- Ultimo checkpoint documentado: carga multiarchivo AFIP preparada para ventas/compras mensuales y prueba piloto reproducible.
 - Fase activa: Fase 1 - Prueba piloto controlada contra Excel y carga real.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -41,6 +41,22 @@ Criterio de cierre:
 - `src/domain/ganancias/fixtures/pilotTaxReturnFixture.ts` existe.
 - `src/domain/ganancias/tests/pilotTaxReturnFixture.test.ts` cubre calculo y persistencia critica del fixture.
 - `docs/GUIA_PRUEBA_PILOTO.md` documenta recorrido manual y checklist.
+- Cambios verificados, commiteados y pusheados.
+
+### P9 - Carga multiarchivo AFIP mensual
+
+Estado: resuelto.
+
+Objetivo inmediato:
+
+- Permitir que ventas y compras se importen con varios archivos mensuales de AFIP sin consolidacion manual previa.
+- Mantener validacion por tipo para evitar mezclar compras en ventas o viceversa.
+
+Criterio de cierre:
+
+- El importador compila multiples archivos con prueba automatizada.
+- `/api/import` acepta `files` multiple y conserva compatibilidad con `file`.
+- El wizard permite seleccion multiple en ventas, compras y retenciones.
 - Cambios verificados, commiteados y pusheados.
 
 ### P0 - Control operativo de continuidad

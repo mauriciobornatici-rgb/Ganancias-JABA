@@ -2464,3 +2464,49 @@ Pendiente externo:
 
 - Ejecutar `docs/GUIA_PRUEBA_PILOTO.md` manualmente en navegador.
 - Comparar una DDJJ real ya resuelta contra Excel y registrar diferencias si aparecen.
+
+### 2026-06-02 - Fase 1, P9: carga multiarchivo AFIP mensual
+
+Se ajusto la importacion para que ventas y compras puedan cargarse con los archivos mensuales tal cual se descargan de AFIP.
+
+Hallazgo:
+
+- El parser fiscal ya soportaba los formatos reales/truncados de AFIP, pero trabajaba archivo por archivo.
+- `/api/import` recibia solo `file`.
+- El wizard usaba `event.target.files?.[0]`, por lo que aunque el navegador permitiera seleccionar varios, se procesaba solo el primero.
+- Esto obligaba al usuario a consolidar manualmente 12 archivos mensuales, justo lo que se quiere evitar por eficiencia y riesgo de error.
+
+Decision:
+
+- Crear `parseAfipExportFiles` como agregador puro sobre el parser existente.
+- Mantener compatibilidad con la carga anterior de un solo archivo.
+- Enviar desde el wizard todos los archivos seleccionados como `files`.
+- Agregar `expectedType` para que la API rechace mezclas de ventas/compras/retenciones en una carga equivocada.
+- Permitir multiples archivos tambien en retenciones porque usa el mismo mecanismo y no agrega complejidad.
+
+Archivos modificados:
+
+- `src/domain/ganancias/mappers/afipImporter.ts`.
+- `src/domain/ganancias/tests/importer.test.ts`.
+- `src/app/api/import/route.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/GUIA_PRUEBA_PILOTO.md`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/ESTADO_FINAL_DESARROLLO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `importer.test.ts` fallo porque `parseAfipExportFiles` no existia.
+- `vitest run src/domain/ganancias/tests/importer.test.ts`: 1 archivo, 6 tests, todo OK.
+- `vitest run`: 26 archivos, 92 tests, todo OK.
+- `eslint` focalizado sobre importador, test, endpoint y wizard: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `next build --webpack`: OK.
+- `tsc --noEmit`: OK.
+
+Pendiente externo:
+
+- Probar en navegador con los 12 archivos reales de ventas y los 12 archivos reales de compras descargados de AFIP.
+- Confirmar que los totales compilados coinciden con el portal/Excel de control.

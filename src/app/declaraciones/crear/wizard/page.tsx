@@ -151,9 +151,23 @@ type ImportedWithholdingRow = {
   operationDescription?: string;
 };
 
+type ImportedFileResult = {
+  fileName: string;
+  fileType: string;
+  totalRecords: number;
+  accepted: boolean;
+  errors?: string[];
+};
+
 type ImportResponse = {
   success: boolean;
   error?: string;
+  details?: string[];
+  fileName?: string;
+  totalFiles?: number;
+  totalRecords?: number;
+  errors?: string[];
+  fileResults?: ImportedFileResult[];
   data?: {
     sales?: ImportedSaleRow[];
     purchases?: ImportedPurchaseRow[];
@@ -1046,14 +1060,17 @@ export default function WizardPage() {
   // PROCEDIMIENTO DE IMPORTACIÓN INTERACTIVA (AFIP EXCEL)
   // ==========================================
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'sales' | 'purchases' | 'withholdings') => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const selectedFiles = Array.from(event.target.files || []);
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
     setUploadError(null);
 
     const formData = new FormData();
-    formData.append('file', file);
+    selectedFiles.forEach(file => {
+      formData.append('files', file);
+    });
+    formData.append('expectedType', type);
 
     try {
       const response = await fetch('/api/import', {
@@ -1064,7 +1081,8 @@ export default function WizardPage() {
       const result = await response.json() as ImportResponse;
 
       if (!result.success) {
-        throw new Error(result.error || 'No se pudo procesar el archivo Excel.');
+        const details = result.details?.length ? ` Detalle: ${result.details.join(' | ')}` : '';
+        throw new Error(`${result.error || 'No se pudieron procesar los archivos Excel.'}${details}`);
       }
 
       // Incorporar dinámicamente los registros cargados para que el usuario los verifique en pantalla
@@ -1080,7 +1098,7 @@ export default function WizardPage() {
           ivaAmount: s.ivaAmount,
           totalAmount: s.totalAmount,
         }));
-        setSales([...sales, ...parsed]);
+        setSales(currentSales => [...currentSales, ...parsed]);
       } else if (type === 'purchases' && result.data?.purchases) {
         const parsed = result.data.purchases.map(p => ({
           date: new Date(p.date).toISOString().split('T')[0],
@@ -1095,7 +1113,7 @@ export default function WizardPage() {
           ivaAmount: p.ivaAmount,
           totalAmount: p.totalAmount,
         }));
-        setPurchases([...purchases, ...parsed]);
+        setPurchases(currentPurchases => [...currentPurchases, ...parsed]);
       } else if (type === 'withholdings' && result.data?.withholdings) {
         const parsed = result.data.withholdings.map(w => ({
           amount: w.amount,
@@ -1109,13 +1127,18 @@ export default function WizardPage() {
           certificateNumber: w.certificateNumber,
           operationDescription: w.operationDescription,
         }));
-        setWithholdings([...withholdings, ...parsed]);
+        setWithholdings(currentWithholdings => [...currentWithholdings, ...parsed]);
+      }
+
+      if (result.errors?.length) {
+        setUploadError(`Carga importada con advertencias: ${result.errors.join(' | ')}`);
       }
 
     } catch (err: unknown) {
       setUploadError(errorMessage(err));
     } finally {
       setIsUploading(false);
+      event.target.value = '';
     }
   };
 
@@ -1761,7 +1784,7 @@ export default function WizardPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-white tracking-tight">Paso 2: Ventas e Ingresos Comerciales</h2>
-                  <p className="text-zinc-400 text-xs mt-1">Cargue el detalle de facturación emitida. Puede subir el Excel de AFIP directamente.</p>
+                  <p className="text-zinc-400 text-xs mt-1">Cargue el detalle de facturacion emitida. Puede subir los 12 archivos mensuales de AFIP tal cual se descargan; el sistema los compila.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
@@ -1785,13 +1808,14 @@ export default function WizardPage() {
                     <input 
                       type="file" 
                       accept=".xlsx,.xls,.csv"
+                      multiple
                       onChange={(e) => handleFileUpload(e, 'sales')}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={isUploading}
                     />
                     <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors">
                       <Upload className="h-4 w-4" />
-                      {isUploading ? 'Procesando...' : 'Importar Excel AFIP'}
+                      {isUploading ? 'Procesando...' : 'Importar archivos AFIP'}
                     </button>
                   </div>
                 </div>
@@ -1948,7 +1972,7 @@ export default function WizardPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-white tracking-tight">Paso 3: Gastos Comerciales y Existencias</h2>
-                  <p className="text-zinc-400 text-xs mt-1">Cargue el detalle de compras impositivas y declare los bienes de cambio para el cálculo automático de CMV en vivo.</p>
+                  <p className="text-zinc-400 text-xs mt-1">Cargue compras impositivas con los archivos mensuales de AFIP y declare bienes de cambio para el calculo automatico de CMV.</p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-4">
@@ -1972,13 +1996,14 @@ export default function WizardPage() {
                     <input 
                       type="file" 
                       accept=".xlsx,.xls,.csv"
+                      multiple
                       onChange={(e) => handleFileUpload(e, 'purchases')}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                       disabled={isUploading}
                     />
                     <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors cursor-pointer">
                       <Upload className="h-4 w-4" />
-                      {isUploading ? 'Procesando...' : 'Importar Excel AFIP'}
+                      {isUploading ? 'Procesando...' : 'Importar archivos AFIP'}
                     </button>
                   </div>
                 </div>
@@ -3253,7 +3278,7 @@ export default function WizardPage() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Retenciones, Percepciones y Pagos a Cuenta</h3>
-                    <p className="text-zinc-400 text-[11px] mt-1">Cargue los pagos a cuenta computables. Puede subir el Excel de AFIP (Mis Retenciones).</p>
+                    <p className="text-zinc-400 text-[11px] mt-1">Cargue los pagos a cuenta computables. Puede subir uno o varios archivos AFIP de Mis Retenciones.</p>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-4">
@@ -3277,13 +3302,14 @@ export default function WizardPage() {
                       <input 
                         type="file" 
                         accept=".xlsx,.xls,.csv"
+                        multiple
                         onChange={(e) => handleFileUpload(e, 'withholdings')}
                         className="absolute inset-0 opacity-0 cursor-pointer"
                         disabled={isUploading}
                       />
                       <button className="flex items-center gap-2 h-9 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors cursor-pointer">
                         <Upload className="h-4 w-4" />
-                        {isUploading ? 'Procesando...' : 'Importar Excel AFIP'}
+                        {isUploading ? 'Procesando...' : 'Importar archivos AFIP'}
                       </button>
                     </div>
                   </div>

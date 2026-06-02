@@ -86,10 +86,14 @@ Nota: la validacion visual automatizada con Browser/Chrome integrado quedo bloqu
 2. Crear una DDJJ periodo fiscal 2025.
 3. Seleccionar una resolucion/parametros activos 2025.
 4. Cargar ventas:
+   - Se pueden seleccionar uno o varios archivos AFIP al mismo tiempo.
+   - Para un caso real, subir los 12 archivos mensuales tal cual se descargan de AFIP; la app los compila internamente.
    - Venta gravada neta: 70.000.000.
    - Venta exenta neta: 1.200.000.
    - Verificar que comprobante, cliente y CUIT queden visibles o reabribles.
 5. Cargar compras:
+   - Se pueden seleccionar uno o varios archivos AFIP al mismo tiempo.
+   - Para un caso real, subir los 12 archivos mensuales tal cual se descargan de AFIP; la app los compila internamente.
    - Materia prima: 15.000.000.
    - Gastos generales deducibles: 2.500.000.
    - Verificar comprobante, proveedor y CUIT.
@@ -135,6 +139,7 @@ Nota: la validacion visual automatizada con Browser/Chrome integrado quedo bloqu
 Marcar como OK solo si se verifica en pantalla o reabriendo:
 
 - La DDJJ conserva ventas y compras cargadas.
+- La importacion acepta varios archivos mensuales sin exigir consolidacion manual previa.
 - La DDJJ conserva retencion con agente, CUIT, regimen, fecha y certificado.
 - La DDJJ conserva efectivo, creditos y pasivos auxiliares ESP.
 - La DDJJ conserva otras justificaciones JVP y sus columnas.

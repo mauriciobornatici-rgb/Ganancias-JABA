@@ -273,6 +273,28 @@ Criterio de cierre:
 - Guia manual disponible para iniciar el piloto.
 - Pendiente externo queda limitado a ejecutar la prueba manual/real y registrar diferencias.
 
+## P9 - Carga multiarchivo AFIP mensual
+
+Estado: Resuelto.
+
+Problema:
+
+- AFIP permite descargar ventas y compras por mes.
+- Obligar al usuario a consolidar manualmente los 12 archivos antes de importarlos resta agilidad y aumenta riesgo de error.
+
+Accion aplicada:
+
+- El importador de dominio ahora compila multiples archivos AFIP del mismo tipo.
+- La API `/api/import` acepta varios archivos en `files` y conserva compatibilidad con la carga anterior de un solo `file`.
+- La API valida el tipo esperado para evitar mezclar ventas, compras o retenciones en una importacion equivocada.
+- El wizard permite seleccionar varios archivos para ventas, compras y retenciones.
+
+Criterio de cierre:
+
+- Prueba automatizada de compilacion multiarchivo verde.
+- Wizard preparado para seleccion multiple.
+- Pendiente externo: probar con los 12 archivos reales descargados de AFIP.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

@@ -168,6 +168,7 @@ Avance 2026-06-01:
 - Septimo corte de persistencia aplicado: el alta inicial detecta `otherJustifications` como carga operativa y evita perderlas cuando la DDJJ se crea con datos JVP.
 - Octavo corte backend aplicado: efectivo, creditos y pasivos comerciales se preservan desde payload hasta motor, snapshot, tablas y reapertura.
 - Noveno corte UI aplicado: Paso 4 incluye una seccion colapsable de auxiliares ESP para efectivo, creditos y pasivos comerciales, con totales de control.
+- Decimo corte de reconciliacion aplicado: los auxiliares ESP generan sugeridos testeados, detectan diferencias contra `activoTotalInicio` / `pasivoTotalInicio` y solo copian importes al agregado por accion explicita del usuario.
 
 Criterio de cierre:
 
@@ -176,8 +177,8 @@ Criterio de cierre:
 
 Pendiente para cerrar P4:
 
-- Integrar auxiliares ESP con patrimonio comercial agregado cuando se defina la regla exacta contra la planilla.
 - Validar rubros de `otherJustifications` contra filas relevantes de hoja `JVP`.
+- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
 
 ## P5 - H3: deducciones generales remanentes
 

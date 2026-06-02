@@ -248,6 +248,23 @@ export type WizardLiability = WizardEditableRecord & {
   balanceFinal?: WizardMoneyValue;
 };
 
+export type WizardEspAuxiliarySummary = {
+  efectivosInicio: number;
+  efectivosCierre: number;
+  creditosInicio: number;
+  creditosCierre: number;
+  activosAuxiliaresInicio: number;
+  activosAuxiliaresCierre: number;
+  pasivosAuxiliaresInicio: number;
+  pasivosAuxiliaresCierre: number;
+  patrimonioNetoAuxiliarInicio: number;
+  patrimonioNetoAuxiliarCierre: number;
+  diferenciaActivoInicio: number;
+  diferenciaPasivoInicio: number;
+  hasAuxiliaryData: boolean;
+  hasInitialAggregateDifference: boolean;
+};
+
 export function buildDefaultWizardCashHolding(): WizardCashHolding {
   return {
     currency: 'ARS',
@@ -272,6 +289,60 @@ export function buildDefaultWizardLiability(): WizardLiability {
     type: 'Otros',
     balanceInitial: '0',
     balanceFinal: '0',
+  };
+}
+
+export function buildWizardEspAuxiliarySummary({
+  cashHoldings = [],
+  receivables = [],
+  liabilities = [],
+  activoTotalInicio,
+  pasivoTotalInicio,
+}: {
+  cashHoldings?: WizardCashHolding[];
+  receivables?: WizardReceivable[];
+  liabilities?: WizardLiability[];
+  activoTotalInicio?: WizardMoneyValue | null;
+  pasivoTotalInicio?: WizardMoneyValue | null;
+}): WizardEspAuxiliarySummary {
+  const efectivosInicio = cashHoldings.reduce(
+    (sum, cash) => sum + wizardMoneyToNumber(cash.nominalInitial) * wizardMoneyToNumber(cash.tcFinal, 1),
+    0
+  );
+  const efectivosCierre = cashHoldings.reduce(
+    (sum, cash) => sum + wizardMoneyToNumber(cash.nominalFinal) * wizardMoneyToNumber(cash.tcFinal, 1),
+    0
+  );
+  const creditosInicio = receivables.reduce((sum, item) => sum + wizardMoneyToNumber(item.balanceInitial), 0);
+  const creditosCierre = receivables.reduce((sum, item) => sum + wizardMoneyToNumber(item.balanceFinal), 0);
+  const pasivosAuxiliaresInicio = liabilities.reduce((sum, item) => sum + wizardMoneyToNumber(item.balanceInitial), 0);
+  const pasivosAuxiliaresCierre = liabilities.reduce((sum, item) => sum + wizardMoneyToNumber(item.balanceFinal), 0);
+  const activosAuxiliaresInicio = efectivosInicio + creditosInicio;
+  const activosAuxiliaresCierre = efectivosCierre + creditosCierre;
+  const patrimonioNetoAuxiliarInicio = activosAuxiliaresInicio - pasivosAuxiliaresInicio;
+  const patrimonioNetoAuxiliarCierre = activosAuxiliaresCierre - pasivosAuxiliaresCierre;
+  const diferenciaActivoInicio = activosAuxiliaresInicio - wizardMoneyToNumber(activoTotalInicio);
+  const diferenciaPasivoInicio = pasivosAuxiliaresInicio - wizardMoneyToNumber(pasivoTotalInicio);
+  const hasAuxiliaryData = cashHoldings.length > 0 || receivables.length > 0 || liabilities.length > 0;
+
+  return {
+    efectivosInicio,
+    efectivosCierre,
+    creditosInicio,
+    creditosCierre,
+    activosAuxiliaresInicio,
+    activosAuxiliaresCierre,
+    pasivosAuxiliaresInicio,
+    pasivosAuxiliaresCierre,
+    patrimonioNetoAuxiliarInicio,
+    patrimonioNetoAuxiliarCierre,
+    diferenciaActivoInicio,
+    diferenciaPasivoInicio,
+    hasAuxiliaryData,
+    hasInitialAggregateDifference: hasAuxiliaryData && (
+      Math.abs(diferenciaActivoInicio) > 0.01 ||
+      Math.abs(diferenciaPasivoInicio) > 0.01
+    ),
   };
 }
 

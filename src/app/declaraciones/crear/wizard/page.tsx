@@ -29,6 +29,7 @@ import {
   buildDefaultWizardLiability,
   buildDefaultWizardOtherJustification,
   buildDefaultWizardReceivable,
+  buildWizardEspAuxiliarySummary,
   buildWizardOtherJustificationFromPreset,
   coerceWizardOtherJustificationColumn,
   coerceWizardPersonalDeductionType,
@@ -1156,6 +1157,14 @@ export default function WizardPage() {
     saldoAFavorAnterior,
     quebrantosAnteriores,
   };
+
+  const espAuxiliarySummary = buildWizardEspAuxiliarySummary({
+    cashHoldings,
+    receivables,
+    liabilities,
+    activoTotalInicio,
+    pasivoTotalInicio,
+  });
 
   const calculationRequestKey = JSON.stringify({
     declarationData: calculationData,
@@ -2458,42 +2467,55 @@ export default function WizardPage() {
                 </summary>
 
                 <div className="mt-4 space-y-6 rounded-xl border border-zinc-850 bg-[#09090b]/35 p-4">
-                  {(() => {
-                    const cashInitial = cashHoldings.reduce((sum, cash) => sum.add(new Decimal(cash.nominalInitial || 0).mul(new Decimal(cash.tcFinal || 1))), new Decimal(0));
-                    const cashFinal = cashHoldings.reduce((sum, cash) => sum.add(new Decimal(cash.nominalFinal || 0).mul(new Decimal(cash.tcFinal || 1))), new Decimal(0));
-                    const receivablesInitial = receivables.reduce((sum, item) => sum.add(new Decimal(item.balanceInitial || 0)), new Decimal(0));
-                    const receivablesFinal = receivables.reduce((sum, item) => sum.add(new Decimal(item.balanceFinal || 0)), new Decimal(0));
-                    const liabilitiesInitial = liabilities.reduce((sum, item) => sum.add(new Decimal(item.balanceInitial || 0)), new Decimal(0));
-                    const liabilitiesFinal = liabilities.reduce((sum, item) => sum.add(new Decimal(item.balanceFinal || 0)), new Decimal(0));
-                    const espAssetsInitial = cashInitial.add(receivablesInitial);
-                    const espAssetsFinal = cashFinal.add(receivablesFinal);
-                    const espNetInitial = espAssetsInitial.sub(liabilitiesInitial);
-                    const espNetFinal = espAssetsFinal.sub(liabilitiesFinal);
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. inicio</span>
+                      <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAuxiliarySummary.activosAuxiliaresInicio)}</span>
+                    </div>
+                    <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. cierre</span>
+                      <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAuxiliarySummary.activosAuxiliaresCierre)}</span>
+                    </div>
+                    <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. inicio</span>
+                      <span className="block text-xs font-mono text-teal-300">{formatDecimal(espAuxiliarySummary.patrimonioNetoAuxiliarInicio)}</span>
+                    </div>
+                    <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
+                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. cierre</span>
+                      <span className="block text-xs font-mono text-teal-300">{formatDecimal(espAuxiliarySummary.patrimonioNetoAuxiliarCierre)}</span>
+                    </div>
+                  </div>
 
-                    return (
-                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. inicio</span>
-                          <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAssetsInitial)}</span>
-                        </div>
-                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. cierre</span>
-                          <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAssetsFinal)}</span>
-                        </div>
-                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. inicio</span>
-                          <span className="block text-xs font-mono text-teal-300">{formatDecimal(espNetInitial)}</span>
-                        </div>
-                        <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                          <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. cierre</span>
-                          <span className="block text-xs font-mono text-teal-300">{formatDecimal(espNetFinal)}</span>
-                        </div>
+                  {espAuxiliarySummary.hasInitialAggregateDifference && (
+                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[11px] text-amber-100/85 space-y-3">
+                      <div>
+                        <p className="font-bold uppercase tracking-wider text-amber-200">Revisar diferencia contra patrimonio comercial agregado</p>
+                        <p className="mt-1">
+                          Activo inicial auxiliar vs agregado: {formatDecimal(espAuxiliarySummary.diferenciaActivoInicio)}. Pasivo inicial auxiliar vs agregado: {formatDecimal(espAuxiliarySummary.diferenciaPasivoInicio)}.
+                          Si los auxiliares son la fuente de verdad, copiá los importes sugeridos; si el agregado incluye otros rubros, dejalo como está.
+                        </p>
                       </div>
-                    );
-                  })()}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActivoTotalInicio(String(espAuxiliarySummary.activosAuxiliaresInicio))}
+                          className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-100 hover:bg-amber-400/20"
+                        >
+                          Usar activo inicial auxiliar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPasivoTotalInicio(String(espAuxiliarySummary.pasivosAuxiliaresInicio))}
+                          className="rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-amber-100 hover:bg-amber-400/20"
+                        >
+                          Usar pasivo inicial auxiliar
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-[11px] text-amber-100/80">
-                    Estos saldos quedan guardados y reabren con la DDJJ. Para que impacten AXI/JVP automaticamente falta el proximo corte de integracion con `activoTotalInicio`, `pasivoTotalInicio` y ESP.
+                    Estos saldos quedan guardados y reabren con la DDJJ. La app calcula sugeridos ESP y solo los copia a `activoTotalInicio` / `pasivoTotalInicio` si el usuario lo confirma, evitando duplicaciones silenciosas.
                   </div>
 
                   <div className="space-y-3">

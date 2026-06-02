@@ -76,8 +76,9 @@ En hoja `ESP`:
 
 Brecha actual:
 
-- La app aproxima el patrimonio comercial con `activoTotalInicio - pasivoTotalInicio` y resultado comercial del periodo.
-- Falta una carga mas explicita del ESP si se quiere replicar rubro por rubro: efectivo, creditos, bienes de cambio, bienes de uso, proveedores y otros pasivos.
+- La app mantiene `activoTotalInicio - pasivoTotalInicio` como agregado de impacto fiscal.
+- El wizard permite cargar auxiliares ESP para efectivo, creditos y pasivos comerciales como respaldo operativo.
+- Bienes de cambio, bienes de uso y otros rubros ESP siguen entrando por los campos agregados existentes, salvo que se definan grillas especificas en un corte posterior.
 
 ## Hojas auxiliares detectadas
 
@@ -98,10 +99,12 @@ Corte aplicado el 2026-06-02:
 - `Pasivo`: se representa como `liabilities`.
 - El backend ya preserva esos arrays desde payload hasta motor, snapshot, tablas relacionales y reapertura por API.
 - El Paso 4 del wizard ya tiene una seccion colapsable para cargar esos auxiliares con totales de control.
-- Queda pendiente decidir la regla de integracion automatica contra patrimonio comercial agregado (`activoTotalInicio`, `pasivoTotalInicio`) para que esos saldos impacten AXI/JVP sin doble computo.
+- Decision aplicada el 2026-06-02: no hay integracion automatica silenciosa contra `activoTotalInicio` / `pasivoTotalInicio`.
+- La UI calcula sugeridos ESP, detecta diferencias contra los agregados y permite copiar activo/pasivo inicial auxiliar solo por accion explicita del usuario.
+- Esta decision evita doble computo cuando el agregado ya incluye bienes de cambio, bienes de uso u otros rubros no cargados en auxiliares.
 
 ## Pendientes de implementacion
 
-- Definir si la app debe abrir una seccion `ESP` explicita o seguir con el atajo de patrimonio comercial inicial/cierre.
+- Evaluar si el estudio necesita grillas adicionales para bienes de cambio, bienes de uso u otros rubros ESP, o si el agregado actual alcanza por agilidad.
 - Agregar presets de conceptos JVP para filas `C8`, `D11` y `D13` si mejora la velocidad de carga sin ocultar criterio profesional.
 - Validar una DDJJ real contra `JVP!C17`, `JVP!D17` y `JVP!C19`.

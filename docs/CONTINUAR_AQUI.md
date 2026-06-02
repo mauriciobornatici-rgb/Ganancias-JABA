@@ -120,7 +120,7 @@ Avance:
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 
-Estado: activo, cuarto corte de formula JVP aplicado.
+Estado: activo, decimo corte ESP/JVP aplicado.
 
 Objetivo:
 
@@ -145,13 +145,15 @@ Avance:
 - El alta inicial de DDJJ detecta `otherJustifications` como carga operativa y las conserva en snapshot/persistencia.
 - Backend P4 preparado para auxiliares ESP: `cashHoldings`, `receivables` y `liabilities` se mapean al motor, se detectan como carga operativa, se guardan en snapshot/tablas y se devuelven al reabrir.
 - El Paso 4 del wizard incorpora una seccion colapsable de auxiliares ESP para efectivo, creditos y pasivos comerciales, con totales de control y aviso de que aun no automatiza el patrimonio comercial agregado.
+- El Paso 4 ahora calcula un resumen ESP testeado, detecta diferencias contra `activoTotalInicio` / `pasivoTotalInicio` y ofrece copiar los importes sugeridos solo por accion explicita del usuario.
+- Decision aplicada: no automatizar el impacto ESP sobre patrimonio comercial agregado para evitar doble computo si el agregado ya incluye otros rubros.
 - P5: los excedentes no admitidos de deducciones generales (`IG 25!E32`) se calculan y se llevan a JVP columna I con aviso visible.
 - P5: gastos educativos queda alineado a Excel; el importador deriva `topeGastosEducativos` como `MNI * 40%` cuando el tope no viene explicito.
 
 Siguiente corte recomendado:
 
 - Mapear esos conceptos contra `JVP` filas 8/13/85 y validar como se reflejan en consumo.
-- Mapear creditos/pasivos personales contra hojas auxiliares `Creditos`, `Pasivo` y `Banco`.
+- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP` para confirmar que el flujo de carga agil cubre el caso del estudio.
 
 ## Reglas de continuidad
 

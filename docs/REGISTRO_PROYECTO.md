@@ -157,7 +157,7 @@ Accion esperada:
 - Centralizar calculo en dominio/backend.
 - El frontend debe pedir preview/calculo y mostrar resultado, no ser una segunda fuente de verdad.
 - Primeros pasos aplicados: el wizard y la pagina independiente de papel de trabajo ya usan un mapper testeado para no recalcular con datos parciales o divergentes.
-- Se agrego un endpoint backend de preview/cálculo (`POST /api/declaraciones/preview`) que usa el mapper comun y devuelve resultado serializado apto para UI.
+- Se agrego un endpoint backend de preview/cÃ¡lculo (`POST /api/declaraciones/preview`) que usa el mapper comun y devuelve resultado serializado apto para UI.
 
 ### H8 - Alta nueva de DDJJ no persistia toda la carga inicial
 
@@ -479,7 +479,7 @@ Se corrigio una diferencia funcional entre el preview backend y el calculo persi
 Riesgo mitigado:
 
 - El preview/backend recibia `personalDeductions.esJubiladoOchoHaberes` y aplicaba la deduccion especifica de 8 haberes.
-- La persistencia reconstruia `personalDeductions` antes de recalcular, pero omitía esa marca.
+- La persistencia reconstruia `personalDeductions` antes de recalcular, pero omitÃ­a esa marca.
 - En un caso jubilado, la DDJJ podia mostrar un resultado y guardar otro al cerrar o actualizar.
 
 Archivos modificados:
@@ -2222,3 +2222,49 @@ Verificacion:
 Pendiente:
 
 - Resolver decision de detalle documental por comprobante para deducciones generales.
+
+### 2026-06-02 - Fase 1, P4 decimo corte: reconciliacion explicita ESP contra agregado
+
+Se resolvio el pendiente de integracion entre auxiliares ESP y patrimonio comercial agregado sin introducir automatismos riesgosos.
+
+Hallazgo:
+
+- El Paso 4 ya cargaba efectivo, creditos y pasivos comerciales, pero el calculo de totales estaba inline en la pantalla.
+- Automatizar esos saldos contra `activoTotalInicio` y `pasivoTotalInicio` puede duplicar rubros cuando el agregado incluye bienes de cambio, bienes de uso u otros conceptos no detallados en auxiliares.
+- El criterio de trabajo del estudio prioriza agilidad y trazabilidad: sugerir y controlar, no reemplazar el juicio profesional.
+
+Decision:
+
+- Extraer el resumen ESP a `buildWizardEspAuxiliarySummary`, testeado en la capa de presentacion.
+- Calcular activos, pasivos y patrimonio neto auxiliar de inicio/cierre.
+- Detectar diferencias contra `activoTotalInicio` / `pasivoTotalInicio`.
+- Mostrar advertencia operativa solo si hay diferencia.
+- Permitir copiar activo inicial auxiliar y pasivo inicial auxiliar al agregado mediante botones explicitos.
+- Mantener la decision de no impactar automaticamente AXI/JVP para evitar doble computo silencioso.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/MAPEO_JVP_EXCEL.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo porque `buildWizardEspAuxiliarySummary` no existia.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: 1 archivo, 8 tests, todo OK.
+- `eslint` focalizado sobre wizard, tipos y test: OK.
+- `vitest run`: 25 archivos, 86 tests, todo OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+- Validacion visual automatizada: bloqueada por entorno. Browser integrado fallo con `node_repl kernel exited unexpectedly` / `windows sandbox failed: spawn setup refresh`.
+- Smoke HTTP local: no concluyente. Next arranco como job temporal en `127.0.0.1:3010`, pero el job no quedo disponible para conectar desde el siguiente proceso de verificacion.
+
+Pendiente:
+
+- Validar visualmente el Paso 4 cuando Browser/Chrome local este disponible.
+- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.

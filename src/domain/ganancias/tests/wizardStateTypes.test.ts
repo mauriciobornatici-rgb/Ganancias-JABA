@@ -3,6 +3,7 @@ import {
   buildDefaultWizardCashHolding,
   buildDefaultWizardLiability,
   buildDefaultWizardReceivable,
+  buildWizardEspAuxiliarySummary,
   buildWizardOtherJustificationFromPreset,
   buildDefaultWizardOtherJustification,
   coerceWizardPersonalDeductionType,
@@ -78,6 +79,32 @@ describe('wizardStateTypes', () => {
       balanceInitial: '0',
       balanceFinal: '0',
     });
+  });
+
+  it('resume auxiliares ESP y detecta diferencias contra patrimonio comercial agregado', () => {
+    const summary = buildWizardEspAuxiliarySummary({
+      cashHoldings: [
+        { currency: 'USD', nominalInitial: '100', nominalFinal: '150', tcFinal: '1000' },
+      ],
+      receivables: [
+        { description: 'Clientes', balanceInitial: '10000', balanceFinal: '25000' },
+      ],
+      liabilities: [
+        { description: 'Proveedores', balanceInitial: '30000', balanceFinal: '12000' },
+      ],
+      activoTotalInicio: '120000',
+      pasivoTotalInicio: '30000',
+    });
+
+    expect(summary.activosAuxiliaresInicio).toBe(110000);
+    expect(summary.activosAuxiliaresCierre).toBe(175000);
+    expect(summary.pasivosAuxiliaresInicio).toBe(30000);
+    expect(summary.pasivosAuxiliaresCierre).toBe(12000);
+    expect(summary.patrimonioNetoAuxiliarInicio).toBe(80000);
+    expect(summary.patrimonioNetoAuxiliarCierre).toBe(163000);
+    expect(summary.diferenciaActivoInicio).toBe(-10000);
+    expect(summary.diferenciaPasivoInicio).toBe(0);
+    expect(summary.hasInitialAggregateDifference).toBe(true);
   });
 
   it('resuelve ids de ruta y condiciones de carga sin depender de efectos sincronicos', () => {

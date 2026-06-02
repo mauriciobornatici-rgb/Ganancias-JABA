@@ -58,6 +58,8 @@ Ejemplos:
 ### Cubierto ahora
 
 - Calculo de rubros admitidos como importes agregados.
+- Calculo de excedentes no admitidos que Excel expone en `IG 25!E32`.
+- El excedente se suma a JVP columna I como erogacion no admitida por tope y se muestra en el wizard.
 - Preview y papel de trabajo muestran desglose por rubro admitido con referencia `IG 25`.
 - Wizard prioriza los rubros frecuentes y deja adicionales colapsados para no sobrecargar la carga.
 

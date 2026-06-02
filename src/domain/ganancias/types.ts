@@ -267,6 +267,7 @@ export interface GeneralDeductionsOutput {
   alquilerCasaHabitacionTope: Decimal;
   locadorLocatarioTope: Decimal;
   donacionesTope: Decimal;
+  totalExcedenteDeduccionesGeneralesJvp: Decimal;
   totalDeduccionesGeneralesAdmitidas: Decimal;
 }
 

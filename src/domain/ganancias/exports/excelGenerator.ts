@@ -168,6 +168,7 @@ export function downloadTaxReturnExcel(
   const patrimonioInicioVal = toNumber(calculationResult?.patrimonioInicioTotal);
   const patrimonioCierreVal = toNumber(calculationResult?.patrimonioCierreTotal);
   const gastosNoDeduciblesVal = toNumber(calculationResult?.gastosNoDeducibles);
+  const excedenteDeduccionesGeneralesJvpVal = toNumber(calculationResult?.deduccionesGenerales?.totalExcedenteDeduccionesGeneralesJvp);
   const amortizacionesBienesDeUsoVal = toNumber(calculationResult?.amortizacionesBienesDeUso);
   const ingresosExentosVal = toNumber(calculationResult?.ventasExentas);
   const consumoVal = toNumber(calculationResult?.consumoDiferencial);
@@ -189,6 +190,12 @@ export function downloadTaxReturnExcel(
       gastosNoDeduciblesVal, 
       resultadoImpositivoVal > 0 ? 'Resultado Impositivo Ganancia (Tercera Cat.)' : '',
       resultadoImpositivoVal > 0 ? resultadoImpositivoVal : 0
+    ],
+    [
+      'Excedente deducciones generales no admitido',
+      excedenteDeduccionesGeneralesJvpVal,
+      '',
+      0
     ],
     [
       resultadoImpositivoVal < 0 ? 'Resultado Impositivo Quebranto' : '', 

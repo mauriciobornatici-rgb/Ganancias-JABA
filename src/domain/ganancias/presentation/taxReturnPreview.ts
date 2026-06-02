@@ -37,6 +37,7 @@ function serializeGeneralDeductions(value: GeneralDeductionsOutput) {
     alquilerCasaHabitacionTope: decimalToNumber(value.alquilerCasaHabitacionTope),
     locadorLocatarioTope: decimalToNumber(value.locadorLocatarioTope),
     donacionesTope: decimalToNumber(value.donacionesTope),
+    totalExcedenteDeduccionesGeneralesJvp: decimalToNumber(value.totalExcedenteDeduccionesGeneralesJvp),
     totalDeduccionesGeneralesAdmitidas: decimalToNumber(value.totalDeduccionesGeneralesAdmitidas),
   };
 }
@@ -192,6 +193,7 @@ export function hydrateTaxReturnPreviewResult(value: ReturnType<typeof serialize
       alquilerCasaHabitacionTope: numberToDecimal(value.deduccionesGenerales.alquilerCasaHabitacionTope),
       locadorLocatarioTope: numberToDecimal(value.deduccionesGenerales.locadorLocatarioTope),
       donacionesTope: numberToDecimal(value.deduccionesGenerales.donacionesTope),
+      totalExcedenteDeduccionesGeneralesJvp: numberToDecimal(value.deduccionesGenerales.totalExcedenteDeduccionesGeneralesJvp),
       totalDeduccionesGeneralesAdmitidas: numberToDecimal(value.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas),
     },
     resultadoNetoAntesQuebrantos: numberToDecimal(value.resultadoNetoAntesQuebrantos),

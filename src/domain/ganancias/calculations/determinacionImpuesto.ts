@@ -180,26 +180,31 @@ export function calculateTaxReturn(
   const domReal = new Decimal(genInput.servicioDomestico);
   const domTope = new Decimal(caps.topeServicioDomestico);
   const domAdmitida = domReal.gt(domTope) ? domTope : domReal;
+  const domExcedenteJvp = Decimal.max(domReal.sub(domAdmitida), new Decimal(0));
 
   // Seguros de Vida
   const vidaReal = new Decimal(genInput.seguroVida);
   const vidaTope = new Decimal(caps.topeSeguroVida);
   const vidaAdmitida = vidaReal.gt(vidaTope) ? vidaTope : vidaReal;
+  const vidaExcedenteJvp = Decimal.max(vidaReal.sub(vidaAdmitida), new Decimal(0));
 
   // Seguros de Retiro
   const retiroReal = new Decimal(genInput.seguroRetiro);
   const retiroTope = new Decimal(caps.topeSeguroRetiro);
   const retiroAdmitida = retiroReal.gt(retiroTope) ? retiroTope : retiroReal;
+  const retiroExcedenteJvp = Decimal.max(retiroReal.sub(retiroAdmitida), new Decimal(0));
 
   // Gastos de Sepelio
   const sepelioReal = new Decimal(genInput.gastosSepelio);
   const sepelioTope = new Decimal(caps.topeGastosSepelio);
   const sepelioAdmitida = sepelioReal.gt(sepelioTope) ? sepelioTope : sepelioReal;
+  const sepelioExcedenteJvp = Decimal.max(sepelioReal.sub(sepelioAdmitida), new Decimal(0));
 
   // Intereses de Créditos Hipotecarios
   const hipotecaReal = new Decimal(genInput.interesesHipoteca);
   const hipotecaTope = new Decimal(caps.topeInteresHipoteca);
   const hipotecaAdmitida = hipotecaReal.gt(hipotecaTope) ? hipotecaTope : hipotecaReal;
+  const hipotecaExcedenteJvp = Decimal.max(hipotecaReal.sub(hipotecaAdmitida), new Decimal(0));
 
   // Gastos Educativos
   const educReal = new Decimal(genInput.gastosEducativos);
@@ -234,6 +239,7 @@ export function calculateTaxReturn(
     ? new Decimal(0)
     : resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul(0.05);
   const prepagaAdmitida = prepagaReal.gt(prepagaTope) ? prepagaTope : prepagaReal;
+  const prepagaExcedenteJvp = Decimal.max(prepagaReal.sub(prepagaAdmitida), new Decimal(0));
 
   // Honorarios medicos: replica IG 25!D30/F30, 40% del comprobante y tope 5% luego de F20:F28.
   const honorariosMedReal = new Decimal(genInput.honorariosMedicos).mul(0.40);
@@ -247,6 +253,15 @@ export function calculateTaxReturn(
   const donacionesReal = new Decimal(genInput.donaciones);
   const donacionesTope = Decimal.max(resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul(0.05), new Decimal(0));
   const donacionesAdmitida = donacionesReal.gt(donacionesTope) ? donacionesTope : donacionesReal;
+  const donacionesExcedenteJvp = Decimal.max(donacionesReal.sub(donacionesAdmitida), new Decimal(0));
+
+  const totalExcedenteDeduccionesGeneralesJvp = domExcedenteJvp
+    .add(vidaExcedenteJvp)
+    .add(retiroExcedenteJvp)
+    .add(sepelioExcedenteJvp)
+    .add(hipotecaExcedenteJvp)
+    .add(prepagaExcedenteJvp)
+    .add(donacionesExcedenteJvp);
 
   const totalDeduccionesGeneralesAdmitidas = new Decimal(genInput.autonomos)
     .add(prepagaAdmitida)
@@ -274,6 +289,7 @@ export function calculateTaxReturn(
     alquilerCasaHabitacionTope: alquilerAdmitida.round(),
     locadorLocatarioTope: locadorLocatarioAdmitida.round(),
     donacionesTope: donacionesAdmitida.round(),
+    totalExcedenteDeduccionesGeneralesJvp: totalExcedenteDeduccionesGeneralesJvp.round(),
     totalDeduccionesGeneralesAdmitidas: totalDeduccionesGeneralesAdmitidas.round(),
   };
 
@@ -403,7 +419,7 @@ export function calculateTaxReturn(
     resultadoImpositivo: resultadoImpositivoNet,
     amortizaciones: amortizacionesBienesDeUso,
     ingresosExentos: ventasExentas,
-    gastosNoDeducibles,
+    gastosNoDeducibles: gastosNoDeducibles.add(totalExcedenteDeduccionesGeneralesJvp),
     otrasJustificaciones: input.otherJustifications,
   });
   warnings.push(...jvpResult.warnings);

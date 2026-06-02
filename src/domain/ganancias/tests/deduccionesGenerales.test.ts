@@ -119,4 +119,32 @@ describe('JABA Deducciones Generales', () => {
     expect(result.deduccionesGenerales.donacionesTope.toNumber()).toBe(30_000);
     expect(result.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber()).toBe(585_000);
   });
+
+  it('expone excedentes no admitidos como importe JVP de columna I segun IG 25!E32', () => {
+    const input = createBaseInput();
+    input.sales = [{ date: new Date('2025-01-01'), netAmount: new Decimal(1_000_000), isExempt: false }];
+    input.params.topesDeduccionesGenerales.topeServicioDomestico = new Decimal(100_000);
+    input.generalDeductions[0] = {
+      autonomos: new Decimal(0),
+      servicioDomestico: new Decimal(250_000),
+      seguroVida: new Decimal(0),
+      seguroRetiro: new Decimal(0),
+      gastosSepelio: new Decimal(0),
+      interesesHipoteca: new Decimal(0),
+      gastosEducativos: new Decimal(0),
+      alquilerCasaHabitacion: new Decimal(0),
+      deduccionLocadorLocatario: new Decimal(0),
+      donaciones: new Decimal(0),
+      medicosAsistencial: new Decimal(0),
+      honorariosMedicos: new Decimal(0),
+    };
+
+    const result = calculateTaxReturn(input);
+
+    expect(result.deduccionesGenerales.totalExcedenteDeduccionesGeneralesJvp.toNumber()).toBe(150_000);
+    expect(result.gastosNoDeducibles.toNumber()).toBe(0);
+    expect(result.jvpTotalColumnaI.toNumber()).toBe(900_000);
+    expect(result.jvpTotalColumnaII.toNumber()).toBe(900_000);
+    expect(result.consumoDiferencial.toNumber()).toBe(-250_000);
+  });
 });

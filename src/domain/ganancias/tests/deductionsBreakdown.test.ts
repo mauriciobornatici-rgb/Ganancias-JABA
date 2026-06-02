@@ -17,6 +17,7 @@ function createDeductionsOutput(): GeneralDeductionsOutput {
     medicosAsistencialTope: new Decimal(30_000),
     honorariosMedicosTope: new Decimal(0),
     donacionesTope: new Decimal(5_000),
+    totalExcedenteDeduccionesGeneralesJvp: new Decimal(0),
     totalDeduccionesGeneralesAdmitidas: new Decimal(240_000),
   };
 }

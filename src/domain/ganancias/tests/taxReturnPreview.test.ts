@@ -69,6 +69,7 @@ describe('buildTaxReturnPreview', () => {
     expect(preview.impuestoDeterminado).toBe(50);
     expect(preview.impuestoAPagarOARCA).toBe(50);
     expect(preview.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas).toBe(0);
+    expect(preview.deduccionesGenerales.totalExcedenteDeduccionesGeneralesJvp).toBe(0);
     expect(preview.jvpTotalColumnaI).toBe(1000);
     expect(preview.jvpTotalColumnaII).toBe(1000);
     expect(preview.jvpJustificationDiff).toBe(0);
@@ -198,6 +199,7 @@ describe('hydrateTaxReturnPreviewResult', () => {
         alquilerCasaHabitacionTope: 0,
         locadorLocatarioTope: 0,
         donacionesTope: 0,
+        totalExcedenteDeduccionesGeneralesJvp: 0,
         totalDeduccionesGeneralesAdmitidas: 0,
       },
       resultadoNetoAntesQuebrantos: 1000,
@@ -231,6 +233,7 @@ describe('hydrateTaxReturnPreviewResult', () => {
     expect(hydrated.jvpTotalColumnaI.toNumber()).toBe(1000);
     expect(hydrated.jvpTotalColumnaII.toNumber()).toBe(1000);
     expect(hydrated.jvpJustificationDiff.toNumber()).toBe(0);
+    expect(hydrated.deduccionesGenerales.totalExcedenteDeduccionesGeneralesJvp.toNumber()).toBe(0);
     expect(hydrated.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber()).toBe(0);
     expect(hydrated.anticiposSiguientePeriodo.map(anticipo => anticipo.toNumber())).toEqual([10, 10, 10, 10, 10]);
   });

@@ -3266,6 +3266,19 @@ export default function WizardPage() {
                         </div>
                       ))}
                     </div>
+                    {calculationResult.deduccionesGenerales.totalExcedenteDeduccionesGeneralesJvp.gt(0) && (
+                      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[11px]">
+                        <div className="flex justify-between gap-3">
+                          <span className="text-amber-200">Excedente no admitido llevado a JVP:</span>
+                          <span className="font-mono text-amber-200">
+                            +{formatDecimal(calculationResult.deduccionesGenerales.totalExcedenteDeduccionesGeneralesJvp)}
+                          </span>
+                        </div>
+                        <span className="mt-1 block text-[10px] text-amber-100/60">
+                          Equivale a la columna JVP de IG 25 para excedentes sobre topes.
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Mínimo No Imponible:</span>
                       <span className="font-mono text-zinc-300">-${calculationResult.deduccionesPersonales.minimoNoImponible.toNumber().toLocaleString('es-AR')}</span>

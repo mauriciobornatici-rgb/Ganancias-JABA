@@ -142,6 +142,7 @@ Avance:
 - La JVP principal ahora usa `resultadoImpositivoNeto` como equivalente a `IG 25!F38`, en lugar de `resultadoComercialNeto`.
 - La grilla JVP incluye presets rapidos de conceptos frecuentes con columna visible para acelerar carga sin ocultar criterio.
 - El resultado principal ahora expone totales JVP columna I/II y cuadre para UI, preview, persistencia y exportacion.
+- P5: los excedentes no admitidos de deducciones generales (`IG 25!E32`) se calculan y se llevan a JVP columna I con aviso visible.
 
 Siguiente corte recomendado:
 

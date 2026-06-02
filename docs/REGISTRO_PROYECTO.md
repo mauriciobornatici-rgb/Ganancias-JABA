@@ -1998,3 +1998,50 @@ Pendiente:
 
 - Resolver decision de detalle documental.
 - Confirmar fuente anual del tope parametrico de gastos educativos.
+
+### 2026-06-02 - Fase 1, P5 segundo corte: excedentes no admitidos a JVP
+
+Se corrigio la trazabilidad de los excedentes de deducciones generales que la planilla muestra en la columna JVP de `IG 25`.
+
+Hallazgo:
+
+- `IG 25!E32 = SUM(E20:E31)`.
+- Esos importes representan excedentes no admitidos por topes, relevantes para la justificacion patrimonial.
+- La app computaba solo lo admitido en `F20:F31` y no exponia ni trasladaba los excedentes a JVP.
+
+Decision:
+
+- Calcular `totalExcedenteDeduccionesGeneralesJvp`.
+- Incluir ese total en `GeneralDeductionsOutput`.
+- Sumarlo a JVP columna I sin modificar `gastosNoDeducibles` comercial.
+- Mostrar un aviso visible en el wizard cuando exista excedente.
+- Incluir fila especifica en el exportador Excel: `Excedente deducciones generales no admitido`.
+
+Archivos modificados:
+
+- `src/domain/ganancias/types.ts`.
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/presentation/taxReturnPreview.ts`.
+- `src/domain/ganancias/exports/excelGenerator.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/domain/ganancias/tests/deduccionesGenerales.test.ts`.
+- `src/domain/ganancias/tests/deductionsBreakdown.test.ts`.
+- `src/domain/ganancias/tests/taxReturnPreview.test.ts`.
+- `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `deduccionesGenerales.test.ts` fallo inicialmente porque `totalExcedenteDeduccionesGeneralesJvp` no existia.
+- `vitest run src/domain/ganancias/tests/deduccionesGenerales.test.ts src/domain/ganancias/tests/taxReturnPreview.test.ts src/domain/ganancias/tests/deductionsBreakdown.test.ts`: 3 archivos, 13 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `vitest run`: 25 archivos, 80 tests, todo OK.
+- `eslint` focalizado sobre motor, preview, exportador, wizard y tests tocados: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Resolver decision de detalle documental por comprobante para deducciones generales.
+- Confirmar fuente anual del tope parametrico de gastos educativos antes de tocar ese calculo.

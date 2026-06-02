@@ -161,6 +161,7 @@ Siguiente corte recomendado:
 - Backlog ordenado: `docs/BACKLOG_PRIORIZADO.md`.
 - Plan de fase Excel: `docs/FASE_1_VALIDACION_EXCEL.md`.
 - Mapeo JVP contra Excel: `docs/MAPEO_JVP_EXCEL.md`.
+- Mapeo deducciones generales contra Excel: `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
 - Plan de esta mejora: `docs/superpowers/plans/2026-06-01-continuidad-operativa.md`.
 
 ## Comandos utiles en esta maquina

@@ -1967,3 +1967,34 @@ Verificacion:
 Pendiente:
 
 - Validar visualmente el panel de auditoria cuando el entorno Browser/Chrome vuelva a estar disponible.
+
+### 2026-06-02 - Fase 1, P5 primer corte: mapeo de deducciones generales
+
+Se inicio P5 con una tabla rubro por rubro contra `IG 25` y `Ded. Gen.`.
+
+Hallazgo:
+
+- La app cubre los rubros agregados que alimentan `IG 25!F20:F31`.
+- Existen tests sobre locador/locatario, topes encadenados de prepagas, honorarios medicos y donaciones.
+- La brecha principal no es formula agregada sino trazabilidad documental: la hoja `Ded. Gen.` conserva fecha, comprobante, numero, concepto y total por rubro.
+
+Decision de continuidad:
+
+- Crear `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
+- Mantener por ahora la carga agregada por rubro como opcion mas agil para estudio chico.
+- Dejar pendiente decidir si la app sera tambien repositorio documental comprobante por comprobante.
+
+Archivo nuevo:
+
+- `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
+
+Archivos modificados:
+
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Pendiente:
+
+- Resolver decision de detalle documental.
+- Confirmar fuente anual del tope parametrico de gastos educativos.

@@ -178,7 +178,7 @@ Pendiente para cerrar P4:
 
 ## P5 - H3: deducciones generales remanentes
 
-Estado: Pendiente.
+Estado: En progreso, mapeo rubro por rubro realizado.
 
 Problema:
 
@@ -186,12 +186,20 @@ Problema:
 
 Accion recomendada:
 
-- Hacer tabla rubro por rubro: planilla, app, formula, tope, estado.
 - Agregar tests antes de modificar formulas.
+- Definir si se conserva carga agregada o si se agrega detalle documental comprobante por comprobante.
+
+Avance 2026-06-02:
+
+- Se creo `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.
+- La app cubre los rubros agregados de `IG 25!F20:F31`.
+- Brecha detectada: `Ded. Gen.` contiene detalle por fecha/comprobante/concepto; la app hoy carga importes agregados por rubro.
+- Gastos educativos quedan como decision parametrica: Excel usa `MNI * 40%`, la app usa `topeGastosEducativos` importado/configurado.
 
 Criterio de cierre:
 
 - Cada deduccion tiene estado: igual a Excel, decision intencional o pendiente normativo.
+- Si se decide mantener agregado por rubro, documentar que la app no reemplaza respaldo documental comprobante por comprobante.
 
 ## P6 - H5 remanente: auditoria importada completa
 

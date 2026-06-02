@@ -49,4 +49,27 @@ describe('hasDetailedTaxReturnPayload', () => {
       }],
     })).toBe(true);
   });
+
+  it('detecta carga operativa de efectivo, creditos y pasivos comerciales', () => {
+    expect(hasDetailedTaxReturnPayload({
+      cuit: '20-12345678-9',
+      clientName: 'Cliente Demo',
+      fiscalYear: 2025,
+      cashHoldings: [{ currency: 'ARS', nominalFinal: '1000' }],
+    })).toBe(true);
+
+    expect(hasDetailedTaxReturnPayload({
+      cuit: '20-12345678-9',
+      clientName: 'Cliente Demo',
+      fiscalYear: 2025,
+      receivables: [{ description: 'IVA saldo tecnico', balanceFinal: '1000' }],
+    })).toBe(true);
+
+    expect(hasDetailedTaxReturnPayload({
+      cuit: '20-12345678-9',
+      clientName: 'Cliente Demo',
+      fiscalYear: 2025,
+      liabilities: [{ description: 'Proveedor local', balanceFinal: '1000' }],
+    })).toBe(true);
+  });
 });

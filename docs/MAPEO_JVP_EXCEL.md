@@ -89,6 +89,16 @@ Uso sugerido:
 - `ESP`: referencia primaria para patrimonio de explotacion unipersonal.
 - `Creditos` y `Pasivo`: evaluar como detalle para alimentar ESP, no como fuente directa de JVP.
 
+## Auxiliares ESP preparados en backend
+
+Corte aplicado el 2026-06-02:
+
+- `Efectivo`: se representa como `cashHoldings`.
+- `Creditos`: se representa como `receivables`.
+- `Pasivo`: se representa como `liabilities`.
+- El backend ya preserva esos arrays desde payload hasta motor, snapshot, tablas relacionales y reapertura por API.
+- Queda pendiente agregar una UI agil/importador visible para cargar esos auxiliares sin hacer mas lenta la pantalla principal.
+
 ## Pendientes de implementacion
 
 - Definir si la app debe abrir una seccion `ESP` explicita o seguir con el atajo de patrimonio comercial inicial/cierre.

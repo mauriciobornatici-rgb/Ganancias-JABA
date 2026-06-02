@@ -166,6 +166,7 @@ Avance 2026-06-01:
 - Quinto corte de agilidad aplicado: presets rapidos para conceptos JVP frecuentes, siempre mostrando columna I/II.
 - Sexto corte de auditoria aplicado: resultado, preview, persistencia, UI y exportacion exponen totales JVP columna I/II y cuadre.
 - Septimo corte de persistencia aplicado: el alta inicial detecta `otherJustifications` como carga operativa y evita perderlas cuando la DDJJ se crea con datos JVP.
+- Octavo corte backend aplicado: efectivo, creditos y pasivos comerciales se preservan desde payload hasta motor, snapshot, tablas y reapertura.
 
 Criterio de cierre:
 

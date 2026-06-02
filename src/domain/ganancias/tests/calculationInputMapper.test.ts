@@ -16,6 +16,30 @@ describe('buildTaxReturnCalculationInput', () => {
         personalDeductions: {
           tipoDeduccionEspecial: 'Autonomo',
         },
+        cashHoldings: [
+          {
+            currency: 'USD',
+            nominalInitial: '100',
+            nominalFinal: '150',
+            tcFinal: '1446',
+          },
+        ],
+        receivables: [
+          {
+            description: 'IVA saldo tecnico',
+            type: 'Fiscal',
+            balanceInitial: '10000',
+            balanceFinal: '25000',
+          },
+        ],
+        liabilities: [
+          {
+            description: 'Proveedor local',
+            type: 'Proveedores',
+            balanceInitial: '30000',
+            balanceFinal: '12000',
+          },
+        ],
         personalLiabilities: [
           {
             description: 'Prestamo familiar',
@@ -72,6 +96,13 @@ describe('buildTaxReturnCalculationInput', () => {
     );
 
     expect(input.generalDeductions[0].deduccionLocadorLocatario?.toNumber()).toBe(1_000_000);
+    expect(input.cashHoldings[0].currency).toBe('USD');
+    expect(input.cashHoldings[0].nominalFinal.toNumber()).toBe(150);
+    expect(input.cashHoldings[0].tcFinal.toNumber()).toBe(1446);
+    expect(input.receivables[0].type).toBe('Fiscal');
+    expect(input.receivables[0].balanceFinal.toNumber()).toBe(25_000);
+    expect(input.liabilities[0].type).toBe('Proveedores');
+    expect(input.liabilities[0].balanceInitial.toNumber()).toBe(30_000);
     expect(input.personalLiabilities[0].valueInitial.toNumber()).toBe(250_000);
     expect(input.personalLiabilities[0].valueFinal.toNumber()).toBe(100_000);
     expect(input.otherJustifications[0].concept).toBe('Herencia recibida');

@@ -30,6 +30,9 @@ type PersistenceDb = {
   fixedAsset: PersistenceModel;
   inventoryValue: PersistenceModel;
   bankAccountBalance: PersistenceModel;
+  cashHolding?: PersistenceModel;
+  receivableDebt?: PersistenceModel;
+  payableDebt?: PersistenceModel;
   taxWithholding: PersistenceModel;
   personalAsset: PersistenceModel;
   personalLiability: PersistenceModel;
@@ -93,6 +96,27 @@ type BankAccountPayload = {
   interests?: NumericValue;
 };
 
+type CashHoldingPayload = {
+  currency?: string;
+  nominalInitial?: NumericValue;
+  nominalFinal?: NumericValue;
+  tcFinal?: NumericValue;
+};
+
+type ReceivablePayload = {
+  description?: string;
+  type?: string;
+  balanceInitial?: NumericValue;
+  balanceFinal?: NumericValue;
+};
+
+type PayablePayload = {
+  description?: string;
+  type?: string;
+  balanceInitial?: NumericValue;
+  balanceFinal?: NumericValue;
+};
+
 type WithholdingPayload = {
   taxCode?: string;
   amount?: NumericValue;
@@ -145,6 +169,9 @@ type TaxReturnPersistencePayload = {
   initialStock?: NumericValue;
   finalStock?: NumericValue;
   bankAccounts?: BankAccountPayload[];
+  cashHoldings?: CashHoldingPayload[];
+  receivables?: ReceivablePayload[];
+  liabilities?: PayablePayload[];
   withholdings?: WithholdingPayload[];
   generalDeductions?: RawRecord;
   personalDeductions?: PersonalDeductionsPayload;
@@ -227,6 +254,9 @@ export async function persistTaxReturnDetails({
     initialStock = '0',
     finalStock = '0',
     bankAccounts = [],
+    cashHoldings = [],
+    receivables = [],
+    liabilities = [],
     withholdings = [],
     generalDeductions,
     personalDeductions,
@@ -293,6 +323,9 @@ export async function persistTaxReturnDetails({
     initialStock,
     finalStock,
     bankAccounts,
+    cashHoldings,
+    receivables,
+    liabilities,
     withholdings,
     generalDeductions,
     personalDeductions: {
@@ -325,6 +358,9 @@ export async function persistTaxReturnDetails({
   await db.fixedAsset.deleteMany({ where: { taxReturnId } });
   await db.inventoryValue.deleteMany({ where: { taxReturnId } });
   await db.bankAccountBalance.deleteMany({ where: { taxReturnId } });
+  await db.cashHolding?.deleteMany({ where: { taxReturnId } });
+  await db.receivableDebt?.deleteMany({ where: { taxReturnId } });
+  await db.payableDebt?.deleteMany({ where: { taxReturnId } });
   await db.taxWithholding.deleteMany({ where: { taxReturnId } });
   await db.personalAsset.deleteMany({ where: { taxReturnId } });
   await db.personalLiability.deleteMany({ where: { taxReturnId } });
@@ -441,6 +477,50 @@ export async function persistTaxReturnDetails({
     });
   }
 
+  if (db.cashHolding && cashHoldings.length > 0) {
+    await db.cashHolding.createMany({
+      data: cashHoldings.map(cash => {
+        const nominalInitial = numberInput(cash.nominalInitial);
+        const nominalFinal = numberInput(cash.nominalFinal);
+        const tcFinal = numberInput(cash.tcFinal, 1);
+
+        return {
+          taxReturnId,
+          currency: stringInput(cash.currency, 'ARS'),
+          nominalInitial,
+          nominalFinal,
+          tcFinal,
+          totalInitialArs: nominalInitial * tcFinal,
+          totalFinalArs: nominalFinal * tcFinal,
+        };
+      }),
+    });
+  }
+
+  if (db.receivableDebt && receivables.length > 0) {
+    await db.receivableDebt.createMany({
+      data: receivables.map(receivable => ({
+        taxReturnId,
+        type: stringInput(receivable.type, 'Comercial'),
+        description: stringInput(receivable.description),
+        balanceInitial: numberInput(receivable.balanceInitial),
+        balanceFinal: numberInput(receivable.balanceFinal),
+      })),
+    });
+  }
+
+  if (db.payableDebt && liabilities.length > 0) {
+    await db.payableDebt.createMany({
+      data: liabilities.map(liability => ({
+        taxReturnId,
+        type: stringInput(liability.type, 'Otros'),
+        description: stringInput(liability.description),
+        balanceInitial: numberInput(liability.balanceInitial),
+        balanceFinal: numberInput(liability.balanceFinal),
+      })),
+    });
+  }
+
   if (withholdings.length > 0) {
     await db.taxWithholding.createMany({
       data: withholdings.map(withholding => ({
@@ -533,6 +613,9 @@ export async function persistTaxReturnDetails({
     quebrantosAnteriores,
     sales,
     purchases,
+    cashHoldings,
+    receivables,
+    liabilities,
     withholdings,
     otherJustifications,
     axiDynamic,

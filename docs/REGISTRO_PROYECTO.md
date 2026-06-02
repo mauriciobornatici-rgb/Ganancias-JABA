@@ -2087,6 +2087,59 @@ Pendiente:
 - Seguir con mapeo fino de creditos/pasivos y filas JVP.
 - Resolver decision de detalle documental por comprobante para deducciones generales.
 
+### 2026-06-02 - Fase 1, P4 octavo corte: auxiliares ESP preservados en backend
+
+Se avanzo sobre la brecha de hojas auxiliares `Efectivo`, `Creditos` y `Pasivo`.
+
+Hallazgo:
+
+- El dominio y Prisma ya contemplaban `cashHoldings`, `receivables` y `liabilities`.
+- `calculationInputMapper` los descartaba y devolvia arrays vacios.
+- El alta inicial no los detectaba como carga operativa ni los copiaba al snapshot.
+- `persistTaxReturnDetails` no los pasaba al motor ni los guardaba en tablas.
+- La reapertura de DDJJ no los devolvia desde la API.
+
+Decision:
+
+- Mapear `cashHoldings`, `receivables` y `liabilities` desde payload al input del motor.
+- Considerarlos carga operativa detallada para activar persistencia.
+- Guardarlos en `variablesSnapshot` y en tablas relacionales si estan presentes.
+- Devolverlos al reabrir la DDJJ desde `GET /api/declaraciones/[id]`.
+- Dejar UI/importador como siguiente corte, para no agrandar el wizard sin una decision de carga.
+
+Archivos modificados:
+
+- `src/domain/ganancias/mappers/calculationInputMapper.ts`.
+- `src/domain/ganancias/persistence/taxReturnPayload.ts`.
+- `src/domain/ganancias/persistence/taxReturnSnapshot.ts`.
+- `src/domain/ganancias/persistence/taxReturnDetailsPersistence.ts`.
+- `src/app/api/declaraciones/[id]/route.ts`.
+- `src/domain/ganancias/tests/calculationInputMapper.test.ts`.
+- `src/domain/ganancias/tests/taxReturnPayload.test.ts`.
+- `src/domain/ganancias/tests/taxReturnSnapshot.test.ts`.
+- `src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/MAPEO_JVP_EXCEL.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `calculationInputMapper.test.ts` fallaba porque `cashHoldings[0]` era `undefined`.
+- TDD rojo confirmado: `taxReturnPayload.test.ts` no detectaba efectivo/creditos/pasivos como carga operativa.
+- TDD rojo confirmado: `taxReturnSnapshot.test.ts` no conservaba esos arrays.
+- TDD rojo confirmado: `taxReturnDetailsPersistence.test.ts` no llamaba a `cashHolding.createMany`.
+- `vitest run src/domain/ganancias/tests/calculationInputMapper.test.ts src/domain/ganancias/tests/taxReturnPayload.test.ts src/domain/ganancias/tests/taxReturnSnapshot.test.ts src/domain/ganancias/tests/taxReturnDetailsPersistence.test.ts`: 4 archivos, 17 tests, todo OK.
+- `vitest run`: 25 archivos, 84 tests, todo OK.
+- `tsc --noEmit`: OK.
+- `eslint` focalizado sobre mapper, persistencia, endpoint y tests tocados: OK.
+- `next build --webpack`: OK.
+
+Pendiente:
+
+- Definir UI/importador para cargar `Efectivo`, `Creditos` y `Pasivo` sin sobrecargar la pantalla.
+- Validar una DDJJ real contra `ESP`, `Patrimonio personal` y `JVP`.
+
 ### 2026-06-02 - Fase 1, P5 tercer corte: tope educativo derivado desde MNI
 
 Se resolvio la decision abierta sobre gastos educativos contra la planilla base.

@@ -142,6 +142,97 @@ describe('persistTaxReturnDetails', () => {
     });
   });
 
+  it('persiste efectivo, creditos y pasivos comerciales cargados para ESP/JVP', async () => {
+    const captures: {
+      cashCreateMany?: CreateManyCapture;
+      receivablesCreateMany?: CreateManyCapture;
+      liabilitiesCreateMany?: CreateManyCapture;
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      cashHolding: model({ createMany: async (args: unknown) => { captures.cashCreateMany = args as CreateManyCapture; } }),
+      receivableDebt: model({ createMany: async (args: unknown) => { captures.receivablesCreateMany = args as CreateManyCapture; } }),
+      payableDebt: model({ createMany: async (args: unknown) => { captures.liabilitiesCreateMany = args as CreateManyCapture; } }),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-esp',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente ESP', cuit: '20-55555555-5' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        cashHoldings: [{
+          currency: 'USD',
+          nominalInitial: '100',
+          nominalFinal: '150',
+          tcFinal: '1446',
+        }],
+        receivables: [{
+          description: 'IVA saldo tecnico',
+          type: 'Fiscal',
+          balanceInitial: '10000',
+          balanceFinal: '25000',
+        }],
+        liabilities: [{
+          description: 'Proveedor local',
+          type: 'Proveedores',
+          balanceInitial: '30000',
+          balanceFinal: '12000',
+        }],
+      },
+    });
+
+    expect(captures.cashCreateMany?.data[0]).toMatchObject({
+      taxReturnId: 'return-esp',
+      currency: 'USD',
+      nominalInitial: 100,
+      nominalFinal: 150,
+      tcFinal: 1446,
+      totalInitialArs: 144600,
+      totalFinalArs: 216900,
+    });
+    expect(captures.receivablesCreateMany?.data[0]).toMatchObject({
+      taxReturnId: 'return-esp',
+      description: 'IVA saldo tecnico',
+      type: 'Fiscal',
+      balanceInitial: 10000,
+      balanceFinal: 25000,
+    });
+    expect(captures.liabilitiesCreateMany?.data[0]).toMatchObject({
+      taxReturnId: 'return-esp',
+      description: 'Proveedor local',
+      type: 'Proveedores',
+      balanceInitial: 30000,
+      balanceFinal: 12000,
+    });
+
+    const snapshot = JSON.parse(captures.calculationCreate?.data.variablesSnapshot || '{}');
+    expect(snapshot.cashHoldings[0].currency).toBe('USD');
+    expect(snapshot.receivables[0].description).toBe('IVA saldo tecnico');
+    expect(snapshot.liabilities[0].description).toBe('Proveedor local');
+  });
+
   it('mantiene la marca de jubilado para que la persistencia coincida con el preview backend', async () => {
     const captures: {
       calculationCreate?: CalculationCreateCapture;

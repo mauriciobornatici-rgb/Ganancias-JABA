@@ -12,6 +12,9 @@ describe('buildInitialTaxReturnSnapshot', () => {
       purchases: [{ date: '2025-02-01', netAmount: '1200', isDeductible: true }],
       fixedAssets: [{ id: 'asset-1', name: 'Notebook', originalCost: '200000' }],
       bankAccounts: [{ id: 'bank-1', nominalFinal: '15000' }],
+      cashHoldings: [{ currency: 'ARS', nominalFinal: '1000' }],
+      receivables: [{ description: 'IVA saldo tecnico', balanceFinal: '25000' }],
+      liabilities: [{ description: 'Proveedor local', balanceFinal: '12000' }],
       withholdings: [{ amount: '300' }],
       personalAssets: [{ description: 'Casa', valueFinal: '1000000' }],
       personalLiabilities: [{ description: 'Prestamo', valueFinal: '100000' }],
@@ -31,6 +34,9 @@ describe('buildInitialTaxReturnSnapshot', () => {
     expect(snapshot.purchases).toHaveLength(1);
     expect(snapshot.fixedAssets).toHaveLength(1);
     expect(snapshot.bankAccounts).toHaveLength(1);
+    expect(snapshot.cashHoldings).toHaveLength(1);
+    expect(snapshot.receivables).toHaveLength(1);
+    expect(snapshot.liabilities).toHaveLength(1);
     expect(snapshot.withholdings).toHaveLength(1);
     expect(snapshot.personalAssets).toHaveLength(1);
     expect(snapshot.personalLiabilities).toHaveLength(1);

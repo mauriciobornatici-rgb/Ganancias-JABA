@@ -2,7 +2,9 @@ import { Decimal } from 'decimal.js';
 import type {
   AxiDynamicInput,
   FixedAssetInput,
+  PayableInput,
   PersonalDeductionsInput,
+  ReceivableInput,
   TaxReturnCalculationInput,
   TaxWithholdingInput,
 } from '../types';
@@ -94,6 +96,22 @@ function axiDynamicType(value: unknown): AxiDynamicInput['type'] {
     return rawType;
   }
   return 'Otro';
+}
+
+function receivableType(value: unknown): ReceivableInput['type'] {
+  const rawType = stringValue(value, 'Comercial');
+  if (rawType === 'Comercial' || rawType === 'Fiscal' || rawType === 'Financiero') {
+    return rawType;
+  }
+  return 'Comercial';
+}
+
+function payableType(value: unknown): PayableInput['type'] {
+  const rawType = stringValue(value, 'Otros');
+  if (rawType === 'Proveedores' || rawType === 'Otros') {
+    return rawType;
+  }
+  return 'Otros';
 }
 
 function patrimonialColumn(value: unknown): number {
@@ -190,9 +208,24 @@ export function buildTaxReturnCalculationInput(
       tcFinal: decimalValue(bank.tcFinal, 1),
       interests: decimalValue(bank.interests),
     })),
-    cashHoldings: [],
-    receivables: [],
-    liabilities: [],
+    cashHoldings: asRecordArray(data.cashHoldings).map(cash => ({
+      currency: stringValue(cash.currency, 'ARS'),
+      nominalInitial: decimalValue(cash.nominalInitial),
+      nominalFinal: decimalValue(cash.nominalFinal),
+      tcFinal: decimalValue(cash.tcFinal, 1),
+    })),
+    receivables: asRecordArray(data.receivables).map(receivable => ({
+      description: stringValue(receivable.description),
+      type: receivableType(receivable.type),
+      balanceInitial: decimalValue(receivable.balanceInitial),
+      balanceFinal: decimalValue(receivable.balanceFinal),
+    })),
+    liabilities: asRecordArray(data.liabilities).map(liability => ({
+      description: stringValue(liability.description),
+      type: payableType(liability.type),
+      balanceInitial: decimalValue(liability.balanceInitial),
+      balanceFinal: decimalValue(liability.balanceFinal),
+    })),
     withholdings: asRecordArray(data.withholdings).map(withholding => ({
       amount: decimalValue(withholding.amount),
       taxCode: taxCode(withholding.taxCode),

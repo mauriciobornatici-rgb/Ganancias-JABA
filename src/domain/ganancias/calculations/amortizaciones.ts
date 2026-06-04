@@ -1,4 +1,4 @@
-﻿import { Decimal } from 'decimal.js';
+import { Decimal } from 'decimal.js';
 import { FixedAssetInput, FixedAssetCalculationOutput } from '../types';
 export function calculateYearsElapsedAtClose(purchaseDate: Date | string | null | undefined, fiscalYear: number): number {
   if (!purchaseDate) return 1;
@@ -37,8 +37,8 @@ export function calculateFixedAssetDepreciation(
     };
   }
 
-  // Si el bien ya superó su vida útil total, está completamente amortizado
-  if (yearsElapsed > usefulLife) {
+  // Si el bien ya superó o alcanzó su vida útil total, está completamente amortizado
+  if (yearsElapsed >= usefulLife) {
     return {
       id: asset.id,
       name: asset.name,

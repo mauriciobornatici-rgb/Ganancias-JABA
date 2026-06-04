@@ -605,10 +605,10 @@ export async function persistTaxReturnDetails({
         concept: calculatedLine.concept,
         type: item.type,
         date: item.date,
-        amount: calculatedLine.amount.toNumber(),
+        amount: Math.round(calculatedLine.amount.toNumber()),
         coef: calculatedLine.factorActualizacion.toNumber(),
         factor,
-        computedAxi: calculatedLine.computedAxi.toNumber(),
+        computedAxi: Math.round(calculatedLine.computedAxi.toNumber()),
       },
     });
   }

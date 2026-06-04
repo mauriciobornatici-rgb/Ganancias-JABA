@@ -1,4 +1,4 @@
-﻿import { Decimal } from 'decimal.js';
+import { Decimal } from 'decimal.js';
 import {
   TaxReturnCalculationInput,
   TaxCalculationResult,
@@ -23,10 +23,12 @@ export function calculateArt94Tax(
   }
 
   // Buscar el tramo correspondiente en la escala
+  // Usa gte (>=) para el límite inferior para que ingresos exactamente en el límite del tramo
+  // no caigan fuera de todos los tramos y produzcan impuesto = 0.
   const bracket = brackets.find(b => {
     const fromVal = new Decimal(b.fromAmount);
     const toVal = b.toAmount ? new Decimal(b.toAmount) : null;
-    return taxableIncome.gt(fromVal) && (toVal === null || taxableIncome.lte(toVal));
+    return taxableIncome.gte(fromVal) && (toVal === null || taxableIncome.lte(toVal));
   });
 
   if (!bracket) {
@@ -35,12 +37,18 @@ export function calculateArt94Tax(
   }
 
   const fixed = new Decimal(bracket.fixedAmount);
-  const pct = new Decimal(bracket.percentage);
+  let pct = new Decimal(bracket.percentage);
   const excess = new Decimal(bracket.excessOf);
+
+  // Validación: si el porcentaje viene como entero (e.g. 5, 9, 35) en vez de fracción (0.05, 0.09, 0.35),
+  // convertirlo a fracción para evitar un impuesto 100x mayor al correcto.
+  if (pct.gt(1)) {
+    pct = pct.div(100);
+  }
 
   // Fórmula: Impuesto = Importe Fijo + (Ganancia Neta - Excedente) * Alícuota
   const tax = fixed.add(taxableIncome.sub(excess).mul(pct));
-  return tax.round();
+  return tax.toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
 }
 
 function calculateAxiStaticInflationRate(params: TaxParameters): Decimal | null {
@@ -213,12 +221,13 @@ export function calculateTaxReturn(
 
 
   // Alquiler Casa Habitación: 40% del importe de alquiler, tope MNI
-  const alquilerReal = new Decimal(genInput.alquilerCasaHabitacion).mul(0.40);
+  const alquilerReal = new Decimal(genInput.alquilerCasaHabitacion).mul('0.40');
   const alquilerTope = new Decimal(input.params.deduccionesArt30.minimoNoImponible);
   const alquilerAdmitida = alquilerReal.gt(alquilerTope) ? alquilerTope : alquilerReal;
+  const alquilerExcedenteJvp = Decimal.max(alquilerReal.sub(alquilerAdmitida), new Decimal(0));
 
   // Nueva deduccion Locador / Locatario: la planilla IG 25 computa el 10% del importe informado.
-  const locadorLocatarioReal = new Decimal(genInput.deduccionLocadorLocatario || 0).mul(0.10);
+  const locadorLocatarioReal = new Decimal(genInput.deduccionLocadorLocatario || 0).mul('0.10');
   const locadorLocatarioAdmitida = Decimal.max(locadorLocatarioReal, new Decimal(0));
 
   const deduccionesF20aF23 = new Decimal(genInput.autonomos)
@@ -234,33 +243,41 @@ export function calculateTaxReturn(
 
   // Prepagas: replica IG 25!D29/F29 con el chequeo del 5% luego de F20:F28.
   const prepagaReal = new Decimal(genInput.medicosAsistencial);
-  const prepagaTopeControl = resultadoNetoTodasCategorias.sub(deduccionesF20aF28).mul(0.05);
-  const prepagaTope = prepagaTopeControl.isNegative()
+  const prepagaTopeBase = resultadoNetoTodasCategorias.sub(deduccionesF20aF28);
+  const prepagaTope = prepagaTopeBase.isNegative()
     ? new Decimal(0)
-    : resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul(0.05);
+    : prepagaTopeBase.mul('0.05');
   const prepagaAdmitida = prepagaReal.gt(prepagaTope) ? prepagaTope : prepagaReal;
   const prepagaExcedenteJvp = Decimal.max(prepagaReal.sub(prepagaAdmitida), new Decimal(0));
 
   // Honorarios medicos: replica IG 25!D30/F30, 40% del comprobante y tope 5% luego de F20:F28.
-  const honorariosMedReal = new Decimal(genInput.honorariosMedicos).mul(0.40);
-  const honorariosMedTopeControl = resultadoNetoTodasCategorias.sub(deduccionesF20aF28).mul(0.05);
-  const honorariosMedTope = honorariosMedTopeControl.isNegative()
-    ? honorariosMedReal
-    : Decimal.min(honorariosMedTopeControl, honorariosMedReal);
+  // Si la base neta es negativa, no se admite deducción (tope = 0).
+  const honorariosMedReal = new Decimal(genInput.honorariosMedicos).mul('0.40');
+  const honorariosMedTopeBase = resultadoNetoTodasCategorias.sub(deduccionesF20aF28);
+  const honorariosMedTope = honorariosMedTopeBase.isNegative()
+    ? new Decimal(0)
+    : Decimal.min(honorariosMedTopeBase.mul('0.05'), honorariosMedReal);
   const honorariosMedAdmitida = Decimal.max(honorariosMedTope, new Decimal(0));
+  const honorariosMedExcedenteJvp = Decimal.max(honorariosMedReal.sub(honorariosMedAdmitida), new Decimal(0));
 
   // Donaciones: replica IG 25!D31/F31, con base neta luego de F20:F23.
   const donacionesReal = new Decimal(genInput.donaciones);
-  const donacionesTope = Decimal.max(resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul(0.05), new Decimal(0));
+  const donacionesTope = Decimal.max(resultadoNetoTodasCategorias.sub(deduccionesF20aF23).mul('0.05'), new Decimal(0));
   const donacionesAdmitida = donacionesReal.gt(donacionesTope) ? donacionesTope : donacionesReal;
   const donacionesExcedenteJvp = Decimal.max(donacionesReal.sub(donacionesAdmitida), new Decimal(0));
+
+  // Excedente de gastos educativos (no deducible, va al JVP como erogación)
+  const educExcedenteJvp = Decimal.max(educReal.sub(educAdmitida), new Decimal(0));
 
   const totalExcedenteDeduccionesGeneralesJvp = domExcedenteJvp
     .add(vidaExcedenteJvp)
     .add(retiroExcedenteJvp)
     .add(sepelioExcedenteJvp)
     .add(hipotecaExcedenteJvp)
+    .add(educExcedenteJvp)
+    .add(alquilerExcedenteJvp)
     .add(prepagaExcedenteJvp)
+    .add(honorariosMedExcedenteJvp)
     .add(donacionesExcedenteJvp);
 
   const totalDeduccionesGeneralesAdmitidas = new Decimal(genInput.autonomos)
@@ -277,20 +294,20 @@ export function calculateTaxReturn(
     .add(honorariosMedAdmitida);
 
   const deduccionesGenerales: GeneralDeductionsOutput = {
-    autonomosAdmitidos: autonomosAdmitidos.round(),
-    servicioDomesticoTope: domAdmitida.round(),
-    seguroVidaTope: vidaAdmitida.round(),
-    seguroRetiroTope: retiroAdmitida.round(),
-    gastosSepelioTope: sepelioAdmitida.round(),
-    interesesHipotecaTope: hipotecaAdmitida.round(),
-    gastosEducativosTope: educAdmitida.round(),
-    medicosAsistencialTope: prepagaAdmitida.round(),
-    honorariosMedicosTope: honorariosMedAdmitida.round(),
-    alquilerCasaHabitacionTope: alquilerAdmitida.round(),
-    locadorLocatarioTope: locadorLocatarioAdmitida.round(),
-    donacionesTope: donacionesAdmitida.round(),
-    totalExcedenteDeduccionesGeneralesJvp: totalExcedenteDeduccionesGeneralesJvp.round(),
-    totalDeduccionesGeneralesAdmitidas: totalDeduccionesGeneralesAdmitidas.round(),
+    autonomosAdmitidos: autonomosAdmitidos.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    servicioDomesticoTope: domAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    seguroVidaTope: vidaAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    seguroRetiroTope: retiroAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    gastosSepelioTope: sepelioAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    interesesHipotecaTope: hipotecaAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    gastosEducativosTope: educAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    medicosAsistencialTope: prepagaAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    honorariosMedicosTope: honorariosMedAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    alquilerCasaHabitacionTope: alquilerAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    locadorLocatarioTope: locadorLocatarioAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    donacionesTope: donacionesAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    totalExcedenteDeduccionesGeneralesJvp: totalExcedenteDeduccionesGeneralesJvp.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    totalDeduccionesGeneralesAdmitidas: totalDeduccionesGeneralesAdmitidas.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
   };
 
   // Ganancia Neta antes de Deducciones Personales
@@ -339,12 +356,12 @@ export function calculateTaxReturn(
     .add(especialAdmitida);
 
   const deduccionesPersonales: PersonalDeductionsOutput = {
-    minimoNoImponible: mniAdmitido.round(),
-    conyuge: conyugeAdmitida.round(),
-    hijos: hijosAdmitido.round(),
-    hijosIncapacitados: hijosIncapAdmitido.round(),
-    deduccionEspecial: especialAdmitida.round(),
-    totalDeduccionesPersonalesAdmitidas: totalDeduccionesPersonales.round(),
+    minimoNoImponible: mniAdmitido.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    conyuge: conyugeAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    hijos: hijosAdmitido.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    hijosIncapacitados: hijosIncapAdmitido.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    deduccionEspecial: especialAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    totalDeduccionesPersonalesAdmitidas: totalDeduccionesPersonales.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
   };
 
   // ==========================================
@@ -416,7 +433,7 @@ export function calculateTaxReturn(
   const jvpResult = calculatePatrimonialJustification({
     personalAssets: jvpAssets,
     personalLiabilities: input.personalLiabilities,
-    resultadoImpositivo: resultadoImpositivoNet,
+    resultadoImpositivo: resultadoNetoAntesQuebrantos,
     amortizaciones: amortizacionesBienesDeUso,
     ingresosExentos: ventasExentas,
     gastosNoDeducibles: gastosNoDeducibles.add(totalExcedenteDeduccionesGeneralesJvp),
@@ -428,7 +445,7 @@ export function calculateTaxReturn(
   // 12. PROYECCIÓN DE ANTICIPOS EJERCICIO SIGUIENTE
   // Recalculo con factor de reexpresión IPC (e.g. 1.142939)
   // ==========================================
-  // Factor de proyección IPC para anticipos: usar variación interanual de los índices cargados
+   // Factor de proyección IPC para anticipos: usar variación interanual de los índices cargados
   let ipcAnticipoRate = new Decimal(1);
   if (input.params.indicesIPC.length >= 2) {
     const ipcDic = input.params.indicesIPC.find(i => i.monthIndex === 12);
@@ -439,10 +456,17 @@ export function calculateTaxReturn(
   }
   const baseImponibleAnticipo = resultadoImpositivoNet.mul(ipcAnticipoRate);
 
-  // Mínimos actualizados
+  // Deducciones personales proyectadas (todas, incluyendo cónyuge e hijos)
   const mniAnticipo = mniAdmitido.mul(ipcAnticipoRate);
   const especialAnticipo = especialAdmitida.mul(ipcAnticipoRate);
-  const deduccionesPersonalesAnticipo = mniAnticipo.add(especialAnticipo);
+  const conyugeAnticipo = conyugeAdmitida.mul(ipcAnticipoRate);
+  const hijosAnticipo = hijosAdmitido.mul(ipcAnticipoRate);
+  const hijosIncapAnticipo = hijosIncapAdmitido.mul(ipcAnticipoRate);
+  const deduccionesPersonalesAnticipo = mniAnticipo
+    .add(especialAnticipo)
+    .add(conyugeAnticipo)
+    .add(hijosAnticipo)
+    .add(hijosIncapAnticipo);
 
   let gananciaAnticipo = baseImponibleAnticipo.sub(deduccionesPersonalesAnticipo);
   if (gananciaAnticipo.isNegative()) {
@@ -462,36 +486,36 @@ export function calculateTaxReturn(
   
   // Anticipos proyectados: 5 cuotas del 20% del impuesto proyectado
   const anticiposSiguientePeriodo: Decimal[] = [];
-  const cuotaAnticipo = impuestoAnticipoDeterminado.mul(0.20);
+  const cuotaAnticipo = impuestoAnticipoDeterminado.mul('0.20');
   for (let i = 0; i < 5; i++) {
-    anticiposSiguientePeriodo.push(cuotaAnticipo.round());
+    anticiposSiguientePeriodo.push(cuotaAnticipo.toDecimalPlaces(0, Decimal.ROUND_HALF_UP));
   }
 
   return {
     clientName: input.clientName,
     cuit: input.cuit,
     fiscalYear: input.fiscalYear,
-    ventasGravadas: ventasGravadas.round(),
-    ventasExentas: ventasExentas.round(),
-    costoVentas: costoVentas.round(),
-    gastosDeducibles: gastosDeducibles.round(),
-    gastosNoDeducibles: gastosNoDeducibles.round(),
-    amortizacionesBienesDeUso: amortizacionesBienesDeUso.round(),
-    resultadoAjustePorInflacion: resultadoAjustePorInflacion.round(),
-    axiStaticResult: axiResult.staticResult.resultadoAxiStatico.round(),
-    axiDynamicResult: axiResult.totalAxiDynamic.round(),
-    resultadoComercialNeto: resultadoComercialNeto.round(),
-    resultadoNetoTodasCategorias: resultadoNetoTodasCategorias.round(),
+    ventasGravadas: ventasGravadas.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    ventasExentas: ventasExentas.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    costoVentas: costoVentas.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    gastosDeducibles: gastosDeducibles.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    gastosNoDeducibles: gastosNoDeducibles.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    amortizacionesBienesDeUso: amortizacionesBienesDeUso.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    resultadoAjustePorInflacion: resultadoAjustePorInflacion.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    axiStaticResult: axiResult.staticResult.resultadoAxiStatico.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    axiDynamicResult: axiResult.totalAxiDynamic.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    resultadoComercialNeto: resultadoComercialNeto.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    resultadoNetoTodasCategorias: resultadoNetoTodasCategorias.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     deduccionesGenerales,
-    resultadoNetoAntesQuebrantos: resultadoNetoAntesQuebrantos.round(),
-    resultadoImpositivoNeto: resultadoImpositivoNet.round(),
+    resultadoNetoAntesQuebrantos: resultadoNetoAntesQuebrantos.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    resultadoImpositivoNeto: resultadoImpositivoNet.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     deduccionesPersonales,
-    gananciaNetaSujetaImpuesto: gananciaNetaSujetaImpuesto.round(),
-    impuestoDeterminado: impuestoDeterminado.round(),
-    retencionesYPercepciones: retencionesYPercepciones.round(),
+    gananciaNetaSujetaImpuesto: gananciaNetaSujetaImpuesto.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    impuestoDeterminado: impuestoDeterminado.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    retencionesYPercepciones: retencionesYPercepciones.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     anticiposSiguientePeriodo,
-    saldoAFavorAnterior: saldoAFavorAnterior.round(),
-    impuestoAPagarOARCA: impuestoAPagarOARCA.round(),
+    saldoAFavorAnterior: saldoAFavorAnterior.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    impuestoAPagarOARCA: impuestoAPagarOARCA.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     patrimonioInicioTotal: jvpResult.patrimonioInicio,
     patrimonioCierreTotal: jvpResult.patrimonioCierre,
     consumoDiferencial: jvpResult.consumoDiferencial,

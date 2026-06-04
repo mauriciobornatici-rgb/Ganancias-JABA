@@ -113,11 +113,18 @@ describe('JABA Deducciones Generales', () => {
 
     const result = calculateTaxReturn(input);
 
+    // Base para prepaga y honorarios = resultadoNeto - F20:F28
+    // F20:F28 = autonomos(100k) + dom(100k) + vida(100k) + retiro(100k) + locador(100k) = 500k
+    // Base = 1,000,000 - 500,000 = 500,000
+    // Prepaga: min(1,000,000, 500,000 * 5%) = min(1,000,000, 25,000) = 25,000
     expect(result.deduccionesGenerales.autonomosAdmitidos.toNumber()).toBe(100_000);
-    expect(result.deduccionesGenerales.medicosAsistencialTope.toNumber()).toBe(30_000);
+    expect(result.deduccionesGenerales.medicosAsistencialTope.toNumber()).toBe(25_000);
+    // Honorarios: min(min(500,000 * 5%, 400,000), 0) = min(25,000, 400,000) = 25,000
     expect(result.deduccionesGenerales.honorariosMedicosTope.toNumber()).toBe(25_000);
+    // Donaciones: base F20:F23 = 400,000, (1,000,000 - 400,000) * 5% = 30,000
     expect(result.deduccionesGenerales.donacionesTope.toNumber()).toBe(30_000);
-    expect(result.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber()).toBe(585_000);
+    // Total = 100k + 100k + 100k + 100k + 100k + 25k + 25k + 30k = 580,000
+    expect(result.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber()).toBe(580_000);
   });
 
   it('expone excedentes no admitidos como importe JVP de columna I segun IG 25!E32', () => {

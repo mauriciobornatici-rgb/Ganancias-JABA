@@ -25,8 +25,9 @@ describe('AXI dynamic average coefficient', () => {
     );
 
     expect(result.lines[0].factorActualizacion.toNumber()).toBeCloseTo(1.1288404539857682, 10);
-    expect(result.lines[0].computedAxi.toNumber()).toBe(502654);
-    expect(result.totalDynamic.toNumber()).toBe(502654);
+    // Sin redondeo intermedio, el valor mantiene precisión completa
+    expect(result.lines[0].computedAxi.toNumber()).toBeCloseTo(502654.4997, 0);
+    expect(result.totalDynamic.toNumber()).toBeCloseTo(502654.4997, 0);
   });
 
   it('mantiene coeficiente mensual para movimientos no agregados', () => {
@@ -46,6 +47,7 @@ describe('AXI dynamic average coefficient', () => {
     );
 
     expect(result.lines[0].factorActualizacion.toNumber()).toBeCloseTo(10121.3715 / 7864.1257, 10);
-    expect(result.lines[0].computedAxi.toNumber()).toBe(28703);
+    // Sin redondeo intermedio, el valor mantiene precisión completa
+    expect(result.lines[0].computedAxi.toNumber()).toBeCloseTo(28703, 0);
   });
 });

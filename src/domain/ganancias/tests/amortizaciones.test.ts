@@ -21,7 +21,7 @@ describe('JABA Amortizaciones de Bienes de Uso', () => {
     expect(result.residualValueAdj.toNumber()).toBe(800);
   });
 
-  it('computa amortizacion anual en el ultimo anio de vida util y deja residual cero', () => {
+  it('activo totalmente amortizado (yearsElapsed == usefulLife) no genera mas depreciacion', () => {
     const result = calculateFixedAssetDepreciation({
       id: 'asset-2',
       name: 'Rodado',
@@ -33,8 +33,11 @@ describe('JABA Amortizaciones de Bienes de Uso', () => {
       customReexpIndex: new Decimal(1),
     });
 
-    expect(result.annualDepreciationHist.toNumber()).toBe(200);
+    // Bien completamente amortizado: cero depreciación y cero residual
+    expect(result.annualDepreciationHist.toNumber()).toBe(0);
+    expect(result.annualDepreciationAdj.toNumber()).toBe(0);
     expect(result.residualValueHist.toNumber()).toBe(0);
+    expect(result.residualValueAdj.toNumber()).toBe(0);
   });
 
   it('calcula anios al cierre desde fecha de compra y periodo fiscal como la planilla', () => {

@@ -1,4 +1,4 @@
-﻿import { Decimal } from 'decimal.js';
+import { Decimal } from 'decimal.js';
 import {
   AxiStaticInput,
   AxiDynamicInput,
@@ -33,11 +33,11 @@ export function calculateAxiStatic(
   }
 
   return {
-    activoComputableInicio: activoComputable.round(),
-    pasivoComputableInicio: totalPasivo.round(),
-    capitalComputableInicio: capitalComputable.round(),
+    activoComputableInicio: activoComputable,
+    pasivoComputableInicio: totalPasivo,
+    capitalComputableInicio: capitalComputable,
     factorActualizacion: inflationRate,
-    resultadoAxiStatico: resultadoAxiStatico.round(),
+    resultadoAxiStatico: resultadoAxiStatico,
   };
 }
 
@@ -90,15 +90,15 @@ export function calculateAxiDynamic(
 
     return {
       concept: item.concept,
-      amount: amount.round(),
+      amount: amount,
       factorActualizacion: coef,
-      computedAxi: computedAxi.round(),
+      computedAxi: computedAxi,
     };
   });
 
   return {
     lines,
-    totalDynamic: totalDynamic.round(),
+    totalDynamic: totalDynamic,
     warnings,
   };
 }
@@ -121,7 +121,7 @@ export function calculateTotalAxi(
     staticResult,
     dynamicLines: dynamicResult.lines,
     totalAxiDynamic: dynamicResult.totalDynamic,
-    netAxiResult: netAxiResult.round(),
+    netAxiResult: netAxiResult,
     warnings: dynamicResult.warnings,
   };
 }

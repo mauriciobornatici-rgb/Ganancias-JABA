@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { Decimal } from 'decimal.js';
 import type { TaxReturnCalculationInput } from '../types';
 import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
+import { buildTaxReturnPreview } from '../presentation/taxReturnPreview';
 
 function zeroTaxParameters() {
   return {
@@ -128,5 +129,97 @@ describe('Simulacion con capturas actuales del usuario', () => {
     expect(result.jvpTotalColumnaI.toNumber()).toBe(4229566);
     expect(result.jvpTotalColumnaII.toNumber()).toBe(4229566);
     expect(result.jvpJustificationDiff.toNumber()).toBe(0);
+  });
+
+  it('replica las capturas cuando la carga llega como datos del wizard', () => {
+    const preview = buildTaxReturnPreview({
+      clientName: 'Capturas usuario 2024',
+      cuit: '20-12345678-9',
+      fiscalYear: 2024,
+      sales: [
+        { date: '2024-12-31', netAmount: '55188790.74', isExempt: false },
+      ],
+      purchases: [
+        { date: '2024-12-31', netAmount: '55516958.16', isDeductible: true, isExempt: false, expenseType: 'MateriaPrima' },
+        { date: '2024-12-31', netAmount: '1265940.70', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' },
+        { date: '2024-12-31', netAmount: '656834.40', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' },
+      ],
+      fixedAssets: [],
+      initialStock: '155496.41',
+      finalStock: '7856322.00',
+      bankAccounts: [{
+        id: 'Disponibilidades-Bancos',
+        nominalInitial: '580157.00',
+        nominalFinal: '1416741.00',
+        tcInitial: '1',
+        tcFinal: '1',
+        interests: '0',
+      }],
+      cashHoldings: [],
+      receivables: [
+        { description: 'Creditos comerciales', type: 'Comercial', balanceInitial: '825842.83', balanceFinal: '299858.95' },
+        { description: 'Creditos fiscales', type: 'Fiscal', balanceInitial: '195527.81', balanceFinal: '533667.49' },
+      ],
+      liabilities: [
+        { description: 'Deudas comerciales y fiscales', type: 'Proveedores', balanceInitial: '1565731.18', balanceFinal: '2950866.99' },
+      ],
+      withholdings: [],
+      generalDeductions: {
+        autonomos: '0',
+        servicioDomestico: '0',
+        seguroVida: '0',
+        seguroRetiro: '0',
+        gastosSepelio: '0',
+        interesesHipoteca: '0',
+        gastosEducativos: '0',
+        alquilerCasaHabitacion: '0',
+        deduccionLocadorLocatario: '0',
+        donaciones: '0',
+        medicosAsistencial: '0',
+        honorariosMedicos: '0',
+      },
+      personalDeductions: {
+        tieneConyuge: false,
+        cantidadHijos: 0,
+        cantidadHijosIncapacitados: 0,
+        tipoDeduccionEspecial: 'Ninguna',
+      },
+      personalAssets: [
+        { description: 'Depositos bancarios', type: 'Depositos Bancarios', valueInitial: '771902.84', valueFinal: '380000.00' },
+        { description: 'Efectivo', type: 'Efectivo', valueInitial: '795000.00', valueFinal: '0.00' },
+      ],
+      personalLiabilities: [
+        { description: 'Deudas personales', valueInitial: '6278512.29', valueFinal: '14686238.56' },
+      ],
+      otherJustifications: [
+        { concept: 'Intereses prestamo', column: 1, amount: '956882.98' },
+        { concept: 'Impuesto determinado anio anterior', column: 1, amount: '392146.90' },
+        { concept: 'Blanqueo', column: 2, amount: '3300000.00' },
+      ],
+      activoTotalInicio: '1757024.05',
+      bienesNoComputablesInicio: '0.00',
+      pasivoTotalInicio: '1565731.18',
+      axiDynamic: [],
+      saldoAFavorAnterior: '0',
+      quebrantosAnteriores: '0',
+    }, {
+      parameterSet: zeroTaxParameters().deduccionesArt30,
+      brackets: [],
+      indices: zeroTaxParameters().indicesIPC,
+      usefulCoefficients: zeroTaxParameters().usefulCoefficients,
+    });
+
+    expect(preview.ventasGravadas).toBe(55188791);
+    expect(preview.costoVentas).toBe(47816133);
+    expect(preview.gastosDeducibles).toBe(1922775);
+    expect(preview.resultadoAjustePorInflacion).toBe(-225273);
+    expect(preview.resultadoComercialNeto).toBe(5224610);
+    expect(preview.resultadoImpositivoNeto).toBe(5224610);
+    expect(preview.patrimonioInicioTotal).toBe(-4520317);
+    expect(preview.patrimonioCierreTotal).toBe(-7150516);
+    expect(preview.consumoDiferencial).toBe(10031053);
+    expect(preview.jvpTotalColumnaI).toBe(4229566);
+    expect(preview.jvpTotalColumnaII).toBe(4229566);
+    expect(preview.jvpJustificationDiff).toBe(0);
   });
 });

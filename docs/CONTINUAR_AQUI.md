@@ -1,17 +1,17 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-02
+Ultima actualizacion: 2026-06-06
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: carga multiarchivo AFIP con resumen en pantalla y control de duplicados.
+- Ultimo checkpoint documentado: auditoria de consistencia contra guia/capturas y eliminacion de duplicaciones de calculo en motor/pantallas.
 - Fase activa: Fase 1 - Prueba piloto controlada contra Excel y carga real.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: listo para iniciar piloto controlado con guia y fixture tecnico reproducible; validacion visual automatizada bloqueada por entorno.
+- Estado de uso: listo para iniciar piloto controlado, con salvedad de validar visualmente el caso real de capturas nuevas en navegador.
 
 ## Como retomar en 5 minutos
 
@@ -26,6 +26,31 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 9. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P11 - Auditoria guia/capturas y duplicaciones de calculo
+
+Estado: resuelto tecnicamente, pendiente validacion visual con caso real.
+
+Objetivo inmediato:
+
+- Corregir inconsistencias detectadas despues de comparar guia PDF, capturas nuevas y calculos visibles de la app.
+- Evitar que wizard, papel de trabajo e informe cliente muestren resultados distintos al motor.
+
+Criterio de cierre:
+
+- `simulacionUsuario.test.ts` replica las capturas nuevas del 06/06/2026 como caso separado del escenario anterior de la guia PDF.
+- Los bienes de uso dados de baja no quedan duplicados en patrimonio comercial de cierre.
+- El capital comercial de cierre se calcula con `calculateClosingCommercialPatrimony`.
+- CMV y gastos se separan con `purchaseBreakdown` para evitar doble computo de compras.
+- `informe-cliente` usa `buildTaxReturnCalculationInput` y deja de reconstruir el input manualmente.
+- Verificacion ejecutada: `vitest run` con 30 archivos y 103 tests OK; `tsc --noEmit` OK; `next build --webpack` OK; lint focal de helpers/tests nuevos OK.
+- Nota: `eslint` global sigue pendiente por deuda amplia previa/no abordada en esta unidad.
+
+Pendiente al retomar:
+
+- Probar en navegador wizard, papel de trabajo e informe cliente con los importes de las capturas nuevas.
+- Confirmar si la guia PDF anterior debe mantenerse como caso historico o actualizarse al nuevo caso.
+- Si se prioriza calidad interna, abrir una unidad separada para saneamiento de `eslint` global.
 
 ### P8 - Preparacion de prueba piloto
 

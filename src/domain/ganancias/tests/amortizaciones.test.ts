@@ -45,4 +45,25 @@ describe('JABA Amortizaciones de Bienes de Uso', () => {
     expect(calculateYearsElapsedAtClose(new Date('2025-12-31'), 2025)).toBe(1);
     expect(calculateYearsElapsedAtClose('', 2025)).toBe(1);
   });
+
+  it('bien de uso dado de baja en el ejercicio (isRetired = true) anula la amortizacion y calcula la perdida por baja', () => {
+    const result = calculateFixedAssetDepreciation({
+      id: 'asset-retired',
+      name: 'Equipamiento Baja',
+      type: 'Equipamiento',
+      purchaseDate: new Date('2023-01-01'),
+      originalCost: new Decimal(1_000),
+      usefulLife: 10,
+      yearsElapsed: 3,
+      customReexpIndex: new Decimal(1.5),
+      isRetired: true,
+    });
+
+    expect(result.annualDepreciationHist.toNumber()).toBe(0);
+    expect(result.annualDepreciationAdj.toNumber()).toBe(0);
+    expect(result.residualValueHist.toNumber()).toBe(0);
+    expect(result.residualValueAdj.toNumber()).toBe(0);
+    expect(result.bajaLossHist?.toNumber()).toBe(800);
+    expect(result.bajaLossAdj?.toNumber()).toBe(1200);
+  });
 });

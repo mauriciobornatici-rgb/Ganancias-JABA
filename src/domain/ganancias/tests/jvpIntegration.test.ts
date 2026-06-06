@@ -96,4 +96,24 @@ describe('JVP integration in calculateTaxReturn', () => {
     expect(result.jvpTotalColumnaII.toNumber()).toBe(800);
     expect(result.jvpJustificationDiff.toNumber()).toBe(0);
   });
+
+  it('no mantiene en patrimonio comercial de cierre un bien de uso dado de baja', () => {
+    const input = baseInput();
+    input.fixedAssets = [{
+      id: 'asset-retired',
+      name: 'Maquina vendida',
+      type: 'Equipamiento',
+      purchaseDate: new Date('2023-01-01'),
+      originalCost: new Decimal(1000),
+      usefulLife: 10,
+      yearsElapsed: 3,
+      customReexpIndex: new Decimal(1),
+      isRetired: true,
+    }];
+
+    const result = calculateTaxReturn(input);
+
+    expect(result.bajaBienesDeUsoLoss?.toNumber()).toBe(800);
+    expect(result.patrimonioCierreTotal.toNumber()).toBe(0);
+  });
 });

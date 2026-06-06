@@ -193,6 +193,8 @@ type TaxReturnPersistencePayload = {
   quebrantosAnteriores?: NumericValue;
   axiDynamic?: AxiDynamicPayload[];
   status?: string;
+  autoCalcInitialBalances?: boolean;
+  axiStaticBreakdown?: RawRecord;
 };
 
 type DbParameterSet = RawRecord & { id: string };
@@ -278,6 +280,7 @@ export async function persistTaxReturnDetails({
     quebrantosAnteriores = '0',
     axiDynamic = [],
     status,
+    autoCalcInitialBalances = true,
   } = payload;
 
   const fiscalYearNumber = integerInput(fiscalYear, existingReturn.fiscalYear.year);
@@ -631,6 +634,10 @@ export async function persistTaxReturnDetails({
     withholdings,
     otherJustifications,
     axiDynamic,
+    autoCalcInitialBalances,
+    personalAssets,
+    fixedAssets,
+    axiStaticBreakdown: payload.axiStaticBreakdown,
   };
 
   await db.calculationRun.create({

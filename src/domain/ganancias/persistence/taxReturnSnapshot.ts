@@ -44,6 +44,7 @@ export function buildInitialTaxReturnSnapshot(payload: unknown): RawRecord {
     'saldoAFavorAnterior',
     'quebrantosAnteriores',
     'axiDynamic',
+    'autoCalcInitialBalances',
   ].forEach(key => copyIfPresent(snapshot, source, key));
 
   return snapshot;

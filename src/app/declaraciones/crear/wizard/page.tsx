@@ -1,24 +1,26 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { 
-  Sparkles, 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
-  Upload, 
-  Plus, 
-  Trash2, 
-  AlertTriangle, 
-  CheckCircle, 
-  FileSpreadsheet, 
-  DollarSign
+import {
+  Sparkles,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Upload,
+  Plus,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  FileSpreadsheet,
+  DollarSign,
+  Printer
 } from 'lucide-react';
 import Link from 'next/link';
 import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/amortizaciones';
+import { calculateClosingCommercialPatrimony } from '@/domain/ganancias/calculations/patrimonioComercial';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import {
   buildGeneralDeductionsBreakdown,
@@ -27,6 +29,7 @@ import {
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
+import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
 import {
   buildDefaultWizardCashHolding,
   buildDefaultWizardLiability,
@@ -190,6 +193,55 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+interface AxiStaticCategory {
+  total: string;
+  computable: string;
+}
+
+interface AxiStaticBreakdown {
+  activo: {
+    disponibilidadesBancos: AxiStaticCategory;
+    retencionesGanancias: AxiStaticCategory;
+    anticiposGanancias: AxiStaticCategory;
+    creditoFiscal: AxiStaticCategory;
+    ivaSaf: AxiStaticCategory;
+    safIibb: AxiStaticCategory;
+    impuestoLey: AxiStaticCategory;
+    deudoresVentas: AxiStaticCategory;
+    bienesCambio: AxiStaticCategory;
+    bienesUso: AxiStaticCategory;
+    [key: string]: AxiStaticCategory;
+  };
+  pasivo: {
+    deudasSociales: AxiStaticCategory;
+    deudasFiscales: AxiStaticCategory;
+    deudasComerciales: AxiStaticCategory;
+    prestamos: AxiStaticCategory;
+    [key: string]: AxiStaticCategory;
+  };
+}
+
+const defaultAxiStaticBreakdown: AxiStaticBreakdown = {
+  activo: {
+    disponibilidadesBancos: { total: '0', computable: '0' },
+    retencionesGanancias: { total: '0', computable: '0' },
+    anticiposGanancias: { total: '0', computable: '0' },
+    creditoFiscal: { total: '0', computable: '0' },
+    ivaSaf: { total: '0', computable: '0' },
+    safIibb: { total: '0', computable: '0' },
+    impuestoLey: { total: '0', computable: '0' },
+    deudoresVentas: { total: '0', computable: '0' },
+    bienesCambio: { total: '0', computable: '0' },
+    bienesUso: { total: '0', computable: '0' },
+  },
+  pasivo: {
+    deudasSociales: { total: '0', computable: '0' },
+    deudasFiscales: { total: '0', computable: '0' },
+    deudasComerciales: { total: '0', computable: '0' },
+    prestamos: { total: '0', computable: '0' },
+  },
+};
+
 export default function WizardPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -200,6 +252,20 @@ export default function WizardPage() {
   const isCreatingRef = React.useRef(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [maxVisitedStep, setMaxVisitedStep] = useState(1);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const stepParam = params.get('step');
+      if (stepParam) {
+        const stepNum = parseInt(stepParam, 10);
+        if (stepNum >= 1 && stepNum <= 6) {
+          setCurrentStep(stepNum);
+          setMaxVisitedStep(Math.max(maxVisitedStep, stepNum));
+        }
+      }
+    }
+  }, []);
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -241,16 +307,21 @@ export default function WizardPage() {
   const [saldoAFavorAnterior, setSaldoAFavorAnterior] = useState('0');
   const [quebrantosAnteriores, setQuebrantosAnteriores] = useState('0');
   const [axiDynamic, setAxiDynamic] = useState<WizardAxiDynamic[]>([]);
+  const [axiStaticBreakdown, setAxiStaticBreakdown] = useState<AxiStaticBreakdown | null>(null);
+  const [activeSubTab, setActiveSubTab] = useState<'deducciones' | 'axi'>('deducciones');
+  const [paramRefetchTrigger, setParamRefetchTrigger] = useState(0);
+  const [isSavingIpcs, setIsSavingIpcs] = useState(false);
+  const [localIpcValues, setLocalIpcValues] = useState<Record<string, string>>({});
 
   // Control de Modales de Persistencia y Cierre
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [modalActionType, setModalActionType] = useState<'borrador' | 'cerrar' | null>(null);
   const [modalLoading, setModalLoading] = useState(true);
-  
+
   const [step1Error, setStep1Error] = useState<string | null>(null);
   const [isLiveBarOpen, setIsLiveBarOpen] = useState(true);
   const [showAllDeductions, setShowAllDeductions] = useState(false);
-  
+
   // Searchable contribuyente dropdown state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -260,8 +331,8 @@ export default function WizardPage() {
   const checkIfStepHasData = (step: number): boolean => {
     if (step === 1) {
       return (
-        clientName.trim() !== '' && 
-        cuit.trim() !== '' && 
+        clientName.trim() !== '' &&
+        cuit.trim() !== '' &&
         (
           personalDeductions.tieneConyuge ||
           personalDeductions.cantidadHijos > 0 ||
@@ -293,7 +364,7 @@ export default function WizardPage() {
   const saveToServer = (targetStep: number) => {
     const saveTarget = resolveTaxReturnSaveTarget({ routeId: id, persistedReturnId });
     if (saveTarget.isCreate) return;
-    
+
     const payload = {
       cuit,
       clientName,
@@ -321,9 +392,10 @@ export default function WizardPage() {
       saldoAFavorAnterior,
       quebrantosAnteriores,
       axiDynamic,
+      axiStaticBreakdown,
       status: 'Borrador'
     };
-    
+
     fetch(saveTarget.url, {
       method: saveTarget.method,
       headers: { 'Content-Type': 'application/json' },
@@ -376,9 +448,9 @@ export default function WizardPage() {
     setShowSaveModal(true);
     setModalActionType(type);
     setModalLoading(true);
-    
+
     const targetStatus = type === 'borrador' ? 'Borrador' : 'Cerrada';
-    
+
     const payload = {
       cuit,
       clientName,
@@ -406,6 +478,7 @@ export default function WizardPage() {
       saldoAFavorAnterior,
       quebrantosAnteriores,
       axiDynamic,
+      axiStaticBreakdown,
       status: targetStatus
     };
 
@@ -440,7 +513,7 @@ export default function WizardPage() {
       setShowSaveModal(false);
     });
   };
-  
+
   const [sales, setSales] = useState<WizardSale[]>([]);
 
   const [purchases, setPurchases] = useState<WizardPurchase[]>([]);
@@ -534,6 +607,7 @@ export default function WizardPage() {
     setPersonalLiabilities([]);
     setOtherJustifications([]);
     setAxiDynamic([]);
+    setAxiStaticBreakdown(null);
   }, []);
 
   const resetWizardDetailsAfterIdentityChange = React.useCallback(() => {
@@ -589,6 +663,7 @@ export default function WizardPage() {
         if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
         if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
         if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
+        if (data.axiStaticBreakdown) setAxiStaticBreakdown(data.axiStaticBreakdown);
         return;
       } catch (e) {
         console.error("Failed parsing wizard state from localStorage", e);
@@ -702,6 +777,7 @@ export default function WizardPage() {
               if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
               if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
               if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
+              if (data.axiStaticBreakdown) setAxiStaticBreakdown(data.axiStaticBreakdown);
             } else {
               loadFromLocalStorage();
             }
@@ -748,15 +824,15 @@ export default function WizardPage() {
         quebrantosAnteriores,
         axiDynamic
       };
-      
+
       const saveKey = activeReturnId || `new_${cuit}`;
       localStorage.setItem(`jaba_wizard_state_${saveKey}`, JSON.stringify(wizardState));
-      
+
       if (!activeReturnId && currentStep > 1 && clientName && cuit) {
         if (isCreatingRef.current) return;
         isCreatingRef.current = true;
         const createPayload = { ...wizardState, status: 'Borrador' };
-        
+
         fetch('/api/declaraciones', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -790,7 +866,8 @@ export default function WizardPage() {
     sales, purchases, fixedAssets, initialStock, finalStock,
     bankAccounts, cashHoldings, receivables, liabilities, withholdings, generalDeductions, personalDeductions,
     personalAssets, personalLiabilities, otherJustifications, activoTotalInicio, pasivoTotalInicio,
-    bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic
+    bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic,
+    axiStaticBreakdown
   ]);
 
   // Hook 4: Buscar resoluciones para el año seleccionado
@@ -815,7 +892,7 @@ export default function WizardPage() {
         console.error("Error al obtener resoluciones:", err);
         setResolutions([]);
       });
-  }, [fiscalYear, taxParameterSetId]);
+  }, [fiscalYear, taxParameterSetId, paramRefetchTrigger]);
 
   // Hook 5: Cargar detalles de la resolución/parámetros activa para cálculos en tiempo real en el front
   useEffect(() => {
@@ -833,7 +910,32 @@ export default function WizardPage() {
         console.error("Error al obtener detalles de la resolución:", err);
         setActiveParamsState({ taxParameterSetId, params: null });
       });
-  }, [fiscalYear, taxParameterSetId]);
+  }, [fiscalYear, taxParameterSetId, paramRefetchTrigger]);
+
+  // Hook 6: Sincronizar localIpcValues con activeParams
+  useEffect(() => {
+    if (activeParams) {
+      const values: Record<string, string> = {};
+      if ((activeParams as any).previousDecemberIndex) {
+        const prevDec = (activeParams as any).previousDecemberIndex as any;
+        values[`${prevDec.year}_12`] = String(prevDec.ipcValue || '0');
+      } else {
+        values[`${fiscalYear - 1}_12`] = '0';
+      }
+      if ((activeParams as any).indices) {
+        (activeParams as any).indices.forEach((idx: any) => {
+          values[`${fiscalYear}_${idx.monthIndex}`] = String(idx.ipcValue || '0');
+        });
+      }
+      for (let m = 1; m <= 12; m++) {
+        const key = `${fiscalYear}_${m}`;
+        if (!values[key]) {
+          values[key] = '0';
+        }
+      }
+      setLocalIpcValues(values);
+    }
+  }, [activeParams, fiscalYear]);
 
   const loadClientHistory = (targetCuit: string, targetName: string, targetYear: number) => {
     void targetCuit;
@@ -862,7 +964,7 @@ export default function WizardPage() {
 
   const applyBulkSalesAction = (action: 'exempt' | 'taxable' | 'delete') => {
     if (selectedSales.length === 0) return;
-    
+
     if (action === 'delete') {
       const confirmDelete = window.confirm(`¿Está seguro de eliminar los ${selectedSales.length} registros seleccionados?`);
       if (!confirmDelete) return;
@@ -888,7 +990,7 @@ export default function WizardPage() {
 
   const applyBulkPurchasesAction = (action: 'deductible' | 'nondeductible' | 'exempt' | 'delete' | string) => {
     if (selectedPurchases.length === 0) return;
-    
+
     if (action === 'delete') {
       const confirmDelete = window.confirm(`¿Está seguro de eliminar los ${selectedPurchases.length} registros seleccionados?`);
       if (!confirmDelete) return;
@@ -1265,6 +1367,33 @@ export default function WizardPage() {
         indices: [],
       };
 
+  // Dec IPC (Diciembre del año actual)
+  const decIpcVal = localIpcValues[`${fiscalYear}_12`] || '0';
+  // Prev Dec IPC (Diciembre del año anterior)
+  const prevDecIpcVal = localIpcValues[`${fiscalYear - 1}_12`] || '0';
+
+  const staticInflationRateVal = (Number(decIpcVal) > 0 && Number(prevDecIpcVal) > 0)
+    ? (Number(decIpcVal) / Number(prevDecIpcVal)) - 1
+    : 0;
+
+  const activeBreakdown = axiStaticBreakdown || defaultAxiStaticBreakdown;
+
+  const sumTotalActivo = Object.values(activeBreakdown.activo).reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const sumComputableActivo = Object.values(activeBreakdown.activo).reduce((sum, item) => sum + Number(item.computable || 0), 0);
+  const sumTotalPasivo = Object.values(activeBreakdown.pasivo).reduce((sum, item) => sum + Number(item.total || 0), 0);
+  const sumComputablePasivo = Object.values(activeBreakdown.pasivo).reduce((sum, item) => sum + Number(item.computable || 0), 0);
+
+  const staticCapitalAfectadoComputable = sumComputableActivo - sumComputablePasivo;
+
+  const rawStaticAxiVal = staticCapitalAfectadoComputable * staticInflationRateVal;
+  const calculatedStaticAxiResult = staticCapitalAfectadoComputable >= 0
+    ? -rawStaticAxiVal
+    : Math.abs(rawStaticAxiVal);
+
+  const effectiveActivoTotalInicio = axiStaticBreakdown ? sumTotalActivo.toFixed(2) : activoTotalInicio;
+  const effectivePasivoTotalInicio = axiStaticBreakdown ? sumComputablePasivo.toFixed(2) : pasivoTotalInicio;
+  const effectiveBienesNoComputablesInicio = axiStaticBreakdown ? (sumTotalActivo - sumComputableActivo).toFixed(2) : bienesNoComputablesInicio;
+
   const calculationData = {
     clientName,
     cuit,
@@ -1284,9 +1413,9 @@ export default function WizardPage() {
     personalAssets,
     personalLiabilities,
     otherJustifications,
-    activoTotalInicio,
-    bienesNoComputablesInicio,
-    pasivoTotalInicio,
+    activoTotalInicio: effectiveActivoTotalInicio,
+    bienesNoComputablesInicio: effectiveBienesNoComputablesInicio,
+    pasivoTotalInicio: effectivePasivoTotalInicio,
     axiDynamic,
     saldoAFavorAnterior,
     quebrantosAnteriores,
@@ -1296,8 +1425,8 @@ export default function WizardPage() {
     cashHoldings,
     receivables,
     liabilities,
-    activoTotalInicio,
-    pasivoTotalInicio,
+    activoTotalInicio: effectiveActivoTotalInicio,
+    pasivoTotalInicio: effectivePasivoTotalInicio,
   });
 
   const calculationRequestKey = JSON.stringify({
@@ -1307,10 +1436,8 @@ export default function WizardPage() {
 
   const hasRequiredPreviewIdentity = clientName.trim() !== '' && cuit.trim() !== '';
 
-  const executeCalculation = () => {
-    const calculationInput = buildTaxReturnCalculationInput(calculationData, calculationParams);
-    return calculateTaxReturn(calculationInput);
-  };
+  const calculationInput = buildTaxReturnCalculationInput(calculationData, calculationParams);
+  const executeCalculation = () => calculateTaxReturn(calculationInput);
 
   const localCalculationResult = hasRequiredPreviewIdentity ? executeCalculation() : null;
 
@@ -1366,6 +1493,21 @@ export default function WizardPage() {
     ? backendPreview.result
     : localCalculationResult;
 
+  const dynamicPatrimonioInicio = sumTotalActivo - sumTotalPasivo;
+
+  const dynamicVentas = calculationResult ? Number(calculationResult.ventasGravadas || 0) : 0;
+  const dynamicCosto = calculationResult ? Number(calculationResult.costoVentas || 0) : 0;
+  const dynamicGastos = calculationResult ? Number(calculationResult.gastosDeducibles || 0) : 0;
+  const dynamicAmortizaciones = calculationResult ? Number(calculationResult.amortizacionesBienesDeUso || 0) : 0;
+  const dynamicLossBaja = calculationResult && (calculationResult as any).bajaBienesDeUsoLoss ? Number((calculationResult as any).bajaBienesDeUsoLoss || 0) : 0;
+  const dynamicUtilidadHistorica = dynamicVentas - dynamicCosto - dynamicGastos - dynamicAmortizaciones - dynamicLossBaja;
+
+  const dynamicCapitalTeorico = dynamicPatrimonioInicio + dynamicUtilidadHistorica + dynamicAmortizaciones;
+
+  const closingCommercialPatrimony = calculateClosingCommercialPatrimony(calculationInput);
+  const dynamicCapitalReal = closingCommercialPatrimony.patrimonioComercialCierre.toNumber();
+  const dynamicRetiroAporteNeto = dynamicCapitalReal - dynamicCapitalTeorico;
+
   const previewStatus = buildTaxReturnPreviewStatus({
     hasRequiredPreviewIdentity,
     calculationRequestKey,
@@ -1390,14 +1532,178 @@ export default function WizardPage() {
 
   // Buscar si el cliente actual (según el CUIT ingresado) tiene una DDJJ anterior cerrada en la BD o mock
   const clientObj = dbClients.find(c => c.cuit === cuit) || mockClients.find(c => c.cuit === cuit);
-  const previousReturnObj = clientObj 
-    ? (dbDeclaraciones.find(r => r.cuit === cuit && r.year === fiscalYear - 1 && r.status === 'Cerrada') || 
+  const previousReturnObj = clientObj
+    ? (dbDeclaraciones.find(r => r.cuit === cuit && r.year === fiscalYear - 1 && r.status === 'Cerrada') ||
        mockTaxReturns.find(r => r.clientId === clientObj.id && r.year === fiscalYear - 1 && r.status === 'Cerrada'))
     : null;
 
+  const handleAxiStaticCellChange = (
+    type: 'activo' | 'pasivo',
+    key: string,
+    field: 'total' | 'computable',
+    value: string
+  ) => {
+    const current = axiStaticBreakdown || defaultAxiStaticBreakdown;
+    const updated = {
+      activo: { ...current.activo },
+      pasivo: { ...current.pasivo }
+    };
+
+    updated[type][key] = {
+      ...updated[type][key],
+      [field]: value
+    };
+
+    if (field === 'total') {
+      const nonComputableKeys = [
+        'retencionesGanancias',
+        'anticiposGanancias',
+        'creditoFiscal',
+        'ivaSaf',
+        'safIibb',
+        'impuestoLey',
+        'bienesUso'
+      ];
+      if (type === 'pasivo' || !nonComputableKeys.includes(key)) {
+        updated[type][key].computable = value;
+      } else {
+        updated[type][key].computable = '0';
+      }
+    }
+
+    setAxiStaticBreakdown(updated);
+  };
+
+  const suggestAxiStaticValues = () => {
+    const initialBanks = bankAccounts.reduce((sum, b) => sum + Number(b.nominalInitial || 0) * Number(b.tcInitial || 1), 0);
+    const initialCash = cashHoldings.reduce((sum, c) => sum + Number(c.nominalInitial || 0) * Number(c.tcFinal || 1), 0);
+    const totalDisp = initialBanks + initialCash;
+
+    const totalDeudores = receivables
+      .filter(r => r.type === 'Comercial' || (r.description && r.description.toLowerCase().includes('cliente')))
+      .reduce((sum, r) => sum + Number(r.balanceInitial || 0), 0);
+
+    const totalStock = Number(initialStock || 0);
+
+    const totalBienesUso = fixedAssets
+      .filter(a => {
+        if (!a.purchaseDate) return false;
+        const purchaseYear = new Date(a.purchaseDate).getFullYear();
+        return purchaseYear < fiscalYear;
+      })
+      .reduce((sum, a) => sum + Number(a.originalCost || 0), 0);
+
+    const totalCF = receivables
+      .filter(r => r.type === 'Fiscal' || (r.description && (r.description.toLowerCase().includes('crédito') || r.description.toLowerCase().includes('saf'))))
+      .reduce((sum, r) => sum + Number(r.balanceInitial || 0), 0);
+
+    const totalDeudasCom = liabilities
+      .filter(l => l.type === 'Proveedores' || (l.description && (l.description.toLowerCase().includes('proveedor') || l.description.toLowerCase().includes('comercial'))))
+      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
+
+    const totalDeudasFis = liabilities
+      .filter(l => l.description && (l.description.toLowerCase().includes('afip') || l.description.toLowerCase().includes('fiscal') || l.description.toLowerCase().includes('impuesto')))
+      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
+
+    const totalDeudasSoc = liabilities
+      .filter(l => l.description && (l.description.toLowerCase().includes('carga') || l.description.toLowerCase().includes('social') || l.description.toLowerCase().includes('sueldo') || l.description.toLowerCase().includes('sindicato') || l.description.toLowerCase().includes('previsional')))
+      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
+
+    const totalPrestamos = liabilities
+      .filter(l => l.type === 'Otros' && !(l.description && (l.description.toLowerCase().includes('proveedor') || l.description.toLowerCase().includes('afip') || l.description.toLowerCase().includes('sueldo') || l.description.toLowerCase().includes('social'))))
+      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
+
+    const suggested: AxiStaticBreakdown = {
+      activo: {
+        disponibilidadesBancos: { total: totalDisp.toFixed(2), computable: totalDisp.toFixed(2) },
+        retencionesGanancias: { total: '0', computable: '0' },
+        anticiposGanancias: { total: '0', computable: '0' },
+        creditoFiscal: { total: totalCF.toFixed(2), computable: '0' },
+        ivaSaf: { total: '0', computable: '0' },
+        safIibb: { total: '0', computable: '0' },
+        impuestoLey: { total: '0', computable: '0' },
+        deudoresVentas: { total: totalDeudores.toFixed(2), computable: totalDeudores.toFixed(2) },
+        bienesCambio: { total: totalStock.toFixed(2), computable: totalStock.toFixed(2) },
+        bienesUso: { total: totalBienesUso.toFixed(2), computable: '0' }
+      },
+      pasivo: {
+        deudasSociales: { total: totalDeudasSoc.toFixed(2), computable: totalDeudasSoc.toFixed(2) },
+        deudasFiscales: { total: totalDeudasFis.toFixed(2), computable: totalDeudasFis.toFixed(2) },
+        deudasComerciales: { total: totalDeudasCom.toFixed(2), computable: totalDeudasCom.toFixed(2) },
+        prestamos: { total: totalPrestamos.toFixed(2), computable: totalPrestamos.toFixed(2) }
+      }
+    };
+
+    setAxiStaticBreakdown(suggested);
+    alert('Valores sugeridos cargados desde la contabilidad al inicio. Verifique y guarde la declaración.');
+  };
+
+  const handleCopyAxiDynamicDifference = (diff: number) => {
+    if (diff === 0) return;
+    const amountStr = Math.abs(diff).toFixed(2);
+    const concept = 'Ajuste Implícito (Retiro/Aporte Neto)';
+    const type = diff < 0 ? 'RetiroSocio' : 'AporteCapital';
+
+    const filtered = axiDynamic.filter(item => item.concept !== concept);
+    const newRow = {
+      concept,
+      type,
+      amount: amountStr,
+      date: `${fiscalYear}-12-31`
+    };
+    setAxiDynamic([...filtered, newRow]);
+    alert(`Se copió la diferencia como variación de tipo ${type === 'RetiroSocio' ? 'Retiro' : 'Aporte'} de $${Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2 })}.`);
+  };
+
+  const handleSaveIpcIndices = () => {
+    setIsSavingIpcs(true);
+    const indicesList = [];
+    const prevDecKey = `${fiscalYear - 1}_12`;
+    indicesList.push({
+      year: fiscalYear - 1,
+      monthIndex: 12,
+      ipcValue: localIpcValues[prevDecKey] || '0',
+      monthName: 'Diciembre (Ant.)'
+    });
+    const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    for (let m = 1; m <= 12; m++) {
+      const key = `${fiscalYear}_${m}`;
+      indicesList.push({
+        year: fiscalYear,
+        monthIndex: m,
+        ipcValue: localIpcValues[key] || '0',
+        monthName: monthNames[m]
+      });
+    }
+    fetch('/api/parametros', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        year: fiscalYear,
+        indices: indicesList
+      })
+    })
+    .then(res => res.json())
+    .then(res => {
+      if (res.success) {
+        alert('Índices IPC guardados con éxito.');
+        setParamRefetchTrigger(prev => prev + 1);
+      } else {
+        alert('Error al guardar índices: ' + res.error);
+      }
+    })
+    .catch(err => {
+      console.error("Error al guardar índices:", err);
+      alert('Error de red al guardar índices.');
+    })
+    .finally(() => {
+      setIsSavingIpcs(false);
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200">
-      
+
       <style dangerouslySetInnerHTML={{__html: `
         .custom-wizard-scrollbar::-webkit-scrollbar {
           height: 5px;
@@ -1426,15 +1732,24 @@ export default function WizardPage() {
       )}
 
       {/* HEADER DE WIZARD */}
-      <header className="border-b border-[#1e1e24] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="border-b border-[#1e1e24] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50 print:hidden">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 print:hidden">
             <Link href="/" className="hover:text-teal-400 transition-colors flex items-center gap-1.5 text-xs text-zinc-400 font-bold uppercase tracking-wider">
               <ArrowLeft className="h-4 w-4" />
               Volver al Dashboard
             </Link>
+            <span className="text-zinc-800">|</span>
+            <button
+              type="button"
+              onClick={() => typeof window !== 'undefined' && window.print()}
+              className="hover:text-teal-400 transition-colors flex items-center gap-1.5 text-xs text-zinc-400 font-bold uppercase tracking-wider cursor-pointer bg-transparent border-0"
+            >
+              <Printer className="h-4 w-4 text-teal-455" />
+              Imprimir Pantalla (PDF)
+            </button>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400">
               <Sparkles className="h-3.5 w-3.5" />
@@ -1449,7 +1764,7 @@ export default function WizardPage() {
       </header>
 
       {/* BARRA DE PROGRESO DE 6 PASOS (STITCH UI PROGRESS LINE) */}
-      <div className="bg-[#121216] border-b border-zinc-850 py-4 px-6">
+      <div className="bg-[#121216] border-b border-zinc-850 py-4 px-6 print:hidden">
         <div className="max-w-7xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           {[
             'Contribuyente y Perfil', 'Ingresos y Ventas', 'Gastos y Existencias',
@@ -1459,9 +1774,9 @@ export default function WizardPage() {
             const isActive = currentStep === stepNum;
             const hasData = checkIfStepHasData(stepNum);
             const isVisited = stepNum < maxVisitedStep;
-            
+
             return (
-              <button 
+              <button
                 key={stepNum}
                 onClick={() => changeStep(stepNum)}
                 className={`flex items-center gap-2 p-2 rounded-lg border transition-all duration-200 text-left focus:outline-none w-full relative ${
@@ -1475,7 +1790,7 @@ export default function WizardPage() {
                 {isActive && (
                   <div className="absolute top-0 left-2 right-2 h-[2px] bg-teal-500 rounded-b"></div>
                 )}
-                
+
                 <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border transition-all shrink-0 ${
                   isActive ? 'bg-teal-500 text-[#09090b] border-teal-500 shadow-md shadow-teal-500/20' :
                   hasData ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' :
@@ -1484,12 +1799,12 @@ export default function WizardPage() {
                 }`}>
                   {isActive ? stepNum : (hasData ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : (isVisited ? <span className="text-[9px] font-extrabold">-</span> : stepNum))}
                 </div>
-                
+
                 <div className="flex flex-col min-w-0">
                   <span className={`text-[10px] font-bold leading-tight truncate transition-colors ${
-                    isActive ? 'text-teal-400 font-extrabold' : 
-                    hasData ? 'text-zinc-300' : 
-                    isVisited ? 'text-amber-450/80' : 
+                    isActive ? 'text-teal-400 font-extrabold' :
+                    hasData ? 'text-zinc-300' :
+                    isVisited ? 'text-amber-450/80' :
                     'text-zinc-500 group-hover:text-zinc-400'
                   }`} title={stepName}>
                     {stepName}
@@ -1508,10 +1823,10 @@ export default function WizardPage() {
 
       {/* CONTENIDO DEL WIZARD */}
       <main className="max-w-5xl mx-auto px-6 py-10">
-        
+
         {/* ENVASE DE CONTENIDO (GLASSMORPHISM PANEL) */}
         <div className="bg-[#121216] border border-zinc-800 rounded-xl p-8 shadow-2xl">
-          
+
           {/* PASO 1: IDENTIFICACIÓN DEL CLIENTE Y PERÍODO */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -1535,8 +1850,8 @@ export default function WizardPage() {
                 <div className="space-y-2 relative">
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Nombre o Razón Social</label>
                   <div className="relative">
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={clientName || ''}
                       onChange={(e) => {
                         setClientName(e.target.value);
@@ -1553,7 +1868,7 @@ export default function WizardPage() {
                       className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
                       placeholder="Busque por nombre/cuit o escriba nuevo..."
                     />
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs font-bold focus:outline-none"
@@ -1569,7 +1884,7 @@ export default function WizardPage() {
                         .filter(c => {
                           const isExactMatch = dbClients.some(mc => mc.name === clientName);
                           if (!clientName || isExactMatch) return true;
-                          return c.name.toLowerCase().includes(clientName.toLowerCase()) || 
+                          return c.name.toLowerCase().includes(clientName.toLowerCase()) ||
                                  c.cuit.includes(clientName);
                         })
                         .map(client => (
@@ -1595,8 +1910,8 @@ export default function WizardPage() {
 
                 <div className="space-y-2">
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">CUIT (Formato Oficial)</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={cuit || ''}
                     onChange={(e) => {
                       setCuit(formatCuit(e.target.value));
@@ -1610,7 +1925,7 @@ export default function WizardPage() {
 
                 <div className="space-y-2">
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Período Fiscal</label>
-                  <select 
+                  <select
                     value={fiscalYear}
                     onChange={(e) => {
                       const newYear = Number(e.target.value);
@@ -1627,7 +1942,7 @@ export default function WizardPage() {
 
                 <div className="space-y-2">
                   <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Resolución Normativa / Escala Aplicable</label>
-                  <select 
+                  <select
                     value={taxParameterSetId}
                     onChange={(e) => setTaxParameterSetId(e.target.value)}
                     className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
@@ -1661,7 +1976,7 @@ export default function WizardPage() {
                       <span className="text-sm font-semibold text-white block">Cónyuge o Conviviente a cargo</span>
                       <span className="text-[10px] text-zinc-500">Debe poseer ingresos menores al MNI impositivo.</span>
                     </div>
-                    <input 
+                    <input
                       type="checkbox"
                       checked={personalDeductions.tieneConyuge}
                       onChange={(e) => setPersonalDeductions({...personalDeductions, tieneConyuge: e.target.checked})}
@@ -1674,7 +1989,7 @@ export default function WizardPage() {
                       <span className="text-sm font-semibold text-white block">Jubilado con 8+ Haberes Mínimos</span>
                       <span className="text-[10px] text-zinc-500">Deducción específica de 8 haberes (reemplaza MNI y ded. especial).</span>
                     </div>
-                    <input 
+                    <input
                       type="checkbox"
                       checked={personalDeductions.esJubiladoOchoHaberes}
                       onChange={(e) => setPersonalDeductions({...personalDeductions, esJubiladoOchoHaberes: e.target.checked})}
@@ -1684,7 +1999,7 @@ export default function WizardPage() {
 
                   <div className="space-y-2">
                     <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Cantidad de Hijos a cargo</label>
-                    <input 
+                    <input
                       type="number"
                       value={personalDeductions.cantidadHijos ?? 0}
                       onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijos: Math.max(0, parseInt(e.target.value) || 0)})}
@@ -1694,7 +2009,7 @@ export default function WizardPage() {
 
                   <div className="space-y-2">
                     <label className="text-xs uppercase font-bold text-zinc-550 tracking-wider">Hijos Incapacitados para el Trabajo</label>
-                    <input 
+                    <input
                       type="number"
                       value={personalDeductions.cantidadHijosIncapacitados ?? 0}
                       onChange={(e) => setPersonalDeductions({...personalDeductions, cantidadHijosIncapacitados: Math.max(0, parseInt(e.target.value) || 0)})}
@@ -1704,7 +2019,7 @@ export default function WizardPage() {
 
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider">Tipo de Deducción Especial (Art. 30)</label>
-                    <select 
+                    <select
                       value={personalDeductions.tipoDeduccionEspecial}
                       onChange={(e) => setPersonalDeductions({...personalDeductions, tipoDeduccionEspecial: coerceWizardPersonalDeductionType(e.target.value)})}
                       className="w-full h-11 px-4 rounded-lg bg-[#09090b] border border-zinc-800 text-sm text-white focus:outline-none focus:border-teal-500/50 transition-colors"
@@ -1724,7 +2039,7 @@ export default function WizardPage() {
                   <Sparkles className="h-4.5 w-4.5" />
                   Saldos Iniciales y Patrimonio del Año Anterior
                 </div>
-                
+
                 <p className="text-xs text-zinc-400 leading-normal">
                   Para justificar la variación patrimonial anual e iniciar el cálculo de inflación (Estático AXI), se requiere cargar el patrimonio del ejercicio anterior.
                 </p>
@@ -1835,8 +2150,8 @@ export default function WizardPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-5 rounded-lg bg-[#09090b] border border-zinc-850">
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Activo Total al Inicio ($)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={activoTotalInicio ?? ''}
                       onChange={(e) => setActivoTotalInicio(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
@@ -1846,8 +2161,8 @@ export default function WizardPage() {
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Pasivo Total al Inicio ($)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={pasivoTotalInicio ?? ''}
                       onChange={(e) => setPasivoTotalInicio(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
@@ -1857,8 +2172,8 @@ export default function WizardPage() {
 
                   <div className="space-y-1.5">
                     <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Bienes No Computables al Inicio ($)</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={bienesNoComputablesInicio ?? ''}
                       onChange={(e) => setBienesNoComputablesInicio(e.target.value)}
                       className="w-full h-10 px-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors"
@@ -1897,8 +2212,8 @@ export default function WizardPage() {
                   )}
 
                   <div className="relative">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".xlsx,.xls,.csv"
                       multiple
                       onChange={(e) => handleFileUpload(e, 'sales')}
@@ -1957,7 +2272,7 @@ export default function WizardPage() {
                   <thead>
                     <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
                       <th className="px-4 py-3 w-10 text-center">
-                        <input 
+                        <input
                           type="checkbox"
                           checked={sales.length > 0 && selectedSales.length === sales.length}
                           onChange={handleSelectAllSales}
@@ -1985,7 +2300,7 @@ export default function WizardPage() {
                       return (
                       <tr key={index} className={`hover:bg-zinc-800/10 transition-colors ${selectedSales.includes(index) ? 'bg-teal-500/5' : ''}`}>
                         <td className="px-4 py-2 text-center">
-                          <input 
+                          <input
                             type="checkbox"
                             checked={selectedSales.includes(index)}
                             onChange={() => handleSelectSale(index)}
@@ -1993,7 +2308,7 @@ export default function WizardPage() {
                           />
                         </td>
                         <td className="px-4 py-2">
-                          <input 
+                          <input
                             type="date"
                             id={`sales-date-${index}`}
                             value={sale.date || ''}
@@ -2016,7 +2331,7 @@ export default function WizardPage() {
                           )}
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <input 
+                          <input
                             type="number"
                             id={`sales-amount-${index}`}
                             value={sale.netAmount ?? ''}
@@ -2036,7 +2351,7 @@ export default function WizardPage() {
                           </select>
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <button 
+                          <button
                             onClick={() => deleteRow(index, 'sales')}
                             className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors"
                           >
@@ -2050,7 +2365,7 @@ export default function WizardPage() {
                 </table>
               </div>
 
-              <button 
+              <button
                 onClick={() => addRow('sales')}
                 className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider"
               >
@@ -2087,8 +2402,8 @@ export default function WizardPage() {
                   )}
 
                   <div className="relative">
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept=".xlsx,.xls,.csv"
                       multiple
                       onChange={(e) => handleFileUpload(e, 'purchases')}
@@ -2162,7 +2477,7 @@ export default function WizardPage() {
                   <thead>
                     <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
                       <th className="px-4 py-3 w-10 text-center">
-                        <input 
+                        <input
                           type="checkbox"
                           checked={purchases.length > 0 && selectedPurchases.length === purchases.length}
                           onChange={handleSelectAllPurchases}
@@ -2191,7 +2506,7 @@ export default function WizardPage() {
                       return (
                       <tr key={index} className={`hover:bg-zinc-800/10 transition-colors ${selectedPurchases.includes(index) ? 'bg-teal-500/5' : ''}`}>
                         <td className="px-4 py-2 text-center">
-                          <input 
+                          <input
                             type="checkbox"
                             checked={selectedPurchases.includes(index)}
                             onChange={() => handleSelectPurchase(index)}
@@ -2199,7 +2514,7 @@ export default function WizardPage() {
                           />
                         </td>
                         <td className="px-4 py-2">
-                          <input 
+                          <input
                             type="date"
                             id={`purchases-date-${index}`}
                             value={purchase.date || ''}
@@ -2222,7 +2537,7 @@ export default function WizardPage() {
                           )}
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <input 
+                          <input
                             type="number"
                             id={`purchases-amount-${index}`}
                             value={purchase.netAmount ?? ''}
@@ -2254,7 +2569,7 @@ export default function WizardPage() {
                           </select>
                         </td>
                         <td className="px-4 py-2 text-right">
-                          <button 
+                          <button
                             onClick={() => deleteRow(index, 'purchases')}
                             className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                           >
@@ -2268,7 +2583,7 @@ export default function WizardPage() {
                 </table>
               </div>
 
-              <button 
+              <button
                 onClick={() => addRow('purchases')}
                 className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
               >
@@ -2284,7 +2599,7 @@ export default function WizardPage() {
                 </div>
 
                 {(() => {
-                  const comprasTotal = purchases.reduce((sum, p) => sum.add(new Decimal(p.netAmount || 0)), new Decimal(0));
+                  const comprasTotal = sumDeductibleCostPurchases(purchases);
                   const ei = new Decimal(initialStock || 0);
                   const ef = new Decimal(finalStock || 0);
                   const cmvCalculated = ei.add(comprasTotal).sub(ef);
@@ -2294,8 +2609,8 @@ export default function WizardPage() {
                         <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Existencia Inicial (al 01/01/{fiscalYear})</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             value={initialStock ?? ''}
                             onChange={(e) => setInitialStock(e.target.value)}
                             className="w-full h-10 pl-7 pr-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
@@ -2306,8 +2621,8 @@ export default function WizardPage() {
                         <label className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider block">Existencia Final (al 31/12/{fiscalYear})</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-bold text-sm">$</span>
-                          <input 
-                            type="number" 
+                          <input
+                            type="number"
                             value={finalStock ?? ''}
                             onChange={(e) => setFinalStock(e.target.value)}
                             className="w-full h-10 pl-7 pr-3 rounded-lg bg-[#121216] border border-zinc-800 text-xs font-mono text-white focus:outline-none focus:border-teal-500/50 transition-colors font-mono"
@@ -2363,7 +2678,7 @@ export default function WizardPage() {
                       {fixedAssets.map((asset, index) => (
                         <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2">
-                            <input 
+                            <input
                               type="text"
                               id={`assets-name-${index}`}
                               value={asset.name || ''}
@@ -2393,7 +2708,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               id={`assets-cost-${index}`}
                               value={asset.originalCost ?? ''}
@@ -2403,7 +2718,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <input 
+                            <input
                               type="number"
                               value={asset.usefulLife ?? ''}
                               onChange={(e) => handleCellChange(index, 'usefulLife', e.target.value, 'assets')}
@@ -2411,7 +2726,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <input 
+                            <input
                               type="number"
                               value={asset.yearsElapsed ?? ''}
                               onChange={(e) => handleCellChange(index, 'yearsElapsed', e.target.value, 'assets')}
@@ -2419,7 +2734,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="text"
                               value={asset.customReexpIndex ?? ''}
                               onChange={(e) => handleCellChange(index, 'customReexpIndex', e.target.value, 'assets')}
@@ -2427,7 +2742,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <button 
+                            <button
                               onClick={() => deleteRow(index, 'assets')}
                               className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                             >
@@ -2447,7 +2762,7 @@ export default function WizardPage() {
                   </table>
                 </div>
 
-                <button 
+                <button
                   onClick={() => addRow('assets')}
                   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
                 >
@@ -2480,7 +2795,7 @@ export default function WizardPage() {
                       {bankAccounts.map((bank, index) => (
                         <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2">
-                            <input 
+                            <input
                               type="text"
                               value={bank.name || ''}
                               onChange={(e) => handleCellChange(index, 'name', e.target.value, 'bankAccounts')}
@@ -2489,7 +2804,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2">
-                            <input 
+                            <input
                               type="text"
                               value={bank.accountNumber || ''}
                               onChange={(e) => handleCellChange(index, 'accountNumber', e.target.value, 'bankAccounts')}
@@ -2509,7 +2824,7 @@ export default function WizardPage() {
                           </td>
                           <td className="px-4 py-2 text-right">
                             <div className="space-y-1.5">
-                              <input 
+                              <input
                                 type="number"
                                 value={bank.nominalInitial ?? ''}
                                 onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'bankAccounts')}
@@ -2519,8 +2834,8 @@ export default function WizardPage() {
                                 <div className="flex flex-col items-end space-y-1">
                                   <div className="flex items-center gap-1 text-[9px] text-zinc-500">
                                     <span>TC Inicial:</span>
-                                    <input 
-                                      type="number" 
+                                    <input
+                                      type="number"
                                       step="0.01"
                                       value={bank.tcInitial ?? '1'}
                                       onChange={(e) => handleCellChange(index, 'tcInitial', e.target.value, 'bankAccounts')}
@@ -2536,7 +2851,7 @@ export default function WizardPage() {
                           </td>
                           <td className="px-4 py-2 text-right">
                             <div className="space-y-1.5">
-                              <input 
+                              <input
                                 type="number"
                                 value={bank.nominalFinal ?? ''}
                                 onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'bankAccounts')}
@@ -2546,8 +2861,8 @@ export default function WizardPage() {
                                 <div className="flex flex-col items-end space-y-1">
                                   <div className="flex items-center gap-1 text-[9px] text-zinc-500">
                                     <span>TC Cierre:</span>
-                                    <input 
-                                      type="number" 
+                                    <input
+                                      type="number"
                                       step="0.01"
                                       value={bank.tcFinal ?? '1'}
                                       onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'bankAccounts')}
@@ -2562,7 +2877,7 @@ export default function WizardPage() {
                             </div>
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               value={bank.interests ?? ''}
                               onChange={(e) => handleCellChange(index, 'interests', e.target.value, 'bankAccounts')}
@@ -2570,7 +2885,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <button 
+                            <button
                               onClick={() => deleteRow(index, 'bankAccounts')}
                               className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                             >
@@ -2590,7 +2905,7 @@ export default function WizardPage() {
                   </table>
                 </div>
 
-                <button 
+                <button
                   onClick={() => addRow('bankAccounts')}
                   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
                 >
@@ -2867,7 +3182,7 @@ export default function WizardPage() {
                       {personalAssets.map((asset, index) => (
                         <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2">
-                            <input 
+                            <input
                               type="text"
                               value={asset.description || ''}
                               onChange={(e) => handleCellChange(index, 'description', e.target.value, 'personalAssets')}
@@ -2888,7 +3203,7 @@ export default function WizardPage() {
                             </select>
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               value={asset.valueInitial ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueInitial', e.target.value, 'personalAssets')}
@@ -2896,7 +3211,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               value={asset.valueFinal ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueFinal', e.target.value, 'personalAssets')}
@@ -2904,7 +3219,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <button 
+                            <button
                               onClick={() => deleteRow(index, 'personalAssets')}
                               className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                             >
@@ -2924,7 +3239,7 @@ export default function WizardPage() {
                   </table>
                 </div>
 
-                <button 
+                <button
                   onClick={() => addRow('personalAssets')}
                   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
                 >
@@ -2954,7 +3269,7 @@ export default function WizardPage() {
                       {personalLiabilities.map((liab, index) => (
                         <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2">
-                            <input 
+                            <input
                               type="text"
                               value={liab.description || ''}
                               onChange={(e) => handleCellChange(index, 'description', e.target.value, 'personalLiabilities')}
@@ -2963,7 +3278,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               value={liab.valueInitial ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueInitial', e.target.value, 'personalLiabilities')}
@@ -2971,7 +3286,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               value={liab.valueFinal ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueFinal', e.target.value, 'personalLiabilities')}
@@ -2979,7 +3294,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <button 
+                            <button
                               onClick={() => deleteRow(index, 'personalLiabilities')}
                               className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                             >
@@ -2999,7 +3314,7 @@ export default function WizardPage() {
                   </table>
                 </div>
 
-                <button 
+                <button
                   onClick={() => addRow('personalLiabilities')}
                   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
                 >
@@ -3134,13 +3449,13 @@ export default function WizardPage() {
               {(() => {
                 const banksIni = bankAccounts.reduce((sum, b) => sum.add(new Decimal(b.nominalInitial || 0).mul(new Decimal(b.tcInitial || 1))), new Decimal(0));
                 const banksFin = bankAccounts.reduce((sum, b) => sum.add(new Decimal(b.nominalFinal || 0).mul(new Decimal(b.tcFinal || 1))), new Decimal(0));
-                
+
                 const assetsIni = personalAssets.reduce((sum, a) => sum.add(new Decimal(a.valueInitial || 0)), new Decimal(0));
                 const assetsFin = personalAssets.reduce((sum, a) => sum.add(new Decimal(a.valueFinal || 0)), new Decimal(0));
-                
+
                 const liabIni = personalLiabilities.reduce((sum, l) => sum.add(new Decimal(l.valueInitial || 0)), new Decimal(0));
                 const liabFin = personalLiabilities.reduce((sum, l) => sum.add(new Decimal(l.valueFinal || 0)), new Decimal(0));
-                
+
                 const totalIni = banksIni.add(assetsIni).sub(liabIni)
                   .add(new Decimal(activoTotalInicio || 0).sub(new Decimal(pasivoTotalInicio || 0)));
                 const totalFin = banksFin.add(assetsFin).sub(liabFin)
@@ -3148,9 +3463,9 @@ export default function WizardPage() {
                     .add(calculationResult ? calculationResult.resultadoComercialNeto.toNumber() : 0));
                 const variacion = totalFin.sub(totalIni);
                 const hasValues = totalIni.abs().gt(0) || totalFin.abs().gt(0);
-                
+
                 if (!hasValues) return null;
-                
+
                 return (
                   <div className="mt-8 p-5 rounded-xl bg-gradient-to-br from-[#181820] to-[#121216] border border-zinc-800 shadow-xl space-y-4 animate-fadeIn">
                     <div className="flex items-center gap-2">
@@ -3159,7 +3474,7 @@ export default function WizardPage() {
                       </div>
                       <h3 className="text-xs font-bold text-white uppercase tracking-wider">Pre-Conciliación Patrimonial (Variación Neta)</h3>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
                       <div className="p-3.5 rounded-lg bg-[#09090b]/80 border border-zinc-850">
                         <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Patrimonio Neto Inicial</span>
@@ -3190,6 +3505,34 @@ export default function WizardPage() {
                 <p className="text-zinc-400 text-xs mt-1">Configure las deducciones generales admitidas por ley, las retenciones sufridas y los saldos anteriores o variaciones AXI.</p>
               </div>
 
+              {/* Switcher de Sub-pestañas JABA Stitch UI */}
+              <div className="flex border-b border-zinc-800 gap-6">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('deducciones')}
+                  className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                    activeSubTab === 'deducciones'
+                      ? 'border-teal-500 text-teal-400 font-extrabold'
+                      : 'border-transparent text-zinc-500 hover:text-zinc-350 font-bold'
+                  }`}
+                >
+                  Deducciones y Retenciones
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveSubTab('axi')}
+                  className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+                    activeSubTab === 'axi'
+                      ? 'border-teal-500 text-teal-400 font-extrabold'
+                      : 'border-transparent text-zinc-500 hover:text-zinc-350 font-bold'
+                  }`}
+                >
+                  Ajuste por Inflación (AXI)
+                </button>
+              </div>
+
+              {activeSubTab === 'deducciones' ? (
+                <div className="space-y-8 animate-fadeIn">
               {/* SECCIÓN 1: DEDUCCIONES GENERALES */}
               {(() => {
                 const getTope = (key: string, def: string) => {
@@ -3199,7 +3542,7 @@ export default function WizardPage() {
                   return def;
                 };
 
-                const hasSecondaryDeductionsValue = 
+                const hasSecondaryDeductionsValue =
                   (generalDeductions.servicioDomestico && generalDeductions.servicioDomestico !== '0') ||
                   (generalDeductions.seguroVida && generalDeductions.seguroVida !== '0') ||
                   (generalDeductions.seguroRetiro && generalDeductions.seguroRetiro !== '0') ||
@@ -3237,7 +3580,7 @@ export default function WizardPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                           <label className="text-xs uppercase font-bold text-zinc-450 tracking-wider block">Aportes Autónomos</label>
-                          <input 
+                          <input
                             type="number"
                             value={generalDeductions.autonomos ?? ''}
                             onChange={(e) => setGeneralDeductions({...generalDeductions, autonomos: e.target.value})}
@@ -3247,7 +3590,7 @@ export default function WizardPage() {
 
                         <div className="space-y-2">
                           <label className="text-xs uppercase font-bold text-zinc-450 tracking-wider block">Prepagas / Asistencial (Tope: 5% Gan. Neta)</label>
-                          <input 
+                          <input
                             type="number"
                             value={generalDeductions.medicosAsistencial ?? ''}
                             onChange={(e) => setGeneralDeductions({...generalDeductions, medicosAsistencial: e.target.value})}
@@ -3257,7 +3600,7 @@ export default function WizardPage() {
 
                         <div className="space-y-2">
                           <label className="text-xs uppercase font-bold text-zinc-450 tracking-wider block">Gastos Educativos (Tope: {getTope('topeGastosEducativos', '$1.803.002,21')})</label>
-                          <input 
+                          <input
                             type="number"
                             value={generalDeductions.gastosEducativos ?? ''}
                             onChange={(e) => setGeneralDeductions({...generalDeductions, gastosEducativos: e.target.value})}
@@ -3282,7 +3625,7 @@ export default function WizardPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-zinc-850/50 pt-6 animate-fadeIn">
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Servicio Doméstico (Tope: {getTope('topeServicioDomestico', '$4.507.505,52')})</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.servicioDomestico ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, servicioDomestico: e.target.value})}
@@ -3292,7 +3635,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Vida (Tope: {getTope('topeSeguroVida', '$573.817,13')})</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.seguroVida ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, seguroVida: e.target.value})}
@@ -3302,7 +3645,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Seguro de Retiro (Tope: {getTope('topeSeguroRetiro', '$573.817,13')})</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.seguroRetiro ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, seguroRetiro: e.target.value})}
@@ -3312,7 +3655,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Gastos de Sepelio (Tope: {getTope('topeGastosSepelio', '$996,23')})</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.gastosSepelio ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, gastosSepelio: e.target.value})}
@@ -3322,7 +3665,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Intereses Créditos Hipotecarios (Tope: {getTope('topeInteresHipoteca', '$20.000,00')})</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.interesesHipoteca ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, interesesHipoteca: e.target.value})}
@@ -3332,7 +3675,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Alquiler Casa Habitación (Deducible: 40%)</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.alquilerCasaHabitacion ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, alquilerCasaHabitacion: e.target.value})}
@@ -3352,7 +3695,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Donaciones (Tope: 5% Ganancia Neta)</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.donaciones ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, donaciones: e.target.value})}
@@ -3362,7 +3705,7 @@ export default function WizardPage() {
 
                           <div className="space-y-2">
                             <label className="text-xs uppercase font-bold text-zinc-500 tracking-wider block">Honorarios Médicos Facturados (Deducible: 40%)</label>
-                            <input 
+                            <input
                               type="number"
                               value={generalDeductions.honorariosMedicos ?? ''}
                               onChange={(e) => setGeneralDeductions({...generalDeductions, honorariosMedicos: e.target.value})}
@@ -3402,8 +3745,8 @@ export default function WizardPage() {
                     )}
 
                     <div className="relative">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept=".xlsx,.xls,.csv"
                         multiple
                         onChange={(e) => handleFileUpload(e, 'withholdings')}
@@ -3515,7 +3858,7 @@ export default function WizardPage() {
                             </div>
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <input 
+                            <input
                               type="number"
                               value={withholding.amount ?? ''}
                               onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'withholdings')}
@@ -3523,7 +3866,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <button 
+                            <button
                               onClick={() => deleteRow(index, 'withholdings')}
                               className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                             >
@@ -3543,7 +3886,7 @@ export default function WizardPage() {
                   </table>
                 </div>
 
-                <button 
+                <button
                   type="button"
                   onClick={() => addRow('withholdings')}
                   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider focus:outline-none cursor-pointer"
@@ -3557,11 +3900,11 @@ export default function WizardPage() {
               <div className="pt-6 border-t border-zinc-800 space-y-4">
                 <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Créditos y Quebrantos de Ejercicios Anteriores</h3>
                 <p className="text-zinc-400 text-[11px] leading-relaxed">Cargue los saldos a favor impositivos del ejercicio anterior y los quebrantos de años anteriores acumulados para compensar en el ejercicio actual.</p>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#09090b] p-5 rounded-lg border border-zinc-850">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block">Saldo a Favor del Período Anterior ($)</label>
-                    <input 
+                    <input
                       type="number"
                       value={saldoAFavorAnterior ?? ''}
                       onChange={(e) => setSaldoAFavorAnterior(e.target.value)}
@@ -3572,7 +3915,7 @@ export default function WizardPage() {
 
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block">Quebrantos de Períodos Anteriores a Compensar ($)</label>
-                    <input 
+                    <input
                       type="number"
                       value={quebrantosAnteriores ?? ''}
                       onChange={(e) => setQuebrantosAnteriores(e.target.value)}
@@ -3583,11 +3926,273 @@ export default function WizardPage() {
                 </div>
               </div>
 
+                </div>
+              ) : (
+                <div className="space-y-8 animate-fadeIn">
+                  {/* AXI DASHBOARD PANEL GRID */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* COLUMNA IZQUIERDA (IPC + DINAMICO) */}
+                    <div className="lg:col-span-5 space-y-6">
+                      {/* Panel IPC Indices */}
+                      <div className="bg-zinc-900/10 border border-zinc-850 p-5 rounded-xl space-y-4 shadow-xl">
+                        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                          <div>
+                            <h4 className="text-xs uppercase font-extrabold text-teal-400 tracking-wider">Editor de Índices IPC</h4>
+                            <p className="text-[10px] text-zinc-500 mt-0.5">Carga de índices mensuales e históricos (INDEC)</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleSaveIpcIndices}
+                            disabled={isSavingIpcs}
+                            className="px-3 h-8 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-zinc-800 disabled:text-zinc-550 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center shadow-md shadow-teal-500/10"
+                          >
+                            {isSavingIpcs ? 'Guardando...' : 'Guardar Índices'}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 max-h-[350px] overflow-y-auto custom-wizard-scrollbar pr-1">
+                          {[
+                            { year: fiscalYear - 1, monthIndex: 12, monthName: 'Diciembre (Ant.)' },
+                            { year: fiscalYear, monthIndex: 1, monthName: 'Enero' },
+                            { year: fiscalYear, monthIndex: 2, monthName: 'Febrero' },
+                            { year: fiscalYear, monthIndex: 3, monthName: 'Marzo' },
+                            { year: fiscalYear, monthIndex: 4, monthName: 'Abril' },
+                            { year: fiscalYear, monthIndex: 5, monthName: 'Mayo' },
+                            { year: fiscalYear, monthIndex: 6, monthName: 'Junio' },
+                            { year: fiscalYear, monthIndex: 7, monthName: 'Julio' },
+                            { year: fiscalYear, monthIndex: 8, monthName: 'Agosto' },
+                            { year: fiscalYear, monthIndex: 9, monthName: 'Septiembre' },
+                            { year: fiscalYear, monthIndex: 10, monthName: 'Octubre' },
+                            { year: fiscalYear, monthIndex: 11, monthName: 'Noviembre' },
+                            { year: fiscalYear, monthIndex: 12, monthName: 'Diciembre' },
+                          ].map((item, idx) => {
+                            const key = `${item.year}_${item.monthIndex}`;
+                            const val = localIpcValues[key] || '0';
+                            const coef = (decIpcVal && Number(val) > 0)
+                              ? (Number(decIpcVal) / Number(val)) - 1
+                              : 0;
+                            return (
+                              <div key={idx} className="flex flex-col gap-1 p-2 rounded-lg bg-zinc-950/45 border border-zinc-900 shadow-inner">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
+                                  {item.monthName} ({item.year})
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type="number"
+                                    step="0.0001"
+                                    value={val}
+                                    onChange={e => {
+                                      const newVal = e.target.value;
+                                      setLocalIpcValues(prev => ({ ...prev, [key]: newVal }));
+                                    }}
+                                    className="w-24 h-8 px-2 rounded border border-zinc-800 bg-[#121216] text-white text-xs font-mono focus:outline-none focus:border-teal-500/50 transition-colors"
+                                  />
+                                  <span className="text-[10px] font-mono text-zinc-400 text-right w-full block">
+                                    Coef: {coef.toLocaleString('es-AR', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Panel AXI Dinamico Calc */}
+                      <div className="bg-zinc-900/10 border border-zinc-850 p-5 rounded-xl space-y-4 shadow-xl">
+                        <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                          <div>
+                            <h4 className="text-xs uppercase font-extrabold text-teal-400 tracking-wider">Ajuste Dinámico (Conciliación)</h4>
+                            <p className="text-[10px] text-zinc-500 mt-0.5">Cálculo del retiro o aporte neto imprevisto del ejercicio</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyAxiDynamicDifference(dynamicRetiroAporteNeto)}
+                            disabled={dynamicRetiroAporteNeto === 0}
+                            className="px-3 h-8 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-[#121216] disabled:border disabled:border-zinc-800 disabled:text-zinc-550 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-md shadow-teal-500/5"
+                          >
+                            Copiar a Variaciones
+                          </button>
+                        </div>
+
+                        <div className="space-y-2 text-xs font-mono">
+                          <div className="flex justify-between p-2 rounded bg-zinc-950/25 border border-zinc-900">
+                            <span className="text-zinc-500">Patrimonio al Inicio (Histórico):</span>
+                            <span className="text-zinc-300">${dynamicPatrimonioInicio.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-zinc-950/25 border border-zinc-900">
+                            <span className="text-zinc-500">(+) Utilidad Neta Histórica:</span>
+                            <span className="text-zinc-300">${dynamicUtilidadHistorica.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-zinc-950/25 border border-zinc-900">
+                            <span className="text-zinc-500">(+) Amortización del Ejercicio:</span>
+                            <span className="text-zinc-300">${dynamicAmortizaciones.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-zinc-900/40 border-y border-dashed border-zinc-800 font-bold">
+                            <span className="text-zinc-200">(=) Capital Afectado Teórico:</span>
+                            <span className="text-white">${dynamicCapitalTeorico.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between p-2 rounded bg-zinc-950/25 border border-zinc-900">
+                            <span className="text-zinc-500">(-) Capital Afectado Real al Cierre:</span>
+                            <span className="text-zinc-300">${dynamicCapitalReal.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                          </div>
+                          <div className="flex justify-between p-2.5 rounded bg-[#121216] border border-zinc-800 font-extrabold text-sm">
+                            <span className="text-teal-400">(=) Retiro / Aporte Neto:</span>
+                            <span className={dynamicRetiroAporteNeto < 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                              {dynamicRetiroAporteNeto < 0 ? 'Retiro: ' : 'Aporte: '}${Math.abs(dynamicRetiroAporteNeto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-zinc-500 italic leading-normal">
+                          * El Retiro/Aporte es la diferencia de cuadre entre el capital real final y el esperado. Presione &quot;Copiar a Variaciones&quot; para agregarlo abajo y calcular su ajuste por coeficiente promedio anual ponderado.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA (ESTATICO) */}
+                    <div className="lg:col-span-7">
+                      <div className="bg-zinc-900/10 border border-zinc-850 p-5 rounded-xl space-y-4 shadow-xl">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+                          <div>
+                            <h4 className="text-xs uppercase font-extrabold text-teal-400 tracking-wider">Ajuste Estático</h4>
+                            <p className="text-[10px] text-zinc-500 mt-0.5">Carga del balance inicial y computabilidad de rubros</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={suggestAxiStaticValues}
+                            className="px-3 h-8 rounded border border-teal-500/30 hover:bg-teal-500/5 text-teal-400 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center shrink-0"
+                          >
+                            Sugerir desde Contabilidad
+                          </button>
+                        </div>
+
+                        <div className="overflow-x-auto custom-wizard-scrollbar">
+                          <table className="w-full text-left border-collapse text-xs">
+                            <thead>
+                              <tr className="border-b border-zinc-850 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                                <th className="py-2 pr-4">Rubro / Concepto</th>
+                                <th className="py-2 px-2 text-right">Total al Inicio ($)</th>
+                                <th className="py-2 pl-4 text-right">Computable Inicio ($)</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-900">
+                              <tr className="bg-zinc-950/25"><td colSpan={3} className="py-2 pr-4 font-extrabold text-teal-400 uppercase text-[9px] tracking-widest pl-2 font-bold">Activo Computable</td></tr>
+
+                              {[
+                                { key: 'disponibilidadesBancos', label: 'Disponibilidades-Bancos' },
+                                { key: 'retencionesGanancias', label: 'Retenciones de Ganancias (No Comput.)', disabled: true },
+                                { key: 'anticiposGanancias', label: 'Ganancias Anticipos (No Comput.)', disabled: true },
+                                { key: 'creditoFiscal', label: 'Crédito Fiscal (IVA/IIBB) (No Comput.)', disabled: true },
+                                { key: 'ivaSaf', label: 'IVA SAF (No Comput.)', disabled: true },
+                                { key: 'safIibb', label: 'SAF IIBB (No Comput.)', disabled: true },
+                                { key: 'impuestoLey', label: 'Impuesto Ley Computable (No Comput.)', disabled: true },
+                                { key: 'deudoresVentas', label: 'Deudores por Ventas' },
+                                { key: 'bienesCambio', label: 'Bienes de Cambio' },
+                                { key: 'bienesUso', label: 'Bienes de Uso (No Comput.)', disabled: true }
+                              ].map((row) => {
+                                const breakdown = axiStaticBreakdown || defaultAxiStaticBreakdown;
+                                return (
+                                  <tr key={row.key} className="hover:bg-zinc-900/10">
+                                    <td className="py-1.5 pr-4 text-zinc-350 font-semibold pl-2">{row.label}</td>
+                                    <td className="py-1.5 px-2 text-right">
+                                      <input
+                                        type="number"
+                                        value={breakdown.activo[row.key]?.total || '0'}
+                                        onChange={e => handleAxiStaticCellChange('activo', row.key, 'total', e.target.value)}
+                                        className="w-24 h-7 px-1.5 rounded border border-zinc-800 bg-[#09090b] text-right text-xs font-mono focus:outline-none focus:border-teal-500/50"
+                                      />
+                                    </td>
+                                    <td className="py-1.5 pl-4 text-right">
+                                      <input
+                                        type="number"
+                                        value={breakdown.activo[row.key]?.computable || '0'}
+                                        onChange={e => handleAxiStaticCellChange('activo', row.key, 'computable', e.target.value)}
+                                        disabled={row.disabled}
+                                        className={`w-24 h-7 px-1.5 rounded border text-right text-xs font-mono focus:outline-none focus:border-teal-500/50 ${
+                                          row.disabled ? 'bg-[#0c0c0e]/40 border-zinc-900 text-zinc-550 cursor-not-allowed' : 'bg-[#09090b] border-zinc-800'
+                                        }`}
+                                      />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+
+                              <tr className="bg-zinc-950/25"><td colSpan={3} className="py-2 pr-4 font-extrabold text-teal-400 uppercase text-[9px] tracking-widest border-t border-zinc-850/50 pl-2 font-bold">Pasivo Computable</td></tr>
+
+                              {[
+                                { key: 'deudasSociales', label: 'Deudas Sociales' },
+                                { key: 'deudasFiscales', label: 'Deudas Fiscales' },
+                                { key: 'deudasComerciales', label: 'Deudas Comerciales' },
+                                { key: 'prestamos', label: 'Préstamos' }
+                              ].map((row) => {
+                                const breakdown = axiStaticBreakdown || defaultAxiStaticBreakdown;
+                                return (
+                                  <tr key={row.key} className="hover:bg-zinc-900/10">
+                                    <td className="py-1.5 pr-4 text-zinc-350 font-semibold pl-2">{row.label}</td>
+                                    <td className="py-1.5 px-2 text-right">
+                                      <input
+                                        type="number"
+                                        value={breakdown.pasivo[row.key]?.total || '0'}
+                                        onChange={e => handleAxiStaticCellChange('pasivo', row.key, 'total', e.target.value)}
+                                        className="w-24 h-7 px-1.5 rounded border border-zinc-800 bg-[#09090b] text-right text-xs font-mono focus:outline-none focus:border-teal-500/50"
+                                      />
+                                    </td>
+                                    <td className="py-1.5 pl-4 text-right">
+                                      <input
+                                        type="number"
+                                        value={breakdown.pasivo[row.key]?.computable || '0'}
+                                        onChange={e => handleAxiStaticCellChange('pasivo', row.key, 'computable', e.target.value)}
+                                        className="w-24 h-7 px-1.5 rounded border border-zinc-800 bg-[#09090b] text-right text-xs font-mono focus:outline-none focus:border-teal-500/50"
+                                      />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+
+                              <tr className="border-t border-zinc-800 font-bold bg-zinc-950/15">
+                                <td className="py-2 text-zinc-300 font-bold pl-2">Sumas Totales</td>
+                                <td className="py-2 px-2 text-right font-mono text-zinc-400">
+                                  ${sumTotalActivo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Activo)<br/>
+                                  ${sumTotalPasivo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Pasivo)
+                                </td>
+                                <td className="py-2 pl-4 text-right font-mono text-white">
+                                  A.C.: ${sumComputableActivo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<br/>
+                                  P.C.: ${sumComputablePasivo.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="p-4 rounded-lg bg-[#09090b] border border-zinc-850 grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-center shadow-inner">
+                          <div className="p-2 bg-zinc-900/30 rounded border border-zinc-800">
+                            <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Capital Computable</span>
+                            <span className="text-sm font-extrabold text-white block mt-0.5">
+                              ${staticCapitalAfectadoComputable.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          <div className="p-2 bg-zinc-900/30 rounded border border-zinc-800">
+                            <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Coef. Ajuste IPC</span>
+                            <span className="text-sm font-extrabold text-teal-400 block mt-0.5">
+                              {staticInflationRateVal.toLocaleString('es-AR', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}
+                            </span>
+                          </div>
+                          <div className="p-2 bg-zinc-900/30 rounded border border-zinc-800">
+                            <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Ajuste Estático</span>
+                            <span className={`text-sm font-extrabold block mt-0.5 ${calculatedStaticAxiResult >= 0 ? 'text-[#34d399]' : 'text-[#fbbf24]'}`}>
+                              {calculatedStaticAxiResult >= 0 ? '+' : ''}${calculatedStaticAxiResult.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* VARIACIONES DINAMICAS GRID (OLD SECTION 4) */}
               {/* SECCIÓN 4: AJUSTE POR INFLACIÓN DINÁMICO (AXI) */}
               <div className="pt-6 border-t border-zinc-800 space-y-4">
                 <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Ajuste por Inflación Dinámico (Variaciones)</h3>
                 <p className="text-zinc-400 text-[11px] leading-relaxed">Cargue los movimientos que modificaron el capital computable del negocio durante el año (ej: aportes de capital, retiros de socios). El sistema calculará el ajuste por inflación ponderado correspondiente.</p>
-                
+
                 <div className="border border-zinc-800 rounded-lg overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -3605,7 +4210,7 @@ export default function WizardPage() {
                       {axiDynamic.map((item, index) => (
                         <tr key={index} className="hover:bg-zinc-800/10 animate-fadeIn">
                           <td className="px-4 py-2 w-40">
-                            <input 
+                            <input
                               type="date"
                               value={item.date || ''}
                               onChange={(e) => handleCellChange(index, 'date', e.target.value, 'axiDynamic')}
@@ -3613,7 +4218,7 @@ export default function WizardPage() {
                             />
                           </td>
                           <td className="px-4 py-2">
-                            <input 
+                            <input
                               type="text"
                               value={item.concept || ''}
                               onChange={(e) => handleCellChange(index, 'concept', e.target.value, 'axiDynamic')}
@@ -3633,7 +4238,7 @@ export default function WizardPage() {
                             </select>
                           </td>
                           <td className="px-4 py-2 text-right w-40">
-                            <input 
+                            <input
                               type="number"
                               value={item.amount ?? ''}
                               onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'axiDynamic')}
@@ -3651,7 +4256,7 @@ export default function WizardPage() {
                               : 'Al guardar'}
                           </td>
                           <td className="px-4 py-2 text-right">
-                            <button 
+                            <button
                               onClick={() => deleteRow(index, 'axiDynamic')}
                               className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer"
                             >
@@ -3671,7 +4276,7 @@ export default function WizardPage() {
                   </table>
                 </div>
 
-                <button 
+                <button
                   onClick={() => addRow('axiDynamic')}
                   className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer mt-2"
                 >
@@ -3680,12 +4285,14 @@ export default function WizardPage() {
                 </button>
               </div>
             </div>
+              )}
+            </div>
           )}
 
           {/* PASO 6: CIERRE Y CONSOLIDACIÓN (CALCULATION MOTOR RESULTS) */}
           {currentStep === 6 && calculationResult && (
             <div className="space-y-8">
-              
+
               {/* CABECERA DE RESULTADOS */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-dashed border-zinc-800 pb-6">
                 <div>
@@ -3702,7 +4309,7 @@ export default function WizardPage() {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="p-4 rounded-lg bg-[#09090b] border border-zinc-800 text-right">
                   <span className="text-[10px] uppercase font-bold text-zinc-550 block">Saldo Final Determinado</span>
                   <span className={`text-2xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.isNegative() ? 'text-emerald-450' : 'text-white'}`}>
@@ -3717,7 +4324,7 @@ export default function WizardPage() {
               {/* AUDITORÍA Y PANEL DE INCONSISTENCIAS / CONTROL DE CONSUMO */}
               <div className="space-y-4">
                 <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-wider">Control de Consistencia y Auditoría Impositiva</h3>
-                
+
                 {/* Cuadre Consumo JVP */}
                 <div className="p-5 rounded-xl bg-[#09090b] border border-zinc-800 grid grid-cols-1 md:grid-cols-5 gap-6">
                   <div>
@@ -3761,11 +4368,11 @@ export default function WizardPage() {
 
               {/* DESGLOSE POR APARTADOS (STITCH SECTION SUMMARY) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
+
                 {/* APARTADO A: ESTADO DE RESULTADOS (3RA CAT) */}
                 <div className="p-6 rounded-xl bg-zinc-900/10 border border-zinc-805 space-y-4">
                   <h4 className="text-xs uppercase font-bold text-teal-400 tracking-wider">Resumen Categoría Comercial (Tercera)</h4>
-                  
+
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Facturación Gravada:</span>
@@ -3805,7 +4412,7 @@ export default function WizardPage() {
                 {/* APARTADO B: DEDUCCIONES Y MÍNIMOS */}
                 <div className="p-6 rounded-xl bg-zinc-900/10 border border-zinc-805 space-y-4">
                   <h4 className="text-xs uppercase font-bold text-teal-400 tracking-wider">Deducciones Aplicadas del Período</h4>
-                  
+
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Deducciones Generales Admitidas:</span>
@@ -3858,7 +4465,7 @@ export default function WizardPage() {
                   Decimal.max(new Decimal(calculationResult.resultadoNetoAntesQuebrantos || 0), new Decimal(0)),
                   new Decimal(quebrantosAnteriores || 0)
                 );
-                
+
                 return (
                   <div className="p-6 rounded-xl bg-zinc-900/10 border border-zinc-800 space-y-6 animate-fadeIn">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-4">
@@ -3893,33 +4500,37 @@ export default function WizardPage() {
                               1. Determinación del Resultado Neto (Tercera Categoría)
                             </td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">Ventas Gravadas del Ejercicio</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Facturación Gravada 3ra Cat</td>
+                          <tr onClick={() => changeStep(2)} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">Ventas Gravadas del Ejercicio</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Facturación Anual: ${formatDecimal(calculationResult.ventasGravadas)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">{formatDecimal(calculationResult.ventasGravadas)}</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Costo de Mercaderías Vendidas</td>
-                            <td className="px-4 py-2.5 text-zinc-500">CMV = Exist. Inicial + Compras - Exist. Final</td>
+                          <tr onClick={() => changeStep(3)} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Costo de Mercaderías Vendidas</td>
+                            <td className="px-4 py-2.5 text-zinc-500">
+                              CMV = {formatDecimal(initialStock)} (Ini) + {formatDecimal(sumDeductibleCostPurchases(purchases))} (Comp) - {formatDecimal(finalStock)} (Fin)
+                            </td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.costoVentas)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Gastos de Explotación y Administración</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Gastos Deducibles Declarados</td>
+                          <tr onClick={() => changeStep(3)} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Gastos de Explotación y Administración</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Gastos Deducibles: ${formatDecimal(calculationResult.gastosDeducibles)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.gastosDeducibles)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Amortizaciones del Ejercicio</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Depreciación de Bienes de Uso (Impositivo)</td>
+                          <tr onClick={() => changeStep(4)} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Amortizaciones del Ejercicio</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Depreciación Bienes Uso (Impositivo): ${formatDecimal(calculationResult.amortizacionesBienesDeUso)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.amortizacionesBienesDeUso)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(+/-) Ajuste por Inflación Impositivo</td>
-                            <td className="px-4 py-2.5 text-zinc-500">AXI Impositivo Neto (Estático + Dinámico)</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('axi'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(+/-) Ajuste por Inflación Impositivo</td>
+                            <td className="px-4 py-2.5 text-zinc-500">
+                              AXI = Estático ({formatDecimal(calculatedStaticAxiResult)}) + Dinámico ({formatDecimal(calculationResult.resultadoAjustePorInflacion.toNumber() - calculatedStaticAxiResult)})
+                            </td>
                             <td className={`px-4 py-2.5 text-right font-mono ${calculationResult.resultadoAjustePorInflacion.toNumber() >= 0 ? 'text-emerald-450' : 'text-red-450'}`}>
                               {calculationResult.resultadoAjustePorInflacion.toNumber() >= 0 ? '+' : ''}{formatDecimal(calculationResult.resultadoAjustePorInflacion)}
                             </td>
@@ -3937,15 +4548,15 @@ export default function WizardPage() {
                               2. Deducciones Generales y Compensaciones
                             </td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Deducciones Generales Admitidas</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Art. 85 / 86 (Autónomos, Prepagas, Educativos, etc.)</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Deducciones Generales Admitidas</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Autónomos, Prepagas, Educativos, etc.: ${formatDecimal(calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Quebrantos de Ejercicios Anteriores</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Compensación de Quebrantos Impositivos</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Quebrantos de Ejercicios Anteriores</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Compensación Quebrantos: ${formatDecimal(appliedQuebrantos)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(appliedQuebrantos)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
@@ -3961,23 +4572,23 @@ export default function WizardPage() {
                               3. Deducciones Personales (Art. 30)
                             </td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Mínimo No Imponible (MNI)</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. a (Ganancia No Imponible)</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Mínimo No Imponible (MNI)</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. a (Ganancia No Imponible): ${formatDecimal(calculationResult.deduccionesPersonales.minimoNoImponible)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.deduccionesPersonales.minimoNoImponible)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Cargas de Familia</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. b (Cónyuge: {formatDecimal(calculationResult.deduccionesPersonales.conyuge)} + Hijos)</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Cargas de Familia</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Cónyuge: ${formatDecimal(calculationResult.deduccionesPersonales.conyuge)} + Hijos: ${formatDecimal(calculationResult.deduccionesPersonales.hijos.add(calculationResult.deduccionesPersonales.hijosIncapacitados))}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">
                               (-{formatDecimal(calculationResult.deduccionesPersonales.conyuge.add(calculationResult.deduccionesPersonales.hijos).add(calculationResult.deduccionesPersonales.hijosIncapacitados))})
                             </td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Deducción Especial</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. c (Condición Fiscal del Contribuyente)</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Deducción Especial</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Art. 30, Inc. c (Deducción Especial): ${formatDecimal(calculationResult.deduccionesPersonales.deduccionEspecial)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.deduccionesPersonales.deduccionEspecial)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
@@ -3994,20 +4605,20 @@ export default function WizardPage() {
                             </td>
                           </tr>
                           <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">Impuesto Progresivo Determinado</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Escala Progresiva Art. 94</td>
+                            <td className="px-6 py-2.5 font-semibold">Impuesto Progresivo Determinado</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Escala Art. 94 (Base Imponible: ${formatDecimal(calculationResult.gananciaNetaSujetaImpuesto)})</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">{formatDecimal(calculationResult.impuestoDeterminado)}</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Retenciones, Percepciones y Pagos a Cuenta</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Cómputo Directo de Retenciones Sufridas</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Retenciones, Percepciones y Pagos a Cuenta</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Mis Retenciones AFIP: ${formatDecimal(calculationResult.retencionesYPercepciones)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.retencionesYPercepciones)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
-                          <tr className="hover:bg-zinc-800/10">
-                            <td className="px-6 py-2.5">(-) Saldo a Favor del Contribuyente Período Anterior</td>
-                            <td className="px-4 py-2.5 text-zinc-500">Saldo Técnico / Libre Disponibilidad DDJJ anterior</td>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Saldo a Favor del Contribuyente Período Anterior</td>
+                            <td className="px-4 py-2.5 text-zinc-500">Saldo Técnico DDJJ anterior: ${formatDecimal(calculationResult.saldoAFavorAnterior)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.saldoAFavorAnterior)})</td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
@@ -4033,7 +4644,7 @@ export default function WizardPage() {
                   <Sparkles className="h-4 w-4 stroke-[2.5]" />
                   Proyección de Cinco Anticipos impositivos - Período Fiscal {fiscalYear + 1}
                 </h4>
-                
+
                 <p className="text-zinc-500 text-xs">
                   De acuerdo a las normativas vigentes, el contribuyente debe abonar cinco cuotas iguales equivalentes al 20% del impuesto proyectado reexpresado por la variación del IPC del período.
                 </p>
@@ -4070,8 +4681,8 @@ export default function WizardPage() {
 
           {/* BARRA DE NAVEGACIÓN INFERIOR (SIGUIENTE / ANTERIOR) */}
           {currentStep < 6 && (
-            <div className="flex items-center justify-between border-t border-zinc-850 pt-8 mt-8">
-              <button 
+            <div className="flex items-center justify-between border-t border-zinc-850 pt-8 mt-8 print:hidden">
+              <button
                 onClick={() => changeStep(Math.max(1, currentStep - 1))}
                 className="flex items-center gap-2 h-10 px-4 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold uppercase tracking-wider text-zinc-400 transition-colors"
                 disabled={currentStep === 1}
@@ -4080,7 +4691,7 @@ export default function WizardPage() {
                 Anterior
               </button>
 
-              <button 
+              <button
                 onClick={() => changeStep(Math.min(6, currentStep + 1))}
                 className="flex items-center gap-2 h-10 px-4 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-all"
               >
@@ -4099,7 +4710,7 @@ export default function WizardPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#09090b]/80 backdrop-blur-md transition-all animate-fadeIn">
           <div className="bg-[#121216] border border-zinc-800 rounded-xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-emerald-500 animate-pulse"></div>
-            
+
             {modalLoading ? (
               <div className="space-y-4 py-6">
                 <div className="h-12 w-12 border-4 border-teal-500/25 border-t-teal-400 rounded-full animate-spin mx-auto"></div>
@@ -4113,13 +4724,13 @@ export default function WizardPage() {
                 <div className="h-14 w-14 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center mx-auto text-teal-400">
                   <CheckCircle className="h-8 w-8 stroke-[2.5]" />
                 </div>
-                
+
                 <div className="space-y-2">
                   <h3 className="text-lg font-black text-white">
                     {modalActionType === 'borrador' ? '¡Borrador Guardado Exitosamente!' : '¡Declaración Jurada Cerrada!'}
                   </h3>
                   <p className="text-zinc-400 text-xs leading-normal">
-                    {modalActionType === 'borrador' 
+                    {modalActionType === 'borrador'
                       ? `La liquidación comercial de ${clientName} se ha guardado de manera segura. Puede regresar para continuar cuando lo desee.`
                       : `Se ha cerrado y bloqueado la declaración jurada impositiva de ${clientName} para el período ${fiscalYear}. El Papel de Trabajo determinativo ya está disponible.`}
                   </p>
@@ -4143,9 +4754,9 @@ export default function WizardPage() {
       {currentStep > 1 && currentStep < 6 && calculationResult && (
         <>
           {isLiveBarOpen ? (
-            <div className="fixed top-24 right-6 z-40 w-80 bg-[#121216]/95 border border-zinc-800 rounded-xl p-5 shadow-2xl backdrop-blur-md transition-all duration-300 animate-fadeIn font-sans">
+            <div className="fixed top-24 right-6 z-40 w-80 bg-[#121216]/95 border border-zinc-800 rounded-xl p-5 shadow-2xl backdrop-blur-md transition-all duration-300 animate-fadeIn font-sans print:hidden">
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-t-xl"></div>
-              
+
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400">
@@ -4153,7 +4764,7 @@ export default function WizardPage() {
                   </div>
                   <span className="text-xs font-bold text-white tracking-wide">Consola Impositiva (En vivo)</span>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsLiveBarOpen(false)}
                   className="text-zinc-500 hover:text-zinc-300 text-xs font-semibold focus:outline-none px-1.5 py-0.5 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
                   title="Minimizar panel"
@@ -4195,7 +4806,7 @@ export default function WizardPage() {
                   <span className="text-lg font-black font-mono text-zinc-350 block mb-2">
                     {formatDecimal(calculationResult.consumoDiferencial)}
                   </span>
-                  
+
                   {/* Alerta de Descuadre Patrimonial / Consumo Negativo */}
                   {calculationResult.consumoDiferencial.toNumber() < 0 ? (
                     <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] font-bold uppercase animate-pulse">
@@ -4212,7 +4823,7 @@ export default function WizardPage() {
               </div>
             </div>
           ) : (
-            <button 
+            <button
               onClick={() => setIsLiveBarOpen(true)}
               className="fixed top-24 right-6 z-40 h-10 w-10 rounded-full bg-teal-500 hover:bg-teal-400 flex items-center justify-center shadow-lg shadow-teal-500/20 text-[#09090b] hover:scale-105 active:scale-95 transition-all focus:outline-none cursor-pointer"
               title="Mostrar panel impositivo"
@@ -4227,7 +4838,7 @@ export default function WizardPage() {
       <footer className="border-t border-[#1e1e24] bg-[#09090b] mt-20 py-8 text-center text-xs text-zinc-500">
         <p>© 2026 JABA Ganancias Impositivas. Todos los derechos reservados. Diseñado bajo normativas AFIP/ARCA Buenos Aires, Argentina.</p>
       </footer>
-      
+
     </div>
   );
 }

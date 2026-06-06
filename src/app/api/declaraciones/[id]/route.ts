@@ -96,16 +96,23 @@ export async function GET(
         ivaAmount: p.ivaAmount.toString(),
         totalAmount: p.totalAmount.toString(),
       })),
-      fixedAssets: taxReturn.fixedAssets.map(a => ({
-        id: a.id,
-        name: a.name,
-        type: a.type,
-        purchaseDate: formatDateForWizardInput(a.purchaseDate),
-        originalCost: a.originalCost.toString(),
-        usefulLife: a.usefulLife,
-        yearsElapsed: a.yearsElapsed,
-        customReexpIndex: a.customReexpIndex.toString(),
-      })),
+      fixedAssets: taxReturn.fixedAssets.map((a, index) => {
+        const extraAsset = Array.isArray(extraState.fixedAssets)
+          ? (extraState.fixedAssets.find((ea: any) => ea && ea.id === a.id) || extraState.fixedAssets[index])
+          : null;
+        const isRetired = extraAsset && (extraAsset.isRetired === true || extraAsset.isRetired === 'true');
+        return {
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          purchaseDate: formatDateForWizardInput(a.purchaseDate),
+          originalCost: a.originalCost.toString(),
+          usefulLife: a.usefulLife,
+          yearsElapsed: a.yearsElapsed,
+          customReexpIndex: a.customReexpIndex.toString(),
+          isRetired: !!isRetired,
+        };
+      }),
       initialStock: taxReturn.inventory[0]?.initialStock.toString() || '0',
       finalStock: taxReturn.inventory[0]?.finalStock.toString() || '0',
       bankAccounts: taxReturn.bankAccounts.map(b => ({
@@ -151,11 +158,12 @@ export async function GET(
         certificateNumber: w.certificateNumber || '',
         operationDescription: w.operationDescription || '',
       })),
-      personalAssets: taxReturn.personalAssets.map(a => ({
+      personalAssets: taxReturn.personalAssets.map((a, index) => ({
         description: a.description,
         type: a.type,
         valueInitial: a.valueInitial.toString(),
         valueFinal: a.valueFinal.toString(),
+        detail: snapshotStringAt(extraState.personalAssets, index, 'detail'),
       })),
       personalLiabilities: taxReturn.personalLiabilities.map(l => ({
         description: l.description,
@@ -191,6 +199,13 @@ export async function GET(
         ? taxReturn.justifications.map(mapPatrimonialJustificationForWizard)
         : extraState.otherJustifications || [],
       axiDynamic: (taxReturn.axiDynamicItems || []).map(mapAxiDynamicItemForWizard),
+      autoCalcInitialBalances: extraState.autoCalcInitialBalances !== undefined
+        ? extraState.autoCalcInitialBalances === true
+        : !(
+            (Number(extraState.activoTotalInicio || 0) > 0 || Number(extraState.pasivoTotalInicio || 0) > 0) &&
+            (taxReturn.bankAccounts.length === 0 && taxReturn.receivables.length === 0 && taxReturn.liabilities.length === 0 && taxReturn.fixedAssets.length === 0)
+          ),
+      axiStaticBreakdown: extraState.axiStaticBreakdown || null,
     };
 
     return NextResponse.json({ success: true, data: payload });

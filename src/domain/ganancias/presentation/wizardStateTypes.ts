@@ -219,6 +219,7 @@ export type WizardFixedAsset = WizardEditableRecord & {
   usefulLife?: WizardMoneyValue;
   yearsElapsed?: WizardMoneyValue;
   customReexpIndex?: WizardMoneyValue;
+  isRetired?: boolean | string;
 };
 
 export type WizardBankAccount = WizardEditableRecord & {
@@ -489,6 +490,7 @@ export type WizardPersonalAsset = WizardEditableRecord & {
   type?: string;
   valueInitial?: WizardMoneyValue;
   valueFinal?: WizardMoneyValue;
+  detail?: string;
 };
 
 export type WizardPersonalLiability = WizardEditableRecord & {

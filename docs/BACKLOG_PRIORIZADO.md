@@ -318,6 +318,52 @@ Criterio de cierre:
 - Feedback visible en ventas, compras y retenciones.
 - Pendiente externo: validar visualmente con archivos reales.
 
+## P11 - Auditoria guia/capturas y duplicaciones de calculo
+
+Estado: Resuelto tecnicamente.
+
+Problema:
+
+- La guia PDF y las capturas nuevas corresponden a escenarios distintos.
+- Habia formulas visibles en pantallas que no usaban exactamente el mismo criterio que el motor.
+- Algunas pantallas podian duplicar compras entre CMV y gastos, o conservar bienes de uso dados de baja dentro del patrimonio comercial de cierre.
+
+Accion aplicada:
+
+- Se reemplazo el test de simulacion usuario por un caso basado en capturas nuevas del 06/06/2026.
+- Se agrego helper de patrimonio comercial de cierre y se reutilizo en motor/wizard/papel.
+- Se agrego helper de presentacion para bienes de uso y baja.
+- Se agrego helper para separar compras imputables a CMV de gastos deducibles no imputables a costo.
+- `informe-cliente` dejo de armar el input manualmente y usa el mapper central.
+
+Criterio de cierre:
+
+- Tests nuevos y regresiones verdes.
+- `vitest run`: 30 archivos, 103 tests OK.
+- `tsc --noEmit`: OK.
+- Pendiente externo: validacion visual con datos reales del usuario en navegador.
+
+## P12 - Saneamiento lint global
+
+Estado: Pendiente.
+
+Problema:
+
+- `eslint` global no pasa por deuda acumulada fuera del alcance de P11.
+- Los errores actuales incluyen `any` en APIs/paginas, reglas de hooks en pantallas existentes, imports no usados, `require` en `seed.ts`/`test_db.js` y textos JSX sin escape.
+- No bloquea `tsc`, tests ni build, pero si bloquea usar lint global como puerta de calidad.
+
+Accion recomendada:
+
+- Resolver en una unidad separada, por cortes pequenos.
+- Priorizar APIs y paginas principales antes de archivos auxiliares.
+- No mezclar con nuevas reglas contables para evitar regresiones funcionales.
+
+Criterio de cierre:
+
+- `eslint` global ejecutado y verde.
+- `vitest run`, `tsc --noEmit` y `next build --webpack` siguen OK.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

@@ -25,6 +25,27 @@ export function calculateFixedAssetDepreciation(
   const yearsElapsed = Math.max(0, asset.yearsElapsed);
   const reexpIndex = new Decimal(asset.customReexpIndex ?? 1.0);
 
+  // Si el bien está marcado como dado de baja en el ejercicio
+  if (asset.isRetired) {
+    const annualDepHist = usefulLife > 0 ? originalCost.div(usefulLife) : new Decimal(0);
+    const yearsDepreciatedAtStart = Math.min(Math.max(yearsElapsed - 1, 0), usefulLife);
+    const accumulatedDepHistAtStart = annualDepHist.mul(yearsDepreciatedAtStart);
+    const bajaLossHist = Decimal.max(originalCost.sub(accumulatedDepHistAtStart), new Decimal(0));
+    const bajaLossAdj = bajaLossHist.mul(reexpIndex);
+
+    return {
+      id: asset.id,
+      name: asset.name,
+      annualDepreciationHist: new Decimal(0),
+      annualDepreciationAdj: new Decimal(0),
+      residualValueHist: new Decimal(0),
+      residualValueAdj: new Decimal(0),
+      isRetired: true,
+      bajaLossHist: bajaLossHist.round(),
+      bajaLossAdj: bajaLossAdj.round(),
+    };
+  }
+
   // Validación robusta para prevenir división por cero en vidas útiles inválidas o nulas
   if (usefulLife <= 0) {
     return {
@@ -34,6 +55,8 @@ export function calculateFixedAssetDepreciation(
       annualDepreciationAdj: new Decimal(0),
       residualValueHist: originalCost,
       residualValueAdj: originalCost.mul(reexpIndex),
+      bajaLossHist: new Decimal(0),
+      bajaLossAdj: new Decimal(0),
     };
   }
 
@@ -46,6 +69,8 @@ export function calculateFixedAssetDepreciation(
       annualDepreciationAdj: new Decimal(0),
       residualValueHist: new Decimal(0),
       residualValueAdj: new Decimal(0),
+      bajaLossHist: new Decimal(0),
+      bajaLossAdj: new Decimal(0),
     };
   }
 
@@ -75,6 +100,8 @@ export function calculateFixedAssetDepreciation(
     annualDepreciationAdj: annualDepreciationAdj.round(),
     residualValueHist: residualValueHist.round(),
     residualValueAdj: residualValueAdj.round(),
+    bajaLossHist: new Decimal(0),
+    bajaLossAdj: new Decimal(0),
   };
 }
 

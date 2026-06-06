@@ -192,6 +192,7 @@ export function buildTaxReturnCalculationInput(
       usefulLife: numberValue(asset.usefulLife, 10),
       yearsElapsed: numberValue(asset.yearsElapsed),
       customReexpIndex: decimalValue(asset.customReexpIndex, 1),
+      isRetired: booleanValue(asset.isRetired),
     })),
     inventories: [
       {

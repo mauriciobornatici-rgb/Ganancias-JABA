@@ -10,6 +10,7 @@ import {
 import { calculateTotalDepreciation } from './amortizaciones';
 import { calculateTotalAxi } from './ajustePorInflacion';
 import { calculatePatrimonialJustification } from './justificacionPatrimonial';
+import { calculateClosingCommercialPatrimony } from './patrimonioComercial';
 
 /**
  * Aplica la escala progresiva del Artículo 94 para determinar el impuesto correspondiente.
@@ -130,6 +131,9 @@ export function calculateTaxReturn(
   // ==========================================
   const amortizacionResult = calculateTotalDepreciation(input.fixedAssets);
   const amortizacionesBienesDeUso = amortizacionResult.totalDepreciationAdj; // Valor reexpresado impositivo
+  const totalBajaLossAdj = amortizacionResult.detailedAssets
+    .filter(a => a.isRetired)
+    .reduce((sum, a) => sum.add(a.bajaLossAdj || 0), new Decimal(0));
 
   // ==========================================
   // 4. AJUSTE POR INFLACIÓN IMPOSITIVO (AXI)
@@ -153,12 +157,13 @@ export function calculateTaxReturn(
 
   // ==========================================
   // 5. RESULTADO NETO TERCERA CATEGORÍA
-  // Resultado = Ventas - Costo - Gastos - Amortizaciones + AXI
+  // Resultado = Ventas - Costo - Gastos - Amortizaciones - Baja Bienes Uso + AXI
   // ==========================================
   const resultadoComercialNeto = ventasGravadas
     .sub(costoVentas)
     .sub(gastosDeducibles)
     .sub(amortizacionesBienesDeUso)
+    .sub(totalBajaLossAdj)
     .add(resultadoAjustePorInflacion);
 
   // Consolida categorías impositivas (en este MVP de 3ra Cat es equivalente)
@@ -409,19 +414,18 @@ export function calculateTaxReturn(
     }
   });
 
-  const patrimonioComercialCierre = patrimonioComercialInicio
+  let patrimonioComercialCierre = patrimonioComercialInicio
     .add(resultadoComercialNeto)
     .sub(totalRetiros)
     .add(totalAportes);
 
+  const closingCommercialPatrimony = calculateClosingCommercialPatrimony(input);
+  if (closingCommercialPatrimony.hasClosingCommercialData) {
+    patrimonioComercialCierre = closingCommercialPatrimony.patrimonioComercialCierre;
+  }
+
   const jvpAssets = [
     ...input.personalAssets,
-    ...input.bankAccounts.map((account) => ({
-      description: `Banco ${account.id}`,
-      type: 'Banco',
-      valueInitial: account.nominalInitial.mul(account.tcInitial ?? 1),
-      valueFinal: account.nominalFinal.mul(account.tcFinal ?? 1),
-    })),
     {
       description: 'Patrimonio comercial',
       type: 'Comercial',
@@ -430,6 +434,22 @@ export function calculateTaxReturn(
     },
   ];
 
+  // Integrar automáticamente el Ajuste por Inflación Impositivo (AXI) en el JVP
+  const otherJustificationsWithAxi = [...input.otherJustifications];
+  if (resultadoAjustePorInflacion.isNegative()) {
+    otherJustificationsWithAxi.push({
+      concept: 'Ajuste por inflación impositivo (pérdida)',
+      column: 2,
+      amount: resultadoAjustePorInflacion.abs(),
+    });
+  } else if (resultadoAjustePorInflacion.isPositive()) {
+    otherJustificationsWithAxi.push({
+      concept: 'Ajuste por inflación impositivo (ganancia)',
+      column: 1,
+      amount: resultadoAjustePorInflacion,
+    });
+  }
+
   const jvpResult = calculatePatrimonialJustification({
     personalAssets: jvpAssets,
     personalLiabilities: input.personalLiabilities,
@@ -437,7 +457,7 @@ export function calculateTaxReturn(
     amortizaciones: amortizacionesBienesDeUso,
     ingresosExentos: ventasExentas,
     gastosNoDeducibles: gastosNoDeducibles.add(totalExcedenteDeduccionesGeneralesJvp),
-    otrasJustificaciones: input.otherJustifications,
+    otrasJustificaciones: otherJustificationsWithAxi,
   });
   warnings.push(...jvpResult.warnings);
 
@@ -501,9 +521,11 @@ export function calculateTaxReturn(
     gastosDeducibles: gastosDeducibles.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     gastosNoDeducibles: gastosNoDeducibles.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     amortizacionesBienesDeUso: amortizacionesBienesDeUso.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    bajaBienesDeUsoLoss: totalBajaLossAdj.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     resultadoAjustePorInflacion: resultadoAjustePorInflacion.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     axiStaticResult: axiResult.staticResult.resultadoAxiStatico.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     axiDynamicResult: axiResult.totalAxiDynamic.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    axiDynamicLines: axiResult.dynamicLines,
     resultadoComercialNeto: resultadoComercialNeto.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     resultadoNetoTodasCategorias: resultadoNetoTodasCategorias.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     deduccionesGenerales,

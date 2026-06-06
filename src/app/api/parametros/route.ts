@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/domain/ganancias/prisma';
 import { Decimal } from 'decimal.js';
 import type { Prisma } from '@/generated/client/client';
@@ -122,6 +122,11 @@ export async function GET(req: NextRequest) {
           ? { currentYearAverage: usefulCoefficients.currentYearAverage.toString() }
           : {}),
       },
+      previousDecemberIndex: previousDecemberIndex ? {
+        year: year - 1,
+        monthIndex: 12,
+        ipcValue: previousDecemberIndex.ipcValue.toString()
+      } : null,
     };
 
     return NextResponse.json({ success: true, data: payload });
@@ -187,6 +192,44 @@ export async function PUT(req: NextRequest) {
               fixedAmount: new Decimal(b.fixedAmount),
               percentage: new Decimal(b.percentage),
               excessOf: new Decimal(b.excessOf)
+            }
+          });
+        }
+      }
+
+      // 3. Guardar o actualizar índices IPC
+      if (body.indices && body.indices.length > 0) {
+        for (const ind of body.indices) {
+          const mIndex = parseInt(ind.monthIndex, 10);
+          const ipcVal = new Decimal(ind.ipcValue);
+          const indexYear = parseInt(ind.year || targetYear, 10);
+
+          let fy = await tx.fiscalYear.findUnique({ where: { year: indexYear } });
+          if (!fy) {
+            fy = await tx.fiscalYear.create({
+              data: { year: indexYear, isEnabled: true }
+            });
+          }
+
+          const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          const mName = ind.monthName || monthNames[mIndex] || `Mes ${mIndex}`;
+
+          await tx.updateIndex.upsert({
+            where: {
+              fiscalYearId_monthIndex: {
+                fiscalYearId: fy.id,
+                monthIndex: mIndex
+              }
+            },
+            update: {
+              ipcValue: ipcVal,
+              updatedAt: new Date()
+            },
+            create: {
+              fiscalYearId: fy.id,
+              monthIndex: mIndex,
+              monthName: mName,
+              ipcValue: ipcVal
             }
           });
         }

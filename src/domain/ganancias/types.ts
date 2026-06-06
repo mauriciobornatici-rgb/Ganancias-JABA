@@ -89,6 +89,7 @@ export interface FixedAssetInput {
   usefulLife: number;     // Vida útil total en años
   yearsElapsed: number;   // Años amortizados al cierre, como fiscalYear - año de compra + 1
   customReexpIndex?: Decimal; // Coeficiente IPC correspondiente manual si no se calcula dinámico
+  isRetired?: boolean;    // Indica si el bien de uso fue dado de baja/enajenado en el ejercicio
 }
 
 export interface InventoryInput {
@@ -238,6 +239,9 @@ export interface FixedAssetCalculationOutput {
   annualDepreciationAdj: Decimal;
   residualValueHist: Decimal;
   residualValueAdj: Decimal;
+  isRetired?: boolean;
+  bajaLossHist?: Decimal; // Valor residual al inicio del año impositivo (pérdida por baja histórica)
+  bajaLossAdj?: Decimal;  // Valor residual al inicio del año impositivo reexpresado (pérdida por baja reexpresada)
 }
 
 export interface AxiStaticResult {
@@ -304,6 +308,8 @@ export interface TaxCalculationResult {
   axiStaticResult: Decimal;
   axiDynamicResult: Decimal;
   resultadoComercialNeto: Decimal; // Neto Tercera Categoría impositivo
+  bajaBienesDeUsoLoss?: Decimal;
+  axiDynamicLines?: AxiDynamicLineResult[];
   
   // Determinación impositiva
   resultadoNetoTodasCategorias: Decimal;

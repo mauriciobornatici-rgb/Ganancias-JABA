@@ -2554,3 +2554,69 @@ Pendiente externo:
 
 - Validar visualmente con archivos reales que el resumen sea claro.
 - Probar repetir una importacion mensual y confirmar que los duplicados se omiten sin duplicar totales.
+
+### 2026-06-06 - Fase 1, P11: auditoria de consistencia contra guia/capturas y duplicaciones de calculo
+
+Se realizo una auditoria puntual sobre los cambios posteriores del proyecto, tomando como referencia la guia PDF aportada por el usuario y las capturas nuevas de Excel.
+
+Hallazgos:
+
+- La guia PDF describe un escenario anterior con ventas por `72.117.989,49`, CMV `64.760.935,00`, amortizacion `203.500,00` y AXI `-429.715,06`.
+- Las capturas nuevas del 06/06/2026 describen otro escenario, con ventas `55.188.790,74`, compras CMV `55.516.958,16`, EI `155.496,41`, EF `7.856.322,00`, CMV `47.816.132,57`, utilidad neta `5.449.883,07`, AXI `-225.273,03`, resultado impositivo `5.224.610,04`, patrimonio inicial `-4.520.316,58`, patrimonio cierre `-7.150.516,11` y consumo `10.031.052,72`.
+- El test `simulacionUsuario.test.ts` estaba nombrado como si validara capturas actuales, pero contenia datos del escenario anterior.
+- El motor descontaba la perdida por baja de bienes de uso, pero el patrimonio comercial de cierre todavia podia conservar ese mismo bien como activo, duplicando economicamente el efecto.
+- El wizard calculaba el capital afectado real de cierre con una formula propia que omitía bienes de uso activos.
+- El CMV en vivo del wizard usaba todas las compras, no solo las imputables a costo.
+- `papel-de-trabajo` e `informe-cliente` mostraban gastos comerciales sumando todas las compras deducibles, incluyendo mercaderia/materia prima ya incluida en CMV.
+- `informe-cliente` armaba manualmente el input del motor e ignoraba auxiliares ESP/JVP como efectivo, creditos, pasivos, pasivos personales, justificaciones, AXI dinamico y bajas.
+- `papel-de-trabajo` duplicaba calculos de amortizacion/baja en UI.
+
+Decision:
+
+- Mantener la guia PDF como referencia del escenario anterior y crear una prueba separada para las capturas nuevas.
+- Extraer helpers de dominio/presentacion para evitar formulas repetidas:
+  - `calculateClosingCommercialPatrimony`.
+  - `buildFixedAssetDepreciationForPresentation`.
+  - `sumDeductibleCostPurchases` / `sumDeductibleNonCostPurchases`.
+- Hacer que wizard, papel de trabajo e informe cliente usen los mismos criterios del motor/mapper donde corresponde.
+- No tocar vinculacion de base de datos ni ejecutar migraciones, por pedido explicito del usuario.
+
+Archivos modificados/agregados:
+
+- `src/domain/ganancias/tests/simulacionUsuario.test.ts`.
+- `src/domain/ganancias/tests/jvpIntegration.test.ts`.
+- `src/domain/ganancias/tests/fixedAssetPresentation.test.ts`.
+- `src/domain/ganancias/tests/patrimonioComercial.test.ts`.
+- `src/domain/ganancias/tests/purchaseBreakdown.test.ts`.
+- `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+- `src/domain/ganancias/calculations/patrimonioComercial.ts`.
+- `src/domain/ganancias/presentation/fixedAssetPresentation.ts`.
+- `src/domain/ganancias/presentation/purchaseBreakdown.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `src/app/declaraciones/[id]/papel-de-trabajo/page.tsx`.
+- `src/app/declaraciones/[id]/informe-cliente/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `fixedAssetPresentation.test.ts` fallo porque el helper no existia.
+- TDD rojo confirmado: `patrimonioComercial.test.ts` fallo porque el helper no existia.
+- TDD rojo confirmado: `purchaseBreakdown.test.ts` fallo porque el helper no existia.
+- TDD rojo confirmado: `jvpIntegration.test.ts` expuso que un bien dado de baja seguia integrando patrimonio de cierre.
+- TDD rojo confirmado: `simulacionUsuario.test.ts` expuso diferencia de coeficiente AXI hasta ajustar el coeficiente exacto de captura.
+- `vitest run src/domain/ganancias/tests/fixedAssetPresentation.test.ts src/domain/ganancias/tests/simulacionUsuario.test.ts src/domain/ganancias/tests/jvpIntegration.test.ts src/domain/ganancias/tests/amortizaciones.test.ts`: OK.
+- `vitest run src/domain/ganancias/tests/patrimonioComercial.test.ts src/domain/ganancias/tests/simulacionUsuario.test.ts src/domain/ganancias/tests/jvpIntegration.test.ts`: OK.
+- `vitest run src/domain/ganancias/tests/purchaseBreakdown.test.ts src/domain/ganancias/tests/simulacionUsuario.test.ts`: OK.
+- `tsc --noEmit`: OK.
+- `vitest run`: 30 archivos, 103 tests, todo OK.
+- `next build --webpack`: OK.
+- `eslint` focalizado sobre helpers/tests nuevos: OK.
+- `eslint` global: pendiente, falla por deuda amplia preexistente/no abordada en esta unidad (`any` en APIs/paginas, reglas de hooks en pantallas existentes, imports no usados, `require` en seed/test_db).
+
+Pendiente externo:
+
+- Validar visualmente en navegador el wizard, papel de trabajo e informe cliente con la carga real del caso de capturas nuevas.
+- Confirmar con el usuario si la guia PDF anterior queda como caso historico de regresion o si debe actualizarse a las capturas nuevas.
+- Definir si se abre una unidad separada de saneamiento lint global.

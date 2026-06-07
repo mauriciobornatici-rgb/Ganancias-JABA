@@ -13,7 +13,15 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
-    "verify": "npm run test && npm run typecheck && npm run prisma:validate && npm run build"
+    "verify": "npm run test && npm run typecheck && npm run prisma:validate && npm run build",
+    "db:test:up": "docker compose up -d mysql-test",
+    "db:test:down": "docker compose down",
+    "db:test:reset": "docker compose down -v && docker compose up -d mysql-test",
+    "db:test:migrate": "node scripts/run-test-db-command.mjs migrate",
+    "db:test:seed": "node scripts/seed-test-db.mjs",
+    "db:test:validate": "node scripts/run-test-db-command.mjs validate",
+    "db:test:studio": "node scripts/run-test-db-command.mjs studio",
+    "dev:testdb": "node scripts/run-test-db-command.mjs dev"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",

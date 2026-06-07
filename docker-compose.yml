@@ -1,19 +1,22 @@
-version: '3.8'
-
 services:
-  mysql-db:
+  mysql-test:
     image: mysql:8.0
-    container_name: ganancias-jaba-db
-    restart: always
+    container_name: ganancias-jaba-test-db
+    restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ganancias_jaba
-      MYSQL_USER: jaba
-      MYSQL_PASSWORD: jaba_secure_pass
-      MYSQL_ROOT_PASSWORD: root_secure_pass
+      MYSQL_DATABASE: ganancias_jaba_test
+      MYSQL_USER: jaba_test
+      MYSQL_PASSWORD: jaba_test_pass
+      MYSQL_ROOT_PASSWORD: root_test_pass
     ports:
-      - '3306:3306'
+      - '3317:3306'
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql_test_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "jaba_test", "-pjaba_test_pass"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
 volumes:
-  mysql_data:
+  mysql_test_data:

@@ -4,6 +4,42 @@ Ultima actualizacion: 2026-06-07
 
 ## Entrada reciente
 
+### 2026-06-07 - P17 base Docker local de pruebas
+
+- Se configuro una base MySQL de pruebas local con Docker Desktop para simular persistencia sin tocar Hostinger.
+- Servicio Docker: `mysql-test`.
+- Contenedor: `ganancias-jaba-test-db`.
+- Base local: `ganancias_jaba_test`.
+- Usuario local: `jaba_test`.
+- Puerto local final: `3317`, porque `3307` estaba ocupado.
+- URL de pruebas enmascarada: `mysql://jaba_test:***@127.0.0.1:3317/ganancias_jaba_test`.
+- Se actualizo `docker-compose.yml` para usar volumen `mysql_test_data` y healthcheck.
+- Se agrego `.env.docker.example` sin credenciales productivas.
+- Se agrego `scripts/run-test-db-command.mjs`, que fuerza `DATABASE_URL` de Docker para comandos de Prisma/Next.
+- Se agrego `scripts/seed-test-db.mjs`, seed minimo en JS puro con `mariadb`, para no depender de `npx/tsx` en esta terminal.
+- Se agregaron scripts npm:
+  - `db:test:up`;
+  - `db:test:down`;
+  - `db:test:reset`;
+  - `db:test:migrate`;
+  - `db:test:seed`;
+  - `db:test:validate`;
+  - `db:test:studio`;
+  - `dev:testdb`.
+- Se creo `docs/BASE_DOCKER_PRUEBAS.md` con comandos y reglas de seguridad.
+- Verificacion:
+  - Docker disponible: version `29.4.2`; Compose `v5.1.3`.
+  - Primer intento en `3307`: fallo porque el puerto ya estaba ocupado.
+  - Reconfigurado a `3317`.
+  - `docker compose up -d --force-recreate mysql-test`: OK.
+  - `docker compose ps mysql-test`: contenedor `healthy`.
+  - `docker exec ... mysqladmin ping`: `mysqld is alive`.
+  - `scripts/run-test-db-command.mjs validate`: OK.
+  - `scripts/run-test-db-command.mjs migrate`: OK; migracion inicial aplicada.
+  - `scripts/seed-test-db.mjs`: OK; 2 clientes, 2 periodos fiscales, 1 set de parametros, 9 escalas y 12 indices.
+  - Validacion de conexion app: `buildMariaDbConnectionConfig` apunta a `127.0.0.1:3317/ganancias_jaba_test`.
+- Nota: existe un contenedor huerfano anterior `ganancias-jaba-db` del compose viejo. No se elimino automaticamente para evitar acciones destructivas no solicitadas; puede limpiarse luego con cuidado si se confirma que no se usa.
+
 ### 2026-06-07 - P16 flujo seguro de deploy y resguardo de DB productiva
 
 - Se definio `main` como unica rama de produccion y `staging` como rama de pruebas/Preview.

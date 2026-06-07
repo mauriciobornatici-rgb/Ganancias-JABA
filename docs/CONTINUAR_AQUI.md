@@ -9,7 +9,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `main`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: flujo seguro de deploy y resguardo de base productiva.
+- Ultimo checkpoint documentado: base Docker local de pruebas.
 - Fase activa: Base de datos productiva para persistir declaraciones, cargas y soportes.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -28,6 +28,47 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 9. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P17 - Base Docker local de pruebas
+
+Estado: resuelto tecnicamente.
+
+Objetivo inmediato:
+
+- Simular una base MySQL de pruebas local sin tocar Hostinger.
+- Poder levantar la app local contra Docker con comandos simples.
+- Probar migraciones, seeds y cargas ficticias antes de publicar cambios.
+
+Avance:
+
+- `docker-compose.yml` define `mysql-test` con base `ganancias_jaba_test`.
+- Puerto local elegido: `3317`, porque `3307` estaba ocupado.
+- URL de pruebas: `mysql://jaba_test:***@127.0.0.1:3317/ganancias_jaba_test`.
+- Se agrego `.env.docker.example`.
+- Se agrego `scripts/run-test-db-command.mjs` para ejecutar Prisma/Next contra Docker.
+- Se agrego `scripts/seed-test-db.mjs` en JS puro, sin depender de `npx/tsx`.
+- Scripts npm agregados: `db:test:up`, `db:test:migrate`, `db:test:seed`, `db:test:reset`, `db:test:down`, `db:test:studio`, `dev:testdb`.
+- Guia creada: `docs/BASE_DOCKER_PRUEBAS.md`.
+
+Verificacion ejecutada:
+
+- Docker disponible: `Docker version 29.4.2`, Compose `v5.1.3`.
+- Primer intento en puerto `3307`: bloqueado por puerto ocupado.
+- Reconfigurado a `3317`.
+- `docker compose up -d --force-recreate mysql-test`: OK.
+- Healthcheck Docker: `healthy`; `mysqladmin ping`: `mysqld is alive`.
+- `scripts/run-test-db-command.mjs migrate`: OK, migracion inicial aplicada.
+- `scripts/seed-test-db.mjs`: OK, 2 clientes, 2 periodos, 1 set de parametros, 9 escalas, 12 indices.
+- Validacion de URL de app: apunta a `127.0.0.1:3317/ganancias_jaba_test`.
+
+Uso recomendado:
+
+```powershell
+npm run db:test:up
+npm run db:test:migrate
+npm run db:test:seed
+npm run dev:testdb
+```
 
 ### P16 - Flujo seguro de deploy y resguardo de DB productiva
 

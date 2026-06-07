@@ -495,6 +495,36 @@ Pendiente externo:
 - En Vercel, confirmar visualmente que `DATABASE_URL` este marcada solo para `Production`.
 - Si se desea probar persistencia en Preview, crear una DB staging separada en Hostinger.
 
+## P17 - Base Docker local de pruebas
+
+Estado: Resuelto tecnicamente.
+
+Problema:
+
+- Hacia falta una base de pruebas local para simular persistencia real sin tocar Hostinger.
+- `npm run dev` puede usar la `.env` normal; si esa `.env` apunta a produccion, la prueba local podria escribir datos reales.
+
+Accion aplicada:
+
+- Se configuro `docker-compose.yml` con servicio `mysql-test`.
+- Se eligio puerto local `3317` para evitar conflicto con otros MySQL locales.
+- Se agrego `.env.docker.example`.
+- Se agrego `scripts/run-test-db-command.mjs` para forzar `DATABASE_URL` de Docker.
+- Se agrego `scripts/seed-test-db.mjs` sin dependencia de `npx/tsx`.
+- Se agregaron scripts npm para levantar, migrar, seedear, abrir Studio y correr la app contra Docker.
+- Se documento el flujo en `docs/BASE_DOCKER_PRUEBAS.md`.
+
+Criterio de cierre:
+
+- Docker levanta MySQL healthy.
+- Prisma migra contra `ganancias_jaba_test`.
+- Seed minimo carga clientes, periodos, parametros, escalas e indices.
+- La app puede iniciarse con `npm run dev:testdb` apuntando a Docker.
+
+Pendiente externo:
+
+- Validar visualmente en navegador `http://localhost:3000` usando `npm run dev:testdb`.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

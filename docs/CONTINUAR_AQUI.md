@@ -47,7 +47,7 @@ Criterio de cierre:
 Pendiente al retomar:
 
 - Validar visualmente en navegador el PDF A4 generado desde el boton.
-- Si el entorno lo permite, commitear y pushear P13/P14 juntos porque P13 quedo sin commit por limite de escalacion.
+- Commit y push ya realizados en `6df8154 feat: generar legajo profesional de carga`.
 
 ### P13 - Sincronizacion de saldos iniciales desde AXI
 

@@ -436,6 +436,7 @@ Accion aplicada:
 
 - Se agrego plan de implementacion en `docs/superpowers/plans/2026-06-07-base-datos-hostinger.md`.
 - Se agrego `docs/ARQUITECTURA_BASE_DATOS_HOSTINGER.md`.
+- Se dejo explicito el flujo GitHub + Vercel + Hostinger MySQL: GitHub versiona codigo/migraciones, Vercel ejecuta la app y usa `DATABASE_URL`, Hostinger guarda los datos reales.
 - `DATABASE_URL` ahora se parsea con `URL`, falla explicitamente si falta y se enmascara en logs/scripts.
 - Se creo `.env.example` sin credenciales reales.
 - `schema.prisma` incorpora tablas/columnas para deducciones, AXI estatico, importaciones AFIP, adjuntos binarios, CUIT de contraparte y bajas de bienes de uso.
@@ -456,6 +457,7 @@ Pendiente externo:
 
 - Crear DB/usuario en Hostinger: `u669600172_ganancias_jaba` y `u669600172_jaba_app`.
 - Configurar Remote MySQL y `DATABASE_URL` local/Vercel.
+- Conectar Vercel al repo GitHub y guardar secretos solo en Environment Variables.
 - Ejecutar `prisma migrate deploy` contra Hostinger.
 
 ## Cierre de desarrollo tecnico

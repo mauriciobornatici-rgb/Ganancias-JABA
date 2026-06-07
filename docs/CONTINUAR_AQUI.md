@@ -41,6 +41,7 @@ Avance:
 
 - Plan guardado: `docs/superpowers/plans/2026-06-07-base-datos-hostinger.md`.
 - Guia operativa creada: `docs/ARQUITECTURA_BASE_DATOS_HOSTINGER.md`.
+- Arquitectura objetivo: GitHub contiene codigo/migraciones, Vercel despliega y ejecuta la app, Hostinger MySQL persiste datos reales.
 - Recomendacion Hostinger:
   - base completa: `u669600172_ganancias_jaba`;
   - usuario completo: `u669600172_jaba_app`.
@@ -53,6 +54,8 @@ Pendiente al retomar:
 
 - Commit y push si aun no se realizo.
 - Crear DB/usuario en Hostinger, configurar Remote MySQL y cargar `DATABASE_URL`.
+- Conectar Vercel al repositorio GitHub `Ganancias-JABA`.
+- Confirmar que `DATABASE_URL` quede cargada como Environment Variable de Vercel, no en GitHub.
 
 Verificacion ejecutada:
 

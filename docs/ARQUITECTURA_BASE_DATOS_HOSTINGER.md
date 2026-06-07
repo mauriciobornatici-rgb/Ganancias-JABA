@@ -34,11 +34,59 @@ Reglas:
 - Si falta `DATABASE_URL`, la app falla explicitamente; no usa fallback local silencioso.
 - `test_db.js` y `seed.ts` imprimen la URL enmascarada, sin password.
 
+## Flujo GitHub + Vercel + Base de datos
+
+La arquitectura correcta queda asi:
+
+```text
+GitHub
+  contiene codigo, schema Prisma, migraciones y cliente generado
+  no contiene passwords ni DATABASE_URL real
+
+Vercel
+  toma el codigo desde GitHub
+  ejecuta build/deploy
+  guarda DATABASE_URL como Environment Variable
+  ejecuta la app publicada y las rutas API
+
+Hostinger MySQL
+  guarda los datos reales
+  recibe conexiones remotas desde Vercel en runtime
+```
+
+Regla importante:
+
+- GitHub no se conecta a la base durante el uso normal de la app.
+- Vercel si se conecta a Hostinger MySQL porque ahi corre la aplicacion publicada.
+- La base no debe depender de la maquina local para funcionar una vez desplegada.
+- Los secretos se cargan en Vercel, nunca en el repositorio.
+
+Flujo operativo recomendado:
+
+1. Se hace push del codigo a GitHub.
+2. Vercel detecta el push y despliega la app.
+3. Vercel usa `DATABASE_URL` para conectar sus rutas API con Hostinger MySQL.
+4. La app lee/escribe DDJJ, cargas, adjuntos e importaciones en MySQL.
+
+Migraciones:
+
+- Para el MVP personal, aplicar `prisma migrate deploy` manualmente cuando la DB de Hostinger este creada y `DATABASE_URL` este configurada.
+- No conviene ejecutar migraciones automaticamente en cada build de Vercel al inicio, para evitar que un deploy fallido mezcle problemas de build con cambios de base.
+- Mas adelante se puede agregar GitHub Actions para aplicar migraciones con control, usando un secret de GitHub o de Vercel y ejecutandolo solo sobre la rama productiva.
+
 ## Vercel
 
 Configurar en Environment Variables:
 
 - `DATABASE_URL`
+
+Configurar el proyecto Vercel conectado al repositorio GitHub `Ganancias-JABA`.
+
+Variables recomendadas:
+
+- Production: `DATABASE_URL` apuntando a Hostinger.
+- Preview: usar la misma DB solo si se acepta que pruebas y produccion compartan datos; si no, crear otra DB.
+- Development: se puede usar `.env` local con la misma estructura.
 
 Para uso personal se puede iniciar con Remote MySQL habilitado de forma amplia en Hostinger si no hay IP fija disponible. Arquitectura recomendada para endurecer mas adelante:
 
@@ -128,6 +176,7 @@ Aunque el uso sea personal, se aplican estas practicas:
 
 - Crear la base y usuario en Hostinger.
 - Configurar Remote MySQL.
+- Conectar Vercel al repositorio GitHub.
 - Pegar `DATABASE_URL` en `.env` local y en Vercel.
 - Ejecutar `migrate deploy`.
 - Ejecutar seed de parametros.

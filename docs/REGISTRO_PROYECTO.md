@@ -9,6 +9,7 @@ Ultima actualizacion: 2026-06-07
 - Se inicio la etapa de base de datos para uso personal con Hostinger y despliegue en Vercel, dejando prevista extension futura a multiusuario.
 - Se documento el plan en `docs/superpowers/plans/2026-06-07-base-datos-hostinger.md`.
 - Se creo `docs/ARQUITECTURA_BASE_DATOS_HOSTINGER.md` con nombres recomendados, formato de `DATABASE_URL`, migraciones, backups y pendientes externos.
+- Se incorporo explicitamente el flujo GitHub + Vercel + Hostinger MySQL: GitHub versiona codigo/migraciones, Vercel despliega y ejecuta la conexion runtime, Hostinger conserva los datos.
 - Recomendacion para Hostinger:
   - DB: `u669600172_ganancias_jaba`;
   - usuario: `u669600172_jaba_app`.

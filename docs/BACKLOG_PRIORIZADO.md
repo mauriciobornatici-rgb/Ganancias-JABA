@@ -1,6 +1,6 @@
 # Backlog Priorizado - Ganancias JABA
 
-Ultima actualizacion: 2026-06-01
+Ultima actualizacion: 2026-06-07
 
 Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usuario o por bloqueo tecnico, registrar el motivo en `docs/REGISTRO_PROYECTO.md`.
 
@@ -423,7 +423,7 @@ Criterio de cierre:
 
 ## P15 - Arquitectura MySQL Hostinger/Vercel
 
-Estado: Resuelto tecnicamente, pendiente conexion real Hostinger.
+Estado: Resuelto tecnicamente, produccion Hostinger/Vercel conectada.
 
 Problema:
 
@@ -451,7 +451,6 @@ Criterio de cierre:
 - `tsc --noEmit`: OK.
 - `next build --webpack`: OK.
 - `git diff --check`: OK, solo avisos CRLF habituales.
-- Commit y push: pendiente en este corte.
 
 Pendiente externo:
 
@@ -460,9 +459,41 @@ Pendiente externo:
 - Remote MySQL habilitado para `u669600172_ganancias_jaba` con acceso `%`.
 - Conexion remota verificada y migracion Prisma aplicada en Hostinger el 2026-06-07: 35 tablas creadas.
 - Seed inicial ejecutado y verificado en Hostinger el 2026-06-07.
-- Configurar `DATABASE_URL` en Vercel con password URL-encoded.
-- Conectar Vercel al repo GitHub y guardar secretos solo en Environment Variables.
-- Validar navegacion productiva contra Vercel y revisar parametros reales.
+- Vercel conectado al repo GitHub y desplegado desde `main`.
+- Revisar parametros reales antes de usar una DDJJ productiva.
+
+## P16 - Flujo seguro de deploy y resguardo de DB productiva
+
+Estado: Resuelto tecnicamente.
+
+Problema:
+
+- `main` despliega produccion en Vercel.
+- Si Preview/Staging usa la misma `DATABASE_URL`, una prueba podria escribir en la base productiva.
+- Faltaba una rama de pruebas formal y una barrera automatica para evitar errores humanos.
+
+Accion aplicada:
+
+- Se agrego `scripts/check-deployment-db-safety.mjs`.
+- Se agrego `src/domain/ganancias/tests/deploymentDbSafety.test.ts`.
+- `prebuild` ejecuta la guarda antes de `next build`.
+- Se agregaron scripts `test`, `typecheck`, `prisma:validate` y `verify`.
+- Se agrego CI en `.github/workflows/ci.yml` para `main` y `staging`.
+- Se creo `docs/FLUJO_SEGURO_DEPLOY.md`.
+- Se documento que `DATABASE_URL` productiva debe estar solo en Vercel Production.
+- Se preparo la rama `staging` como ambiente de prueba antes de integrar a `main`.
+
+Criterio de cierre:
+
+- Preview/Staging queda bloqueado si apunta a `u669600172_ganancias_jaba`.
+- Production queda bloqueado si falta `DATABASE_URL`.
+- CI ejecuta tests, typecheck, Prisma validate y build.
+- Documentacion de flujo y backups disponible.
+
+Pendiente externo:
+
+- En Vercel, confirmar visualmente que `DATABASE_URL` este marcada solo para `Production`.
+- Si se desea probar persistencia en Preview, crear una DB staging separada en Hostinger.
 
 ## Cierre de desarrollo tecnico
 

@@ -6,8 +6,10 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: arquitectura MySQL Hostinger/Vercel en curso de cierre.
+- Rama activa: `main`.
+- Rama productiva publicada: `main`.
+- Rama de pruebas prevista: `staging`.
+- Ultimo checkpoint documentado: flujo seguro de deploy y resguardo de base productiva.
 - Fase activa: Base de datos productiva para persistir declaraciones, cargas y soportes.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -27,9 +29,49 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Ultima unidad cerrada
 
+### P16 - Flujo seguro de deploy y resguardo de DB productiva
+
+Estado: resuelto tecnicamente, pendiente ajustar variable en Vercel si aun figura como Production and Preview.
+
+Objetivo inmediato:
+
+- Mantener `main` como produccion.
+- Crear `staging` como rama de pruebas/Preview.
+- Evitar que Preview/Staging use la DB productiva por accidente.
+- Dejar CI y documentacion para probar antes de pasar a produccion.
+
+Avance:
+
+- Guia operativa creada: `docs/FLUJO_SEGURO_DEPLOY.md`.
+- Plan guardado: `docs/superpowers/plans/2026-06-07-flujo-seguro-deploy.md`.
+- Guarda agregada: `scripts/check-deployment-db-safety.mjs`.
+- Test agregado: `src/domain/ganancias/tests/deploymentDbSafety.test.ts`.
+- `prebuild` ejecuta la guarda antes de `next build`.
+- CI agregado en `.github/workflows/ci.yml` para `main` y `staging`.
+- Si Vercel Preview usa `u669600172_ganancias_jaba`, el build queda bloqueado.
+- Si Vercel Production no tiene `DATABASE_URL`, el build queda bloqueado.
+- Si Vercel Preview no tiene `DATABASE_URL`, se permite porque no puede escribir en produccion.
+
+Pendiente al retomar:
+
+- En Vercel, confirmar que `DATABASE_URL` este marcada solo para `Production`.
+- Si se quiere probar persistencia real en Preview, crear DB staging separada y configurar Preview con esa URL.
+- No ejecutar migraciones productivas sin backup SQL previo de Hostinger.
+
+Verificacion ejecutada:
+
+- TDD rojo confirmado: el test nuevo fallo inicialmente por falta del script de guarda.
+- `deploymentDbSafety.test.ts`: OK, 7 tests.
+- Prueba CLI manual: Preview con DB productiva bloqueado; Production desde `main` permitido.
+- `vitest run`: OK, 34 archivos y 129 tests.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `check-deployment-db-safety` + `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales de Windows.
+
 ### P15 - Base de datos MySQL Hostinger/Vercel
 
-Estado: resuelto tecnicamente, pendiente conexion real Hostinger.
+Estado: resuelto tecnicamente, produccion Hostinger/Vercel conectada.
 
 Objetivo inmediato:
 
@@ -59,12 +101,8 @@ Avance:
 
 Pendiente al retomar:
 
-- Commit y push si aun no se realizo.
-- Cargar `DATABASE_URL` real en Vercel con host `srv1199.hstgr.io`.
-- Conectar Vercel al repositorio GitHub `Ganancias-JABA`.
-- Confirmar que `DATABASE_URL` quede cargada como Environment Variable de Vercel, no en GitHub.
-- Validar desde Vercel que Clientes/Parametros/DDJJ lean la base remota.
 - Revisar/actualizar parametros reales antes de usar una DDJJ productiva.
+- Implementar endpoints finales de adjuntos/importaciones si se prioriza guardar soportes binarios desde UI.
 
 Verificacion ejecutada:
 

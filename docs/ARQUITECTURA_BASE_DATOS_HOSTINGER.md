@@ -99,9 +99,19 @@ Configurar el proyecto Vercel conectado al repositorio GitHub `Ganancias-JABA`.
 
 Variables recomendadas:
 
-- Production: `DATABASE_URL` apuntando a Hostinger.
-- Preview: usar la misma DB solo si se acepta que pruebas y produccion compartan datos; si no, crear otra DB.
+- Production: `DATABASE_URL` apuntando a Hostinger productivo.
+- Preview/Staging: no usar la DB productiva. Dejar `DATABASE_URL` sin configurar o crear otra DB, por ejemplo `u669600172_ganancias_jaba_staging`.
 - Development: se puede usar `.env` local con la misma estructura.
+
+Proteccion agregada:
+
+- `scripts/check-deployment-db-safety.mjs` corre automaticamente antes de `next build` por `prebuild`.
+- Si Vercel Preview intenta usar `u669600172_ganancias_jaba`, el build se bloquea.
+- Si Vercel Production no tiene `DATABASE_URL`, el build se bloquea.
+- Si Vercel Production no viene desde `main`, el build se bloquea.
+- Si Vercel Preview no tiene `DATABASE_URL`, se permite porque no puede escribir datos reales.
+
+Detalle operativo completo: `docs/FLUJO_SEGURO_DEPLOY.md`.
 
 Para uso personal se puede iniciar con Remote MySQL habilitado de forma amplia en Hostinger si no hay IP fija disponible. Arquitectura recomendada para endurecer mas adelante:
 
@@ -172,6 +182,7 @@ Criterio actual:
 Regla minima recomendada para uso personal:
 
 - exportar SQL desde Hostinger antes de cambios importantes,
+- exportar SQL antes de aplicar migraciones productivas,
 - exportar despues de cierres de declaraciones,
 - guardar copia local y copia externa,
 - probar periodicamente que el backup se puede descargar y abrir.
@@ -189,8 +200,8 @@ Aunque el uso sea personal, se aplican estas practicas:
 
 ## Pendientes posteriores
 
-- Cargar `DATABASE_URL` real en Vercel usando `srv1199.hstgr.io`.
-- Conectar Vercel al repositorio GitHub.
+- Revisar en Vercel que `DATABASE_URL` este marcada solo para Production.
+- Crear una DB staging si se quiere probar previews con persistencia real separada.
 - Revisar/actualizar parametros reales antes de usar una DDJJ productiva si las escalas o indices cargados son solo base inicial.
 - Probar `test_db.js`.
 - Implementar endpoint de adjuntos/importaciones usando `AttachmentBlob`, `ImportBatch` e `ImportFile`.

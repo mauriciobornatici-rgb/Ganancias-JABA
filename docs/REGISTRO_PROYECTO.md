@@ -4,6 +4,36 @@ Ultima actualizacion: 2026-06-07
 
 ## Entrada reciente
 
+### 2026-06-07 - P16 flujo seguro de deploy y resguardo de DB productiva
+
+- Se definio `main` como unica rama de produccion y `staging` como rama de pruebas/Preview.
+- Se agrego una guarda automatica para evitar que Vercel Preview/Staging use la base productiva de Hostinger por error.
+- Script agregado: `scripts/check-deployment-db-safety.mjs`.
+- Test agregado: `src/domain/ganancias/tests/deploymentDbSafety.test.ts`.
+- El script corre como `prebuild`, antes de `next build`.
+- Production:
+  - requiere `DATABASE_URL`;
+  - si Vercel informa rama distinta de `main`, bloquea el build.
+- Preview/Staging:
+  - permite no tener `DATABASE_URL`;
+  - bloquea si `DATABASE_URL` apunta a `srv1199.hstgr.io` / `193.203.175.56` y base `u669600172_ganancias_jaba`;
+  - permite una DB staging separada.
+- Se agregaron scripts npm `test`, `typecheck`, `prisma:validate` y `verify`.
+- Se agrego CI GitHub en `.github/workflows/ci.yml` para push/PR sobre `main` y `staging`.
+- Se creo `docs/FLUJO_SEGURO_DEPLOY.md` con ambientes, reglas de Vercel, backups, migraciones y checklist de produccion.
+- Se actualizo `.env.example` sin credenciales reales, agregando variables de identificacion de DB productiva.
+- Decision: no ejecutar migraciones automaticamente durante build de Vercel. Las migraciones productivas siguen siendo manuales y con backup SQL previo.
+- Pendiente externo: en Vercel, confirmar que `DATABASE_URL` este marcada solo para Production. Si se quiere persistencia real en Preview, crear una DB staging separada.
+- Verificacion:
+  - TDD rojo confirmado: `deploymentDbSafety.test.ts` fallo inicialmente porque no existia `scripts/check-deployment-db-safety.mjs`.
+  - Test focalizado: `deploymentDbSafety.test.ts` OK, 7 tests.
+  - Prueba CLI manual: Preview con DB productiva bloqueado; Production desde `main` permitido.
+  - `vitest run`: OK, 34 archivos y 129 tests.
+  - `tsc --noEmit`: OK.
+  - `prisma validate --schema prisma/schema.prisma`: OK.
+  - `check-deployment-db-safety` + `next build --webpack`: OK.
+  - `git diff --check`: OK, solo avisos CRLF habituales de Windows.
+
 ### 2026-06-07 - P15 arquitectura MySQL Hostinger/Vercel
 
 - Se inicio la etapa de base de datos para uso personal con Hostinger y despliegue en Vercel, dejando prevista extension futura a multiusuario.

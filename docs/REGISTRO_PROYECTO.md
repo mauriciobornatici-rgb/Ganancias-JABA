@@ -22,6 +22,7 @@ Ultima actualizacion: 2026-06-07
 - Se agrego CI GitHub en `.github/workflows/ci.yml` para push/PR sobre `main` y `staging`.
 - Se creo `docs/FLUJO_SEGURO_DEPLOY.md` con ambientes, reglas de Vercel, backups, migraciones y checklist de produccion.
 - Se actualizo `.env.example` sin credenciales reales, agregando variables de identificacion de DB productiva.
+- Se publico `origin/staging` desde `main` para usarlo como rama de pruebas/Preview antes de integrar cambios futuros a produccion.
 - Decision: no ejecutar migraciones automaticamente durante build de Vercel. Las migraciones productivas siguen siendo manuales y con backup SQL previo.
 - Pendiente externo: en Vercel, confirmar que `DATABASE_URL` este marcada solo para Production. Si se quiere persistencia real en Preview, crear una DB staging separada.
 - Verificacion:

@@ -81,7 +81,7 @@ Registrar backup SQL antes de migraciones productivas y prohibir `prisma db push
 **Files:**
 - Git remote state
 
-- [ ] **Step 1: Create staging branch**
+- [x] **Step 1: Create staging branch**
 
 Run:
 
@@ -97,11 +97,11 @@ Expected: `origin/staging` creado desde el estado verificado de `main`.
 **Files:**
 - All changed files
 
-- [ ] **Step 1: Run verification**
+- [x] **Step 1: Run verification**
 
 Run tests, typecheck, Prisma validate, build and `git diff --check`.
 
-- [ ] **Step 2: Commit and push**
+- [x] **Step 2: Commit and push**
 
 Commit:
 

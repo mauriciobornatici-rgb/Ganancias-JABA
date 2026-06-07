@@ -8,7 +8,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 - Rama activa: `main`.
 - Rama productiva publicada: `main`.
-- Rama de pruebas prevista: `staging`.
+- Rama de pruebas publicada: `staging`.
 - Ultimo checkpoint documentado: flujo seguro de deploy y resguardo de base productiva.
 - Fase activa: Base de datos productiva para persistir declaraciones, cargas y soportes.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.

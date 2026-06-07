@@ -6,6 +6,7 @@ import {
   buildWizardEspAuxiliarySummary,
   buildWizardOtherJustificationFromPreset,
   buildDefaultWizardOtherJustification,
+  buildWizardAxiStaticSuggestion,
   splitWizardImportDuplicates,
   coerceWizardPersonalDeductionType,
   coerceWizardOtherJustificationColumn,
@@ -110,6 +111,49 @@ describe('wizardStateTypes', () => {
     expect(summary.diferenciaActivoInicio).toBe(-10000);
     expect(summary.diferenciaPasivoInicio).toBe(0);
     expect(summary.hasInitialAggregateDifference).toBe(true);
+  });
+
+  it('sugiere AXI estatico desde contabilidad y sincroniza saldos iniciales del Paso 1', () => {
+    const suggestion = buildWizardAxiStaticSuggestion({
+      fiscalYear: 2024,
+      initialStock: '155496.41',
+      bankAccounts: [
+        { nominalInitial: '580157', tcInitial: '1' },
+      ],
+      cashHoldings: [],
+      receivables: [
+        { description: 'Creditos comerciales', type: 'Comercial', balanceInitial: '825842.83' },
+        { description: 'Creditos fiscales', type: 'Fiscal', balanceInitial: '195527.81' },
+      ],
+      liabilities: [
+        { description: 'Deudas comerciales', type: 'Proveedores', balanceInitial: '1565731.18' },
+      ],
+      fixedAssets: [],
+    });
+
+    expect(suggestion.breakdown.activo.disponibilidadesBancos).toEqual({
+      total: '580157.00',
+      computable: '580157.00',
+    });
+    expect(suggestion.breakdown.activo.deudoresVentas).toEqual({
+      total: '1021370.64',
+      computable: '1021370.64',
+    });
+    expect(suggestion.breakdown.activo.creditoFiscal).toEqual({
+      total: '0.00',
+      computable: '0.00',
+    });
+    expect(suggestion.breakdown.activo.bienesCambio).toEqual({
+      total: '155496.41',
+      computable: '155496.41',
+    });
+    expect(suggestion.breakdown.pasivo.deudasComerciales).toEqual({
+      total: '1565731.18',
+      computable: '1565731.18',
+    });
+    expect(suggestion.activoTotalInicio).toBe('1757024.05');
+    expect(suggestion.pasivoTotalInicio).toBe('1565731.18');
+    expect(suggestion.bienesNoComputablesInicio).toBe('0.00');
   });
 
   it('resuelve ids de ruta y condiciones de carga sin depender de efectos sincronicos', () => {

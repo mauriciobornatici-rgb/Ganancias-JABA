@@ -22,6 +22,7 @@ import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacio
 import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/amortizaciones';
 import { calculateClosingCommercialPatrimony } from '@/domain/ganancias/calculations/patrimonioComercial';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
+import { buildWizardLoadReport } from '@/domain/ganancias/presentation/wizardLoadReport';
 import {
   buildGeneralDeductionsBreakdown,
   getGeneralDeductionsDocumentationNotice,
@@ -35,10 +36,12 @@ import {
   buildDefaultWizardLiability,
   buildDefaultWizardOtherJustification,
   buildDefaultWizardReceivable,
+  buildWizardAxiStaticSuggestion,
   buildWizardEspAuxiliarySummary,
   buildWizardOtherJustificationFromPreset,
   coerceWizardOtherJustificationColumn,
   coerceWizardPersonalDeductionType,
+  DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN,
   resolveWizardRouteReturnId,
   shouldRequestActiveTaxParameters,
   shouldResetWizardDetailsOnIdentityChange,
@@ -49,6 +52,7 @@ import {
   type ActiveTaxParameters,
   type TaxResolutionOption,
   type WizardAxiDynamic,
+  type WizardAxiStaticBreakdown,
   type WizardBankAccount,
   type WizardCashHolding,
   type WizardCellValue,
@@ -79,6 +83,7 @@ import {
   resolveTaxReturnSaveTarget,
 } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
+import { WizardLoadReportPrint } from './WizardLoadReportPrint';
 
 // Escala Art 94 Mock (2025)
 const escala2025BracketMock = [
@@ -193,55 +198,6 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-interface AxiStaticCategory {
-  total: string;
-  computable: string;
-}
-
-interface AxiStaticBreakdown {
-  activo: {
-    disponibilidadesBancos: AxiStaticCategory;
-    retencionesGanancias: AxiStaticCategory;
-    anticiposGanancias: AxiStaticCategory;
-    creditoFiscal: AxiStaticCategory;
-    ivaSaf: AxiStaticCategory;
-    safIibb: AxiStaticCategory;
-    impuestoLey: AxiStaticCategory;
-    deudoresVentas: AxiStaticCategory;
-    bienesCambio: AxiStaticCategory;
-    bienesUso: AxiStaticCategory;
-    [key: string]: AxiStaticCategory;
-  };
-  pasivo: {
-    deudasSociales: AxiStaticCategory;
-    deudasFiscales: AxiStaticCategory;
-    deudasComerciales: AxiStaticCategory;
-    prestamos: AxiStaticCategory;
-    [key: string]: AxiStaticCategory;
-  };
-}
-
-const defaultAxiStaticBreakdown: AxiStaticBreakdown = {
-  activo: {
-    disponibilidadesBancos: { total: '0', computable: '0' },
-    retencionesGanancias: { total: '0', computable: '0' },
-    anticiposGanancias: { total: '0', computable: '0' },
-    creditoFiscal: { total: '0', computable: '0' },
-    ivaSaf: { total: '0', computable: '0' },
-    safIibb: { total: '0', computable: '0' },
-    impuestoLey: { total: '0', computable: '0' },
-    deudoresVentas: { total: '0', computable: '0' },
-    bienesCambio: { total: '0', computable: '0' },
-    bienesUso: { total: '0', computable: '0' },
-  },
-  pasivo: {
-    deudasSociales: { total: '0', computable: '0' },
-    deudasFiscales: { total: '0', computable: '0' },
-    deudasComerciales: { total: '0', computable: '0' },
-    prestamos: { total: '0', computable: '0' },
-  },
-};
-
 export default function WizardPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -307,7 +263,7 @@ export default function WizardPage() {
   const [saldoAFavorAnterior, setSaldoAFavorAnterior] = useState('0');
   const [quebrantosAnteriores, setQuebrantosAnteriores] = useState('0');
   const [axiDynamic, setAxiDynamic] = useState<WizardAxiDynamic[]>([]);
-  const [axiStaticBreakdown, setAxiStaticBreakdown] = useState<AxiStaticBreakdown | null>(null);
+  const [axiStaticBreakdown, setAxiStaticBreakdown] = useState<WizardAxiStaticBreakdown | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'deducciones' | 'axi'>('deducciones');
   const [paramRefetchTrigger, setParamRefetchTrigger] = useState(0);
   const [isSavingIpcs, setIsSavingIpcs] = useState(false);
@@ -1376,7 +1332,7 @@ export default function WizardPage() {
     ? (Number(decIpcVal) / Number(prevDecIpcVal)) - 1
     : 0;
 
-  const activeBreakdown = axiStaticBreakdown || defaultAxiStaticBreakdown;
+  const activeBreakdown = axiStaticBreakdown || DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN;
 
   const sumTotalActivo = Object.values(activeBreakdown.activo).reduce((sum, item) => sum + Number(item.total || 0), 0);
   const sumComputableActivo = Object.values(activeBreakdown.activo).reduce((sum, item) => sum + Number(item.computable || 0), 0);
@@ -1530,6 +1486,37 @@ export default function WizardPage() {
     fallback: 'bg-sky-400',
   }[previewStatus.kind];
 
+  const loadReport = buildWizardLoadReport({
+    clientName,
+    cuit,
+    fiscalYear,
+    status: activeReturnId ? 'Borrador / En edicion' : 'Nueva DDJJ sin guardar',
+    currentStep,
+    sales,
+    purchases,
+    initialStock,
+    finalStock,
+    fixedAssets,
+    bankAccounts,
+    cashHoldings,
+    receivables,
+    liabilities,
+    withholdings,
+    generalDeductions,
+    personalDeductions,
+    personalAssets,
+    personalLiabilities,
+    otherJustifications,
+    activoTotalInicio: effectiveActivoTotalInicio,
+    pasivoTotalInicio: effectivePasivoTotalInicio,
+    bienesNoComputablesInicio: effectiveBienesNoComputablesInicio,
+    saldoAFavorAnterior,
+    quebrantosAnteriores,
+    axiDynamic,
+    axiStaticBreakdown,
+    calculationResult,
+  });
+
   // Buscar si el cliente actual (según el CUIT ingresado) tiene una DDJJ anterior cerrada en la BD o mock
   const clientObj = dbClients.find(c => c.cuit === cuit) || mockClients.find(c => c.cuit === cuit);
   const previousReturnObj = clientObj
@@ -1543,7 +1530,7 @@ export default function WizardPage() {
     field: 'total' | 'computable',
     value: string
   ) => {
-    const current = axiStaticBreakdown || defaultAxiStaticBreakdown;
+    const current = axiStaticBreakdown || DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN;
     const updated = {
       activo: { ...current.activo },
       pasivo: { ...current.pasivo }
@@ -1575,67 +1562,21 @@ export default function WizardPage() {
   };
 
   const suggestAxiStaticValues = () => {
-    const initialBanks = bankAccounts.reduce((sum, b) => sum + Number(b.nominalInitial || 0) * Number(b.tcInitial || 1), 0);
-    const initialCash = cashHoldings.reduce((sum, c) => sum + Number(c.nominalInitial || 0) * Number(c.tcFinal || 1), 0);
-    const totalDisp = initialBanks + initialCash;
+    const suggestion = buildWizardAxiStaticSuggestion({
+      bankAccounts,
+      cashHoldings,
+      receivables,
+      liabilities,
+      fixedAssets,
+      initialStock,
+      fiscalYear,
+    });
 
-    const totalDeudores = receivables
-      .filter(r => r.type === 'Comercial' || (r.description && r.description.toLowerCase().includes('cliente')))
-      .reduce((sum, r) => sum + Number(r.balanceInitial || 0), 0);
-
-    const totalStock = Number(initialStock || 0);
-
-    const totalBienesUso = fixedAssets
-      .filter(a => {
-        if (!a.purchaseDate) return false;
-        const purchaseYear = new Date(a.purchaseDate).getFullYear();
-        return purchaseYear < fiscalYear;
-      })
-      .reduce((sum, a) => sum + Number(a.originalCost || 0), 0);
-
-    const totalCF = receivables
-      .filter(r => r.type === 'Fiscal' || (r.description && (r.description.toLowerCase().includes('crédito') || r.description.toLowerCase().includes('saf'))))
-      .reduce((sum, r) => sum + Number(r.balanceInitial || 0), 0);
-
-    const totalDeudasCom = liabilities
-      .filter(l => l.type === 'Proveedores' || (l.description && (l.description.toLowerCase().includes('proveedor') || l.description.toLowerCase().includes('comercial'))))
-      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
-
-    const totalDeudasFis = liabilities
-      .filter(l => l.description && (l.description.toLowerCase().includes('afip') || l.description.toLowerCase().includes('fiscal') || l.description.toLowerCase().includes('impuesto')))
-      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
-
-    const totalDeudasSoc = liabilities
-      .filter(l => l.description && (l.description.toLowerCase().includes('carga') || l.description.toLowerCase().includes('social') || l.description.toLowerCase().includes('sueldo') || l.description.toLowerCase().includes('sindicato') || l.description.toLowerCase().includes('previsional')))
-      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
-
-    const totalPrestamos = liabilities
-      .filter(l => l.type === 'Otros' && !(l.description && (l.description.toLowerCase().includes('proveedor') || l.description.toLowerCase().includes('afip') || l.description.toLowerCase().includes('sueldo') || l.description.toLowerCase().includes('social'))))
-      .reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0);
-
-    const suggested: AxiStaticBreakdown = {
-      activo: {
-        disponibilidadesBancos: { total: totalDisp.toFixed(2), computable: totalDisp.toFixed(2) },
-        retencionesGanancias: { total: '0', computable: '0' },
-        anticiposGanancias: { total: '0', computable: '0' },
-        creditoFiscal: { total: totalCF.toFixed(2), computable: '0' },
-        ivaSaf: { total: '0', computable: '0' },
-        safIibb: { total: '0', computable: '0' },
-        impuestoLey: { total: '0', computable: '0' },
-        deudoresVentas: { total: totalDeudores.toFixed(2), computable: totalDeudores.toFixed(2) },
-        bienesCambio: { total: totalStock.toFixed(2), computable: totalStock.toFixed(2) },
-        bienesUso: { total: totalBienesUso.toFixed(2), computable: '0' }
-      },
-      pasivo: {
-        deudasSociales: { total: totalDeudasSoc.toFixed(2), computable: totalDeudasSoc.toFixed(2) },
-        deudasFiscales: { total: totalDeudasFis.toFixed(2), computable: totalDeudasFis.toFixed(2) },
-        deudasComerciales: { total: totalDeudasCom.toFixed(2), computable: totalDeudasCom.toFixed(2) },
-        prestamos: { total: totalPrestamos.toFixed(2), computable: totalPrestamos.toFixed(2) }
-      }
-    };
-
-    setAxiStaticBreakdown(suggested);
-    alert('Valores sugeridos cargados desde la contabilidad al inicio. Verifique y guarde la declaración.');
+    setAxiStaticBreakdown(suggestion.breakdown);
+    setActivoTotalInicio(suggestion.activoTotalInicio);
+    setPasivoTotalInicio(suggestion.pasivoTotalInicio);
+    setBienesNoComputablesInicio(suggestion.bienesNoComputablesInicio);
+    alert('Valores sugeridos cargados desde la contabilidad al inicio. Tambien se actualizaron los saldos iniciales del Paso 1. Verifique y guarde la declaracion.');
   };
 
   const handleCopyAxiDynamicDifference = (diff: number) => {
@@ -1746,7 +1687,7 @@ export default function WizardPage() {
               className="hover:text-teal-400 transition-colors flex items-center gap-1.5 text-xs text-zinc-400 font-bold uppercase tracking-wider cursor-pointer bg-transparent border-0"
             >
               <Printer className="h-4 w-4 text-teal-455" />
-              Imprimir Pantalla (PDF)
+              Generar Legajo de Carga (PDF)
             </button>
           </div>
 
@@ -1821,8 +1762,10 @@ export default function WizardPage() {
         </div>
       </div>
 
+      <WizardLoadReportPrint report={loadReport} />
+
       {/* CONTENIDO DEL WIZARD */}
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-6 py-10 print:hidden">
 
         {/* ENVASE DE CONTENIDO (GLASSMORPHISM PANEL) */}
         <div className="bg-[#121216] border border-zinc-800 rounded-xl p-8 shadow-2xl">
@@ -2043,6 +1986,10 @@ export default function WizardPage() {
                 <p className="text-xs text-zinc-400 leading-normal">
                   Para justificar la variación patrimonial anual e iniciar el cálculo de inflación (Estático AXI), se requiere cargar el patrimonio del ejercicio anterior.
                 </p>
+
+                <div className="rounded-lg border border-teal-500/20 bg-teal-500/5 px-4 py-3 text-[11px] leading-relaxed text-teal-100/80">
+                  El calculo automatico esta en Paso 5 &gt; Ajuste por Inflacion (AXI) con el boton &quot;Sugerir desde Contabilidad&quot;. Ese boton completa la grilla AXI y sincroniza estos tres saldos.
+                </div>
 
                 {/* Detector de DDJJ Anterior Dinámico */}
                 {previousReturnObj && (
@@ -4089,7 +4036,7 @@ export default function WizardPage() {
                                 { key: 'bienesCambio', label: 'Bienes de Cambio' },
                                 { key: 'bienesUso', label: 'Bienes de Uso (No Comput.)', disabled: true }
                               ].map((row) => {
-                                const breakdown = axiStaticBreakdown || defaultAxiStaticBreakdown;
+                                const breakdown = axiStaticBreakdown || DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN;
                                 return (
                                   <tr key={row.key} className="hover:bg-zinc-900/10">
                                     <td className="py-1.5 pr-4 text-zinc-350 font-semibold pl-2">{row.label}</td>
@@ -4124,7 +4071,7 @@ export default function WizardPage() {
                                 { key: 'deudasComerciales', label: 'Deudas Comerciales' },
                                 { key: 'prestamos', label: 'Préstamos' }
                               ].map((row) => {
-                                const breakdown = axiStaticBreakdown || defaultAxiStaticBreakdown;
+                                const breakdown = axiStaticBreakdown || DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN;
                                 return (
                                   <tr key={row.key} className="hover:bg-zinc-900/10">
                                     <td className="py-1.5 pr-4 text-zinc-350 font-semibold pl-2">{row.label}</td>
@@ -4835,11 +4782,10 @@ export default function WizardPage() {
       )}
 
       {/* FOOTER */}
-      <footer className="border-t border-[#1e1e24] bg-[#09090b] mt-20 py-8 text-center text-xs text-zinc-500">
+      <footer className="border-t border-[#1e1e24] bg-[#09090b] mt-20 py-8 text-center text-xs text-zinc-500 print:hidden">
         <p>© 2026 JABA Ganancias Impositivas. Todos los derechos reservados. Diseñado bajo normativas AFIP/ARCA Buenos Aires, Argentina.</p>
       </footer>
 
     </div>
   );
 }
-

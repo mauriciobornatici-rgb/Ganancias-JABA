@@ -2620,3 +2620,89 @@ Pendiente externo:
 - Validar visualmente en navegador el wizard, papel de trabajo e informe cliente con la carga real del caso de capturas nuevas.
 - Confirmar con el usuario si la guia PDF anterior queda como caso historico de regresion o si debe actualizarse a las capturas nuevas.
 - Definir si se abre una unidad separada de saneamiento lint global.
+
+### 2026-06-06 - Fase 1, P13: sincronizacion de saldos iniciales desde AXI
+
+Se analizo la observacion del usuario sobre la ausencia del boton de "Calculo Automatico de Saldos Iniciales" en Paso 1.
+
+Hallazgos:
+
+- El boton ya no debe estar en Paso 1; el flujo vigente lo concentra en Paso 5 > Ajuste por Inflacion (AXI) > "Sugerir desde Contabilidad".
+- La pantalla de Paso 1 no explicaba ese cambio, por lo que el usuario podia interpretar que el automatismo habia desaparecido.
+- El boton de Paso 5 completaba la grilla AXI, pero no sincronizaba visualmente los campos de Paso 1 (`activoTotalInicio`, `pasivoTotalInicio`, `bienesNoComputablesInicio`).
+- La logica inline del boton clasificaba genericamente `Fiscal` como credito fiscal no computable; para las capturas nuevas, "Creditos fiscales" integra el capital afectado/computable de inicio.
+
+Decision:
+
+- Mantener el boton en Paso 5, no reintroducir interruptor en Paso 1.
+- Extraer la sugerencia AXI a una funcion testeable en `wizardStateTypes.ts`.
+- Hacer que "Sugerir desde Contabilidad" complete la grilla AXI y sincronice tambien los tres saldos iniciales visibles de Paso 1.
+- Clasificar creditos fiscales genericos como deudores/creditos computables, salvo conceptos especificos de retenciones, anticipos, saldos a favor o impuesto ley.
+
+Archivos modificados:
+
+- `src/domain/ganancias/presentation/wizardStateTypes.ts`.
+- `src/domain/ganancias/tests/wizardStateTypes.test.ts`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardStateTypes.test.ts` fallo porque `buildWizardAxiStaticSuggestion` no existia.
+- `vitest run src/domain/ganancias/tests/wizardStateTypes.test.ts`: OK.
+- `vitest run src/domain/ganancias/tests/simulacionUsuario.test.ts`: OK.
+- `tsc --noEmit`: OK.
+- `vitest run`: 30 archivos, 105 tests, todo OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+
+Pendiente externo:
+
+- Validar visualmente en navegador el recorrido Paso 1 > Paso 5 con datos reales.
+
+### 2026-06-06 - Fase 1, P14: legajo profesional de carga PDF e instructivo de carga
+
+Se analizo el uso esperado del boton superior de impresion del wizard. El objetivo definido por el usuario es conservar un soporte profesional de las pantallas de carga y sus valores, no una captura desprolija de la pantalla operativa.
+
+Hallazgos:
+
+- El boton existente ejecutaba `window.print()` directamente sobre el wizard.
+- La pantalla interactiva no es un buen soporte documental: depende del paso actual, tiene controles de navegacion y no resume toda la carga.
+- La informacion necesaria para el soporte ya existe en memoria del wizard, incluso antes de guardar la DDJJ.
+- Faltaba un instructivo unico de carga para ordenar criterios y evitar duplicaciones.
+
+Decision:
+
+- Mantener el flujo de impresion del navegador para guardar como PDF, sin agregar dependencias nuevas.
+- Reemplazar el contenido impreso por un reporte print-only profesional.
+- Crear un helper testeable (`buildWizardLoadReport`) que arma metadatos, metricas, secciones y advertencias.
+- Crear un instructivo operativo detallado para uso del estudio.
+
+Archivos modificados/agregados:
+
+- `src/domain/ganancias/presentation/wizardLoadReport.ts`.
+- `src/domain/ganancias/tests/wizardLoadReport.test.ts`.
+- `src/app/declaraciones/crear/wizard/WizardLoadReportPrint.tsx`.
+- `src/app/declaraciones/crear/wizard/page.tsx`.
+- `docs/INSTRUCTIVO_CARGA_DDJJ_GANANCIAS.md`.
+- `docs/superpowers/plans/2026-06-06-legajo-carga-pdf.md`.
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Verificacion:
+
+- TDD rojo confirmado: `wizardLoadReport.test.ts` fallo porque `wizardLoadReport` no existia.
+- `vitest run src/domain/ganancias/tests/wizardLoadReport.test.ts`: OK.
+- `vitest run src/domain/ganancias/tests/wizardLoadReport.test.ts src/domain/ganancias/tests/wizardStateTypes.test.ts`: OK.
+- `tsc --noEmit`: OK.
+- `vitest run`: 31 archivos, 106 tests, todo OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- Lint focalizado de archivos nuevos (`wizardLoadReport.ts`, `wizardLoadReport.test.ts`, `WizardLoadReportPrint.tsx`): OK.
+
+Pendiente externo:
+
+- Validar visualmente el PDF cuando el navegador este disponible.

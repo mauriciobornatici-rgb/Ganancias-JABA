@@ -7,7 +7,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: auditoria de consistencia contra guia/capturas y eliminacion de duplicaciones de calculo en motor/pantallas.
+- Ultimo checkpoint documentado: legajo profesional de carga PDF e instructivo detallado de carga.
 - Fase activa: Fase 1 - Prueba piloto controlada contra Excel y carga real.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -26,6 +26,50 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 9. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P14 - Legajo profesional de carga PDF e instructivo de carga
+
+Estado: resuelto tecnicamente, pendiente validacion visual manual del PDF generado desde navegador.
+
+Objetivo inmediato:
+
+- Reemplazar la impresion desprolija de pantalla por un legajo profesional de soporte de carga.
+- Documentar el orden correcto de carga para evitar duplicaciones y errores de calculo.
+
+Criterio de cierre:
+
+- El boton del wizard se presenta como `Generar Legajo de Carga (PDF)`.
+- La impresion usa un reporte print-only profesional con portada, resumen, secciones por paso, controles y leyenda.
+- `buildWizardLoadReport` arma un modelo testeable del legajo desde datos en memoria.
+- `docs/INSTRUCTIVO_CARGA_DDJJ_GANANCIAS.md` explica carga correcta, errores frecuentes y checklist final.
+- Verificacion ejecutada: `vitest run` OK con 31 archivos y 106 tests, `tsc --noEmit` OK, `next build --webpack` OK, `git diff --check` OK y lint focalizado de archivos nuevos OK.
+
+Pendiente al retomar:
+
+- Validar visualmente en navegador el PDF A4 generado desde el boton.
+- Si el entorno lo permite, commitear y pushear P13/P14 juntos porque P13 quedo sin commit por limite de escalacion.
+
+### P13 - Sincronizacion de saldos iniciales desde AXI
+
+Estado: resuelto tecnicamente, pendiente solo de validacion visual manual.
+
+Objetivo inmediato:
+
+- Resolver la confusion por la ausencia del viejo interruptor de calculo automatico en Paso 1.
+- Mantener la automatizacion centralizada en Paso 5 > Ajuste por Inflacion (AXI) > "Sugerir desde Contabilidad".
+- Asegurar que el boton actualice tambien los tres campos visibles de Paso 1.
+
+Criterio de cierre:
+
+- `buildWizardAxiStaticSuggestion` calcula la grilla AXI y devuelve `activoTotalInicio`, `pasivoTotalInicio` y `bienesNoComputablesInicio`.
+- Creditos fiscales genericos de las capturas se tratan como creditos computables, salvo conceptos especificos de retenciones, anticipos, saldos a favor o impuesto ley.
+- Paso 1 muestra una nota indicando donde esta el automatismo.
+- El boton de Paso 5 sincroniza la grilla AXI y los saldos iniciales del Paso 1.
+- Verificacion ejecutada: `wizardStateTypes.test.ts` OK, `simulacionUsuario.test.ts` OK, `tsc --noEmit` OK, `vitest run` OK con 105 tests, `next build --webpack` OK y `git diff --check` OK.
+
+Pendiente al retomar:
+
+- Validar visualmente en navegador el recorrido Paso 1 > Paso 5 con datos reales.
 
 ### P11 - Auditoria guia/capturas y duplicaciones de calculo
 

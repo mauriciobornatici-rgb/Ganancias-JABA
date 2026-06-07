@@ -257,6 +257,220 @@ export type WizardLiability = WizardEditableRecord & {
   balanceFinal?: WizardMoneyValue;
 };
 
+export type WizardAxiStaticCategory = {
+  total: string;
+  computable: string;
+};
+
+export type WizardAxiStaticBreakdown = {
+  activo: Record<string, WizardAxiStaticCategory>;
+  pasivo: Record<string, WizardAxiStaticCategory>;
+};
+
+export type WizardAxiStaticSuggestion = {
+  breakdown: WizardAxiStaticBreakdown;
+  activoTotalInicio: string;
+  pasivoTotalInicio: string;
+  bienesNoComputablesInicio: string;
+};
+
+export const DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN: WizardAxiStaticBreakdown = {
+  activo: {
+    disponibilidadesBancos: { total: '0', computable: '0' },
+    retencionesGanancias: { total: '0', computable: '0' },
+    anticiposGanancias: { total: '0', computable: '0' },
+    creditoFiscal: { total: '0', computable: '0' },
+    ivaSaf: { total: '0', computable: '0' },
+    safIibb: { total: '0', computable: '0' },
+    impuestoLey: { total: '0', computable: '0' },
+    deudoresVentas: { total: '0', computable: '0' },
+    bienesCambio: { total: '0', computable: '0' },
+    bienesUso: { total: '0', computable: '0' },
+  },
+  pasivo: {
+    deudasSociales: { total: '0', computable: '0' },
+    deudasFiscales: { total: '0', computable: '0' },
+    deudasComerciales: { total: '0', computable: '0' },
+    prestamos: { total: '0', computable: '0' },
+  },
+};
+
+function formatWizardAxiMoney(value: number): string {
+  return Math.abs(value) < 0.005 ? '0.00' : value.toFixed(2);
+}
+
+function normalizeWizardAxiText(value: unknown): string {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function sumWizardAxiCategories(categories: Record<string, WizardAxiStaticCategory>, field: 'total' | 'computable'): number {
+  return Object.values(categories).reduce((sum, item) => sum + wizardMoneyToNumber(item[field]), 0);
+}
+
+function buildWizardAxiCategory(total: number, computable: number): WizardAxiStaticCategory {
+  return {
+    total: formatWizardAxiMoney(total),
+    computable: formatWizardAxiMoney(computable),
+  };
+}
+
+function classifyWizardReceivableForAxi(receivable: WizardReceivable): string {
+  const text = normalizeWizardAxiText(`${receivable.description ?? ''} ${receivable.type ?? ''}`);
+
+  if ((text.includes('retencion') || text.includes('percepcion')) && text.includes('ganancia')) {
+    return 'retencionesGanancias';
+  }
+
+  if (text.includes('anticipo') && text.includes('ganancia')) {
+    return 'anticiposGanancias';
+  }
+
+  if (text.includes('iva') && (text.includes('saf') || text.includes('saldo a favor'))) {
+    return 'ivaSaf';
+  }
+
+  if ((text.includes('iibb') || text.includes('ingresos brutos')) && (text.includes('saf') || text.includes('saldo a favor'))) {
+    return 'safIibb';
+  }
+
+  if (text.includes('impuesto ley')) {
+    return 'impuestoLey';
+  }
+
+  if (text.includes('saf') || text.includes('saldo a favor')) {
+    return 'creditoFiscal';
+  }
+
+  return 'deudoresVentas';
+}
+
+function classifyWizardLiabilityForAxi(liability: WizardLiability): string {
+  const text = normalizeWizardAxiText(`${liability.description ?? ''} ${liability.type ?? ''}`);
+
+  if (
+    text.includes('carga') ||
+    text.includes('social') ||
+    text.includes('sueldo') ||
+    text.includes('sindicato') ||
+    text.includes('previsional')
+  ) {
+    return 'deudasSociales';
+  }
+
+  if (text.includes('afip') || text.includes('fiscal') || text.includes('impuesto')) {
+    return 'deudasFiscales';
+  }
+
+  if (
+    text.includes('proveedor') ||
+    text.includes('comercial') ||
+    normalizeWizardAxiText(liability.type).includes('proveedores')
+  ) {
+    return 'deudasComerciales';
+  }
+
+  return 'prestamos';
+}
+
+export function buildWizardAxiStaticSuggestion({
+  bankAccounts = [],
+  cashHoldings = [],
+  receivables = [],
+  liabilities = [],
+  fixedAssets = [],
+  initialStock,
+  fiscalYear,
+}: {
+  bankAccounts?: WizardBankAccount[];
+  cashHoldings?: WizardCashHolding[];
+  receivables?: WizardReceivable[];
+  liabilities?: WizardLiability[];
+  fixedAssets?: WizardFixedAsset[];
+  initialStock?: WizardMoneyValue | null;
+  fiscalYear: number;
+}): WizardAxiStaticSuggestion {
+  const initialBanks = bankAccounts.reduce(
+    (sum, bank) => sum + wizardMoneyToNumber(bank.nominalInitial) * wizardMoneyToNumber(bank.tcInitial, 1),
+    0
+  );
+  const initialCash = cashHoldings.reduce(
+    (sum, cash) => sum + wizardMoneyToNumber(cash.nominalInitial) * wizardMoneyToNumber(cash.tcFinal, 1),
+    0
+  );
+
+  const receivableTotals: Record<string, number> = {
+    retencionesGanancias: 0,
+    anticiposGanancias: 0,
+    creditoFiscal: 0,
+    ivaSaf: 0,
+    safIibb: 0,
+    impuestoLey: 0,
+    deudoresVentas: 0,
+  };
+
+  receivables.forEach(receivable => {
+    const key = classifyWizardReceivableForAxi(receivable);
+    receivableTotals[key] = (receivableTotals[key] ?? 0) + wizardMoneyToNumber(receivable.balanceInitial);
+  });
+
+  const liabilityTotals: Record<string, number> = {
+    deudasSociales: 0,
+    deudasFiscales: 0,
+    deudasComerciales: 0,
+    prestamos: 0,
+  };
+
+  liabilities.forEach(liability => {
+    const key = classifyWizardLiabilityForAxi(liability);
+    liabilityTotals[key] = (liabilityTotals[key] ?? 0) + wizardMoneyToNumber(liability.balanceInitial);
+  });
+
+  const totalBienesUso = fixedAssets
+    .filter(asset => {
+      if (!asset.purchaseDate) return false;
+      const purchaseYear = new Date(asset.purchaseDate).getFullYear();
+      return Number.isFinite(purchaseYear) && purchaseYear < fiscalYear;
+    })
+    .reduce((sum, asset) => sum + wizardMoneyToNumber(asset.originalCost), 0);
+
+  const totalStock = wizardMoneyToNumber(initialStock);
+
+  const breakdown: WizardAxiStaticBreakdown = {
+    activo: {
+      disponibilidadesBancos: buildWizardAxiCategory(initialBanks + initialCash, initialBanks + initialCash),
+      retencionesGanancias: buildWizardAxiCategory(receivableTotals.retencionesGanancias, 0),
+      anticiposGanancias: buildWizardAxiCategory(receivableTotals.anticiposGanancias, 0),
+      creditoFiscal: buildWizardAxiCategory(receivableTotals.creditoFiscal, 0),
+      ivaSaf: buildWizardAxiCategory(receivableTotals.ivaSaf, 0),
+      safIibb: buildWizardAxiCategory(receivableTotals.safIibb, 0),
+      impuestoLey: buildWizardAxiCategory(receivableTotals.impuestoLey, 0),
+      deudoresVentas: buildWizardAxiCategory(receivableTotals.deudoresVentas, receivableTotals.deudoresVentas),
+      bienesCambio: buildWizardAxiCategory(totalStock, totalStock),
+      bienesUso: buildWizardAxiCategory(totalBienesUso, 0),
+    },
+    pasivo: {
+      deudasSociales: buildWizardAxiCategory(liabilityTotals.deudasSociales, liabilityTotals.deudasSociales),
+      deudasFiscales: buildWizardAxiCategory(liabilityTotals.deudasFiscales, liabilityTotals.deudasFiscales),
+      deudasComerciales: buildWizardAxiCategory(liabilityTotals.deudasComerciales, liabilityTotals.deudasComerciales),
+      prestamos: buildWizardAxiCategory(liabilityTotals.prestamos, liabilityTotals.prestamos),
+    },
+  };
+
+  const sumTotalActivo = sumWizardAxiCategories(breakdown.activo, 'total');
+  const sumComputableActivo = sumWizardAxiCategories(breakdown.activo, 'computable');
+  const sumComputablePasivo = sumWizardAxiCategories(breakdown.pasivo, 'computable');
+
+  return {
+    breakdown,
+    activoTotalInicio: formatWizardAxiMoney(sumTotalActivo),
+    pasivoTotalInicio: formatWizardAxiMoney(sumComputablePasivo),
+    bienesNoComputablesInicio: formatWizardAxiMoney(sumTotalActivo - sumComputableActivo),
+  };
+}
+
 export type WizardEspAuxiliarySummary = {
   efectivosInicio: number;
   efectivosCierre: number;

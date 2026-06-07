@@ -343,6 +343,63 @@ Criterio de cierre:
 - `tsc --noEmit`: OK.
 - Pendiente externo: validacion visual con datos reales del usuario en navegador.
 
+## P13 - Sincronizacion de saldos iniciales desde AXI
+
+Estado: Resuelto tecnicamente.
+
+Problema:
+
+- El interruptor viejo de calculo automatico de saldos iniciales ya no existe en Paso 1.
+- El boton vigente esta en Paso 5 > Ajuste por Inflacion (AXI), pero Paso 1 no lo indicaba.
+- El boton "Sugerir desde Contabilidad" completaba AXI, pero no sincronizaba visualmente `activoTotalInicio`, `pasivoTotalInicio` y `bienesNoComputablesInicio`.
+- La sugerencia podia mandar creditos fiscales genericos a no computables, distinto del criterio usado en las capturas nuevas.
+
+Accion aplicada:
+
+- Se agrego `buildWizardAxiStaticSuggestion` como helper testeado para centralizar la sugerencia AXI.
+- El boton de Paso 5 ahora completa la grilla AXI y actualiza los saldos iniciales visibles de Paso 1.
+- Paso 1 muestra una nota operativa indicando que el automatismo esta en Paso 5.
+- Creditos fiscales genericos se consideran creditos computables, salvo retenciones, anticipos, saldos a favor o impuesto ley.
+
+Criterio de cierre:
+
+- TDD rojo/verde sobre `wizardStateTypes.test.ts`.
+- `simulacionUsuario.test.ts` conserva los resultados de las capturas.
+- `tsc --noEmit`: OK.
+- `vitest run`: 30 archivos, 105 tests OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- Pendiente externo: validacion visual manual del flujo completo.
+
+## P14 - Legajo profesional de carga PDF e instructivo de carga
+
+Estado: Resuelto tecnicamente, pendiente validacion visual manual.
+
+Problema:
+
+- El boton "Imprimir Pantalla (PDF)" llamaba a `window.print()` sobre la pantalla del wizard.
+- Ese enfoque imprimia una vista operativa, no un soporte profesional ordenado para archivo del estudio.
+- Faltaba un instructivo unificado de carga para prevenir duplicaciones, clasificaciones incorrectas y errores de calculo.
+
+Accion aplicada:
+
+- Se agrego `buildWizardLoadReport` como helper testeado para armar el legajo desde datos en memoria del wizard.
+- Se agrego un componente `WizardLoadReportPrint` visible solo en impresion/PDF.
+- El boton del wizard ahora se presenta como `Generar Legajo de Carga (PDF)`.
+- El reporte incluye portada, resumen de carga, secciones por paso, controles y leyenda profesional.
+- Se creo `docs/INSTRUCTIVO_CARGA_DDJJ_GANANCIAS.md` con orden de carga, criterios, errores frecuentes y checklist final.
+
+Criterio de cierre:
+
+- TDD rojo/verde sobre `wizardLoadReport.test.ts`.
+- El wizard compila con el componente print-only.
+- `vitest run`: 31 archivos, 106 tests OK.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- Lint focalizado de archivos nuevos: OK.
+- Pendiente externo: validar visualmente el PDF generado en navegador.
+
 ## P12 - Saneamiento lint global
 
 Estado: Pendiente.

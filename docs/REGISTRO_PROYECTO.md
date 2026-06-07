@@ -40,6 +40,26 @@ Ultima actualizacion: 2026-06-07
   - Validacion de conexion app: `buildMariaDbConnectionConfig` apunta a `127.0.0.1:3317/ganancias_jaba_test`.
 - Nota: existe un contenedor huerfano anterior `ganancias-jaba-db` del compose viejo. No se elimino automaticamente para evitar acciones destructivas no solicitadas; puede limpiarse luego con cuidado si se confirma que no se usa.
 
+### 2026-06-07 - Procedimiento obligatorio de desarrollo seguro
+
+- A pedido del usuario, se reforzo el registro del procedimiento porque sera fundamental para agregar funcionalidades, probarlas y no romper produccion ni la base asociada.
+- Se creo `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md` como documento central.
+- El procedimiento establece:
+  - usar Docker local para desarrollo y pruebas;
+  - usar `npm run dev:testdb` para forzar `ganancias_jaba_test`;
+  - no usar la base productiva de Hostinger para pruebas;
+  - no usar `prisma db push` contra produccion;
+  - crear migraciones versionadas;
+  - hacer backup SQL antes de migraciones productivas;
+  - actualizar registro, backlog y continuidad antes de cerrar cada unidad;
+  - commitear y pushear cambios utiles.
+- Se enlazo el procedimiento desde:
+  - `docs/CONTINUAR_AQUI.md`;
+  - `docs/BASE_DOCKER_PRUEBAS.md`;
+  - `docs/FLUJO_SEGURO_DEPLOY.md`;
+  - `docs/BACKLOG_PRIORIZADO.md`.
+- Decision permanente: salvo instruccion explicita y registrada, toda prueba local se realiza contra Docker y no contra Hostinger.
+
 ### 2026-06-07 - P16 flujo seguro de deploy y resguardo de DB productiva
 
 - Se definio `main` como unica rama de produccion y `staging` como rama de pruebas/Preview.

@@ -6,6 +6,8 @@ Fecha: 2026-06-07
 
 Trabajar con tranquilidad: probar cambios antes de publicarlos, mantener `main` como produccion y evitar que ambientes de prueba escriban por accidente en la base real de Hostinger.
 
+Procedimiento operativo obligatorio: `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
+
 ## Ambientes
 
 | Ambiente | Rama | Vercel | Base de datos |

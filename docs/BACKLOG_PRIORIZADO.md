@@ -525,6 +525,12 @@ Pendiente externo:
 
 - Validar visualmente en navegador `http://localhost:3000` usando `npm run dev:testdb`.
 
+Regla permanente:
+
+- Para agregar funcionalidades o probar cambios, seguir `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
+- No usar la base productiva de Hostinger para pruebas locales.
+- Preferir `npm run dev:testdb` sobre `npm run dev` durante desarrollo.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

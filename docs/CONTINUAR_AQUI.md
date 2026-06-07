@@ -19,13 +19,15 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 1. Ejecutar `git status --short --branch`.
 2. Leer esta pagina completa.
-3. Abrir `docs/GUIA_PRUEBA_PILOTO.md`.
-4. Abrir `docs/BACKLOG_PRIORIZADO.md`.
-5. Tomar el primer item con estado `Activo` o `Siguiente`.
-6. No abrir un nuevo frente si hay uno `En curso`, salvo instruccion explicita del usuario.
-7. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
-8. Correr verificacion fresca antes de decir que algo quedo terminado.
-9. Hacer commit y push a GitHub al cerrar cada bloque util.
+3. Abrir `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
+4. Si se va a desarrollar o probar, usar `npm run dev:testdb` contra Docker, no `npm run dev`.
+5. Abrir `docs/GUIA_PRUEBA_PILOTO.md`.
+6. Abrir `docs/BACKLOG_PRIORIZADO.md`.
+7. Tomar el primer item con estado `Activo` o `Siguiente`.
+8. No abrir un nuevo frente si hay uno `En curso`, salvo instruccion explicita del usuario.
+9. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
+10. Correr verificacion fresca antes de decir que algo quedo terminado.
+11. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
 
@@ -406,6 +408,8 @@ Siguiente corte recomendado:
 
 ## Reglas de continuidad
 
+- Todo desarrollo o prueba local debe realizarse contra Docker con `npm run dev:testdb`, salvo decision explicita y registrada.
+- La base productiva de Hostinger no se usa para pruebas.
 - Una unidad de trabajo debe cerrar con registro, verificacion, commit y push.
 - Si aparece un bloqueo del entorno, se documenta con fecha y se sigue por el siguiente camino seguro.
 - Si un pendiente queda resuelto por un cambio posterior, marcarlo como resuelto en el backlog; no dejar pendientes fantasmas.
@@ -415,6 +419,9 @@ Siguiente corte recomendado:
 
 - Registro historico largo: `docs/REGISTRO_PROYECTO.md`.
 - Backlog ordenado: `docs/BACKLOG_PRIORIZADO.md`.
+- Procedimiento obligatorio de desarrollo seguro: `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
+- Base Docker de pruebas: `docs/BASE_DOCKER_PRUEBAS.md`.
+- Flujo seguro de deploy: `docs/FLUJO_SEGURO_DEPLOY.md`.
 - Plan de fase Excel: `docs/FASE_1_VALIDACION_EXCEL.md`.
 - Mapeo JVP contra Excel: `docs/MAPEO_JVP_EXCEL.md`.
 - Mapeo deducciones generales contra Excel: `docs/MAPEO_DEDUCCIONES_GENERALES_EXCEL.md`.

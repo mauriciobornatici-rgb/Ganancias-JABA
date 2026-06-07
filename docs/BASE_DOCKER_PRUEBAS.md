@@ -6,6 +6,8 @@ Fecha: 2026-06-07
 
 Simular una base MySQL local para pruebas sin tocar la base productiva de Hostinger.
 
+Procedimiento completo de trabajo: `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
+
 Esta base sirve para:
 
 - probar cambios antes de pasarlos a `main`,

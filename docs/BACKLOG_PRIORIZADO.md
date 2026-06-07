@@ -459,9 +459,10 @@ Pendiente externo:
 - Host MySQL confirmado: `srv1199.hstgr.io`; IP alternativa `193.203.175.56`.
 - Remote MySQL habilitado para `u669600172_ganancias_jaba` con acceso `%`.
 - Conexion remota verificada y migracion Prisma aplicada en Hostinger el 2026-06-07: 35 tablas creadas.
+- Seed inicial ejecutado y verificado en Hostinger el 2026-06-07.
 - Configurar `DATABASE_URL` en Vercel con password URL-encoded.
 - Conectar Vercel al repo GitHub y guardar secretos solo en Environment Variables.
-- Ejecutar seed de parametros iniciales si corresponde.
+- Validar navegacion productiva contra Vercel y revisar parametros reales.
 
 ## Cierre de desarrollo tecnico
 

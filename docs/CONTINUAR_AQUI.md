@@ -50,6 +50,7 @@ Avance:
 - Host MySQL remoto confirmado: `srv1199.hstgr.io`.
 - Remote MySQL habilitado para `u669600172_ganancias_jaba` con acceso `%` (cualquier host).
 - Conexion remota verificada y migracion Prisma aplicada en Hostinger el 2026-06-07: 35 tablas creadas.
+- Seed inicial ejecutado en Hostinger el 2026-06-07: 3 clientes, 2 periodos fiscales, 1 set de parametros, 9 tramos Art. 94, 12 indices, 1 DDJJ historica y 1 ejecucion.
 - Password no registrada por seguridad; se recomienda regenerarla si quedo expuesta en capturas.
 - Se agrego `.env.example` y `.gitignore` permite versionarlo sin credenciales reales.
 - Se agrego helper de conexion segura sin fallback local silencioso.
@@ -62,7 +63,8 @@ Pendiente al retomar:
 - Cargar `DATABASE_URL` real en Vercel con host `srv1199.hstgr.io`.
 - Conectar Vercel al repositorio GitHub `Ganancias-JABA`.
 - Confirmar que `DATABASE_URL` quede cargada como Environment Variable de Vercel, no en GitHub.
-- Ejecutar seed de parametros iniciales si la base sigue vacia de datos maestros.
+- Validar desde Vercel que Clientes/Parametros/DDJJ lean la base remota.
+- Revisar/actualizar parametros reales antes de usar una DDJJ productiva.
 
 Verificacion ejecutada:
 

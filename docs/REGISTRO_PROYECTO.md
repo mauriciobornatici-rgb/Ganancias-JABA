@@ -19,6 +19,8 @@ Ultima actualizacion: 2026-06-07
 - Se habilito Remote MySQL para `u669600172_ganancias_jaba` con acceso `%`, compatible con Vercel sin IP fija.
 - Se verifico conexion remota desde la app contra Hostinger y se aplico `prisma migrate deploy` el 2026-06-07.
 - Verificacion posterior: 35 tablas creadas en `u669600172_ganancias_jaba`.
+- Se ejecuto seed inicial contra Hostinger el 2026-06-07.
+- Verificacion post-seed: `Client=3`, `FiscalYear=2`, `TaxParameterSet=1`, `TaxArt94Bracket=9`, `UpdateIndex=12`, `TaxReturn=1`, `CalculationRun=1`.
 - La password fue visible en captura; no se registra en el repo y se recomienda regenerarla antes de produccion o tratarla como temporal.
 - Se agrego `.env.example` sin secretos reales.
 - Se actualizo `.gitignore` para permitir versionar `.env.example`.

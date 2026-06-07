@@ -28,6 +28,8 @@ Estado al 2026-06-07:
 - Remote MySQL habilitado para la base `u669600172_ganancias_jaba` con acceso `%` (cualquier host), necesario para Vercel sin IP fija.
 - Conexion remota verificada desde la app el 2026-06-07.
 - Migracion Prisma aplicada en Hostinger el 2026-06-07: 35 tablas creadas.
+- Seed inicial ejecutado en Hostinger el 2026-06-07.
+- Verificacion post-seed: 3 clientes, 2 periodos fiscales, 1 set de parametros, 9 tramos Art. 94, 12 indices, 1 DDJJ historica y 1 ejecucion de calculo.
 - La password fue visible en una captura de trabajo; no se registra en el repo. Recomendacion: regenerarla antes de usar produccion o tratarla como clave temporal.
 - No usar `127.0.0.1`, `localhost` ni el dominio del sitio web como host de Vercel.
 
@@ -189,6 +191,6 @@ Aunque el uso sea personal, se aplican estas practicas:
 
 - Cargar `DATABASE_URL` real en Vercel usando `srv1199.hstgr.io`.
 - Conectar Vercel al repositorio GitHub.
-- Ejecutar seed de parametros.
+- Revisar/actualizar parametros reales antes de usar una DDJJ productiva si las escalas o indices cargados son solo base inicial.
 - Probar `test_db.js`.
 - Implementar endpoint de adjuntos/importaciones usando `AttachmentBlob`, `ImportBatch` e `ImportFile`.

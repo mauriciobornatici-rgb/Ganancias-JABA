@@ -14,7 +14,9 @@ Ultima actualizacion: 2026-06-07
   - DB: `u669600172_ganancias_jaba`;
   - usuario: `u669600172_jaba_app`.
 - El usuario creo en Hostinger la DB `u669600172_ganancias_jaba` y el usuario `u669600172_jaba_app` el 2026-06-07.
-- Se registro el sitio asociado `lightgray-herring-775204.hostingersite.com`, aclarando que falta confirmar el host/servidor MySQL real.
+- Se registro el sitio asociado `lightgray-herring-775204.hostingersite.com`.
+- Se confirmo host MySQL remoto `srv1199.hstgr.io` e IP alternativa `193.203.175.56`.
+- Se habilito Remote MySQL para `u669600172_ganancias_jaba` con acceso `%`, compatible con Vercel sin IP fija.
 - La password fue visible en captura; no se registra en el repo y se recomienda regenerarla antes de produccion o tratarla como temporal.
 - Se agrego `.env.example` sin secretos reales.
 - Se actualizo `.gitignore` para permitir versionar `.env.example`.

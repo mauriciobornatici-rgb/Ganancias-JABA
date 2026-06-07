@@ -47,6 +47,8 @@ Avance:
   - usuario completo: `u669600172_jaba_app`.
 - DB/usuario creados en Hostinger el 2026-06-07.
 - Sitio asociado en Hostinger: `lightgray-herring-775204.hostingersite.com`.
+- Host MySQL remoto confirmado: `srv1199.hstgr.io`.
+- Remote MySQL habilitado para `u669600172_ganancias_jaba` con acceso `%` (cualquier host).
 - Password no registrada por seguridad; se recomienda regenerarla si quedo expuesta en capturas.
 - Se agrego `.env.example` y `.gitignore` permite versionarlo sin credenciales reales.
 - Se agrego helper de conexion segura sin fallback local silencioso.
@@ -56,7 +58,7 @@ Avance:
 Pendiente al retomar:
 
 - Commit y push si aun no se realizo.
-- Confirmar host/servidor MySQL de Hostinger, configurar Remote MySQL y cargar `DATABASE_URL`.
+- Cargar `DATABASE_URL` real en `.env` local y Vercel con host `srv1199.hstgr.io`.
 - Conectar Vercel al repositorio GitHub `Ganancias-JABA`.
 - Confirmar que `DATABASE_URL` quede cargada como Environment Variable de Vercel, no en GitHub.
 

@@ -456,8 +456,9 @@ Criterio de cierre:
 Pendiente externo:
 
 - DB/usuario Hostinger creados el 2026-06-07: `u669600172_ganancias_jaba` y `u669600172_jaba_app`.
-- Confirmar host/servidor MySQL de Hostinger.
-- Configurar Remote MySQL y `DATABASE_URL` local/Vercel.
+- Host MySQL confirmado: `srv1199.hstgr.io`; IP alternativa `193.203.175.56`.
+- Remote MySQL habilitado para `u669600172_ganancias_jaba` con acceso `%`.
+- Configurar `DATABASE_URL` local/Vercel con password URL-encoded.
 - Conectar Vercel al repo GitHub y guardar secretos solo en Environment Variables.
 - Ejecutar `prisma migrate deploy` contra Hostinger.
 

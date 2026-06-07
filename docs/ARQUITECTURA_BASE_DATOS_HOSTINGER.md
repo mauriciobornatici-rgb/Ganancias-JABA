@@ -23,15 +23,18 @@ Estado al 2026-06-07:
 - Base creada: `u669600172_ganancias_jaba`.
 - Usuario creado: `u669600172_jaba_app`.
 - Sitio asociado en Hostinger: `lightgray-herring-775204.hostingersite.com`.
+- Host MySQL remoto confirmado: `srv1199.hstgr.io`.
+- IP alternativa informada por Hostinger: `193.203.175.56`.
+- Remote MySQL habilitado para la base `u669600172_ganancias_jaba` con acceso `%` (cualquier host), necesario para Vercel sin IP fija.
 - La password fue visible en una captura de trabajo; no se registra en el repo. Recomendacion: regenerarla antes de usar produccion o tratarla como clave temporal.
-- Pendiente: obtener el host/servidor real de MySQL para conexion remota. No asumir que el dominio del sitio web es el host de MySQL.
+- No usar `127.0.0.1`, `localhost` ni el dominio del sitio web como host de Vercel.
 
 ## Conexion
 
 Formato:
 
 ```env
-DATABASE_URL="mysql://u669600172_jaba_app:PASSWORD_URL_ENCODED@HOST_MYSQL:3306/u669600172_ganancias_jaba"
+DATABASE_URL="mysql://u669600172_jaba_app:PASSWORD_URL_ENCODED@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"
 ```
 
 Reglas:
@@ -182,10 +185,8 @@ Aunque el uso sea personal, se aplican estas practicas:
 
 ## Pendientes posteriores
 
-- Confirmar el host/servidor MySQL de Hostinger.
-- Configurar Remote MySQL.
+- Cargar `DATABASE_URL` real en `.env` local y en Vercel usando `srv1199.hstgr.io`.
 - Conectar Vercel al repositorio GitHub.
-- Pegar `DATABASE_URL` en `.env` local y en Vercel.
 - Ejecutar `migrate deploy`.
 - Ejecutar seed de parametros.
 - Probar `test_db.js`.

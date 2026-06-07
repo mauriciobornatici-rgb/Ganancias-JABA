@@ -45,6 +45,9 @@ Avance:
 - Recomendacion Hostinger:
   - base completa: `u669600172_ganancias_jaba`;
   - usuario completo: `u669600172_jaba_app`.
+- DB/usuario creados en Hostinger el 2026-06-07.
+- Sitio asociado en Hostinger: `lightgray-herring-775204.hostingersite.com`.
+- Password no registrada por seguridad; se recomienda regenerarla si quedo expuesta en capturas.
 - Se agrego `.env.example` y `.gitignore` permite versionarlo sin credenciales reales.
 - Se agrego helper de conexion segura sin fallback local silencioso.
 - `schema.prisma` incorpora CUIT de contraparte, bajas/perdidas de bienes de uso, deducciones, AXI estatico, adjuntos binarios e importaciones AFIP.
@@ -53,7 +56,7 @@ Avance:
 Pendiente al retomar:
 
 - Commit y push si aun no se realizo.
-- Crear DB/usuario en Hostinger, configurar Remote MySQL y cargar `DATABASE_URL`.
+- Confirmar host/servidor MySQL de Hostinger, configurar Remote MySQL y cargar `DATABASE_URL`.
 - Conectar Vercel al repositorio GitHub `Ganancias-JABA`.
 - Confirmar que `DATABASE_URL` quede cargada como Environment Variable de Vercel, no en GitHub.
 

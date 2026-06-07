@@ -455,7 +455,8 @@ Criterio de cierre:
 
 Pendiente externo:
 
-- Crear DB/usuario en Hostinger: `u669600172_ganancias_jaba` y `u669600172_jaba_app`.
+- DB/usuario Hostinger creados el 2026-06-07: `u669600172_ganancias_jaba` y `u669600172_jaba_app`.
+- Confirmar host/servidor MySQL de Hostinger.
 - Configurar Remote MySQL y `DATABASE_URL` local/Vercel.
 - Conectar Vercel al repo GitHub y guardar secretos solo en Environment Variables.
 - Ejecutar `prisma migrate deploy` contra Hostinger.

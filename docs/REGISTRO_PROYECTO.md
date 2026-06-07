@@ -13,6 +13,9 @@ Ultima actualizacion: 2026-06-07
 - Recomendacion para Hostinger:
   - DB: `u669600172_ganancias_jaba`;
   - usuario: `u669600172_jaba_app`.
+- El usuario creo en Hostinger la DB `u669600172_ganancias_jaba` y el usuario `u669600172_jaba_app` el 2026-06-07.
+- Se registro el sitio asociado `lightgray-herring-775204.hostingersite.com`, aclarando que falta confirmar el host/servidor MySQL real.
+- La password fue visible en captura; no se registra en el repo y se recomienda regenerarla antes de produccion o tratarla como temporal.
 - Se agrego `.env.example` sin secretos reales.
 - Se actualizo `.gitignore` para permitir versionar `.env.example`.
 - Se agrego helper `buildMariaDbConnectionConfig` y `maskDatabaseUrl`.

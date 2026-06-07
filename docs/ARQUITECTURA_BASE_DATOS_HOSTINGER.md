@@ -18,6 +18,14 @@ Segun el prefijo mostrado por Hostinger:
 
 No guardar la password en documentos, capturas, GitHub ni mensajes.
 
+Estado al 2026-06-07:
+
+- Base creada: `u669600172_ganancias_jaba`.
+- Usuario creado: `u669600172_jaba_app`.
+- Sitio asociado en Hostinger: `lightgray-herring-775204.hostingersite.com`.
+- La password fue visible en una captura de trabajo; no se registra en el repo. Recomendacion: regenerarla antes de usar produccion o tratarla como clave temporal.
+- Pendiente: obtener el host/servidor real de MySQL para conexion remota. No asumir que el dominio del sitio web es el host de MySQL.
+
 ## Conexion
 
 Formato:
@@ -174,7 +182,7 @@ Aunque el uso sea personal, se aplican estas practicas:
 
 ## Pendientes posteriores
 
-- Crear la base y usuario en Hostinger.
+- Confirmar el host/servidor MySQL de Hostinger.
 - Configurar Remote MySQL.
 - Conectar Vercel al repositorio GitHub.
 - Pegar `DATABASE_URL` en `.env` local y en Vercel.

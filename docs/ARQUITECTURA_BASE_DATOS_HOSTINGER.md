@@ -26,6 +26,8 @@ Estado al 2026-06-07:
 - Host MySQL remoto confirmado: `srv1199.hstgr.io`.
 - IP alternativa informada por Hostinger: `193.203.175.56`.
 - Remote MySQL habilitado para la base `u669600172_ganancias_jaba` con acceso `%` (cualquier host), necesario para Vercel sin IP fija.
+- Conexion remota verificada desde la app el 2026-06-07.
+- Migracion Prisma aplicada en Hostinger el 2026-06-07: 35 tablas creadas.
 - La password fue visible en una captura de trabajo; no se registra en el repo. Recomendacion: regenerarla antes de usar produccion o tratarla como clave temporal.
 - No usar `127.0.0.1`, `localhost` ni el dominio del sitio web como host de Vercel.
 
@@ -185,9 +187,8 @@ Aunque el uso sea personal, se aplican estas practicas:
 
 ## Pendientes posteriores
 
-- Cargar `DATABASE_URL` real en `.env` local y en Vercel usando `srv1199.hstgr.io`.
+- Cargar `DATABASE_URL` real en Vercel usando `srv1199.hstgr.io`.
 - Conectar Vercel al repositorio GitHub.
-- Ejecutar `migrate deploy`.
 - Ejecutar seed de parametros.
 - Probar `test_db.js`.
 - Implementar endpoint de adjuntos/importaciones usando `AttachmentBlob`, `ImportBatch` e `ImportFile`.

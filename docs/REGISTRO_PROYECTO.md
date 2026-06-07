@@ -17,6 +17,8 @@ Ultima actualizacion: 2026-06-07
 - Se registro el sitio asociado `lightgray-herring-775204.hostingersite.com`.
 - Se confirmo host MySQL remoto `srv1199.hstgr.io` e IP alternativa `193.203.175.56`.
 - Se habilito Remote MySQL para `u669600172_ganancias_jaba` con acceso `%`, compatible con Vercel sin IP fija.
+- Se verifico conexion remota desde la app contra Hostinger y se aplico `prisma migrate deploy` el 2026-06-07.
+- Verificacion posterior: 35 tablas creadas en `u669600172_ganancias_jaba`.
 - La password fue visible en captura; no se registra en el repo y se recomienda regenerarla antes de produccion o tratarla como temporal.
 - Se agrego `.env.example` sin secretos reales.
 - Se actualizo `.gitignore` para permitir versionar `.env.example`.

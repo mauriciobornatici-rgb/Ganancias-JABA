@@ -421,6 +421,43 @@ Criterio de cierre:
 - `eslint` global ejecutado y verde.
 - `vitest run`, `tsc --noEmit` y `next build --webpack` siguen OK.
 
+## P15 - Arquitectura MySQL Hostinger/Vercel
+
+Estado: Resuelto tecnicamente, pendiente conexion real Hostinger.
+
+Problema:
+
+- La app necesitaba una base MySQL real para conservar declaraciones, cargas y soportes.
+- La conexion tenia fallback silencioso a una base local ficticia.
+- Algunos datos relevantes dependian del snapshot JSON: CUIT de contraparte, AXI estatico, deducciones y baja de bienes de uso.
+- Faltaban tablas para importaciones AFIP por lote/archivo y adjuntos guardados dentro de la base.
+
+Accion aplicada:
+
+- Se agrego plan de implementacion en `docs/superpowers/plans/2026-06-07-base-datos-hostinger.md`.
+- Se agrego `docs/ARQUITECTURA_BASE_DATOS_HOSTINGER.md`.
+- `DATABASE_URL` ahora se parsea con `URL`, falla explicitamente si falta y se enmascara en logs/scripts.
+- Se creo `.env.example` sin credenciales reales.
+- `schema.prisma` incorpora tablas/columnas para deducciones, AXI estatico, importaciones AFIP, adjuntos binarios, CUIT de contraparte y bajas de bienes de uso.
+- Se genero migracion inicial en `prisma/migrations/20260607000100_initial_hostinger_mysql/migration.sql`.
+- Persistencia/reapertura prefieren tablas relacionales y mantienen snapshot como fallback/auditoria.
+
+Criterio de cierre:
+
+- `prisma validate`: OK.
+- Tests focalizados DB/persistencia: OK.
+- `vitest run`: OK, 33 archivos y 122 tests.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
+- Commit y push: pendiente en este corte.
+
+Pendiente externo:
+
+- Crear DB/usuario en Hostinger: `u669600172_ganancias_jaba` y `u669600172_jaba_app`.
+- Configurar Remote MySQL y `DATABASE_URL` local/Vercel.
+- Ejecutar `prisma migrate deploy` contra Hostinger.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

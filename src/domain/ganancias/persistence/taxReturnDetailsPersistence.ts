@@ -19,6 +19,7 @@ type PersistenceModel = {
   createMany(args: unknown): Promise<unknown>;
   create(args: unknown): Promise<unknown>;
   update(args: unknown): Promise<unknown>;
+  upsert?(args: unknown): Promise<unknown>;
 };
 
 type PersistenceDb = {
@@ -37,6 +38,9 @@ type PersistenceDb = {
   personalAsset: PersistenceModel;
   personalLiability: PersistenceModel;
   patrimonialJustification?: PersistenceModel;
+  generalDeduction?: PersistenceModel;
+  personalDeduction?: PersistenceModel;
+  axiStaticItem?: PersistenceModel;
   axiDynamicItem: PersistenceModel;
   calculationRun: PersistenceModel;
   taxReturn: PersistenceModel;
@@ -82,6 +86,7 @@ type FixedAssetPayload = {
   usefulLife?: NumericValue;
   yearsElapsed?: NumericValue;
   customReexpIndex?: NumericValue;
+  isRetired?: boolean | string;
 };
 
 type BankAccountPayload = {
@@ -216,6 +221,16 @@ function stringInput(value: string | undefined, fallback = ''): string {
   return value ?? fallback;
 }
 
+function booleanInput(value: unknown, fallback = false): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() === 'true';
+  return fallback;
+}
+
+function asRecord(value: unknown): RawRecord {
+  return value !== null && typeof value === 'object' ? value as RawRecord : {};
+}
+
 function dateInput(value: DateValue | undefined): Date {
   const date = value instanceof Date ? value : new Date(value ?? Date.now());
   return Number.isNaN(date.getTime()) ? new Date() : date;
@@ -239,6 +254,112 @@ function axiDynamicType(value: string | undefined): AxiDynamicInput['type'] {
 
 function patrimonialColumn(value: NumericValue | undefined): number {
   return integerInput(value, 2) === 1 ? 1 : 2;
+}
+
+const GENERAL_DEDUCTION_KEYS = [
+  'autonomos',
+  'servicioDomestico',
+  'seguroVida',
+  'seguroRetiro',
+  'gastosSepelio',
+  'interesesHipoteca',
+  'gastosEducativos',
+  'alquilerCasaHabitacion',
+  'deduccionLocadorLocatario',
+  'donaciones',
+  'medicosAsistencial',
+  'honorariosMedicos',
+] as const;
+
+function buildGeneralDeductionData(taxReturnId: string, generalDeductions: RawRecord | undefined) {
+  if (!generalDeductions) return null;
+
+  return GENERAL_DEDUCTION_KEYS.reduce<Record<string, unknown>>((data, key) => {
+    data[key] = numberInput(generalDeductions[key] as NumericValue | undefined);
+    return data;
+  }, { taxReturnId });
+}
+
+function buildPersonalDeductionData(taxReturnId: string, personalDeductions: PersonalDeductionsPayload | undefined) {
+  if (!personalDeductions) return null;
+
+  return {
+    taxReturnId,
+    tieneConyuge: booleanInput(personalDeductions.tieneConyuge),
+    cantidadHijos: integerInput(personalDeductions.cantidadHijos),
+    cantidadHijosIncapacitados: integerInput(personalDeductions.cantidadHijosIncapacitados),
+    tipoDeduccionEspecial: personalDeductions.tipoDeduccionEspecial || 'Ninguna',
+    esJubiladoOchoHaberes: booleanInput(personalDeductions.esJubiladoOchoHaberes),
+  };
+}
+
+function omitTaxReturnId(data: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).filter(([key]) => key !== 'taxReturnId')
+  );
+}
+
+const AXI_STATIC_LABELS: Record<string, string> = {
+  disponibilidadesBancos: 'Disponibilidades-Bancos',
+  retencionesGanancias: 'Retenciones de Ganancias',
+  anticiposGanancias: 'Ganancias Anticipos',
+  creditoFiscal: 'Credito Fiscal',
+  ivaSaf: 'IVA SAF',
+  safIibb: 'SAF IIBB',
+  impuestoLey: 'Impuesto Ley Computable',
+  deudoresVentas: 'Deudores por Ventas',
+  bienesCambio: 'Bienes de Cambio',
+  bienesUso: 'Bienes de Uso',
+  deudasSociales: 'Deudas Sociales',
+  deudasFiscales: 'Deudas Fiscales',
+  deudasComerciales: 'Deudas Comerciales',
+  prestamos: 'Prestamos',
+};
+
+function buildAxiStaticRows(taxReturnId: string, axiStaticBreakdown: RawRecord | undefined): Record<string, unknown>[] {
+  if (!axiStaticBreakdown) return [];
+
+  const rows: Record<string, unknown>[] = [];
+  const activo = asRecord(axiStaticBreakdown.activo);
+  const pasivo = asRecord(axiStaticBreakdown.pasivo);
+
+  Object.entries(activo).forEach(([categoryKey, rawCategory]) => {
+    const category = asRecord(rawCategory);
+    const totalAmount = numberInput(category.total as NumericValue | undefined);
+    const computableAmount = numberInput(category.computable as NumericValue | undefined);
+    const concept = stringInput(category.label as string | undefined, AXI_STATIC_LABELS[categoryKey] || categoryKey);
+
+    rows.push({
+      taxReturnId,
+      concept,
+      section: Math.abs(computableAmount) > 0 ? 'ACTIVO_TOTAL' : 'BIEN_NO_COMPUTABLE',
+      categoryKey,
+      amount: totalAmount,
+      totalAmount,
+      computableAmount,
+      isComputable: Math.abs(computableAmount) > 0,
+    });
+  });
+
+  Object.entries(pasivo).forEach(([categoryKey, rawCategory]) => {
+    const category = asRecord(rawCategory);
+    const totalAmount = numberInput(category.total as NumericValue | undefined);
+    const computableAmount = numberInput(category.computable as NumericValue | undefined, totalAmount);
+    const concept = stringInput(category.label as string | undefined, AXI_STATIC_LABELS[categoryKey] || categoryKey);
+
+    rows.push({
+      taxReturnId,
+      concept,
+      section: 'PASIVO_TOTAL',
+      categoryKey,
+      amount: totalAmount,
+      totalAmount,
+      computableAmount,
+      isComputable: Math.abs(computableAmount) > 0,
+    });
+  });
+
+  return rows;
 }
 
 export async function persistTaxReturnDetails({
@@ -376,6 +497,7 @@ export async function persistTaxReturnDetails({
   await db.personalAsset.deleteMany({ where: { taxReturnId } });
   await db.personalLiability.deleteMany({ where: { taxReturnId } });
   await db.patrimonialJustification?.deleteMany({ where: { taxReturnId } });
+  await db.axiStaticItem?.deleteMany({ where: { taxReturnId } });
   await db.axiDynamicItem.deleteMany({ where: { taxReturnId } });
   await db.calculationRun.deleteMany({ where: { taxReturnId } });
 
@@ -387,6 +509,7 @@ export async function persistTaxReturnDetails({
         invoiceType: stringInput(s.invoiceType, 'Factura'),
         invoiceNumber: stringInput(s.invoiceNumber, '00000000'),
         customerName: stringInput(s.customerName, 'Cliente General'),
+        counterpartyCuit: stringInput(s.counterpartyCuit) || undefined,
         netAmount: numberInput(s.netAmount),
         ivaAmount: numberInput(s.ivaAmount),
         totalAmount: numberInput(s.totalAmount, numberInput(s.netAmount)),
@@ -403,6 +526,7 @@ export async function persistTaxReturnDetails({
         invoiceType: stringInput(p.invoiceType, 'Factura'),
         invoiceNumber: stringInput(p.invoiceNumber, '00000000'),
         vendorName: stringInput(p.vendorName, 'Proveedor General'),
+        counterpartyCuit: stringInput(p.counterpartyCuit) || undefined,
         netAmount: numberInput(p.netAmount),
         ivaAmount: numberInput(p.ivaAmount),
         totalAmount: numberInput(p.totalAmount, numberInput(p.netAmount)),
@@ -422,6 +546,7 @@ export async function persistTaxReturnDetails({
     const usefulLife = integerInput(asset.usefulLife, 10);
     const yearsElapsed = integerInput(asset.yearsElapsed);
     const customReexpIndex = numberInput(asset.customReexpIndex, 1);
+    const isRetired = booleanInput(asset.isRetired);
 
     const depResult = calculateFixedAssetDepreciation({
       id: assetId,
@@ -432,6 +557,7 @@ export async function persistTaxReturnDetails({
       usefulLife,
       yearsElapsed,
       customReexpIndex: new Decimal(customReexpIndex),
+      isRetired,
     });
 
     await db.fixedAsset.create({
@@ -445,10 +571,13 @@ export async function persistTaxReturnDetails({
         usefulLife,
         yearsElapsed,
         customReexpIndex,
+        isRetired,
         annualDepreciationHist: depResult.annualDepreciationHist.toNumber(),
         annualDepreciationAdj: depResult.annualDepreciationAdj.toNumber(),
         residualValueHist: depResult.residualValueHist.toNumber(),
         residualValueAdj: depResult.residualValueAdj.toNumber(),
+        bajaLossHist: depResult.bajaLossHist?.toNumber() ?? 0,
+        bajaLossAdj: depResult.bajaLossAdj?.toNumber() ?? 0,
       },
     });
   }
@@ -582,6 +711,29 @@ export async function persistTaxReturnDetails({
         amount: numberInput(justification.amount),
       })),
     });
+  }
+
+  const generalDeductionData = buildGeneralDeductionData(taxReturnId, generalDeductions);
+  if (db.generalDeduction?.upsert && generalDeductionData) {
+    await db.generalDeduction.upsert({
+      where: { taxReturnId },
+      create: generalDeductionData,
+      update: omitTaxReturnId(generalDeductionData),
+    });
+  }
+
+  const personalDeductionData = buildPersonalDeductionData(taxReturnId, personalDeductions);
+  if (db.personalDeduction?.upsert && personalDeductionData) {
+    await db.personalDeduction.upsert({
+      where: { taxReturnId },
+      create: personalDeductionData,
+      update: omitTaxReturnId(personalDeductionData),
+    });
+  }
+
+  const axiStaticRows = buildAxiStaticRows(taxReturnId, payload.axiStaticBreakdown);
+  if (db.axiStaticItem && axiStaticRows.length > 0) {
+    await db.axiStaticItem.createMany({ data: axiStaticRows });
   }
 
   const normalizedAxiDynamic: AxiDynamicInput[] = axiDynamic.map(item => ({

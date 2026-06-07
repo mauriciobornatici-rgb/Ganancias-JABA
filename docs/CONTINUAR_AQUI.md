@@ -1,14 +1,14 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-06
+Ultima actualizacion: 2026-06-07
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
 ## Estado actual
 
 - Rama activa: `feature/wizard-optimizado`.
-- Ultimo checkpoint documentado: legajo profesional de carga PDF e instructivo detallado de carga.
-- Fase activa: Fase 1 - Prueba piloto controlada contra Excel y carga real.
+- Ultimo checkpoint documentado: arquitectura MySQL Hostinger/Vercel en curso de cierre.
+- Fase activa: Base de datos productiva para persistir declaraciones, cargas y soportes.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
 - Estado de uso: listo para iniciar piloto controlado, con salvedad de validar visualmente el caso real de capturas nuevas en navegador.
@@ -26,6 +26,42 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 9. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P15 - Base de datos MySQL Hostinger/Vercel
+
+Estado: resuelto tecnicamente, pendiente conexion real Hostinger.
+
+Objetivo inmediato:
+
+- Crear la arquitectura de base MySQL para Hostinger y Vercel.
+- Guardar declaraciones y carga operativa en tablas relacionales, manteniendo snapshot como auditoria.
+- Preparar la base para uso personal inicial y extension futura a multiusuario.
+
+Avance:
+
+- Plan guardado: `docs/superpowers/plans/2026-06-07-base-datos-hostinger.md`.
+- Guia operativa creada: `docs/ARQUITECTURA_BASE_DATOS_HOSTINGER.md`.
+- Recomendacion Hostinger:
+  - base completa: `u669600172_ganancias_jaba`;
+  - usuario completo: `u669600172_jaba_app`.
+- Se agrego `.env.example` y `.gitignore` permite versionarlo sin credenciales reales.
+- Se agrego helper de conexion segura sin fallback local silencioso.
+- `schema.prisma` incorpora CUIT de contraparte, bajas/perdidas de bienes de uso, deducciones, AXI estatico, adjuntos binarios e importaciones AFIP.
+- Migracion inicial: `prisma/migrations/20260607000100_initial_hostinger_mysql/migration.sql`.
+
+Pendiente al retomar:
+
+- Commit y push si aun no se realizo.
+- Crear DB/usuario en Hostinger, configurar Remote MySQL y cargar `DATABASE_URL`.
+
+Verificacion ejecutada:
+
+- `prisma validate`: OK.
+- Tests focalizados DB/persistencia: OK.
+- `vitest run`: OK, 33 archivos y 122 tests.
+- `tsc --noEmit`: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales.
 
 ### P14 - Legajo profesional de carga PDF e instructivo de carga
 

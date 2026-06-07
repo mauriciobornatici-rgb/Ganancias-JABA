@@ -1,6 +1,27 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-02
+Ultima actualizacion: 2026-06-07
+
+## Entrada reciente
+
+### 2026-06-07 - P15 arquitectura MySQL Hostinger/Vercel
+
+- Se inicio la etapa de base de datos para uso personal con Hostinger y despliegue en Vercel, dejando prevista extension futura a multiusuario.
+- Se documento el plan en `docs/superpowers/plans/2026-06-07-base-datos-hostinger.md`.
+- Se creo `docs/ARQUITECTURA_BASE_DATOS_HOSTINGER.md` con nombres recomendados, formato de `DATABASE_URL`, migraciones, backups y pendientes externos.
+- Recomendacion para Hostinger:
+  - DB: `u669600172_ganancias_jaba`;
+  - usuario: `u669600172_jaba_app`.
+- Se agrego `.env.example` sin secretos reales.
+- Se actualizo `.gitignore` para permitir versionar `.env.example`.
+- Se agrego helper `buildMariaDbConnectionConfig` y `maskDatabaseUrl`.
+- Se removio el fallback silencioso local de `src/domain/ganancias/prisma.ts` y `prisma/seed.ts`.
+- `test_db.js` deja de imprimir passwords.
+- `schema.prisma` incorpora estructura relacional para CUIT de contraparte, bajas de bienes, deducciones, AXI estatico, adjuntos binarios e importaciones AFIP.
+- La persistencia guarda esos campos en tablas propias y conserva `variablesSnapshot` como soporte de auditoria/fallback.
+- La reapertura de DDJJ prefiere valores relacionales y usa snapshot solo como compatibilidad con declaraciones previas.
+- Se genero migracion inicial en `prisma/migrations/20260607000100_initial_hostinger_mysql/migration.sql`.
+- Verificacion tecnica ejecutada: `prisma validate` OK, tests focalizados OK, `vitest run` OK con 33 archivos y 122 tests, `tsc --noEmit` OK, `next build --webpack` OK y `git diff --check` OK con avisos CRLF habituales.
 
 ## Para Retomar Rapido
 

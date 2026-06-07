@@ -1,34 +1,10 @@
 import 'dotenv/config';
 import { PrismaClient } from '../src/generated/client/client';
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-const mariadb = require('mariadb');
+import { buildMariaDbConnectionConfig, maskDatabaseUrl } from '../src/domain/ganancias/persistence/databaseConnection';
 
-const parseConnectionString = (url: string) => {
-  const regex = /^(?:mysql|mariadb):\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)$/;
-  const match = url.match(regex);
-  if (match) {
-    return {
-      user: match[1],
-      password: match[2],
-      host: match[3],
-      port: parseInt(match[4], 10),
-      database: match[5]
-    };
-  }
-  return {
-    host: 'localhost',
-    port: 3306,
-    user: 'jaba',
-    password: 'jaba_secure_pass',
-    database: 'ganancias_jaba'
-  };
-};
-
-const connConfig = parseConnectionString(process.env.DATABASE_URL!);
-if (connConfig) {
-  (connConfig as any).allowPublicKeyRetrieval = true;
-}
-console.log("Parsed config:", connConfig);
+const connConfig = buildMariaDbConnectionConfig();
+console.log('Database target:', maskDatabaseUrl());
 const adapter = new PrismaMariaDb(connConfig);
 const prisma = new PrismaClient({ adapter });
 

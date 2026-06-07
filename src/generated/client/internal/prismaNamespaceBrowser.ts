@@ -75,10 +75,15 @@ export const ModelName = {
   PersonalAsset: 'PersonalAsset',
   PersonalLiability: 'PersonalLiability',
   PatrimonialJustification: 'PatrimonialJustification',
+  GeneralDeduction: 'GeneralDeduction',
+  PersonalDeduction: 'PersonalDeduction',
   AxiStaticItem: 'AxiStaticItem',
   AxiDynamicItem: 'AxiDynamicItem',
   CalculationRun: 'CalculationRun',
   Attachment: 'Attachment',
+  AttachmentBlob: 'AttachmentBlob',
+  ImportBatch: 'ImportBatch',
+  ImportFile: 'ImportFile',
   AuditLog: 'AuditLog'
 } as const
 
@@ -263,10 +268,13 @@ export const SalesInvoiceScalarFieldEnum = {
   invoiceType: 'invoiceType',
   invoiceNumber: 'invoiceNumber',
   customerName: 'customerName',
+  counterpartyCuit: 'counterpartyCuit',
   netAmount: 'netAmount',
   ivaAmount: 'ivaAmount',
   totalAmount: 'totalAmount',
-  isExempt: 'isExempt'
+  isExempt: 'isExempt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type SalesInvoiceScalarFieldEnum = (typeof SalesInvoiceScalarFieldEnum)[keyof typeof SalesInvoiceScalarFieldEnum]
@@ -279,12 +287,15 @@ export const PurchaseInvoiceScalarFieldEnum = {
   invoiceType: 'invoiceType',
   invoiceNumber: 'invoiceNumber',
   vendorName: 'vendorName',
+  counterpartyCuit: 'counterpartyCuit',
   netAmount: 'netAmount',
   ivaAmount: 'ivaAmount',
   totalAmount: 'totalAmount',
   isDeductible: 'isDeductible',
   isExempt: 'isExempt',
-  expenseType: 'expenseType'
+  expenseType: 'expenseType',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type PurchaseInvoiceScalarFieldEnum = (typeof PurchaseInvoiceScalarFieldEnum)[keyof typeof PurchaseInvoiceScalarFieldEnum]
@@ -301,10 +312,15 @@ export const FixedAssetScalarFieldEnum = {
   yearsElapsed: 'yearsElapsed',
   originalIva: 'originalIva',
   customReexpIndex: 'customReexpIndex',
+  isRetired: 'isRetired',
   annualDepreciationHist: 'annualDepreciationHist',
   annualDepreciationAdj: 'annualDepreciationAdj',
   residualValueHist: 'residualValueHist',
-  residualValueAdj: 'residualValueAdj'
+  residualValueAdj: 'residualValueAdj',
+  bajaLossHist: 'bajaLossHist',
+  bajaLossAdj: 'bajaLossAdj',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type FixedAssetScalarFieldEnum = (typeof FixedAssetScalarFieldEnum)[keyof typeof FixedAssetScalarFieldEnum]
@@ -431,13 +447,55 @@ export const PatrimonialJustificationScalarFieldEnum = {
 export type PatrimonialJustificationScalarFieldEnum = (typeof PatrimonialJustificationScalarFieldEnum)[keyof typeof PatrimonialJustificationScalarFieldEnum]
 
 
+export const GeneralDeductionScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  autonomos: 'autonomos',
+  servicioDomestico: 'servicioDomestico',
+  seguroVida: 'seguroVida',
+  seguroRetiro: 'seguroRetiro',
+  gastosSepelio: 'gastosSepelio',
+  interesesHipoteca: 'interesesHipoteca',
+  gastosEducativos: 'gastosEducativos',
+  alquilerCasaHabitacion: 'alquilerCasaHabitacion',
+  deduccionLocadorLocatario: 'deduccionLocadorLocatario',
+  donaciones: 'donaciones',
+  medicosAsistencial: 'medicosAsistencial',
+  honorariosMedicos: 'honorariosMedicos',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GeneralDeductionScalarFieldEnum = (typeof GeneralDeductionScalarFieldEnum)[keyof typeof GeneralDeductionScalarFieldEnum]
+
+
+export const PersonalDeductionScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  tieneConyuge: 'tieneConyuge',
+  cantidadHijos: 'cantidadHijos',
+  cantidadHijosIncapacitados: 'cantidadHijosIncapacitados',
+  tipoDeduccionEspecial: 'tipoDeduccionEspecial',
+  esJubiladoOchoHaberes: 'esJubiladoOchoHaberes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PersonalDeductionScalarFieldEnum = (typeof PersonalDeductionScalarFieldEnum)[keyof typeof PersonalDeductionScalarFieldEnum]
+
+
 export const AxiStaticItemScalarFieldEnum = {
   id: 'id',
   taxReturnId: 'taxReturnId',
   concept: 'concept',
   section: 'section',
+  categoryKey: 'categoryKey',
   amount: 'amount',
-  isComputable: 'isComputable'
+  totalAmount: 'totalAmount',
+  computableAmount: 'computableAmount',
+  isComputable: 'isComputable',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type AxiStaticItemScalarFieldEnum = (typeof AxiStaticItemScalarFieldEnum)[keyof typeof AxiStaticItemScalarFieldEnum]
@@ -494,13 +552,67 @@ export const AttachmentScalarFieldEnum = {
   fileSize: 'fileSize',
   fileExtension: 'fileExtension',
   mimeType: 'mimeType',
+  storageType: 'storageType',
   securePath: 'securePath',
   fileHash: 'fileHash',
   uploadedById: 'uploadedById',
-  createdAt: 'createdAt'
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
 } as const
 
 export type AttachmentScalarFieldEnum = (typeof AttachmentScalarFieldEnum)[keyof typeof AttachmentScalarFieldEnum]
+
+
+export const AttachmentBlobScalarFieldEnum = {
+  id: 'id',
+  attachmentId: 'attachmentId',
+  content: 'content',
+  createdAt: 'createdAt'
+} as const
+
+export type AttachmentBlobScalarFieldEnum = (typeof AttachmentBlobScalarFieldEnum)[keyof typeof AttachmentBlobScalarFieldEnum]
+
+
+export const ImportBatchScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  kind: 'kind',
+  source: 'source',
+  periodFrom: 'periodFrom',
+  periodTo: 'periodTo',
+  totalFiles: 'totalFiles',
+  totalRecords: 'totalRecords',
+  acceptedRecords: 'acceptedRecords',
+  duplicateRecords: 'duplicateRecords',
+  rejectedRecords: 'rejectedRecords',
+  status: 'status',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ImportBatchScalarFieldEnum = (typeof ImportBatchScalarFieldEnum)[keyof typeof ImportBatchScalarFieldEnum]
+
+
+export const ImportFileScalarFieldEnum = {
+  id: 'id',
+  importBatchId: 'importBatchId',
+  fileName: 'fileName',
+  fileHash: 'fileHash',
+  fileSize: 'fileSize',
+  mimeType: 'mimeType',
+  periodMonth: 'periodMonth',
+  periodYear: 'periodYear',
+  totalRecords: 'totalRecords',
+  acceptedRecords: 'acceptedRecords',
+  duplicateRecords: 'duplicateRecords',
+  rejectedRecords: 'rejectedRecords',
+  status: 'status',
+  errors: 'errors',
+  createdAt: 'createdAt'
+} as const
+
+export type ImportFileScalarFieldEnum = (typeof ImportFileScalarFieldEnum)[keyof typeof ImportFileScalarFieldEnum]
 
 
 export const AuditLogScalarFieldEnum = {
@@ -658,7 +770,8 @@ export const SalesInvoiceOrderByRelevanceFieldEnum = {
   taxReturnId: 'taxReturnId',
   invoiceType: 'invoiceType',
   invoiceNumber: 'invoiceNumber',
-  customerName: 'customerName'
+  customerName: 'customerName',
+  counterpartyCuit: 'counterpartyCuit'
 } as const
 
 export type SalesInvoiceOrderByRelevanceFieldEnum = (typeof SalesInvoiceOrderByRelevanceFieldEnum)[keyof typeof SalesInvoiceOrderByRelevanceFieldEnum]
@@ -670,6 +783,7 @@ export const PurchaseInvoiceOrderByRelevanceFieldEnum = {
   invoiceType: 'invoiceType',
   invoiceNumber: 'invoiceNumber',
   vendorName: 'vendorName',
+  counterpartyCuit: 'counterpartyCuit',
   expenseType: 'expenseType'
 } as const
 
@@ -781,11 +895,29 @@ export const PatrimonialJustificationOrderByRelevanceFieldEnum = {
 export type PatrimonialJustificationOrderByRelevanceFieldEnum = (typeof PatrimonialJustificationOrderByRelevanceFieldEnum)[keyof typeof PatrimonialJustificationOrderByRelevanceFieldEnum]
 
 
+export const GeneralDeductionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId'
+} as const
+
+export type GeneralDeductionOrderByRelevanceFieldEnum = (typeof GeneralDeductionOrderByRelevanceFieldEnum)[keyof typeof GeneralDeductionOrderByRelevanceFieldEnum]
+
+
+export const PersonalDeductionOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  tipoDeduccionEspecial: 'tipoDeduccionEspecial'
+} as const
+
+export type PersonalDeductionOrderByRelevanceFieldEnum = (typeof PersonalDeductionOrderByRelevanceFieldEnum)[keyof typeof PersonalDeductionOrderByRelevanceFieldEnum]
+
+
 export const AxiStaticItemOrderByRelevanceFieldEnum = {
   id: 'id',
   taxReturnId: 'taxReturnId',
   concept: 'concept',
-  section: 'section'
+  section: 'section',
+  categoryKey: 'categoryKey'
 } as const
 
 export type AxiStaticItemOrderByRelevanceFieldEnum = (typeof AxiStaticItemOrderByRelevanceFieldEnum)[keyof typeof AxiStaticItemOrderByRelevanceFieldEnum]
@@ -818,12 +950,46 @@ export const AttachmentOrderByRelevanceFieldEnum = {
   fileName: 'fileName',
   fileExtension: 'fileExtension',
   mimeType: 'mimeType',
+  storageType: 'storageType',
   securePath: 'securePath',
   fileHash: 'fileHash',
   uploadedById: 'uploadedById'
 } as const
 
 export type AttachmentOrderByRelevanceFieldEnum = (typeof AttachmentOrderByRelevanceFieldEnum)[keyof typeof AttachmentOrderByRelevanceFieldEnum]
+
+
+export const AttachmentBlobOrderByRelevanceFieldEnum = {
+  id: 'id',
+  attachmentId: 'attachmentId'
+} as const
+
+export type AttachmentBlobOrderByRelevanceFieldEnum = (typeof AttachmentBlobOrderByRelevanceFieldEnum)[keyof typeof AttachmentBlobOrderByRelevanceFieldEnum]
+
+
+export const ImportBatchOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  kind: 'kind',
+  source: 'source',
+  status: 'status',
+  notes: 'notes'
+} as const
+
+export type ImportBatchOrderByRelevanceFieldEnum = (typeof ImportBatchOrderByRelevanceFieldEnum)[keyof typeof ImportBatchOrderByRelevanceFieldEnum]
+
+
+export const ImportFileOrderByRelevanceFieldEnum = {
+  id: 'id',
+  importBatchId: 'importBatchId',
+  fileName: 'fileName',
+  fileHash: 'fileHash',
+  mimeType: 'mimeType',
+  status: 'status',
+  errors: 'errors'
+} as const
+
+export type ImportFileOrderByRelevanceFieldEnum = (typeof ImportFileOrderByRelevanceFieldEnum)[keyof typeof ImportFileOrderByRelevanceFieldEnum]
 
 
 export const AuditLogOrderByRelevanceFieldEnum = {

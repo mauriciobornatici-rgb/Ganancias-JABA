@@ -31,6 +31,16 @@ type AxiDynamicReadItem = {
   computedAxi: DecimalLike;
 };
 
+type AxiStaticReadItem = {
+  concept: string;
+  section: string;
+  categoryKey?: string | null;
+  amount: DecimalLike;
+  totalAmount?: DecimalLike | null;
+  computableAmount?: DecimalLike | null;
+  isComputable: boolean;
+};
+
 type PatrimonialJustificationReadItem = {
   concept: string;
   column: number;
@@ -47,6 +57,29 @@ export function mapAxiDynamicItemForWizard(item: AxiDynamicReadItem) {
     factor: item.factor.toString(),
     computedAxi: item.computedAxi.toString(),
   };
+}
+
+export function mapAxiStaticItemsForWizard(items: AxiStaticReadItem[]) {
+  if (items.length === 0) return null;
+
+  const breakdown: {
+    activo: Record<string, { total: string; computable: string }>;
+    pasivo: Record<string, { total: string; computable: string }>;
+  } = {
+    activo: {},
+    pasivo: {},
+  };
+
+  items.forEach((item) => {
+    const categoryKey = item.categoryKey || item.concept;
+    const total = (item.totalAmount ?? item.amount).toString();
+    const computable = (item.computableAmount ?? (item.isComputable ? item.amount : { toString: () => '0' })).toString();
+    const target = item.section === 'PASIVO_TOTAL' ? breakdown.pasivo : breakdown.activo;
+
+    target[categoryKey] = { total, computable };
+  });
+
+  return breakdown;
 }
 
 export function mapPatrimonialJustificationForWizard(item: PatrimonialJustificationReadItem) {

@@ -36,6 +36,8 @@ export type FixedAssetAvgAggregateOutputType = {
   annualDepreciationAdj: runtime.Decimal | null
   residualValueHist: runtime.Decimal | null
   residualValueAdj: runtime.Decimal | null
+  bajaLossHist: runtime.Decimal | null
+  bajaLossAdj: runtime.Decimal | null
 }
 
 export type FixedAssetSumAggregateOutputType = {
@@ -48,6 +50,8 @@ export type FixedAssetSumAggregateOutputType = {
   annualDepreciationAdj: runtime.Decimal | null
   residualValueHist: runtime.Decimal | null
   residualValueAdj: runtime.Decimal | null
+  bajaLossHist: runtime.Decimal | null
+  bajaLossAdj: runtime.Decimal | null
 }
 
 export type FixedAssetMinAggregateOutputType = {
@@ -61,10 +65,15 @@ export type FixedAssetMinAggregateOutputType = {
   yearsElapsed: number | null
   originalIva: runtime.Decimal | null
   customReexpIndex: runtime.Decimal | null
+  isRetired: boolean | null
   annualDepreciationHist: runtime.Decimal | null
   annualDepreciationAdj: runtime.Decimal | null
   residualValueHist: runtime.Decimal | null
   residualValueAdj: runtime.Decimal | null
+  bajaLossHist: runtime.Decimal | null
+  bajaLossAdj: runtime.Decimal | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type FixedAssetMaxAggregateOutputType = {
@@ -78,10 +87,15 @@ export type FixedAssetMaxAggregateOutputType = {
   yearsElapsed: number | null
   originalIva: runtime.Decimal | null
   customReexpIndex: runtime.Decimal | null
+  isRetired: boolean | null
   annualDepreciationHist: runtime.Decimal | null
   annualDepreciationAdj: runtime.Decimal | null
   residualValueHist: runtime.Decimal | null
   residualValueAdj: runtime.Decimal | null
+  bajaLossHist: runtime.Decimal | null
+  bajaLossAdj: runtime.Decimal | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type FixedAssetCountAggregateOutputType = {
@@ -95,10 +109,15 @@ export type FixedAssetCountAggregateOutputType = {
   yearsElapsed: number
   originalIva: number
   customReexpIndex: number
+  isRetired: number
   annualDepreciationHist: number
   annualDepreciationAdj: number
   residualValueHist: number
   residualValueAdj: number
+  bajaLossHist: number
+  bajaLossAdj: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -113,6 +132,8 @@ export type FixedAssetAvgAggregateInputType = {
   annualDepreciationAdj?: true
   residualValueHist?: true
   residualValueAdj?: true
+  bajaLossHist?: true
+  bajaLossAdj?: true
 }
 
 export type FixedAssetSumAggregateInputType = {
@@ -125,6 +146,8 @@ export type FixedAssetSumAggregateInputType = {
   annualDepreciationAdj?: true
   residualValueHist?: true
   residualValueAdj?: true
+  bajaLossHist?: true
+  bajaLossAdj?: true
 }
 
 export type FixedAssetMinAggregateInputType = {
@@ -138,10 +161,15 @@ export type FixedAssetMinAggregateInputType = {
   yearsElapsed?: true
   originalIva?: true
   customReexpIndex?: true
+  isRetired?: true
   annualDepreciationHist?: true
   annualDepreciationAdj?: true
   residualValueHist?: true
   residualValueAdj?: true
+  bajaLossHist?: true
+  bajaLossAdj?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type FixedAssetMaxAggregateInputType = {
@@ -155,10 +183,15 @@ export type FixedAssetMaxAggregateInputType = {
   yearsElapsed?: true
   originalIva?: true
   customReexpIndex?: true
+  isRetired?: true
   annualDepreciationHist?: true
   annualDepreciationAdj?: true
   residualValueHist?: true
   residualValueAdj?: true
+  bajaLossHist?: true
+  bajaLossAdj?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type FixedAssetCountAggregateInputType = {
@@ -172,10 +205,15 @@ export type FixedAssetCountAggregateInputType = {
   yearsElapsed?: true
   originalIva?: true
   customReexpIndex?: true
+  isRetired?: true
   annualDepreciationHist?: true
   annualDepreciationAdj?: true
   residualValueHist?: true
   residualValueAdj?: true
+  bajaLossHist?: true
+  bajaLossAdj?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -276,10 +314,15 @@ export type FixedAssetGroupByOutputType = {
   yearsElapsed: number
   originalIva: runtime.Decimal
   customReexpIndex: runtime.Decimal
+  isRetired: boolean
   annualDepreciationHist: runtime.Decimal
   annualDepreciationAdj: runtime.Decimal
   residualValueHist: runtime.Decimal
   residualValueAdj: runtime.Decimal
+  bajaLossHist: runtime.Decimal
+  bajaLossAdj: runtime.Decimal
+  createdAt: Date
+  updatedAt: Date
   _count: FixedAssetCountAggregateOutputType | null
   _avg: FixedAssetAvgAggregateOutputType | null
   _sum: FixedAssetSumAggregateOutputType | null
@@ -316,10 +359,15 @@ export type FixedAssetWhereInput = {
   yearsElapsed?: Prisma.IntFilter<"FixedAsset"> | number
   originalIva?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFilter<"FixedAsset"> | boolean
   annualDepreciationHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFilter<"FixedAsset"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"FixedAsset"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
 }
 
@@ -334,10 +382,15 @@ export type FixedAssetOrderByWithRelationInput = {
   yearsElapsed?: Prisma.SortOrder
   originalIva?: Prisma.SortOrder
   customReexpIndex?: Prisma.SortOrder
+  isRetired?: Prisma.SortOrder
   annualDepreciationHist?: Prisma.SortOrder
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   taxReturn?: Prisma.TaxReturnOrderByWithRelationInput
   _relevance?: Prisma.FixedAssetOrderByRelevanceInput
 }
@@ -356,10 +409,15 @@ export type FixedAssetWhereUniqueInput = Prisma.AtLeast<{
   yearsElapsed?: Prisma.IntFilter<"FixedAsset"> | number
   originalIva?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFilter<"FixedAsset"> | boolean
   annualDepreciationHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFilter<"FixedAsset"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"FixedAsset"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
 }, "id">
 
@@ -374,10 +432,15 @@ export type FixedAssetOrderByWithAggregationInput = {
   yearsElapsed?: Prisma.SortOrder
   originalIva?: Prisma.SortOrder
   customReexpIndex?: Prisma.SortOrder
+  isRetired?: Prisma.SortOrder
   annualDepreciationHist?: Prisma.SortOrder
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.FixedAssetCountOrderByAggregateInput
   _avg?: Prisma.FixedAssetAvgOrderByAggregateInput
   _max?: Prisma.FixedAssetMaxOrderByAggregateInput
@@ -399,10 +462,15 @@ export type FixedAssetScalarWhereWithAggregatesInput = {
   yearsElapsed?: Prisma.IntWithAggregatesFilter<"FixedAsset"> | number
   originalIva?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolWithAggregatesFilter<"FixedAsset"> | boolean
   annualDepreciationHist?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalWithAggregatesFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"FixedAsset"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"FixedAsset"> | Date | string
 }
 
 export type FixedAssetCreateInput = {
@@ -415,10 +483,15 @@ export type FixedAssetCreateInput = {
   yearsElapsed: number
   originalIva?: runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: boolean
   annualDepreciationHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
   taxReturn: Prisma.TaxReturnCreateNestedOneWithoutFixedAssetsInput
 }
 
@@ -433,10 +506,15 @@ export type FixedAssetUncheckedCreateInput = {
   yearsElapsed: number
   originalIva?: runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: boolean
   annualDepreciationHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type FixedAssetUpdateInput = {
@@ -449,10 +527,15 @@ export type FixedAssetUpdateInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutFixedAssetsNestedInput
 }
 
@@ -467,10 +550,15 @@ export type FixedAssetUncheckedUpdateInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FixedAssetCreateManyInput = {
@@ -484,10 +572,15 @@ export type FixedAssetCreateManyInput = {
   yearsElapsed: number
   originalIva?: runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: boolean
   annualDepreciationHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type FixedAssetUpdateManyMutationInput = {
@@ -500,10 +593,15 @@ export type FixedAssetUpdateManyMutationInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FixedAssetUncheckedUpdateManyInput = {
@@ -517,10 +615,15 @@ export type FixedAssetUncheckedUpdateManyInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FixedAssetListRelationFilter = {
@@ -550,10 +653,15 @@ export type FixedAssetCountOrderByAggregateInput = {
   yearsElapsed?: Prisma.SortOrder
   originalIva?: Prisma.SortOrder
   customReexpIndex?: Prisma.SortOrder
+  isRetired?: Prisma.SortOrder
   annualDepreciationHist?: Prisma.SortOrder
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type FixedAssetAvgOrderByAggregateInput = {
@@ -566,6 +674,8 @@ export type FixedAssetAvgOrderByAggregateInput = {
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
 }
 
 export type FixedAssetMaxOrderByAggregateInput = {
@@ -579,10 +689,15 @@ export type FixedAssetMaxOrderByAggregateInput = {
   yearsElapsed?: Prisma.SortOrder
   originalIva?: Prisma.SortOrder
   customReexpIndex?: Prisma.SortOrder
+  isRetired?: Prisma.SortOrder
   annualDepreciationHist?: Prisma.SortOrder
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type FixedAssetMinOrderByAggregateInput = {
@@ -596,10 +711,15 @@ export type FixedAssetMinOrderByAggregateInput = {
   yearsElapsed?: Prisma.SortOrder
   originalIva?: Prisma.SortOrder
   customReexpIndex?: Prisma.SortOrder
+  isRetired?: Prisma.SortOrder
   annualDepreciationHist?: Prisma.SortOrder
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type FixedAssetSumOrderByAggregateInput = {
@@ -612,6 +732,8 @@ export type FixedAssetSumOrderByAggregateInput = {
   annualDepreciationAdj?: Prisma.SortOrder
   residualValueHist?: Prisma.SortOrder
   residualValueAdj?: Prisma.SortOrder
+  bajaLossHist?: Prisma.SortOrder
+  bajaLossAdj?: Prisma.SortOrder
 }
 
 export type FixedAssetCreateNestedManyWithoutTaxReturnInput = {
@@ -666,10 +788,15 @@ export type FixedAssetCreateWithoutTaxReturnInput = {
   yearsElapsed: number
   originalIva?: runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: boolean
   annualDepreciationHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type FixedAssetUncheckedCreateWithoutTaxReturnInput = {
@@ -682,10 +809,15 @@ export type FixedAssetUncheckedCreateWithoutTaxReturnInput = {
   yearsElapsed: number
   originalIva?: runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: boolean
   annualDepreciationHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type FixedAssetCreateOrConnectWithoutTaxReturnInput = {
@@ -728,10 +860,15 @@ export type FixedAssetScalarWhereInput = {
   yearsElapsed?: Prisma.IntFilter<"FixedAsset"> | number
   originalIva?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFilter<"FixedAsset"> | boolean
   annualDepreciationHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFilter<"FixedAsset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFilter<"FixedAsset"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"FixedAsset"> | Date | string
 }
 
 export type FixedAssetCreateManyTaxReturnInput = {
@@ -744,10 +881,15 @@ export type FixedAssetCreateManyTaxReturnInput = {
   yearsElapsed: number
   originalIva?: runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: boolean
   annualDepreciationHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist: runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type FixedAssetUpdateWithoutTaxReturnInput = {
@@ -760,10 +902,15 @@ export type FixedAssetUpdateWithoutTaxReturnInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FixedAssetUncheckedUpdateWithoutTaxReturnInput = {
@@ -776,10 +923,15 @@ export type FixedAssetUncheckedUpdateWithoutTaxReturnInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type FixedAssetUncheckedUpdateManyWithoutTaxReturnInput = {
@@ -792,10 +944,15 @@ export type FixedAssetUncheckedUpdateManyWithoutTaxReturnInput = {
   yearsElapsed?: Prisma.IntFieldUpdateOperationsInput | number
   originalIva?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   customReexpIndex?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  isRetired?: Prisma.BoolFieldUpdateOperationsInput | boolean
   annualDepreciationHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   annualDepreciationAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   residualValueAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossHist?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  bajaLossAdj?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -811,10 +968,15 @@ export type FixedAssetSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   yearsElapsed?: boolean
   originalIva?: boolean
   customReexpIndex?: boolean
+  isRetired?: boolean
   annualDepreciationHist?: boolean
   annualDepreciationAdj?: boolean
   residualValueHist?: boolean
   residualValueAdj?: boolean
+  bajaLossHist?: boolean
+  bajaLossAdj?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["fixedAsset"]>
 
@@ -831,13 +993,18 @@ export type FixedAssetSelectScalar = {
   yearsElapsed?: boolean
   originalIva?: boolean
   customReexpIndex?: boolean
+  isRetired?: boolean
   annualDepreciationHist?: boolean
   annualDepreciationAdj?: boolean
   residualValueHist?: boolean
   residualValueAdj?: boolean
+  bajaLossHist?: boolean
+  bajaLossAdj?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type FixedAssetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "name" | "type" | "purchaseDate" | "originalCost" | "usefulLife" | "yearsElapsed" | "originalIva" | "customReexpIndex" | "annualDepreciationHist" | "annualDepreciationAdj" | "residualValueHist" | "residualValueAdj", ExtArgs["result"]["fixedAsset"]>
+export type FixedAssetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "name" | "type" | "purchaseDate" | "originalCost" | "usefulLife" | "yearsElapsed" | "originalIva" | "customReexpIndex" | "isRetired" | "annualDepreciationHist" | "annualDepreciationAdj" | "residualValueHist" | "residualValueAdj" | "bajaLossHist" | "bajaLossAdj" | "createdAt" | "updatedAt", ExtArgs["result"]["fixedAsset"]>
 export type FixedAssetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }
@@ -858,10 +1025,15 @@ export type $FixedAssetPayload<ExtArgs extends runtime.Types.Extensions.Internal
     yearsElapsed: number
     originalIva: runtime.Decimal
     customReexpIndex: runtime.Decimal
+    isRetired: boolean
     annualDepreciationHist: runtime.Decimal
     annualDepreciationAdj: runtime.Decimal
     residualValueHist: runtime.Decimal
     residualValueAdj: runtime.Decimal
+    bajaLossHist: runtime.Decimal
+    bajaLossAdj: runtime.Decimal
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["fixedAsset"]>
   composites: {}
 }
@@ -1242,10 +1414,15 @@ export interface FixedAssetFieldRefs {
   readonly yearsElapsed: Prisma.FieldRef<"FixedAsset", 'Int'>
   readonly originalIva: Prisma.FieldRef<"FixedAsset", 'Decimal'>
   readonly customReexpIndex: Prisma.FieldRef<"FixedAsset", 'Decimal'>
+  readonly isRetired: Prisma.FieldRef<"FixedAsset", 'Boolean'>
   readonly annualDepreciationHist: Prisma.FieldRef<"FixedAsset", 'Decimal'>
   readonly annualDepreciationAdj: Prisma.FieldRef<"FixedAsset", 'Decimal'>
   readonly residualValueHist: Prisma.FieldRef<"FixedAsset", 'Decimal'>
   readonly residualValueAdj: Prisma.FieldRef<"FixedAsset", 'Decimal'>
+  readonly bajaLossHist: Prisma.FieldRef<"FixedAsset", 'Decimal'>
+  readonly bajaLossAdj: Prisma.FieldRef<"FixedAsset", 'Decimal'>
+  readonly createdAt: Prisma.FieldRef<"FixedAsset", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"FixedAsset", 'DateTime'>
 }
     
 

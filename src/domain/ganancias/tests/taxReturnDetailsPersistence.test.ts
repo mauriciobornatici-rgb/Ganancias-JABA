@@ -118,6 +118,7 @@ describe('persistTaxReturnDetails', () => {
       invoiceType: '1',
       invoiceNumber: '0003-00001529',
       customerName: 'OIMASTI LUCIANO',
+      counterpartyCuit: '24300000000',
       ivaAmount: 1943.8,
       totalAmount: 11200,
     });
@@ -125,6 +126,7 @@ describe('persistTaxReturnDetails', () => {
       invoiceType: '1',
       invoiceNumber: '0004-00000243',
       vendorName: 'VAVCOMS.P',
+      counterpartyCuit: '307141419',
       ivaAmount: 3118.75,
       totalAmount: 25833.75,
     });
@@ -493,6 +495,199 @@ describe('persistTaxReturnDetails', () => {
     expect(Number(captures.axiDynamicCreate?.data.coef)).toBeCloseTo(1.1288404539857682, 10);
     expect(captures.axiDynamicCreate?.data.computedAxi).toBe(502654);
     expect(captures.calculationCreate?.data.axiDynamicResult).toBe(502654);
+  });
+
+  it('estructura deducciones y AXI estatico en tablas propias sin perder snapshot de auditoria', async () => {
+    const captures: {
+      generalDeductionUpsert?: { where: Record<string, unknown>; create: Record<string, unknown>; update: Record<string, unknown> };
+      personalDeductionUpsert?: { where: Record<string, unknown>; create: Record<string, unknown>; update: Record<string, unknown> };
+      axiStaticCreateMany?: CreateManyCapture;
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const upsertModel = {
+      ...model(),
+      upsert: async (args: unknown) => args,
+    };
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model(),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      axiStaticItem: model({ createMany: async (args: unknown) => { captures.axiStaticCreateMany = args as CreateManyCapture; } }),
+      generalDeduction: {
+        ...upsertModel,
+        upsert: async (args: unknown) => { captures.generalDeductionUpsert = args as typeof captures.generalDeductionUpsert; },
+      },
+      personalDeduction: {
+        ...upsertModel,
+        upsert: async (args: unknown) => { captures.personalDeductionUpsert = args as typeof captures.personalDeductionUpsert; },
+      },
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-structured',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente DB', cuit: '20-11111111-1' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        generalDeductions: {
+          autonomos: '1000',
+          servicioDomestico: '2000',
+          seguroVida: '3000',
+          seguroRetiro: '4000',
+          gastosSepelio: '5000',
+          interesesHipoteca: '6000',
+          gastosEducativos: '7000',
+          alquilerCasaHabitacion: '8000',
+          deduccionLocadorLocatario: '9000',
+          donaciones: '10000',
+          medicosAsistencial: '11000',
+          honorariosMedicos: '12000',
+        },
+        personalDeductions: {
+          tieneConyuge: true,
+          cantidadHijos: 2,
+          cantidadHijosIncapacitados: 1,
+          tipoDeduccionEspecial: 'Autonomo',
+          esJubiladoOchoHaberes: false,
+        },
+        axiStaticBreakdown: {
+          activo: {
+            disponibilidades: { label: 'Disponibilidades', total: '580157', computable: '580157' },
+            bienesUso: { label: 'Bienes de uso', total: '1017500', computable: '0' },
+          },
+          pasivo: {
+            deudasComerciales: { label: 'Deudas comerciales', total: '1462280.71', computable: '1462280.71' },
+          },
+        },
+      },
+    });
+
+    expect(captures.generalDeductionUpsert?.create).toMatchObject({
+      taxReturnId: 'return-structured',
+      autonomos: 1000,
+      servicioDomestico: 2000,
+      honorariosMedicos: 12000,
+    });
+    expect(captures.generalDeductionUpsert?.update).toMatchObject({
+      autonomos: 1000,
+      deduccionLocadorLocatario: 9000,
+    });
+    expect(captures.personalDeductionUpsert?.create).toMatchObject({
+      taxReturnId: 'return-structured',
+      tieneConyuge: true,
+      cantidadHijos: 2,
+      cantidadHijosIncapacitados: 1,
+      tipoDeduccionEspecial: 'Autonomo',
+      esJubiladoOchoHaberes: false,
+    });
+    expect(captures.axiStaticCreateMany?.data).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        taxReturnId: 'return-structured',
+        concept: 'Disponibilidades',
+        section: 'ACTIVO_TOTAL',
+        amount: 580157,
+        isComputable: true,
+      }),
+      expect.objectContaining({
+        taxReturnId: 'return-structured',
+        concept: 'Bienes de uso',
+        section: 'BIEN_NO_COMPUTABLE',
+        amount: 1017500,
+        isComputable: false,
+      }),
+      expect.objectContaining({
+        taxReturnId: 'return-structured',
+        concept: 'Deudas comerciales',
+        section: 'PASIVO_TOTAL',
+        amount: 1462280.71,
+        isComputable: true,
+      }),
+    ]));
+
+    const snapshot = JSON.parse(captures.calculationCreate?.data.variablesSnapshot || '{}');
+    expect(snapshot.generalDeductions.autonomos).toBe('1000');
+    expect(snapshot.axiStaticBreakdown.activo.disponibilidades.total).toBe('580157');
+  });
+
+  it('estructura bajas de bienes de uso en FixedAsset para reapertura y auditoria', async () => {
+    const captures: {
+      fixedAssetCreate?: { data: Record<string, unknown> };
+      calculationCreate?: CalculationCreateCapture;
+    } = {};
+
+    const retiredAsset = {
+      id: 'asset-retired',
+      name: 'Maquina dada de baja',
+      type: 'Equipamiento',
+      purchaseDate: '2021-01-01',
+      originalCost: '1000000',
+      usefulLife: 10,
+      yearsElapsed: 5,
+      customReexpIndex: '1.5',
+      isRetired: true,
+    } as Record<string, unknown>;
+
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model({ create: async (args: unknown) => { captures.fixedAssetCreate = args as { data: Record<string, unknown> }; } }),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      calculationRun: model({ create: async (args: unknown) => { captures.calculationCreate = args as CalculationCreateCapture; } }),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-fixed-assets',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente Bienes', cuit: '20-22222222-2' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        fixedAssets: [retiredAsset],
+      },
+    });
+
+    expect(captures.fixedAssetCreate?.data).toMatchObject({
+      id: 'asset-retired',
+      taxReturnId: 'return-fixed-assets',
+      name: 'Maquina dada de baja',
+      type: 'Equipamiento',
+      isRetired: true,
+    });
+    expect(Number(captures.fixedAssetCreate?.data.bajaLossHist)).toBeGreaterThan(0);
+    expect(Number(captures.fixedAssetCreate?.data.bajaLossAdj)).toBeGreaterThan(0);
   });
 
   it('persiste otras justificaciones patrimoniales y las conserva en snapshot', async () => {

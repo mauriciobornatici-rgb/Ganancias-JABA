@@ -41,10 +41,12 @@ export type AttachmentMinAggregateOutputType = {
   fileSize: number | null
   fileExtension: string | null
   mimeType: string | null
+  storageType: string | null
   securePath: string | null
   fileHash: string | null
   uploadedById: string | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type AttachmentMaxAggregateOutputType = {
@@ -54,10 +56,12 @@ export type AttachmentMaxAggregateOutputType = {
   fileSize: number | null
   fileExtension: string | null
   mimeType: string | null
+  storageType: string | null
   securePath: string | null
   fileHash: string | null
   uploadedById: string | null
   createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type AttachmentCountAggregateOutputType = {
@@ -67,10 +71,12 @@ export type AttachmentCountAggregateOutputType = {
   fileSize: number
   fileExtension: number
   mimeType: number
+  storageType: number
   securePath: number
   fileHash: number
   uploadedById: number
   createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -90,10 +96,12 @@ export type AttachmentMinAggregateInputType = {
   fileSize?: true
   fileExtension?: true
   mimeType?: true
+  storageType?: true
   securePath?: true
   fileHash?: true
   uploadedById?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type AttachmentMaxAggregateInputType = {
@@ -103,10 +111,12 @@ export type AttachmentMaxAggregateInputType = {
   fileSize?: true
   fileExtension?: true
   mimeType?: true
+  storageType?: true
   securePath?: true
   fileHash?: true
   uploadedById?: true
   createdAt?: true
+  updatedAt?: true
 }
 
 export type AttachmentCountAggregateInputType = {
@@ -116,10 +126,12 @@ export type AttachmentCountAggregateInputType = {
   fileSize?: true
   fileExtension?: true
   mimeType?: true
+  storageType?: true
   securePath?: true
   fileHash?: true
   uploadedById?: true
   createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -216,10 +228,12 @@ export type AttachmentGroupByOutputType = {
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType: string
+  securePath: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById: string | null
   createdAt: Date
+  updatedAt: Date
   _count: AttachmentCountAggregateOutputType | null
   _avg: AttachmentAvgAggregateOutputType | null
   _sum: AttachmentSumAggregateOutputType | null
@@ -252,11 +266,14 @@ export type AttachmentWhereInput = {
   fileSize?: Prisma.IntFilter<"Attachment"> | number
   fileExtension?: Prisma.StringFilter<"Attachment"> | string
   mimeType?: Prisma.StringFilter<"Attachment"> | string
-  securePath?: Prisma.StringFilter<"Attachment"> | string
+  storageType?: Prisma.StringFilter<"Attachment"> | string
+  securePath?: Prisma.StringNullableFilter<"Attachment"> | string | null
   fileHash?: Prisma.StringFilter<"Attachment"> | string
-  uploadedById?: Prisma.StringFilter<"Attachment"> | string
+  uploadedById?: Prisma.StringNullableFilter<"Attachment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
+  blob?: Prisma.XOR<Prisma.AttachmentBlobNullableScalarRelationFilter, Prisma.AttachmentBlobWhereInput> | null
 }
 
 export type AttachmentOrderByWithRelationInput = {
@@ -266,11 +283,14 @@ export type AttachmentOrderByWithRelationInput = {
   fileSize?: Prisma.SortOrder
   fileExtension?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
-  securePath?: Prisma.SortOrder
+  storageType?: Prisma.SortOrder
+  securePath?: Prisma.SortOrderInput | Prisma.SortOrder
   fileHash?: Prisma.SortOrder
-  uploadedById?: Prisma.SortOrder
+  uploadedById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   taxReturn?: Prisma.TaxReturnOrderByWithRelationInput
+  blob?: Prisma.AttachmentBlobOrderByWithRelationInput
   _relevance?: Prisma.AttachmentOrderByRelevanceInput
 }
 
@@ -284,11 +304,14 @@ export type AttachmentWhereUniqueInput = Prisma.AtLeast<{
   fileSize?: Prisma.IntFilter<"Attachment"> | number
   fileExtension?: Prisma.StringFilter<"Attachment"> | string
   mimeType?: Prisma.StringFilter<"Attachment"> | string
-  securePath?: Prisma.StringFilter<"Attachment"> | string
+  storageType?: Prisma.StringFilter<"Attachment"> | string
+  securePath?: Prisma.StringNullableFilter<"Attachment"> | string | null
   fileHash?: Prisma.StringFilter<"Attachment"> | string
-  uploadedById?: Prisma.StringFilter<"Attachment"> | string
+  uploadedById?: Prisma.StringNullableFilter<"Attachment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
+  blob?: Prisma.XOR<Prisma.AttachmentBlobNullableScalarRelationFilter, Prisma.AttachmentBlobWhereInput> | null
 }, "id">
 
 export type AttachmentOrderByWithAggregationInput = {
@@ -298,10 +321,12 @@ export type AttachmentOrderByWithAggregationInput = {
   fileSize?: Prisma.SortOrder
   fileExtension?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
-  securePath?: Prisma.SortOrder
+  storageType?: Prisma.SortOrder
+  securePath?: Prisma.SortOrderInput | Prisma.SortOrder
   fileHash?: Prisma.SortOrder
-  uploadedById?: Prisma.SortOrder
+  uploadedById?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.AttachmentCountOrderByAggregateInput
   _avg?: Prisma.AttachmentAvgOrderByAggregateInput
   _max?: Prisma.AttachmentMaxOrderByAggregateInput
@@ -319,10 +344,12 @@ export type AttachmentScalarWhereWithAggregatesInput = {
   fileSize?: Prisma.IntWithAggregatesFilter<"Attachment"> | number
   fileExtension?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
   mimeType?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
-  securePath?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
+  storageType?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
+  securePath?: Prisma.StringNullableWithAggregatesFilter<"Attachment"> | string | null
   fileHash?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
-  uploadedById?: Prisma.StringWithAggregatesFilter<"Attachment"> | string
+  uploadedById?: Prisma.StringNullableWithAggregatesFilter<"Attachment"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Attachment"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Attachment"> | Date | string
 }
 
 export type AttachmentCreateInput = {
@@ -331,11 +358,14 @@ export type AttachmentCreateInput = {
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType?: string
+  securePath?: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
   taxReturn: Prisma.TaxReturnCreateNestedOneWithoutAttachmentsInput
+  blob?: Prisma.AttachmentBlobCreateNestedOneWithoutAttachmentInput
 }
 
 export type AttachmentUncheckedCreateInput = {
@@ -345,10 +375,13 @@ export type AttachmentUncheckedCreateInput = {
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType?: string
+  securePath?: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
+  blob?: Prisma.AttachmentBlobUncheckedCreateNestedOneWithoutAttachmentInput
 }
 
 export type AttachmentUpdateInput = {
@@ -357,11 +390,14 @@ export type AttachmentUpdateInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutAttachmentsNestedInput
+  blob?: Prisma.AttachmentBlobUpdateOneWithoutAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateInput = {
@@ -371,10 +407,13 @@ export type AttachmentUncheckedUpdateInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  blob?: Prisma.AttachmentBlobUncheckedUpdateOneWithoutAttachmentNestedInput
 }
 
 export type AttachmentCreateManyInput = {
@@ -384,10 +423,12 @@ export type AttachmentCreateManyInput = {
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType?: string
+  securePath?: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AttachmentUpdateManyMutationInput = {
@@ -396,10 +437,12 @@ export type AttachmentUpdateManyMutationInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AttachmentUncheckedUpdateManyInput = {
@@ -409,10 +452,12 @@ export type AttachmentUncheckedUpdateManyInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AttachmentListRelationFilter = {
@@ -438,10 +483,12 @@ export type AttachmentCountOrderByAggregateInput = {
   fileSize?: Prisma.SortOrder
   fileExtension?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
+  storageType?: Prisma.SortOrder
   securePath?: Prisma.SortOrder
   fileHash?: Prisma.SortOrder
   uploadedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type AttachmentAvgOrderByAggregateInput = {
@@ -455,10 +502,12 @@ export type AttachmentMaxOrderByAggregateInput = {
   fileSize?: Prisma.SortOrder
   fileExtension?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
+  storageType?: Prisma.SortOrder
   securePath?: Prisma.SortOrder
   fileHash?: Prisma.SortOrder
   uploadedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type AttachmentMinOrderByAggregateInput = {
@@ -468,14 +517,21 @@ export type AttachmentMinOrderByAggregateInput = {
   fileSize?: Prisma.SortOrder
   fileExtension?: Prisma.SortOrder
   mimeType?: Prisma.SortOrder
+  storageType?: Prisma.SortOrder
   securePath?: Prisma.SortOrder
   fileHash?: Prisma.SortOrder
   uploadedById?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type AttachmentSumOrderByAggregateInput = {
   fileSize?: Prisma.SortOrder
+}
+
+export type AttachmentScalarRelationFilter = {
+  is?: Prisma.AttachmentWhereInput
+  isNot?: Prisma.AttachmentWhereInput
 }
 
 export type AttachmentCreateNestedManyWithoutTaxReturnInput = {
@@ -520,16 +576,33 @@ export type AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput = {
   deleteMany?: Prisma.AttachmentScalarWhereInput | Prisma.AttachmentScalarWhereInput[]
 }
 
+export type AttachmentCreateNestedOneWithoutBlobInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutBlobInput, Prisma.AttachmentUncheckedCreateWithoutBlobInput>
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutBlobInput
+  connect?: Prisma.AttachmentWhereUniqueInput
+}
+
+export type AttachmentUpdateOneRequiredWithoutBlobNestedInput = {
+  create?: Prisma.XOR<Prisma.AttachmentCreateWithoutBlobInput, Prisma.AttachmentUncheckedCreateWithoutBlobInput>
+  connectOrCreate?: Prisma.AttachmentCreateOrConnectWithoutBlobInput
+  upsert?: Prisma.AttachmentUpsertWithoutBlobInput
+  connect?: Prisma.AttachmentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AttachmentUpdateToOneWithWhereWithoutBlobInput, Prisma.AttachmentUpdateWithoutBlobInput>, Prisma.AttachmentUncheckedUpdateWithoutBlobInput>
+}
+
 export type AttachmentCreateWithoutTaxReturnInput = {
   id?: string
   fileName: string
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType?: string
+  securePath?: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
+  blob?: Prisma.AttachmentBlobCreateNestedOneWithoutAttachmentInput
 }
 
 export type AttachmentUncheckedCreateWithoutTaxReturnInput = {
@@ -538,10 +611,13 @@ export type AttachmentUncheckedCreateWithoutTaxReturnInput = {
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType?: string
+  securePath?: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
+  blob?: Prisma.AttachmentBlobUncheckedCreateNestedOneWithoutAttachmentInput
 }
 
 export type AttachmentCreateOrConnectWithoutTaxReturnInput = {
@@ -580,10 +656,88 @@ export type AttachmentScalarWhereInput = {
   fileSize?: Prisma.IntFilter<"Attachment"> | number
   fileExtension?: Prisma.StringFilter<"Attachment"> | string
   mimeType?: Prisma.StringFilter<"Attachment"> | string
-  securePath?: Prisma.StringFilter<"Attachment"> | string
+  storageType?: Prisma.StringFilter<"Attachment"> | string
+  securePath?: Prisma.StringNullableFilter<"Attachment"> | string | null
   fileHash?: Prisma.StringFilter<"Attachment"> | string
-  uploadedById?: Prisma.StringFilter<"Attachment"> | string
+  uploadedById?: Prisma.StringNullableFilter<"Attachment"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"Attachment"> | Date | string
+}
+
+export type AttachmentCreateWithoutBlobInput = {
+  id?: string
+  fileName: string
+  fileSize: number
+  fileExtension: string
+  mimeType: string
+  storageType?: string
+  securePath?: string | null
+  fileHash: string
+  uploadedById?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  taxReturn: Prisma.TaxReturnCreateNestedOneWithoutAttachmentsInput
+}
+
+export type AttachmentUncheckedCreateWithoutBlobInput = {
+  id?: string
+  taxReturnId: string
+  fileName: string
+  fileSize: number
+  fileExtension: string
+  mimeType: string
+  storageType?: string
+  securePath?: string | null
+  fileHash: string
+  uploadedById?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type AttachmentCreateOrConnectWithoutBlobInput = {
+  where: Prisma.AttachmentWhereUniqueInput
+  create: Prisma.XOR<Prisma.AttachmentCreateWithoutBlobInput, Prisma.AttachmentUncheckedCreateWithoutBlobInput>
+}
+
+export type AttachmentUpsertWithoutBlobInput = {
+  update: Prisma.XOR<Prisma.AttachmentUpdateWithoutBlobInput, Prisma.AttachmentUncheckedUpdateWithoutBlobInput>
+  create: Prisma.XOR<Prisma.AttachmentCreateWithoutBlobInput, Prisma.AttachmentUncheckedCreateWithoutBlobInput>
+  where?: Prisma.AttachmentWhereInput
+}
+
+export type AttachmentUpdateToOneWithWhereWithoutBlobInput = {
+  where?: Prisma.AttachmentWhereInput
+  data: Prisma.XOR<Prisma.AttachmentUpdateWithoutBlobInput, Prisma.AttachmentUncheckedUpdateWithoutBlobInput>
+}
+
+export type AttachmentUpdateWithoutBlobInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  fileName?: Prisma.StringFieldUpdateOperationsInput | string
+  fileSize?: Prisma.IntFieldUpdateOperationsInput | number
+  fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fileHash?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutAttachmentsNestedInput
+}
+
+export type AttachmentUncheckedUpdateWithoutBlobInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  taxReturnId?: Prisma.StringFieldUpdateOperationsInput | string
+  fileName?: Prisma.StringFieldUpdateOperationsInput | string
+  fileSize?: Prisma.IntFieldUpdateOperationsInput | number
+  fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
+  mimeType?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  fileHash?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AttachmentCreateManyTaxReturnInput = {
@@ -592,10 +746,12 @@ export type AttachmentCreateManyTaxReturnInput = {
   fileSize: number
   fileExtension: string
   mimeType: string
-  securePath: string
+  storageType?: string
+  securePath?: string | null
   fileHash: string
-  uploadedById: string
+  uploadedById?: string | null
   createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AttachmentUpdateWithoutTaxReturnInput = {
@@ -604,10 +760,13 @@ export type AttachmentUpdateWithoutTaxReturnInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  blob?: Prisma.AttachmentBlobUpdateOneWithoutAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateWithoutTaxReturnInput = {
@@ -616,10 +775,13 @@ export type AttachmentUncheckedUpdateWithoutTaxReturnInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  blob?: Prisma.AttachmentBlobUncheckedUpdateOneWithoutAttachmentNestedInput
 }
 
 export type AttachmentUncheckedUpdateManyWithoutTaxReturnInput = {
@@ -628,10 +790,12 @@ export type AttachmentUncheckedUpdateManyWithoutTaxReturnInput = {
   fileSize?: Prisma.IntFieldUpdateOperationsInput | number
   fileExtension?: Prisma.StringFieldUpdateOperationsInput | string
   mimeType?: Prisma.StringFieldUpdateOperationsInput | string
-  securePath?: Prisma.StringFieldUpdateOperationsInput | string
+  storageType?: Prisma.StringFieldUpdateOperationsInput | string
+  securePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   fileHash?: Prisma.StringFieldUpdateOperationsInput | string
-  uploadedById?: Prisma.StringFieldUpdateOperationsInput | string
+  uploadedById?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -643,11 +807,14 @@ export type AttachmentSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   fileSize?: boolean
   fileExtension?: boolean
   mimeType?: boolean
+  storageType?: boolean
   securePath?: boolean
   fileHash?: boolean
   uploadedById?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
+  blob?: boolean | Prisma.Attachment$blobArgs<ExtArgs>
 }, ExtArgs["result"]["attachment"]>
 
 
@@ -659,21 +826,25 @@ export type AttachmentSelectScalar = {
   fileSize?: boolean
   fileExtension?: boolean
   mimeType?: boolean
+  storageType?: boolean
   securePath?: boolean
   fileHash?: boolean
   uploadedById?: boolean
   createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "fileName" | "fileSize" | "fileExtension" | "mimeType" | "securePath" | "fileHash" | "uploadedById" | "createdAt", ExtArgs["result"]["attachment"]>
+export type AttachmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "fileName" | "fileSize" | "fileExtension" | "mimeType" | "storageType" | "securePath" | "fileHash" | "uploadedById" | "createdAt" | "updatedAt", ExtArgs["result"]["attachment"]>
 export type AttachmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
+  blob?: boolean | Prisma.Attachment$blobArgs<ExtArgs>
 }
 
 export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Attachment"
   objects: {
     taxReturn: Prisma.$TaxReturnPayload<ExtArgs>
+    blob: Prisma.$AttachmentBlobPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -682,10 +853,12 @@ export type $AttachmentPayload<ExtArgs extends runtime.Types.Extensions.Internal
     fileSize: number
     fileExtension: string
     mimeType: string
-    securePath: string
+    storageType: string
+    securePath: string | null
     fileHash: string
-    uploadedById: string
+    uploadedById: string | null
     createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["attachment"]>
   composites: {}
 }
@@ -1027,6 +1200,7 @@ readonly fields: AttachmentFieldRefs;
 export interface Prisma__AttachmentClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   taxReturn<T extends Prisma.TaxReturnDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturnDefaultArgs<ExtArgs>>): Prisma.Prisma__TaxReturnClient<runtime.Types.Result.GetResult<Prisma.$TaxReturnPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  blob<T extends Prisma.Attachment$blobArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Attachment$blobArgs<ExtArgs>>): Prisma.Prisma__AttachmentBlobClient<runtime.Types.Result.GetResult<Prisma.$AttachmentBlobPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1062,10 +1236,12 @@ export interface AttachmentFieldRefs {
   readonly fileSize: Prisma.FieldRef<"Attachment", 'Int'>
   readonly fileExtension: Prisma.FieldRef<"Attachment", 'String'>
   readonly mimeType: Prisma.FieldRef<"Attachment", 'String'>
+  readonly storageType: Prisma.FieldRef<"Attachment", 'String'>
   readonly securePath: Prisma.FieldRef<"Attachment", 'String'>
   readonly fileHash: Prisma.FieldRef<"Attachment", 'String'>
   readonly uploadedById: Prisma.FieldRef<"Attachment", 'String'>
   readonly createdAt: Prisma.FieldRef<"Attachment", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"Attachment", 'DateTime'>
 }
     
 
@@ -1411,6 +1587,25 @@ export type AttachmentDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.In
    * Limit how many Attachments to delete.
    */
   limit?: number
+}
+
+/**
+ * Attachment.blob
+ */
+export type Attachment$blobArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AttachmentBlob
+   */
+  select?: Prisma.AttachmentBlobSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AttachmentBlob
+   */
+  omit?: Prisma.AttachmentBlobOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AttachmentBlobInclude<ExtArgs> | null
+  where?: Prisma.AttachmentBlobWhereInput
 }
 
 /**

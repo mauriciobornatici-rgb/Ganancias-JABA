@@ -4,6 +4,7 @@ import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import {
   formatDateForWizardInput,
+  mapAxiStaticItemsForWizard,
   mapAxiDynamicItemForWizard,
   mapPatrimonialJustificationForWizard,
   snapshotStringAt,
@@ -34,6 +35,9 @@ export async function GET(
         personalAssets: true,
         personalLiabilities: true,
         justifications: true,
+        generalDeduction: true,
+        personalDeduction: true,
+        axiStaticItems: true,
         axiDynamicItems: true,
         calculations: {
           orderBy: { runDate: 'desc' },
@@ -60,6 +64,33 @@ export async function GET(
       }
     }
 
+    const dbGeneralDeductions = taxReturn.generalDeduction
+      ? {
+          autonomos: taxReturn.generalDeduction.autonomos.toString(),
+          servicioDomestico: taxReturn.generalDeduction.servicioDomestico.toString(),
+          seguroVida: taxReturn.generalDeduction.seguroVida.toString(),
+          seguroRetiro: taxReturn.generalDeduction.seguroRetiro.toString(),
+          gastosSepelio: taxReturn.generalDeduction.gastosSepelio.toString(),
+          interesesHipoteca: taxReturn.generalDeduction.interesesHipoteca.toString(),
+          gastosEducativos: taxReturn.generalDeduction.gastosEducativos.toString(),
+          alquilerCasaHabitacion: taxReturn.generalDeduction.alquilerCasaHabitacion.toString(),
+          deduccionLocadorLocatario: taxReturn.generalDeduction.deduccionLocadorLocatario.toString(),
+          donaciones: taxReturn.generalDeduction.donaciones.toString(),
+          medicosAsistencial: taxReturn.generalDeduction.medicosAsistencial.toString(),
+          honorariosMedicos: taxReturn.generalDeduction.honorariosMedicos.toString(),
+        }
+      : null;
+    const dbPersonalDeductions = taxReturn.personalDeduction
+      ? {
+          tieneConyuge: taxReturn.personalDeduction.tieneConyuge,
+          cantidadHijos: taxReturn.personalDeduction.cantidadHijos,
+          cantidadHijosIncapacitados: taxReturn.personalDeduction.cantidadHijosIncapacitados,
+          tipoDeduccionEspecial: taxReturn.personalDeduction.tipoDeduccionEspecial,
+          esJubiladoOchoHaberes: taxReturn.personalDeduction.esJubiladoOchoHaberes,
+        }
+      : null;
+    const dbAxiStaticBreakdown = mapAxiStaticItemsForWizard(taxReturn.axiStaticItems || []);
+
     // Mapear la estructura relacional de la BD al estado plano esperado por el frontend
     const payload = {
       id: taxReturn.id,
@@ -79,7 +110,7 @@ export async function GET(
         invoiceType: s.invoiceType,
         invoiceNumber: s.invoiceNumber,
         customerName: s.customerName,
-        counterpartyCuit: snapshotStringAt(extraState.sales, index, 'counterpartyCuit'),
+        counterpartyCuit: s.counterpartyCuit || snapshotStringAt(extraState.sales, index, 'counterpartyCuit'),
         ivaAmount: s.ivaAmount.toString(),
         totalAmount: s.totalAmount.toString(),
       })),
@@ -92,7 +123,7 @@ export async function GET(
         invoiceType: p.invoiceType,
         invoiceNumber: p.invoiceNumber,
         vendorName: p.vendorName,
-        counterpartyCuit: snapshotStringAt(extraState.purchases, index, 'counterpartyCuit'),
+        counterpartyCuit: p.counterpartyCuit || snapshotStringAt(extraState.purchases, index, 'counterpartyCuit'),
         ivaAmount: p.ivaAmount.toString(),
         totalAmount: p.totalAmount.toString(),
       })),
@@ -100,7 +131,7 @@ export async function GET(
         const extraAsset = Array.isArray(extraState.fixedAssets)
           ? (extraState.fixedAssets.find((ea: any) => ea && ea.id === a.id) || extraState.fixedAssets[index])
           : null;
-        const isRetired = extraAsset && (extraAsset.isRetired === true || extraAsset.isRetired === 'true');
+        const isRetired = a.isRetired || (extraAsset && (extraAsset.isRetired === true || extraAsset.isRetired === 'true'));
         return {
           id: a.id,
           name: a.name,
@@ -170,7 +201,7 @@ export async function GET(
         valueInitial: l.valueInitial.toString(),
         valueFinal: l.valueFinal.toString(),
       })),
-      generalDeductions: extraState.generalDeductions || {
+      generalDeductions: dbGeneralDeductions || extraState.generalDeductions || {
         autonomos: '0',
         servicioDomestico: '0',
         seguroVida: '0',
@@ -184,7 +215,7 @@ export async function GET(
         medicosAsistencial: '0',
         honorariosMedicos: '0',
       },
-      personalDeductions: extraState.personalDeductions || {
+      personalDeductions: dbPersonalDeductions || extraState.personalDeductions || {
         tieneConyuge: false,
         cantidadHijos: 0,
         cantidadHijosIncapacitados: 0,
@@ -205,7 +236,7 @@ export async function GET(
             (Number(extraState.activoTotalInicio || 0) > 0 || Number(extraState.pasivoTotalInicio || 0) > 0) &&
             (taxReturn.bankAccounts.length === 0 && taxReturn.receivables.length === 0 && taxReturn.liabilities.length === 0 && taxReturn.fixedAssets.length === 0)
           ),
-      axiStaticBreakdown: extraState.axiStaticBreakdown || null,
+      axiStaticBreakdown: dbAxiStaticBreakdown || extraState.axiStaticBreakdown || null,
     };
 
     return NextResponse.json({ success: true, data: payload });

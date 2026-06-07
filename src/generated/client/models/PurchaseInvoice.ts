@@ -45,12 +45,15 @@ export type PurchaseInvoiceMinAggregateOutputType = {
   invoiceType: string | null
   invoiceNumber: string | null
   vendorName: string | null
+  counterpartyCuit: string | null
   netAmount: runtime.Decimal | null
   ivaAmount: runtime.Decimal | null
   totalAmount: runtime.Decimal | null
   isDeductible: boolean | null
   isExempt: boolean | null
   expenseType: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type PurchaseInvoiceMaxAggregateOutputType = {
@@ -60,12 +63,15 @@ export type PurchaseInvoiceMaxAggregateOutputType = {
   invoiceType: string | null
   invoiceNumber: string | null
   vendorName: string | null
+  counterpartyCuit: string | null
   netAmount: runtime.Decimal | null
   ivaAmount: runtime.Decimal | null
   totalAmount: runtime.Decimal | null
   isDeductible: boolean | null
   isExempt: boolean | null
   expenseType: string | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type PurchaseInvoiceCountAggregateOutputType = {
@@ -75,12 +81,15 @@ export type PurchaseInvoiceCountAggregateOutputType = {
   invoiceType: number
   invoiceNumber: number
   vendorName: number
+  counterpartyCuit: number
   netAmount: number
   ivaAmount: number
   totalAmount: number
   isDeductible: number
   isExempt: number
   expenseType: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
@@ -104,12 +113,15 @@ export type PurchaseInvoiceMinAggregateInputType = {
   invoiceType?: true
   invoiceNumber?: true
   vendorName?: true
+  counterpartyCuit?: true
   netAmount?: true
   ivaAmount?: true
   totalAmount?: true
   isDeductible?: true
   isExempt?: true
   expenseType?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type PurchaseInvoiceMaxAggregateInputType = {
@@ -119,12 +131,15 @@ export type PurchaseInvoiceMaxAggregateInputType = {
   invoiceType?: true
   invoiceNumber?: true
   vendorName?: true
+  counterpartyCuit?: true
   netAmount?: true
   ivaAmount?: true
   totalAmount?: true
   isDeductible?: true
   isExempt?: true
   expenseType?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type PurchaseInvoiceCountAggregateInputType = {
@@ -134,12 +149,15 @@ export type PurchaseInvoiceCountAggregateInputType = {
   invoiceType?: true
   invoiceNumber?: true
   vendorName?: true
+  counterpartyCuit?: true
   netAmount?: true
   ivaAmount?: true
   totalAmount?: true
   isDeductible?: true
   isExempt?: true
   expenseType?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -236,12 +254,15 @@ export type PurchaseInvoiceGroupByOutputType = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit: string | null
   netAmount: runtime.Decimal
   ivaAmount: runtime.Decimal
   totalAmount: runtime.Decimal
   isDeductible: boolean
   isExempt: boolean
   expenseType: string | null
+  createdAt: Date
+  updatedAt: Date
   _count: PurchaseInvoiceCountAggregateOutputType | null
   _avg: PurchaseInvoiceAvgAggregateOutputType | null
   _sum: PurchaseInvoiceSumAggregateOutputType | null
@@ -274,12 +295,15 @@ export type PurchaseInvoiceWhereInput = {
   invoiceType?: Prisma.StringFilter<"PurchaseInvoice"> | string
   invoiceNumber?: Prisma.StringFilter<"PurchaseInvoice"> | string
   vendorName?: Prisma.StringFilter<"PurchaseInvoice"> | string
+  counterpartyCuit?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
   netAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
 }
 
@@ -290,12 +314,15 @@ export type PurchaseInvoiceOrderByWithRelationInput = {
   invoiceType?: Prisma.SortOrder
   invoiceNumber?: Prisma.SortOrder
   vendorName?: Prisma.SortOrder
+  counterpartyCuit?: Prisma.SortOrderInput | Prisma.SortOrder
   netAmount?: Prisma.SortOrder
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   taxReturn?: Prisma.TaxReturnOrderByWithRelationInput
   _relevance?: Prisma.PurchaseInvoiceOrderByRelevanceInput
 }
@@ -310,12 +337,15 @@ export type PurchaseInvoiceWhereUniqueInput = Prisma.AtLeast<{
   invoiceType?: Prisma.StringFilter<"PurchaseInvoice"> | string
   invoiceNumber?: Prisma.StringFilter<"PurchaseInvoice"> | string
   vendorName?: Prisma.StringFilter<"PurchaseInvoice"> | string
+  counterpartyCuit?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
   netAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
 }, "id">
 
@@ -326,12 +356,15 @@ export type PurchaseInvoiceOrderByWithAggregationInput = {
   invoiceType?: Prisma.SortOrder
   invoiceNumber?: Prisma.SortOrder
   vendorName?: Prisma.SortOrder
+  counterpartyCuit?: Prisma.SortOrderInput | Prisma.SortOrder
   netAmount?: Prisma.SortOrder
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrderInput | Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.PurchaseInvoiceCountOrderByAggregateInput
   _avg?: Prisma.PurchaseInvoiceAvgOrderByAggregateInput
   _max?: Prisma.PurchaseInvoiceMaxOrderByAggregateInput
@@ -349,12 +382,15 @@ export type PurchaseInvoiceScalarWhereWithAggregatesInput = {
   invoiceType?: Prisma.StringWithAggregatesFilter<"PurchaseInvoice"> | string
   invoiceNumber?: Prisma.StringWithAggregatesFilter<"PurchaseInvoice"> | string
   vendorName?: Prisma.StringWithAggregatesFilter<"PurchaseInvoice"> | string
+  counterpartyCuit?: Prisma.StringNullableWithAggregatesFilter<"PurchaseInvoice"> | string | null
   netAmount?: Prisma.DecimalWithAggregatesFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalWithAggregatesFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalWithAggregatesFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolWithAggregatesFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolWithAggregatesFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableWithAggregatesFilter<"PurchaseInvoice"> | string | null
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseInvoice"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseInvoice"> | Date | string
 }
 
 export type PurchaseInvoiceCreateInput = {
@@ -363,12 +399,15 @@ export type PurchaseInvoiceCreateInput = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit?: string | null
   netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
   taxReturn: Prisma.TaxReturnCreateNestedOneWithoutPurchasesInput
 }
 
@@ -379,12 +418,15 @@ export type PurchaseInvoiceUncheckedCreateInput = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit?: string | null
   netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PurchaseInvoiceUpdateInput = {
@@ -393,12 +435,15 @@ export type PurchaseInvoiceUpdateInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutPurchasesNestedInput
 }
 
@@ -409,12 +454,15 @@ export type PurchaseInvoiceUncheckedUpdateInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PurchaseInvoiceCreateManyInput = {
@@ -424,12 +472,15 @@ export type PurchaseInvoiceCreateManyInput = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit?: string | null
   netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PurchaseInvoiceUpdateManyMutationInput = {
@@ -438,12 +489,15 @@ export type PurchaseInvoiceUpdateManyMutationInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PurchaseInvoiceUncheckedUpdateManyInput = {
@@ -453,12 +507,15 @@ export type PurchaseInvoiceUncheckedUpdateManyInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PurchaseInvoiceListRelationFilter = {
@@ -484,12 +541,15 @@ export type PurchaseInvoiceCountOrderByAggregateInput = {
   invoiceType?: Prisma.SortOrder
   invoiceNumber?: Prisma.SortOrder
   vendorName?: Prisma.SortOrder
+  counterpartyCuit?: Prisma.SortOrder
   netAmount?: Prisma.SortOrder
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type PurchaseInvoiceAvgOrderByAggregateInput = {
@@ -505,12 +565,15 @@ export type PurchaseInvoiceMaxOrderByAggregateInput = {
   invoiceType?: Prisma.SortOrder
   invoiceNumber?: Prisma.SortOrder
   vendorName?: Prisma.SortOrder
+  counterpartyCuit?: Prisma.SortOrder
   netAmount?: Prisma.SortOrder
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type PurchaseInvoiceMinOrderByAggregateInput = {
@@ -520,12 +583,15 @@ export type PurchaseInvoiceMinOrderByAggregateInput = {
   invoiceType?: Prisma.SortOrder
   invoiceNumber?: Prisma.SortOrder
   vendorName?: Prisma.SortOrder
+  counterpartyCuit?: Prisma.SortOrder
   netAmount?: Prisma.SortOrder
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type PurchaseInvoiceSumOrderByAggregateInput = {
@@ -582,12 +648,15 @@ export type PurchaseInvoiceCreateWithoutTaxReturnInput = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit?: string | null
   netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PurchaseInvoiceUncheckedCreateWithoutTaxReturnInput = {
@@ -596,12 +665,15 @@ export type PurchaseInvoiceUncheckedCreateWithoutTaxReturnInput = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit?: string | null
   netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PurchaseInvoiceCreateOrConnectWithoutTaxReturnInput = {
@@ -640,12 +712,15 @@ export type PurchaseInvoiceScalarWhereInput = {
   invoiceType?: Prisma.StringFilter<"PurchaseInvoice"> | string
   invoiceNumber?: Prisma.StringFilter<"PurchaseInvoice"> | string
   vendorName?: Prisma.StringFilter<"PurchaseInvoice"> | string
+  counterpartyCuit?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
   netAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFilter<"PurchaseInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  createdAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
 }
 
 export type PurchaseInvoiceCreateManyTaxReturnInput = {
@@ -654,12 +729,15 @@ export type PurchaseInvoiceCreateManyTaxReturnInput = {
   invoiceType: string
   invoiceNumber: string
   vendorName: string
+  counterpartyCuit?: string | null
   netAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type PurchaseInvoiceUpdateWithoutTaxReturnInput = {
@@ -668,12 +746,15 @@ export type PurchaseInvoiceUpdateWithoutTaxReturnInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PurchaseInvoiceUncheckedUpdateWithoutTaxReturnInput = {
@@ -682,12 +763,15 @@ export type PurchaseInvoiceUncheckedUpdateWithoutTaxReturnInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type PurchaseInvoiceUncheckedUpdateManyWithoutTaxReturnInput = {
@@ -696,12 +780,15 @@ export type PurchaseInvoiceUncheckedUpdateManyWithoutTaxReturnInput = {
   invoiceType?: Prisma.StringFieldUpdateOperationsInput | string
   invoiceNumber?: Prisma.StringFieldUpdateOperationsInput | string
   vendorName?: Prisma.StringFieldUpdateOperationsInput | string
+  counterpartyCuit?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   netAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -713,12 +800,15 @@ export type PurchaseInvoiceSelect<ExtArgs extends runtime.Types.Extensions.Inter
   invoiceType?: boolean
   invoiceNumber?: boolean
   vendorName?: boolean
+  counterpartyCuit?: boolean
   netAmount?: boolean
   ivaAmount?: boolean
   totalAmount?: boolean
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["purchaseInvoice"]>
 
@@ -731,15 +821,18 @@ export type PurchaseInvoiceSelectScalar = {
   invoiceType?: boolean
   invoiceNumber?: boolean
   vendorName?: boolean
+  counterpartyCuit?: boolean
   netAmount?: boolean
   ivaAmount?: boolean
   totalAmount?: boolean
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type PurchaseInvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "date" | "invoiceType" | "invoiceNumber" | "vendorName" | "netAmount" | "ivaAmount" | "totalAmount" | "isDeductible" | "isExempt" | "expenseType", ExtArgs["result"]["purchaseInvoice"]>
+export type PurchaseInvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "date" | "invoiceType" | "invoiceNumber" | "vendorName" | "counterpartyCuit" | "netAmount" | "ivaAmount" | "totalAmount" | "isDeductible" | "isExempt" | "expenseType" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseInvoice"]>
 export type PurchaseInvoiceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }
@@ -756,12 +849,15 @@ export type $PurchaseInvoicePayload<ExtArgs extends runtime.Types.Extensions.Int
     invoiceType: string
     invoiceNumber: string
     vendorName: string
+    counterpartyCuit: string | null
     netAmount: runtime.Decimal
     ivaAmount: runtime.Decimal
     totalAmount: runtime.Decimal
     isDeductible: boolean
     isExempt: boolean
     expenseType: string | null
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["purchaseInvoice"]>
   composites: {}
 }
@@ -1138,12 +1234,15 @@ export interface PurchaseInvoiceFieldRefs {
   readonly invoiceType: Prisma.FieldRef<"PurchaseInvoice", 'String'>
   readonly invoiceNumber: Prisma.FieldRef<"PurchaseInvoice", 'String'>
   readonly vendorName: Prisma.FieldRef<"PurchaseInvoice", 'String'>
+  readonly counterpartyCuit: Prisma.FieldRef<"PurchaseInvoice", 'String'>
   readonly netAmount: Prisma.FieldRef<"PurchaseInvoice", 'Decimal'>
   readonly ivaAmount: Prisma.FieldRef<"PurchaseInvoice", 'Decimal'>
   readonly totalAmount: Prisma.FieldRef<"PurchaseInvoice", 'Decimal'>
   readonly isDeductible: Prisma.FieldRef<"PurchaseInvoice", 'Boolean'>
   readonly isExempt: Prisma.FieldRef<"PurchaseInvoice", 'Boolean'>
   readonly expenseType: Prisma.FieldRef<"PurchaseInvoice", 'String'>
+  readonly createdAt: Prisma.FieldRef<"PurchaseInvoice", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"PurchaseInvoice", 'DateTime'>
 }
     
 

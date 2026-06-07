@@ -28,10 +28,14 @@ export type AggregateAxiStaticItem = {
 
 export type AxiStaticItemAvgAggregateOutputType = {
   amount: runtime.Decimal | null
+  totalAmount: runtime.Decimal | null
+  computableAmount: runtime.Decimal | null
 }
 
 export type AxiStaticItemSumAggregateOutputType = {
   amount: runtime.Decimal | null
+  totalAmount: runtime.Decimal | null
+  computableAmount: runtime.Decimal | null
 }
 
 export type AxiStaticItemMinAggregateOutputType = {
@@ -39,8 +43,13 @@ export type AxiStaticItemMinAggregateOutputType = {
   taxReturnId: string | null
   concept: string | null
   section: string | null
+  categoryKey: string | null
   amount: runtime.Decimal | null
+  totalAmount: runtime.Decimal | null
+  computableAmount: runtime.Decimal | null
   isComputable: boolean | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type AxiStaticItemMaxAggregateOutputType = {
@@ -48,8 +57,13 @@ export type AxiStaticItemMaxAggregateOutputType = {
   taxReturnId: string | null
   concept: string | null
   section: string | null
+  categoryKey: string | null
   amount: runtime.Decimal | null
+  totalAmount: runtime.Decimal | null
+  computableAmount: runtime.Decimal | null
   isComputable: boolean | null
+  createdAt: Date | null
+  updatedAt: Date | null
 }
 
 export type AxiStaticItemCountAggregateOutputType = {
@@ -57,18 +71,27 @@ export type AxiStaticItemCountAggregateOutputType = {
   taxReturnId: number
   concept: number
   section: number
+  categoryKey: number
   amount: number
+  totalAmount: number
+  computableAmount: number
   isComputable: number
+  createdAt: number
+  updatedAt: number
   _all: number
 }
 
 
 export type AxiStaticItemAvgAggregateInputType = {
   amount?: true
+  totalAmount?: true
+  computableAmount?: true
 }
 
 export type AxiStaticItemSumAggregateInputType = {
   amount?: true
+  totalAmount?: true
+  computableAmount?: true
 }
 
 export type AxiStaticItemMinAggregateInputType = {
@@ -76,8 +99,13 @@ export type AxiStaticItemMinAggregateInputType = {
   taxReturnId?: true
   concept?: true
   section?: true
+  categoryKey?: true
   amount?: true
+  totalAmount?: true
+  computableAmount?: true
   isComputable?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type AxiStaticItemMaxAggregateInputType = {
@@ -85,8 +113,13 @@ export type AxiStaticItemMaxAggregateInputType = {
   taxReturnId?: true
   concept?: true
   section?: true
+  categoryKey?: true
   amount?: true
+  totalAmount?: true
+  computableAmount?: true
   isComputable?: true
+  createdAt?: true
+  updatedAt?: true
 }
 
 export type AxiStaticItemCountAggregateInputType = {
@@ -94,8 +127,13 @@ export type AxiStaticItemCountAggregateInputType = {
   taxReturnId?: true
   concept?: true
   section?: true
+  categoryKey?: true
   amount?: true
+  totalAmount?: true
+  computableAmount?: true
   isComputable?: true
+  createdAt?: true
+  updatedAt?: true
   _all?: true
 }
 
@@ -190,8 +228,13 @@ export type AxiStaticItemGroupByOutputType = {
   taxReturnId: string
   concept: string
   section: string
+  categoryKey: string | null
   amount: runtime.Decimal
+  totalAmount: runtime.Decimal
+  computableAmount: runtime.Decimal
   isComputable: boolean
+  createdAt: Date
+  updatedAt: Date
   _count: AxiStaticItemCountAggregateOutputType | null
   _avg: AxiStaticItemAvgAggregateOutputType | null
   _sum: AxiStaticItemSumAggregateOutputType | null
@@ -222,8 +265,13 @@ export type AxiStaticItemWhereInput = {
   taxReturnId?: Prisma.StringFilter<"AxiStaticItem"> | string
   concept?: Prisma.StringFilter<"AxiStaticItem"> | string
   section?: Prisma.StringFilter<"AxiStaticItem"> | string
+  categoryKey?: Prisma.StringNullableFilter<"AxiStaticItem"> | string | null
   amount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFilter<"AxiStaticItem"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"AxiStaticItem"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"AxiStaticItem"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
 }
 
@@ -232,8 +280,13 @@ export type AxiStaticItemOrderByWithRelationInput = {
   taxReturnId?: Prisma.SortOrder
   concept?: Prisma.SortOrder
   section?: Prisma.SortOrder
+  categoryKey?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
   isComputable?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   taxReturn?: Prisma.TaxReturnOrderByWithRelationInput
   _relevance?: Prisma.AxiStaticItemOrderByRelevanceInput
 }
@@ -246,8 +299,13 @@ export type AxiStaticItemWhereUniqueInput = Prisma.AtLeast<{
   taxReturnId?: Prisma.StringFilter<"AxiStaticItem"> | string
   concept?: Prisma.StringFilter<"AxiStaticItem"> | string
   section?: Prisma.StringFilter<"AxiStaticItem"> | string
+  categoryKey?: Prisma.StringNullableFilter<"AxiStaticItem"> | string | null
   amount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFilter<"AxiStaticItem"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"AxiStaticItem"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"AxiStaticItem"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
 }, "id">
 
@@ -256,8 +314,13 @@ export type AxiStaticItemOrderByWithAggregationInput = {
   taxReturnId?: Prisma.SortOrder
   concept?: Prisma.SortOrder
   section?: Prisma.SortOrder
+  categoryKey?: Prisma.SortOrderInput | Prisma.SortOrder
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
   isComputable?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
   _count?: Prisma.AxiStaticItemCountOrderByAggregateInput
   _avg?: Prisma.AxiStaticItemAvgOrderByAggregateInput
   _max?: Prisma.AxiStaticItemMaxOrderByAggregateInput
@@ -273,16 +336,26 @@ export type AxiStaticItemScalarWhereWithAggregatesInput = {
   taxReturnId?: Prisma.StringWithAggregatesFilter<"AxiStaticItem"> | string
   concept?: Prisma.StringWithAggregatesFilter<"AxiStaticItem"> | string
   section?: Prisma.StringWithAggregatesFilter<"AxiStaticItem"> | string
+  categoryKey?: Prisma.StringNullableWithAggregatesFilter<"AxiStaticItem"> | string | null
   amount?: Prisma.DecimalWithAggregatesFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalWithAggregatesFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalWithAggregatesFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolWithAggregatesFilter<"AxiStaticItem"> | boolean
+  createdAt?: Prisma.DateTimeWithAggregatesFilter<"AxiStaticItem"> | Date | string
+  updatedAt?: Prisma.DateTimeWithAggregatesFilter<"AxiStaticItem"> | Date | string
 }
 
 export type AxiStaticItemCreateInput = {
   id?: string
   concept: string
   section: string
+  categoryKey?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
   taxReturn: Prisma.TaxReturnCreateNestedOneWithoutAxiStaticItemsInput
 }
 
@@ -291,16 +364,26 @@ export type AxiStaticItemUncheckedCreateInput = {
   taxReturnId: string
   concept: string
   section: string
+  categoryKey?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AxiStaticItemUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutAxiStaticItemsNestedInput
 }
 
@@ -309,8 +392,13 @@ export type AxiStaticItemUncheckedUpdateInput = {
   taxReturnId?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AxiStaticItemCreateManyInput = {
@@ -318,16 +406,26 @@ export type AxiStaticItemCreateManyInput = {
   taxReturnId: string
   concept: string
   section: string
+  categoryKey?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AxiStaticItemUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AxiStaticItemUncheckedUpdateManyInput = {
@@ -335,8 +433,13 @@ export type AxiStaticItemUncheckedUpdateManyInput = {
   taxReturnId?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AxiStaticItemListRelationFilter = {
@@ -360,12 +463,19 @@ export type AxiStaticItemCountOrderByAggregateInput = {
   taxReturnId?: Prisma.SortOrder
   concept?: Prisma.SortOrder
   section?: Prisma.SortOrder
+  categoryKey?: Prisma.SortOrder
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
   isComputable?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type AxiStaticItemAvgOrderByAggregateInput = {
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
 }
 
 export type AxiStaticItemMaxOrderByAggregateInput = {
@@ -373,8 +483,13 @@ export type AxiStaticItemMaxOrderByAggregateInput = {
   taxReturnId?: Prisma.SortOrder
   concept?: Prisma.SortOrder
   section?: Prisma.SortOrder
+  categoryKey?: Prisma.SortOrder
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
   isComputable?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type AxiStaticItemMinOrderByAggregateInput = {
@@ -382,12 +497,19 @@ export type AxiStaticItemMinOrderByAggregateInput = {
   taxReturnId?: Prisma.SortOrder
   concept?: Prisma.SortOrder
   section?: Prisma.SortOrder
+  categoryKey?: Prisma.SortOrder
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
   isComputable?: Prisma.SortOrder
+  createdAt?: Prisma.SortOrder
+  updatedAt?: Prisma.SortOrder
 }
 
 export type AxiStaticItemSumOrderByAggregateInput = {
   amount?: Prisma.SortOrder
+  totalAmount?: Prisma.SortOrder
+  computableAmount?: Prisma.SortOrder
 }
 
 export type AxiStaticItemCreateNestedManyWithoutTaxReturnInput = {
@@ -436,16 +558,26 @@ export type AxiStaticItemCreateWithoutTaxReturnInput = {
   id?: string
   concept: string
   section: string
+  categoryKey?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AxiStaticItemUncheckedCreateWithoutTaxReturnInput = {
   id?: string
   concept: string
   section: string
+  categoryKey?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AxiStaticItemCreateOrConnectWithoutTaxReturnInput = {
@@ -482,40 +614,65 @@ export type AxiStaticItemScalarWhereInput = {
   taxReturnId?: Prisma.StringFilter<"AxiStaticItem"> | string
   concept?: Prisma.StringFilter<"AxiStaticItem"> | string
   section?: Prisma.StringFilter<"AxiStaticItem"> | string
+  categoryKey?: Prisma.StringNullableFilter<"AxiStaticItem"> | string | null
   amount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFilter<"AxiStaticItem"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFilter<"AxiStaticItem"> | boolean
+  createdAt?: Prisma.DateTimeFilter<"AxiStaticItem"> | Date | string
+  updatedAt?: Prisma.DateTimeFilter<"AxiStaticItem"> | Date | string
 }
 
 export type AxiStaticItemCreateManyTaxReturnInput = {
   id?: string
   concept: string
   section: string
+  categoryKey?: string | null
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
 }
 
 export type AxiStaticItemUpdateWithoutTaxReturnInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AxiStaticItemUncheckedUpdateWithoutTaxReturnInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type AxiStaticItemUncheckedUpdateManyWithoutTaxReturnInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   concept?: Prisma.StringFieldUpdateOperationsInput | string
   section?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryKey?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  computableAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 
@@ -525,8 +682,13 @@ export type AxiStaticItemSelect<ExtArgs extends runtime.Types.Extensions.Interna
   taxReturnId?: boolean
   concept?: boolean
   section?: boolean
+  categoryKey?: boolean
   amount?: boolean
+  totalAmount?: boolean
+  computableAmount?: boolean
   isComputable?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["axiStaticItem"]>
 
@@ -537,11 +699,16 @@ export type AxiStaticItemSelectScalar = {
   taxReturnId?: boolean
   concept?: boolean
   section?: boolean
+  categoryKey?: boolean
   amount?: boolean
+  totalAmount?: boolean
+  computableAmount?: boolean
   isComputable?: boolean
+  createdAt?: boolean
+  updatedAt?: boolean
 }
 
-export type AxiStaticItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "concept" | "section" | "amount" | "isComputable", ExtArgs["result"]["axiStaticItem"]>
+export type AxiStaticItemOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "concept" | "section" | "categoryKey" | "amount" | "totalAmount" | "computableAmount" | "isComputable" | "createdAt" | "updatedAt", ExtArgs["result"]["axiStaticItem"]>
 export type AxiStaticItemInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }
@@ -556,8 +723,13 @@ export type $AxiStaticItemPayload<ExtArgs extends runtime.Types.Extensions.Inter
     taxReturnId: string
     concept: string
     section: string
+    categoryKey: string | null
     amount: runtime.Decimal
+    totalAmount: runtime.Decimal
+    computableAmount: runtime.Decimal
     isComputable: boolean
+    createdAt: Date
+    updatedAt: Date
   }, ExtArgs["result"]["axiStaticItem"]>
   composites: {}
 }
@@ -932,8 +1104,13 @@ export interface AxiStaticItemFieldRefs {
   readonly taxReturnId: Prisma.FieldRef<"AxiStaticItem", 'String'>
   readonly concept: Prisma.FieldRef<"AxiStaticItem", 'String'>
   readonly section: Prisma.FieldRef<"AxiStaticItem", 'String'>
+  readonly categoryKey: Prisma.FieldRef<"AxiStaticItem", 'String'>
   readonly amount: Prisma.FieldRef<"AxiStaticItem", 'Decimal'>
+  readonly totalAmount: Prisma.FieldRef<"AxiStaticItem", 'Decimal'>
+  readonly computableAmount: Prisma.FieldRef<"AxiStaticItem", 'Decimal'>
   readonly isComputable: Prisma.FieldRef<"AxiStaticItem", 'Boolean'>
+  readonly createdAt: Prisma.FieldRef<"AxiStaticItem", 'DateTime'>
+  readonly updatedAt: Prisma.FieldRef<"AxiStaticItem", 'DateTime'>
 }
     
 

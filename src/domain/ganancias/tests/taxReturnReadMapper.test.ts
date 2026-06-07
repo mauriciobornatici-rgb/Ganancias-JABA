@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatDateForWizardInput,
+  mapAxiStaticItemsForWizard,
   mapAxiDynamicItemForWizard,
   mapPatrimonialJustificationForWizard,
   snapshotStringAt,
@@ -58,6 +59,54 @@ describe('mapAxiDynamicItemForWizard', () => {
       factor: '1.0000',
       computedAxi: '502654.00',
     });
+  });
+});
+
+describe('mapAxiStaticItemsForWizard', () => {
+  it('reconstruye la grilla AXI estatica desde filas relacionales', () => {
+    const mapped = mapAxiStaticItemsForWizard([
+      {
+        section: 'ACTIVO_TOTAL',
+        categoryKey: 'disponibilidadesBancos',
+        concept: 'Disponibilidades - Bancos',
+        totalAmount: { toString: () => '580157.00' },
+        computableAmount: { toString: () => '580157.00' },
+        amount: { toString: () => '580157.00' },
+        isComputable: true,
+      },
+      {
+        section: 'BIEN_NO_COMPUTABLE',
+        categoryKey: 'bienesUso',
+        concept: 'Bienes de uso',
+        totalAmount: { toString: () => '1017500.00' },
+        computableAmount: { toString: () => '0.00' },
+        amount: { toString: () => '1017500.00' },
+        isComputable: false,
+      },
+      {
+        section: 'PASIVO_TOTAL',
+        categoryKey: 'deudasComerciales',
+        concept: 'Deudas comerciales',
+        totalAmount: { toString: () => '1462280.71' },
+        computableAmount: { toString: () => '1462280.71' },
+        amount: { toString: () => '1462280.71' },
+        isComputable: true,
+      },
+    ]);
+
+    expect(mapped).toEqual({
+      activo: {
+        disponibilidadesBancos: { total: '580157.00', computable: '580157.00' },
+        bienesUso: { total: '1017500.00', computable: '0.00' },
+      },
+      pasivo: {
+        deudasComerciales: { total: '1462280.71', computable: '1462280.71' },
+      },
+    });
+  });
+
+  it('devuelve null si no hay filas persistidas para mantener fallback al snapshot', () => {
+    expect(mapAxiStaticItemsForWizard([])).toBeNull();
   });
 });
 

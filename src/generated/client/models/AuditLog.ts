@@ -520,14 +520,6 @@ export type AuditLogUncheckedUpdateManyWithoutUserNestedInput = {
   deleteMany?: Prisma.AuditLogScalarWhereInput | Prisma.AuditLogScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type AuditLogCreateWithoutUserInput = {
   id?: string
   action: string

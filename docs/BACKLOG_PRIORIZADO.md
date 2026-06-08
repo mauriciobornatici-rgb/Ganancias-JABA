@@ -573,7 +573,7 @@ Regla permanente:
 
 ## P18 - Autenticacion y proteccion de acceso
 
-Estado: Activo - integrado y verificado en rama segura `integrate/auth-simple-safe-main`, variables de Vercel confirmadas por el usuario, pendiente de publicacion controlada.
+Estado: Resuelto tecnicamente y publicado en `main`; ramas ordenadas.
 
 Problema:
 
@@ -619,6 +619,12 @@ Verificacion 2026-06-08:
 Dato externo:
 
 - El usuario confirmo que `AUTH_PASSWORD` y `AUTH_SECRET` quedaron cargadas en Vercel Production.
+- El usuario confirmo que el boton `Salir` aparece en produccion.
+
+Orden de ramas:
+
+- `main` y `staging` quedaron alineadas en `a309f22`.
+- Se eliminaron ramas obsoletas locales/remotas de hotfix/auth/wizard anterior.
 
 Fuera de alcance por decision:
 
@@ -628,7 +634,7 @@ Fuera de alcance por decision:
 
 ## P19 - Validacion real contra Excel en Docker
 
-Estado: Pendiente.
+Estado: Siguiente.
 
 Problema:
 

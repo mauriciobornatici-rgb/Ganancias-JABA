@@ -4,6 +4,20 @@ Ultima actualizacion: 2026-06-08
 
 ## Entrada reciente
 
+### 2026-06-08 - Cierre P18 y orden de ramas
+
+- El usuario confirmo que la autenticacion ya funciona en produccion y que aparece el boton `Salir`.
+- Se limpio el repositorio para evitar frentes abiertos y ramas obsoletas:
+  - se eliminaron ramas locales/remotas `integrate/auth-simple-safe-main`, `fix/produccion-parametros-axi-deducciones`, `feature/auth-simple`, `feature/wizard-optimizado`;
+  - se conservaron `main` y `staging`;
+  - `staging` quedo alineada al mismo commit que `main`: `a309f22`.
+- Estado resultante:
+  - `main`: produccion;
+  - `staging`: rama de pruebas alineada para futuros trabajos;
+  - siguiente frente del plan: P19 validacion real contra Excel en Docker.
+- Nota operativa:
+  - si Vercel Preview muestra error en `staging`, no afecta produccion; se debe a la guarda que bloquea usar DB productiva en Preview mientras `DATABASE_URL` siga marcada para Preview.
+
 ### 2026-06-08 - P18 integracion segura de autenticacion sobre main actual
 
 - El usuario pidio realizar todas las correcciones y adaptaciones necesarias para no pisar ni romper la app productiva, que quedo funcionando luego de los hotfixes recientes.
@@ -35,10 +49,10 @@ Ultima actualizacion: 2026-06-08
   - lint incluyendo `src/app/page.tsx` y wizard completo: falla por deuda previa ya registrada (`any`, hooks y warnings historicos), no por los archivos nuevos de auth.
 - Dato externo confirmado:
   - el usuario configuro `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production antes de publicar.
-- Pendiente antes de publicar:
-  - registrar este dato en commit;
-  - repetir verificacion final;
-  - mergear/publicar en `main`.
+- Publicacion:
+  - rama segura mergeada por fast-forward a `main`;
+  - commit final publicado: `a309f22 docs: confirmar variables auth vercel`;
+  - Vercel redeploy ejecutado luego de confirmar variables.
 
 ### 2026-06-08 - Hotfix UX IPC en Paso 6
 

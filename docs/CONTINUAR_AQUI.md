@@ -6,14 +6,14 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `integrate/auth-simple-safe-main`.
+- Rama activa: `main`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: P18 autenticacion simple integrada sobre `main` actual, pendiente de publicacion controlada.
+- Ultimo checkpoint documentado: P18 autenticacion simple publicada y ramas ordenadas.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: produccion sigue estable en `main`; autenticacion esta en rama segura y no debe publicarse sin variables de Vercel.
+- Estado de uso: produccion corre desde `main`; autenticacion simple activa; `main` y `staging` quedaron alineadas.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos
@@ -35,7 +35,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ### P18 - Autenticacion simple integrada sin pisar hotfixes
 
-Estado: en rama `integrate/auth-simple-safe-main`, pendiente de merge/push a `main`.
+Estado: publicado en `main` con commit `a309f22`; ramas obsoletas eliminadas y `staging` alineada a `main`.
 
 Objetivo:
 
@@ -61,13 +61,19 @@ Verificacion ejecutada:
 - Lint focalizado en archivos nuevos/pequenos de auth/guardas: OK.
 - Lint incluyendo `src/app/page.tsx` y wizard completo: falla por deuda previa ya registrada, no por los archivos nuevos de auth.
 
-Pendiente inmediato:
-
-- Publicar solo cuando el deploy pueda pasar la guarda.
-
 Dato externo confirmado:
 
 - El usuario configuro `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production antes de publicar.
+
+Orden de ramas aplicado:
+
+- Quedaron vivas `main` y `staging`.
+- Se eliminaron ramas obsoletas locales/remotas: `integrate/auth-simple-safe-main`, `fix/produccion-parametros-axi-deducciones`, `feature/auth-simple`, `feature/wizard-optimizado`.
+- `staging` quedo apuntando al mismo commit que `main`.
+
+Proximo frente:
+
+- P19 - Validacion real contra Excel en Docker.
 
 ### Hotfix produccion - Parametros, AXI y deducciones
 
@@ -99,14 +105,13 @@ Verificacion ejecutada:
 - `check-deployment-db-safety`: OK.
 - `next build --webpack`: OK.
 
-Pendiente inmediato:
+Pendiente externo:
 
-- Esperar/confirmar deploy automatico de Vercel desde `main`.
-- Probar en produccion: guardar indices, revisar AXI, revisar deducciones.
+- Seguir probando en produccion: guardar indices, revisar AXI, revisar deducciones.
 
 ### Hotfix UX IPC - Aviso accionable en Paso 6
 
-Estado: implementado y verificado localmente, pendiente de commit/push.
+Estado: publicado en `main` con commit `942ee28 fix: guiar carga ipc desde advertencia axi`.
 
 Origen:
 

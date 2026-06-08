@@ -38,8 +38,10 @@ Ultima actualizacion: 2026-06-08
   - lint focalizado: OK;
   - `scripts/check-deployment-db-safety.mjs`: OK;
   - `next build --webpack`: OK.
+- Publicacion:
+  - commit `09f3e2b fix: corregir parametros axi y deducciones` integrado por fast-forward en `main`;
+  - `main` pusheado a GitHub para que Vercel ejecute el deploy automatico.
 - Pendiente:
-  - merge controlado a `main`;
   - validar en produccion guardado de indices, AXI y deducciones.
 
 ### 2026-06-08 - Plan App 10/10

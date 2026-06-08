@@ -6,10 +6,10 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `fix/produccion-parametros-axi-deducciones`.
+- Rama activa: `main`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: hotfix produccion parametros/AXI/deducciones.
+- Ultimo checkpoint documentado: hotfix produccion parametros/AXI/deducciones publicado en `main`.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -35,7 +35,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ### Hotfix produccion - Parametros, AXI y deducciones
 
-Estado: implementado en rama `fix/produccion-parametros-axi-deducciones`, pendiente de merge controlado a `main`.
+Estado: publicado en `main` con commit `09f3e2b fix: corregir parametros axi y deducciones`.
 
 Origen:
 
@@ -65,8 +65,7 @@ Verificacion ejecutada:
 
 Pendiente inmediato:
 
-- Repetir verificacion final si se toca algo mas.
-- Mergear a `main` para que Vercel publique el hotfix.
+- Esperar/confirmar deploy automatico de Vercel desde `main`.
 - Probar en produccion: guardar indices, revisar AXI, revisar deducciones.
 
 ### Parentesis - Instructivo de carga del caso Excel/capturas

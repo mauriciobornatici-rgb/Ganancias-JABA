@@ -35,7 +35,7 @@ Criterio de cierre:
 
 ## P28 - Hotfix produccion parametros, AXI y deducciones
 
-Estado: Resuelto tecnicamente en rama `fix/produccion-parametros-axi-deducciones`, pendiente de merge a `main`.
+Estado: Resuelto y publicado en `main` con commit `09f3e2b fix: corregir parametros axi y deducciones`.
 
 Problema:
 

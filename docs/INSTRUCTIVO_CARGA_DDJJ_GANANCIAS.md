@@ -6,6 +6,11 @@ Aplicacion: Ganancias JABA.
 
 Objetivo: cargar una declaracion jurada de Ganancias de persona humana con tercera categoria de forma agil, consistente y auditable, evitando duplicaciones y errores de calculo.
 
+Caso numerico de practica:
+
+- Para una carga guiada con importes concretos y controles esperados, usar `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
+- Ese documento reproduce el caso de capturas/test y sirve para validar que la app calcula lo mismo antes de usar datos reales del estudio.
+
 ## Principios de carga
 
 - Cargar primero datos base y despues ajustes. No empezar por deducciones o AXI si todavia faltan ventas, compras, patrimonio o existencias.

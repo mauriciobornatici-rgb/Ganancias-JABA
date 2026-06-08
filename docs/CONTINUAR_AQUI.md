@@ -1,6 +1,6 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-07
+Ultima actualizacion: 2026-06-08
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
@@ -14,6 +14,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
 - Estado de uso: listo para iniciar piloto controlado, con salvedad de validar visualmente el caso real de capturas nuevas en navegador.
+- Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos
 
@@ -21,15 +22,41 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 2. Leer esta pagina completa.
 3. Abrir `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
 4. Si se va a desarrollar o probar, usar `npm run dev:testdb` contra Docker, no `npm run dev`.
-5. Abrir `docs/GUIA_PRUEBA_PILOTO.md`.
-6. Abrir `docs/BACKLOG_PRIORIZADO.md`.
-7. Tomar el primer item con estado `Activo` o `Siguiente`.
-8. No abrir un nuevo frente si hay uno `En curso`, salvo instruccion explicita del usuario.
-9. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
-10. Correr verificacion fresca antes de decir que algo quedo terminado.
-11. Hacer commit y push a GitHub al cerrar cada bloque util.
+5. Si se va a validar contra Excel/capturas, abrir `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
+6. Abrir `docs/GUIA_PRUEBA_PILOTO.md`.
+7. Abrir `docs/BACKLOG_PRIORIZADO.md`.
+8. Tomar el primer item con estado `Activo` o `Siguiente`.
+9. No abrir un nuevo frente si hay uno `En curso`, salvo instruccion explicita del usuario.
+10. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
+11. Correr verificacion fresca antes de decir que algo quedo terminado.
+12. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### Parentesis - Instructivo de carga del caso Excel/capturas
+
+Estado: documentado.
+
+Objetivo inmediato:
+
+- Darle al usuario y al estudio una guia didactica para cargar exactamente el caso numerico de control.
+- Explicar que valor poner, en que paso y en que campo.
+- Separar importes cargables, importes calculados y controles esperados.
+
+Documento creado:
+
+- `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
+
+Hallazgo importante:
+
+- El archivo fisico `DJ Ganancias 2025 - Tercera Categoria.xlsx` esta como base/plantilla sin datos operativos al leerlo desde el proyecto.
+- Los valores reales de la prueba salen de las capturas del 06/06/2026 y del test interno `simulacionUsuario.test.ts`.
+- La guia advierte no mezclar este caso con el escenario anterior de AXI `-429.715,06`.
+
+Uso recomendado:
+
+- Usar esta guia para P19 - Validacion real contra Excel en Docker.
+- Cargar primero en base Docker con `npm run dev:testdb`, guardar, reabrir y comparar con los controles redondeados.
 
 ### P18-P27 - Plan App 10/10
 

@@ -2845,3 +2845,43 @@ Verificacion:
 Pendiente externo:
 
 - Validar visualmente el PDF cuando el navegador este disponible.
+
+### 2026-06-08 - Parentesis: instructivo de carga del caso Excel/capturas
+
+Se hizo una pausa antes de continuar con correcciones para preparar un instructivo didactico de carga usando el caso numerico de control.
+
+Solicitud del usuario:
+
+- Explicar precisamente donde cargar cada valor.
+- Incluir el valor numerico.
+- Permitir que una persona de carga pueda reproducir el caso sin depender de reconstruir toda la conversacion.
+- Usar el Excel ubicado en `C:\Dev\Ganancia\Persona Fisica\DJ Ganancias 2025 - Tercera Categoria.xlsx`.
+
+Hallazgos:
+
+- El archivo fisico en esa ruta se pudo abrir y contiene las hojas esperadas (`IG 25`, `JVP`, `ER`, `ESP`, `Ventas`, `Compras`, `Patrimonio personal`, auxiliares, etc.).
+- Al leerlo desde el proyecto, el archivo aparece como plantilla/base sin datos operativos: las hojas de resumen y detalle devuelven importes en cero.
+- Los valores reales de validacion ya estaban representados en `src/domain/ganancias/tests/simulacionUsuario.test.ts`, alineados con las capturas nuevas del 06/06/2026.
+- Se detecto y se dejo explicitado que no debe mezclarse este caso con el escenario anterior de AXI `-429.715,06`.
+
+Decision:
+
+- Crear un instructivo especifico de caso patron, separado del instructivo general de carga.
+- Tomar como fuente numerica las capturas/test y dejar nota sobre el Excel fisico en blanco.
+- Indicar para cada paso del wizard que se carga, que se deja en cero y que no se carga porque la app lo calcula.
+- Documentar los controles esperados con centavos Excel y redondeo esperado de la app.
+
+Archivo creado:
+
+- `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
+
+Archivos actualizados:
+
+- `docs/CONTINUAR_AQUI.md`.
+- `docs/BACKLOG_PRIORIZADO.md`.
+- `docs/REGISTRO_PROYECTO.md`.
+
+Uso posterior:
+
+- Este instructivo queda como entrada directa para P19 - Validacion real contra Excel en Docker.
+- Cuando se ejecute P19, cargar el caso en `npm run dev:testdb`, guardar, reabrir y comparar wizard, papel de trabajo, informe cliente y legajo PDF.

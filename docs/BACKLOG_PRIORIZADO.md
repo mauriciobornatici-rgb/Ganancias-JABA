@@ -562,13 +562,22 @@ Estado: Pendiente.
 Problema:
 
 - El desarrollo tecnico esta avanzado, pero falta validar una DDJJ real completa contra la planilla usada profesionalmente.
+- El archivo Excel fisico revisado quedo como plantilla/base sin datos operativos, por lo que la carga piloto debe seguir el caso numerico documentado desde capturas/test.
 
 Accion recomendada:
 
+- Usar `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md` como guia de carga exacta.
 - Cargar caso real en Docker.
 - Guardar, reabrir y comparar con Excel.
 - Validar wizard, papel de trabajo, informe cliente y legajo PDF.
 - Registrar diferencias si aparecen.
+
+Avance 2026-06-08:
+
+- Se creo `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
+- El instructivo separa valores cargables, valores calculados y controles esperados.
+- El caso coincide con `src/domain/ganancias/tests/simulacionUsuario.test.ts`.
+- Se documento la inconsistencia de fuente: Excel fisico sin datos y capturas con escenarios historicos distintos.
 
 Criterio de cierre:
 

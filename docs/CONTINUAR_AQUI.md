@@ -6,10 +6,10 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `main`.
+- Rama activa: `fix/produccion-parametros-axi-deducciones`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: plan App 10/10.
+- Ultimo checkpoint documentado: hotfix produccion parametros/AXI/deducciones.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -32,6 +32,42 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 12. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### Hotfix produccion - Parametros, AXI y deducciones
+
+Estado: implementado en rama `fix/produccion-parametros-axi-deducciones`, pendiente de merge controlado a `main`.
+
+Origen:
+
+- En produccion fallaba "Guardar indices" con timeout de Prisma/Hostinger.
+- Ajuste dinamico mostraba retiro/aporte con signo invertido.
+- La pantalla indicaba que faltaban indices IPC aunque los valores estaban cargados.
+- Las deducciones aparecian en cero cuando habia indices activos pero faltaba `parameterSet`.
+
+Cambios aplicados:
+
+- `PUT /api/parametros` usa timeout de transaccion ampliado para Hostinger.
+- El wizard arma parametros efectivos con fallback de deducciones si la API no trae `parameterSet`.
+- Los indices visibles en pantalla alimentan el calculo aunque todavia no hayan sido recargados desde la API.
+- Se normaliza coma decimal en indices IPC.
+- AXI estatico ignora indices cero para evitar `Infinity`/`-0`.
+- Ajuste dinamico se calcula como `Capital Afectado Teorico - Capital Afectado Real`.
+
+Verificacion ejecutada:
+
+- Tests focales: OK, 7 tests.
+- `vitest run`: OK, 36 archivos y 135 tests.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- Lint focalizado: OK.
+- `check-deployment-db-safety`: OK.
+- `next build --webpack`: OK.
+
+Pendiente inmediato:
+
+- Repetir verificacion final si se toca algo mas.
+- Mergear a `main` para que Vercel publique el hotfix.
+- Probar en produccion: guardar indices, revisar AXI, revisar deducciones.
 
 ### Parentesis - Instructivo de carga del caso Excel/capturas
 

@@ -32,6 +32,11 @@ import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoic
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
 import {
+  buildWizardAxiDynamicReconciliation,
+  buildWizardEffectiveCalculationParams,
+  normalizeWizardIpcValue,
+} from '@/domain/ganancias/presentation/wizardCalculationParams';
+import {
   buildDefaultWizardCashHolding,
   buildDefaultWizardLiability,
   buildDefaultWizardOtherJustification,
@@ -1311,25 +1316,23 @@ export default function WizardPage() {
     topeGastosEducativos: 1803002.21,
   };
 
-  const calculationParams = activeParams
-    ? {
-        ...activeParams,
-        brackets: activeParams.brackets && activeParams.brackets.length > 0 ? activeParams.brackets : escala2025BracketMock,
-        indices: activeParams.indices ?? [],
-      }
-    : {
-        parameterSet: fallbackParameterSet,
-        brackets: escala2025BracketMock,
-        indices: [],
-      };
+  const calculationParams = buildWizardEffectiveCalculationParams({
+    activeParams,
+    fallbackParameterSet,
+    fallbackBrackets: escala2025BracketMock,
+    fiscalYear,
+    localIpcValues,
+  });
 
   // Dec IPC (Diciembre del año actual)
   const decIpcVal = localIpcValues[`${fiscalYear}_12`] || '0';
   // Prev Dec IPC (Diciembre del año anterior)
   const prevDecIpcVal = localIpcValues[`${fiscalYear - 1}_12`] || '0';
+  const decIpcNumber = Number(normalizeWizardIpcValue(decIpcVal));
+  const prevDecIpcNumber = Number(normalizeWizardIpcValue(prevDecIpcVal));
 
-  const staticInflationRateVal = (Number(decIpcVal) > 0 && Number(prevDecIpcVal) > 0)
-    ? (Number(decIpcVal) / Number(prevDecIpcVal)) - 1
+  const staticInflationRateVal = (decIpcNumber > 0 && prevDecIpcNumber > 0)
+    ? (decIpcNumber / prevDecIpcNumber) - 1
     : 0;
 
   const activeBreakdown = axiStaticBreakdown || DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN;
@@ -1462,7 +1465,11 @@ export default function WizardPage() {
 
   const closingCommercialPatrimony = calculateClosingCommercialPatrimony(calculationInput);
   const dynamicCapitalReal = closingCommercialPatrimony.patrimonioComercialCierre.toNumber();
-  const dynamicRetiroAporteNeto = dynamicCapitalReal - dynamicCapitalTeorico;
+  const dynamicReconciliation = buildWizardAxiDynamicReconciliation({
+    theoreticalCapital: dynamicCapitalTeorico,
+    realCapital: dynamicCapitalReal,
+  });
+  const dynamicRetiroAporteNeto = dynamicReconciliation.signedDifference;
 
   const previewStatus = buildTaxReturnPreviewStatus({
     hasRequiredPreviewIdentity,
@@ -1581,9 +1588,13 @@ export default function WizardPage() {
 
   const handleCopyAxiDynamicDifference = (diff: number) => {
     if (diff === 0) return;
-    const amountStr = Math.abs(diff).toFixed(2);
+    const reconciliation = buildWizardAxiDynamicReconciliation({
+      theoreticalCapital: dynamicCapitalTeorico,
+      realCapital: dynamicCapitalReal,
+    });
+    const amountStr = reconciliation.absoluteAmount.toFixed(2);
     const concept = 'Ajuste Implícito (Retiro/Aporte Neto)';
-    const type = diff < 0 ? 'RetiroSocio' : 'AporteCapital';
+    const type = reconciliation.movementType;
 
     const filtered = axiDynamic.filter(item => item.concept !== concept);
     const newRow = {
@@ -1593,7 +1604,7 @@ export default function WizardPage() {
       date: `${fiscalYear}-12-31`
     };
     setAxiDynamic([...filtered, newRow]);
-    alert(`Se copió la diferencia como variación de tipo ${type === 'RetiroSocio' ? 'Retiro' : 'Aporte'} de $${Math.abs(diff).toLocaleString('es-AR', { minimumFractionDigits: 2 })}.`);
+    alert(`Se copió la diferencia como variación de tipo ${reconciliation.label} de $${reconciliation.absoluteAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}.`);
   };
 
   const handleSaveIpcIndices = () => {
@@ -1603,7 +1614,7 @@ export default function WizardPage() {
     indicesList.push({
       year: fiscalYear - 1,
       monthIndex: 12,
-      ipcValue: localIpcValues[prevDecKey] || '0',
+      ipcValue: normalizeWizardIpcValue(localIpcValues[prevDecKey] || '0'),
       monthName: 'Diciembre (Ant.)'
     });
     const monthNames = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -1612,7 +1623,7 @@ export default function WizardPage() {
       indicesList.push({
         year: fiscalYear,
         monthIndex: m,
-        ipcValue: localIpcValues[key] || '0',
+        ipcValue: normalizeWizardIpcValue(localIpcValues[key] || '0'),
         monthName: monthNames[m]
       });
     }
@@ -3915,8 +3926,9 @@ export default function WizardPage() {
                           ].map((item, idx) => {
                             const key = `${item.year}_${item.monthIndex}`;
                             const val = localIpcValues[key] || '0';
-                            const coef = (decIpcVal && Number(val) > 0)
-                              ? (Number(decIpcVal) / Number(val)) - 1
+                            const valNumber = Number(normalizeWizardIpcValue(val));
+                            const coef = (decIpcNumber > 0 && valNumber > 0)
+                              ? (decIpcNumber / valNumber) - 1
                               : 0;
                             return (
                               <div key={idx} className="flex flex-col gap-1 p-2 rounded-lg bg-zinc-950/45 border border-zinc-900 shadow-inner">
@@ -3985,12 +3997,12 @@ export default function WizardPage() {
                           <div className="flex justify-between p-2.5 rounded bg-[#121216] border border-zinc-800 font-extrabold text-sm">
                             <span className="text-teal-400">(=) Retiro / Aporte Neto:</span>
                             <span className={dynamicRetiroAporteNeto < 0 ? 'text-amber-400' : 'text-emerald-400'}>
-                              {dynamicRetiroAporteNeto < 0 ? 'Retiro: ' : 'Aporte: '}${Math.abs(dynamicRetiroAporteNeto).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                              {dynamicReconciliation.label}: ${dynamicRetiroAporteNeto.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
                         </div>
                         <p className="text-[9px] text-zinc-500 italic leading-normal">
-                          * El Retiro/Aporte es la diferencia de cuadre entre el capital real final y el esperado. Presione &quot;Copiar a Variaciones&quot; para agregarlo abajo y calcular su ajuste por coeficiente promedio anual ponderado.
+                          * El Retiro/Aporte se calcula como Capital Afectado Teorico menos Capital Afectado Real. Presione &quot;Copiar a Variaciones&quot; para agregarlo abajo y calcular su ajuste por coeficiente promedio anual ponderado.
                         </p>
                       </div>
                     </div>

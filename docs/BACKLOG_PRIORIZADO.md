@@ -1,6 +1,6 @@
 # Backlog Priorizado - Ganancias JABA
 
-Ultima actualizacion: 2026-06-07
+Ultima actualizacion: 2026-06-08
 
 Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usuario o por bloqueo tecnico, registrar el motivo en `docs/REGISTRO_PROYECTO.md`.
 
@@ -32,6 +32,43 @@ Criterio de cierre:
 - Archivos de continuidad creados.
 - Registro historico enlaza a la puerta de entrada.
 - Commit y push realizados.
+
+## P28 - Hotfix produccion parametros, AXI y deducciones
+
+Estado: Resuelto tecnicamente en rama `fix/produccion-parametros-axi-deducciones`, pendiente de merge a `main`.
+
+Problema:
+
+- Produccion no permitia guardar indices IPC por timeout de transaccion Prisma/Hostinger.
+- AXI dinamico mostraba signo inverso respecto de `Capital Afectado Teorico - Capital Afectado Real`.
+- El calculo podia advertir falta de indices aunque la pantalla tuviera valores cargados.
+- Las deducciones quedaban en cero cuando habia indices activos pero faltaba `parameterSet`.
+
+Accion aplicada:
+
+- Timeout de transaccion de parametros ampliado.
+- Fallback de deducciones protegido cuando `parameterSet` viene nulo.
+- Indices visibles del editor IPC incorporados al calculo efectivo.
+- Normalizacion de coma decimal en IPC.
+- AXI estatico ignora IPC cero y evita `Infinity`/`-0`.
+- Retiro/aporte neto se calcula y muestra con signo.
+
+Criterio de cierre:
+
+- Guardar indices en produccion sin timeout.
+- AXI dinamico muestra `teorico - real` con signo.
+- AXI usa indices visibles/cargados.
+- Deducciones no se pierden por falta de `parameterSet`.
+
+Verificacion:
+
+- Tests focales: OK, 7 tests.
+- `vitest run`: OK, 36 archivos y 135 tests.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- Lint focalizado: OK.
+- `check-deployment-db-safety`: OK.
+- `next build --webpack`: OK.
 
 ## P1 - Reducir riesgo operativo del wizard
 

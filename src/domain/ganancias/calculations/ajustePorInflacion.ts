@@ -26,7 +26,9 @@ export function calculateAxiStatic(
   const capitalComputable = activoComputable.sub(totalPasivo);
 
   let resultadoAxiStatico = new Decimal(0);
-  if (capitalComputable.isPositive()) {
+  if (inflationRate.isZero()) {
+    resultadoAxiStatico = new Decimal(0);
+  } else if (capitalComputable.isPositive()) {
     resultadoAxiStatico = capitalComputable.mul(inflationRate).negated();
   } else if (capitalComputable.isNegative()) {
     resultadoAxiStatico = capitalComputable.abs().mul(inflationRate);

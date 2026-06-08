@@ -61,7 +61,11 @@ function calculateAxiStaticInflationRate(params: TaxParameters): Decimal | null 
   const ipcEnero = params.indicesIPC.find(i => i.monthIndex === 1);
   const ipcDiciembre = params.indicesIPC.find(i => i.monthIndex === 12);
   if (ipcEnero && ipcDiciembre) {
-    return new Decimal(ipcDiciembre.ipcValue).div(new Decimal(ipcEnero.ipcValue)).sub(1);
+    const ipcEneroValue = new Decimal(ipcEnero.ipcValue);
+    const ipcDiciembreValue = new Decimal(ipcDiciembre.ipcValue);
+    if (ipcEneroValue.gt(0) && ipcDiciembreValue.gt(0)) {
+      return ipcDiciembreValue.div(ipcEneroValue).sub(1);
+    }
   }
 
   return null;
@@ -142,7 +146,7 @@ export function calculateTaxReturn(
   const calculatedStaticInflationRate = calculateAxiStaticInflationRate(input.params);
   const staticInflationRate = calculatedStaticInflationRate ?? new Decimal(0);
   if (!calculatedStaticInflationRate) {
-    warnings.push('AXI Estático: No se encontraron índices IPC de enero y/o diciembre. La tasa de inflación estática se fijó en 0.');
+    warnings.push('AXI Estatico: No se encontraron indices IPC validos de enero y/o diciembre. La tasa de inflacion estatica se fijo en 0.');
   }
   const axiResult = calculateTotalAxi(
     input.axiStatic,

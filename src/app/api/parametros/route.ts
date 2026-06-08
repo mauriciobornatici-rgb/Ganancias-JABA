@@ -3,6 +3,7 @@ import { prisma } from '@/domain/ganancias/prisma';
 import { Decimal } from 'decimal.js';
 import type { Prisma } from '@/generated/client/client';
 import { buildUsefulCoefficientsFromIndexes } from '@/domain/ganancias/mappers/taxParameterUsefulCoefficients';
+import { PARAMETER_UPDATE_TRANSACTION_OPTIONS } from '@/domain/ganancias/persistence/taxParameterPersistence';
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Error desconocido';
@@ -201,7 +202,7 @@ export async function PUT(req: NextRequest) {
       if (body.indices && body.indices.length > 0) {
         for (const ind of body.indices) {
           const mIndex = parseInt(ind.monthIndex, 10);
-          const ipcVal = new Decimal(ind.ipcValue);
+          const ipcVal = new Decimal(String(ind.ipcValue ?? '0').replace(',', '.'));
           const indexYear = parseInt(ind.year || targetYear, 10);
 
           let fy = await tx.fiscalYear.findUnique({ where: { year: indexYear } });
@@ -234,7 +235,7 @@ export async function PUT(req: NextRequest) {
           });
         }
       }
-    });
+    }, PARAMETER_UPDATE_TRANSACTION_OPTIONS);
 
     return NextResponse.json({ success: true, message: 'Parámetros actualizados con éxito en la base de datos.' });
   } catch (err: unknown) {

@@ -1,8 +1,46 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-07
+Ultima actualizacion: 2026-06-08
 
 ## Entrada reciente
+
+### 2026-06-08 - Hotfix produccion parametros, AXI y deducciones
+
+- El usuario reporto problemas observados directamente en produccion:
+  - al guardar indices IPC fallaba Prisma con `Transaction API error` por timeout de 5000 ms;
+  - ajuste dinamico mostraba el retiro/aporte con signo contrario al esperado;
+  - la pantalla advertia falta de indices IPC aunque el editor tenia valores cargados;
+  - deducciones personales/generales aparecian en cero.
+- Se creo la rama `fix/produccion-parametros-axi-deducciones` desde `main`, separada de `feature/auth-simple`, para poder publicar un hotfix sin arrastrar la autenticacion si no se decide mergearla todavia.
+- Causa raiz identificada:
+  - `PUT /api/parametros` guardaba parametros, escalas e indices dentro de una transaccion interactiva Prisma con timeout default de 5 segundos;
+  - el wizard consideraba `activeParams` como valido aunque `parameterSet` viniera `null`, anulando el fallback de deducciones;
+  - el calculo usaba indices persistidos/recargados, pero no siempre los indices visibles en pantalla;
+  - `Number()` y `Decimal()` no toleraban coma decimal sin normalizacion;
+  - AXI estatico aceptaba IPC cero y podia derivar en `Infinity` o `-0`;
+  - ajuste dinamico se estaba mostrando como `capital real - capital teorico`, cuando el criterio definido es `capital teorico - capital real`.
+- Cambios aplicados:
+  - `src/domain/ganancias/persistence/taxParameterPersistence.ts` define opciones de transaccion con timeout ampliado;
+  - `src/app/api/parametros/route.ts` usa esas opciones y normaliza coma decimal en IPC;
+  - `src/domain/ganancias/presentation/wizardCalculationParams.ts` arma parametros efectivos del wizard con fallback seguro de deducciones, indices visibles y coeficientes utiles;
+  - `src/app/declaraciones/crear/wizard/page.tsx` usa parametros efectivos, normaliza IPC de pantalla y corrige la visualizacion/copia de retiro-aporte neto;
+  - `calculateAxiStaticInflationRate` exige IPC positivos antes de dividir;
+  - `calculateAxiStatic` evita resultado `-0` cuando la tasa es cero.
+- Tests agregados/actualizados:
+  - `wizardCalculationParams.test.ts`;
+  - `taxParameterPersistence.test.ts`;
+  - `axiInflationRate.test.ts`.
+- Verificacion ejecutada:
+  - tests focales: OK, 7 tests;
+  - `vitest run`: OK, 36 archivos y 135 tests;
+  - `tsc --noEmit`: OK;
+  - `prisma validate --schema prisma/schema.prisma`: OK;
+  - lint focalizado: OK;
+  - `scripts/check-deployment-db-safety.mjs`: OK;
+  - `next build --webpack`: OK.
+- Pendiente:
+  - merge controlado a `main`;
+  - validar en produccion guardado de indices, AXI y deducciones.
 
 ### 2026-06-08 - Plan App 10/10
 

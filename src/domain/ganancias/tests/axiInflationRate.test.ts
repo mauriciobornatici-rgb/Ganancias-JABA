@@ -78,4 +78,19 @@ describe('AXI static inflation rate', () => {
 
     expect(result.axiStaticResult.toNumber()).toBe(-315488);
   });
+
+  it('ignora indices IPC con valor cero para no calcular tasas invalidas', () => {
+    const params = {
+      ...zeroTaxParameters(),
+      indicesIPC: [
+        { monthIndex: 1, ipcValue: new Decimal(0) },
+        { monthIndex: 12, ipcValue: new Decimal(7694.0075) },
+      ],
+    } as TaxParameters;
+
+    const result = calculateTaxReturn(minimalInput(params));
+
+    expect(result.axiStaticResult.toNumber()).toBe(0);
+    expect(result.warnings.some(warning => warning.includes('No se encontraron indices IPC validos'))).toBe(true);
+  });
 });

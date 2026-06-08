@@ -6,14 +6,14 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `feature/p19-validacion-excel-docker`.
+- Rama activa: `feature/p20-workflow-ddjj`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: P19 primer corte automatico contra Docker aplicado.
+- Ultimo checkpoint documentado: P20 workflow profesional de DDJJ en desarrollo; P19 integrado a `staging`.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en rama P19.
+- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en rama P20.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos
@@ -32,6 +32,41 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 12. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Unidad activa
+
+### P20 - Workflow profesional de DDJJ
+
+Estado: primer corte aplicado en rama `feature/p20-workflow-ddjj`.
+
+Objetivo:
+
+- Evitar que una DDJJ cerrada, presentada, rectificada o anulada se modifique por accidente.
+- Reemplazar el borrado operativo por anulacion con motivo, sin borrar datos de la base.
+- Mantener un rollback tecnico fisico solo para cabeceras borrador creadas automaticamente y fallidas.
+
+Cambios aplicados:
+
+- Se agrego `src/domain/ganancias/workflow/taxReturnWorkflow.ts` con reglas puras testeadas.
+- `PUT /api/declaraciones/[id]` bloquea actualizaciones comunes sobre DDJJ inmutables.
+- La reapertura exige `workflowAction: "reopen"` y motivo; vuelve a `Borrador` sin modificar la carga en el mismo request.
+- `DELETE /api/declaraciones/[id]` anula con motivo y registra auditoria; no borra fisicamente salvo header tecnico de rollback.
+- El dashboard pide motivo de anulacion y trata `Cerrada`, `Presentada` y `Rectificada` como estados inmutables.
+- El wizard muestra aviso de solo lectura y deshabilita guardar/cerrar si se entra por URL a una DDJJ inmutable.
+
+Verificacion ejecutada:
+
+- `vitest run src/domain/ganancias/tests/taxReturnWorkflow.test.ts src/domain/ganancias/tests/taxReturnSaveFlow.test.ts`: OK, 16 tests.
+- `vitest run`: OK, 39 archivos pasados, 1 omitido, 152 tests pasados, 1 omitido.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales de Windows.
+
+Pendiente para cerrar P20:
+
+- Commit y push de la rama.
+- Si se quiere una pantalla de reapertura/rectificativa desde dashboard, agregarla como segundo corte P20 o P20-b.
+
+## Unidad anterior en staging
 
 ### P19 - Validacion real contra Excel en Docker
 

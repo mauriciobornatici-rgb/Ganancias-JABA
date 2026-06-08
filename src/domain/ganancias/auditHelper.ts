@@ -5,7 +5,7 @@ import { prisma } from '@/domain/ganancias/prisma';
  * No propaga errores para no interrumpir la operación principal.
  */
 export async function logAuditEvent(params: {
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'CLOSE' | 'REOPEN' | 'RECTIFY' | 'IMPORT';
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'CLOSE' | 'REOPEN' | 'RECTIFY' | 'ANNUL' | 'IMPORT';
   entityType: string;
   entityId?: string | null;
   clientCuit?: string | null;

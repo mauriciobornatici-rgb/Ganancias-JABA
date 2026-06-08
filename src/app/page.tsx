@@ -338,6 +338,12 @@ export default function Home() {
     return isNaN(parsed) ? 0 : parsed;
   };
 
+  const isDashboardImmutableReturn = (status: string) => (
+    status === 'Cerrada' ||
+    status === 'Presentada' ||
+    status === 'Rectificada'
+  );
+
   const handleCreateClient = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName || !newClientCuit) {
@@ -442,17 +448,23 @@ export default function Home() {
   };
 
   const handleDeleteReturn = (returnId: string, clientName: string, year: number) => {
-    const confirmDelete = window.confirm(`¿Está seguro que desea eliminar la declaración jurada del año ${year} para el contribuyente "${clientName}"? Esta acción eliminará permanentemente la declaración y todos sus papeles de trabajo.`);
+    const confirmDelete = window.confirm(`¿Está seguro que desea anular la declaración jurada del año ${year} para el contribuyente "${clientName}"? La DDJJ no se borrará de la base de datos; quedará archivada como anulada para auditoría.`);
     if (!confirmDelete) return;
 
-    fetch(`/api/declaraciones/${returnId}`, {
+    const reason = window.prompt('Indique el motivo de la anulación. Ejemplo: DDJJ duplicada por error de carga.');
+    if (!reason || reason.trim().length === 0) {
+      setNotification({ message: 'La anulación fue cancelada: el motivo es obligatorio.', type: 'error' });
+      return;
+    }
+
+    fetch(`/api/declaraciones/${returnId}?reason=${encodeURIComponent(reason.trim())}`, {
       method: 'DELETE',
     })
       .then(res => res.json())
       .then(res => {
         if (res.success) {
           setNotification({
-            message: `¡Declaración jurada de ${clientName} (${year}) eliminada con éxito!`,
+            message: `Declaración jurada de ${clientName} (${year}) anulada con éxito. No fue borrada de la base.`,
             type: 'success'
           });
           setTaxReturns(prev => prev.filter(r => r.id !== returnId));
@@ -480,7 +492,7 @@ export default function Home() {
     if (activeTab === 'todos') return matchesSearch;
     if (activeTab === 'borrador') return matchesSearch && ret.status === 'Borrador';
     if (activeTab === 'revision') return matchesSearch && ret.status === 'En Revisión';
-    if (activeTab === 'cerrada') return matchesSearch && ret.status === 'Cerrada';
+    if (activeTab === 'cerrada') return matchesSearch && isDashboardImmutableReturn(ret.status);
     return matchesSearch;
   });
 
@@ -605,7 +617,7 @@ export default function Home() {
                   </div>
                 </div>
                 <h2 className="text-3xl font-bold text-white tracking-tight">
-                  {taxReturns.filter(r => r.year === 2025 && r.status !== 'Cerrada').length}
+                  {taxReturns.filter(r => r.year === 2025 && !isDashboardImmutableReturn(r.status)).length}
                 </h2>
                 <p className="text-zinc-500 text-xs mt-1">En proceso de liquidación</p>
               </div>
@@ -638,7 +650,7 @@ export default function Home() {
                   </div>
                 </div>
                 <h2 className="text-3xl font-bold text-white tracking-tight">
-                  {taxReturns.filter(r => r.status === 'Cerrada').length}
+                  {taxReturns.filter(r => isDashboardImmutableReturn(r.status)).length}
                 </h2>
                 <p className="text-zinc-500 text-xs mt-1">Períodos cerrados</p>
               </div>
@@ -750,13 +762,13 @@ export default function Home() {
                           <td className="px-6 py-4 text-right">
                             <div className="flex gap-2 justify-end">
                               <Link 
-                                href={ret.status === 'Cerrada' ? `/declaraciones/${ret.id}/papel-de-trabajo` : `/declaraciones/${ret.id}/wizard`}
+                                href={isDashboardImmutableReturn(ret.status) ? `/declaraciones/${ret.id}/papel-de-trabajo` : `/declaraciones/${ret.id}/wizard`}
                                 className="inline-flex items-center justify-center h-8 px-3 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 text-xs font-bold text-teal-400 group-hover:border-teal-500/30 transition-all active:scale-[0.97]"
                               >
-                                {ret.status === 'Cerrada' ? 'Papel Trabajo' : 'Continuar'}
+                                {isDashboardImmutableReturn(ret.status) ? 'Papel Trabajo' : 'Continuar'}
                                 <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                               </Link>
-                              {ret.status === 'Cerrada' && (
+                              {isDashboardImmutableReturn(ret.status) && (
                                 <Link 
                                   href={`/declaraciones/${ret.id}/informe-cliente`}
                                   className="inline-flex items-center justify-center h-8 px-3 rounded bg-teal-950/20 hover:bg-teal-900/35 border border-teal-500/25 text-xs font-bold text-teal-300 hover:border-teal-500/40 transition-all active:scale-[0.97]"
@@ -767,7 +779,7 @@ export default function Home() {
                               <button
                                 onClick={() => handleDeleteReturn(ret.id, ret.clientName, ret.year)}
                                 className="inline-flex items-center justify-center h-8 w-8 rounded bg-red-950/20 hover:bg-red-900/35 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all active:scale-[0.97] cursor-pointer"
-                                title="Eliminar Declaración Jurada"
+                                title="Anular declaración jurada"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>

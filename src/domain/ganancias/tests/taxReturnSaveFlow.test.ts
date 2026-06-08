@@ -29,6 +29,7 @@ describe('buildCreatedTaxReturnFullSaveRequest', () => {
 
     expect(request.url).toBe('/api/declaraciones/return-123');
     expect(request.init.method).toBe('DELETE');
+    expect(request.init.headers).toEqual({ 'X-JABA-Rollback': 'true' });
   });
 });
 

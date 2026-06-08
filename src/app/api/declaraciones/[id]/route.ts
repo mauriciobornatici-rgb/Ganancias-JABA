@@ -9,6 +9,10 @@ import {
   mapPatrimonialJustificationForWizard,
   snapshotStringAt,
 } from '@/domain/ganancias/persistence/taxReturnReadMapper';
+import {
+  buildTaxReturnAnnulmentDecision,
+  buildTaxReturnUpdateDecision,
+} from '@/domain/ganancias/workflow/taxReturnWorkflow';
 
 export async function GET(
   req: NextRequest,
@@ -17,7 +21,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Buscar la declaración en la base de datos junto con todas sus tablas hijas
+    // Buscar la declaracion en la base de datos junto con todas sus tablas hijas.
     const taxReturn = await prisma.taxReturn.findUnique({
       where: { id },
       include: {
@@ -48,7 +52,7 @@ export async function GET(
 
     if (!taxReturn) {
       return NextResponse.json(
-        { success: false, error: 'Declaración jurada no encontrada.' },
+        { success: false, error: 'Declaracion jurada no encontrada.' },
         { status: 404 }
       );
     }
@@ -242,7 +246,7 @@ export async function GET(
     return NextResponse.json({ success: true, data: payload });
   } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al obtener declaración: ${errorMessage(err)}` },
+      { success: false, error: `Error al obtener declaracion: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -255,9 +259,8 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await req.json();
-    const { clientName, status } = body;
+    const { clientName, status, workflowAction, workflowReason } = body;
 
-    // 1. Validar que la declaración exista
     const existingReturn = await prisma.taxReturn.findUnique({
       where: { id },
       include: { client: true, fiscalYear: true },
@@ -265,9 +268,49 @@ export async function PUT(
 
     if (!existingReturn) {
       return NextResponse.json(
-        { success: false, error: 'Declaración jurada no encontrada para actualizar.' },
+        { success: false, error: 'Declaracion jurada no encontrada para actualizar.' },
         { status: 404 }
       );
+    }
+
+    const workflowDecision = buildTaxReturnUpdateDecision({
+      currentStatus: existingReturn.status,
+      requestedStatus: status,
+      workflowAction,
+      workflowReason,
+    });
+
+    if (!workflowDecision.allowed) {
+      return NextResponse.json(
+        { success: false, error: workflowDecision.error },
+        { status: workflowDecision.httpStatus }
+      );
+    }
+
+    if (!workflowDecision.persistDetails) {
+      await prisma.taxReturn.update({
+        where: { id },
+        data: {
+          status: workflowDecision.nextStatus,
+          notes: appendWorkflowNote(existingReturn.notes, 'REAPERTURA', workflowDecision.reason || ''),
+          updatedAt: new Date(),
+        },
+      });
+
+      logAuditEvent({
+        action: workflowDecision.auditAction,
+        entityType: 'TaxReturn',
+        entityId: id,
+        clientCuit: existingReturn.client?.cuit,
+        clientName: clientName || existingReturn.client?.name,
+        fiscalYear: existingReturn.fiscalYear?.year,
+        details: `Reapertura de DDJJ ${id}. Motivo: ${workflowDecision.reason}`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Declaracion reabierta como Borrador. Ya puede editarse con control de auditoria.',
+      });
     }
 
     await prisma.$transaction(async tx => {
@@ -275,24 +318,27 @@ export async function PUT(
         db: tx,
         taxReturnId: id,
         existingReturn,
-        payload: body,
+        payload: {
+          ...body,
+          status: workflowDecision.nextStatus,
+        },
       });
     });
-    // Registrar en auditoría
+
     logAuditEvent({
-      action: status === 'Cerrada' ? 'CLOSE' : 'UPDATE',
+      action: workflowDecision.auditAction,
       entityType: 'TaxReturn',
       entityId: id,
       clientCuit: existingReturn.client?.cuit,
-      clientName: clientName,
+      clientName: clientName || existingReturn.client?.name,
       fiscalYear: existingReturn.fiscalYear?.year,
-      details: `Actualización de DDJJ ${id} — Estado: ${status || existingReturn.status}`,
+      details: `Actualizacion de DDJJ ${id} - Estado: ${workflowDecision.nextStatus}`,
     });
 
-    return NextResponse.json({ success: true, message: 'Declaración actualizada con éxito en la base de datos.' });
+    return NextResponse.json({ success: true, message: 'Declaracion actualizada con exito en la base de datos.' });
   } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al actualizar declaración: ${errorMessage(err)}` },
+      { success: false, error: `Error al actualizar declaracion: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -304,37 +350,85 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(req.url);
+    const reason = searchParams.get('reason') || '';
+    const isTechnicalRollback = req.headers.get('x-jaba-rollback') === 'true';
 
     const existingReturn = await prisma.taxReturn.findUnique({
       where: { id },
+      include: {
+        client: true,
+        fiscalYear: true,
+      },
     });
 
     if (!existingReturn) {
       return NextResponse.json(
-        { success: false, error: 'Declaración jurada no encontrada para eliminar.' },
+        { success: false, error: 'Declaracion jurada no encontrada para anular.' },
         { status: 404 }
       );
     }
 
-    await prisma.taxReturn.delete({
-      where: { id },
+    const annulmentDecision = buildTaxReturnAnnulmentDecision({
+      currentStatus: existingReturn.status,
+      reason,
+      isTechnicalRollback,
     });
 
-    // Registrar en auditoría
+    if (!annulmentDecision.allowed) {
+      return NextResponse.json(
+        { success: false, error: annulmentDecision.error },
+        { status: annulmentDecision.httpStatus }
+      );
+    }
+
+    if (annulmentDecision.mode === 'physical-delete') {
+      await prisma.taxReturn.delete({
+        where: { id },
+      });
+
+      logAuditEvent({
+        action: annulmentDecision.auditAction,
+        entityType: 'TaxReturn',
+        entityId: id,
+        clientCuit: existingReturn.client?.cuit,
+        clientName: existingReturn.client?.name,
+        fiscalYear: existingReturn.fiscalYear?.year,
+        details: annulmentDecision.reason,
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Rollback tecnico ejecutado: cabecera borrador eliminada fisicamente.',
+      });
+    }
+
+    await prisma.taxReturn.update({
+      where: { id },
+      data: {
+        status: annulmentDecision.nextStatus,
+        notes: appendWorkflowNote(existingReturn.notes, 'ANULACION', annulmentDecision.reason),
+        updatedAt: new Date(),
+      },
+    });
+
     logAuditEvent({
-      action: 'DELETE',
+      action: annulmentDecision.auditAction,
       entityType: 'TaxReturn',
       entityId: id,
-      details: `Eliminación de DDJJ ${id}`,
+      clientCuit: existingReturn.client?.cuit,
+      clientName: existingReturn.client?.name,
+      fiscalYear: existingReturn.fiscalYear?.year,
+      details: `Anulacion operativa de DDJJ ${id}. Motivo: ${annulmentDecision.reason}`,
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Declaración jurada eliminada con éxito de la base de datos.'
+      message: 'Declaracion jurada anulada con exito. No fue borrada de la base de datos.',
     });
   } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al eliminar la declaración jurada: ${errorMessage(err)}` },
+      { success: false, error: `Error al anular la declaracion jurada: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -342,4 +436,10 @@ export async function DELETE(
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+function appendWorkflowNote(previous: string | null | undefined, label: string, reason: string): string {
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
+  const line = `[${timestamp}] ${label}: ${reason}`;
+  return previous ? `${previous}\n${line}` : line;
 }

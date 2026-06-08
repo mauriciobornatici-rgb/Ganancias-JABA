@@ -94,6 +94,7 @@ export function buildCreatedTaxReturnRollbackRequest(
     url: `/api/declaraciones/${taxReturnId}`,
     init: {
       method: 'DELETE',
+      headers: { 'X-JABA-Rollback': 'true' },
     },
   };
 }

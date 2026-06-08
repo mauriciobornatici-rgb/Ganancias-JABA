@@ -6,13 +6,18 @@ import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxRetur
 import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persistence/taxReturnDuplicate';
 import { buildInitialTaxReturnSnapshot } from '@/domain/ganancias/persistence/taxReturnSnapshot';
 import { hasDetailedTaxReturnPayload } from '@/domain/ganancias/persistence/taxReturnPayload';
+import { TAX_RETURN_STATUS } from '@/domain/ganancias/workflow/taxReturnWorkflow';
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const clientId = searchParams.get('clientId');
+    const includeAnnulled = searchParams.get('includeAnnulled') === 'true';
 
     const whereClause: any = {};
+    if (!includeAnnulled) {
+      whereClause.status = { not: TAX_RETURN_STATUS.ANULADA };
+    }
     if (clientId) {
       whereClause.clientId = clientId;
     }

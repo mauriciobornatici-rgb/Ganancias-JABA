@@ -4,6 +4,35 @@ Ultima actualizacion: 2026-06-08
 
 ## Entrada reciente
 
+### 2026-06-08 - P20 primer corte workflow profesional de DDJJ
+
+- Se creo la rama `feature/p20-workflow-ddjj` desde `staging`, dejando `main` intacta.
+- Se integro P19 a `staging` por fast-forward para conservar el corte de validacion Excel/Docker como base de pruebas, sin publicarlo en produccion.
+- Objetivo del corte P20:
+  - proteger DDJJ cerradas/presentadas/rectificadas/anuladas contra edicion accidental;
+  - reemplazar borrado operativo por anulacion con motivo;
+  - conservar borrado fisico solo como rollback tecnico de cabeceras borrador creadas automaticamente.
+- Cambios aplicados:
+  - se agrego `src/domain/ganancias/workflow/taxReturnWorkflow.ts`;
+  - se agrego `src/domain/ganancias/tests/taxReturnWorkflow.test.ts`;
+  - `PUT /api/declaraciones/[id]` aplica politica de workflow antes de persistir detalle;
+  - reapertura requiere `workflowAction: "reopen"` y `workflowReason`;
+  - `DELETE /api/declaraciones/[id]` anula con motivo y registra auditoria;
+  - rollback tecnico usa header `X-JABA-Rollback: true`;
+  - `/api/declaraciones` oculta anuladas por defecto salvo `includeAnnulled=true`;
+  - el dashboard pide motivo de anulacion y ya no habla de borrado permanente de DDJJ;
+  - el wizard detecta DDJJ inmutables, muestra aviso de solo lectura y bloquea guardar/cerrar.
+- Verificacion ejecutada:
+  - `vitest run src/domain/ganancias/tests/taxReturnWorkflow.test.ts src/domain/ganancias/tests/taxReturnSaveFlow.test.ts`: OK, 16 tests;
+  - `vitest run`: OK, 39 archivos pasados, 1 omitido, 152 tests pasados, 1 omitido;
+  - `tsc --noEmit`: OK;
+  - `prisma validate --schema prisma/schema.prisma`: OK;
+  - `next build --webpack`: OK;
+  - `git diff --check`: OK, solo avisos CRLF habituales de Windows.
+- Pendiente:
+  - commit y push de la rama;
+  - definir si se agrega en un segundo corte UI explicita para reabrir/rectificar desde dashboard.
+
 ### 2026-06-08 - P19 primer corte automatico contra Docker
 
 - Se inicio el frente P19 en rama `feature/p19-validacion-excel-docker`.

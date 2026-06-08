@@ -93,6 +93,7 @@ import {
   buildTaxReturnSaveRequest,
   resolveTaxReturnSaveTarget,
 } from '@/domain/ganancias/presentation/taxReturnSaveFlow';
+import { isTaxReturnImmutable } from '@/domain/ganancias/workflow/taxReturnWorkflow';
 import { mockTaxReturns, mockClients } from '@/domain/ganancias/mockData';
 import { WizardLoadReportPrint } from './WizardLoadReportPrint';
 
@@ -215,6 +216,8 @@ export default function WizardPage() {
   const routeReturnId = resolveWizardRouteReturnId(id);
   const [persistedReturnId, setPersistedReturnId] = useState('');
   const activeReturnId = persistedReturnId || routeReturnId;
+  const [loadedReturnStatus, setLoadedReturnStatus] = useState('Borrador');
+  const isLoadedReturnImmutable = isTaxReturnImmutable(loadedReturnStatus);
   const initialCuitRef = React.useRef<string | null>(null);
   const isCreatingRef = React.useRef(false);
   const [currentStep, setCurrentStep] = useState(1);
@@ -331,6 +334,7 @@ export default function WizardPage() {
   const saveToServer = (targetStep: number) => {
     const saveTarget = resolveTaxReturnSaveTarget({ routeId: id, persistedReturnId });
     if (saveTarget.isCreate) return;
+    if (isLoadedReturnImmutable) return;
 
     const payload = {
       cuit,
@@ -400,6 +404,11 @@ export default function WizardPage() {
   };
 
   const handleSaveAction = (type: 'borrador' | 'cerrar') => {
+    if (isLoadedReturnImmutable) {
+      alert(`La DDJJ esta en estado ${loadedReturnStatus} y es de solo lectura. Reabrala desde el workflow antes de editar o guardar cambios.`);
+      return;
+    }
+
     if (type === 'cerrar') {
       const previewWarning = buildTaxReturnCloseConsistencyWarning(previewStatus);
       if (previewWarning && !window.confirm(`${previewWarning}\n\n¿Desea continuar y cerrar igualmente?`)) {
@@ -461,6 +470,7 @@ export default function WizardPage() {
           localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(payload));
           window.history.replaceState(null, '', `/declaraciones/${newId}/wizard`);
         }
+        setLoadedReturnStatus(targetStatus);
         setModalLoading(false);
       } else {
         const duplicateRedirectPath = buildDuplicateTaxReturnRedirectPath(res);
@@ -592,6 +602,7 @@ export default function WizardPage() {
       setClientName('');
       setFiscalYear(2025);
       setTaxParameterSetId('');
+      setLoadedReturnStatus('Borrador');
       resetWizardDetailState();
       updateCurrentStep(1);
       return;
@@ -606,6 +617,7 @@ export default function WizardPage() {
           initialCuitRef.current = data.cuit;
         }
         if (data.clientName) setClientName(data.clientName);
+        if (data.status) setLoadedReturnStatus(data.status);
         if (data.fiscalYear) setFiscalYear(data.fiscalYear);
         if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
         if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
@@ -643,6 +655,7 @@ export default function WizardPage() {
       initialCuitRef.current = '27-95430211-3';
       setClientName('Maria Luz Gomez');
       setFiscalYear(2025);
+      setLoadedReturnStatus('En Revisión');
       setSales([
         { date: '2025-04-12', netAmount: '12400000', isExempt: false },
         { date: '2025-07-20', netAmount: '150000', isExempt: true }
@@ -689,6 +702,7 @@ export default function WizardPage() {
         initialCuitRef.current = targetReturn.cuit;
         setClientName(targetReturn.clientName);
         setFiscalYear(targetReturn.year);
+        setLoadedReturnStatus(targetReturn.status);
         if (targetReturn.currentStep) {
           updateCurrentStep(Math.min(6, targetReturn.currentStep));
         }
@@ -720,6 +734,7 @@ export default function WizardPage() {
                 initialCuitRef.current = data.cuit;
               }
               if (data.clientName) setClientName(data.clientName);
+              if (data.status) setLoadedReturnStatus(data.status);
               if (data.fiscalYear) setFiscalYear(data.fiscalYear);
               if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
               if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
@@ -810,6 +825,7 @@ export default function WizardPage() {
           if (res.success && res.data?.id) {
             const newId = res.data.id;
             setPersistedReturnId(newId);
+            setLoadedReturnStatus('Borrador');
             localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(createPayload));
             window.location.href = `/declaraciones/${newId}/wizard`;
           } else {
@@ -1825,6 +1841,19 @@ export default function WizardPage() {
 
       {/* CONTENIDO DEL WIZARD */}
       <main className="max-w-5xl mx-auto px-6 py-10 print:hidden">
+        {isLoadedReturnImmutable && (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-300" />
+              <div>
+                <p className="font-bold uppercase tracking-wider text-amber-200">DDJJ de solo lectura</p>
+                <p className="mt-1 text-xs leading-normal text-zinc-300">
+                  Esta liquidacion esta en estado {loadedReturnStatus}. Puede consultar los datos, pero no se guardaran cambios desde el wizard hasta reabrirla con motivo en el workflow.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ENVASE DE CONTENIDO (GLASSMORPHISM PANEL) */}
         <div className="bg-[#121216] border border-zinc-800 rounded-xl p-8 shadow-2xl">
@@ -4690,13 +4719,19 @@ export default function WizardPage() {
               <div className="flex justify-end gap-4 border-t border-zinc-800 pt-6">
                 <button
                   onClick={() => handleSaveAction('borrador')}
-                  className="flex items-center justify-center h-11 px-5 rounded-lg border border-zinc-700 hover:bg-zinc-800 text-zinc-300 font-semibold text-sm transition-colors cursor-pointer"
+                  disabled={isLoadedReturnImmutable}
+                  className={`flex items-center justify-center h-11 px-5 rounded-lg border border-zinc-700 text-zinc-300 font-semibold text-sm transition-colors ${
+                    isLoadedReturnImmutable ? 'cursor-not-allowed opacity-50' : 'hover:bg-zinc-800 cursor-pointer'
+                  }`}
                 >
                   Guardar como Borrador
                 </button>
                 <button
                   onClick={() => handleSaveAction('cerrar')}
-                  className="flex items-center justify-center h-11 px-5 rounded-lg bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-sm transition-colors shadow-lg shadow-teal-500/10 active:scale-[0.98] cursor-pointer"
+                  disabled={isLoadedReturnImmutable}
+                  className={`flex items-center justify-center h-11 px-5 rounded-lg bg-teal-500 text-[#09090b] font-bold text-sm transition-colors shadow-lg shadow-teal-500/10 ${
+                    isLoadedReturnImmutable ? 'cursor-not-allowed opacity-50' : 'hover:bg-teal-400 active:scale-[0.98] cursor-pointer'
+                  }`}
                 >
                   Cerrar y Bloquear Liquidación
                 </button>

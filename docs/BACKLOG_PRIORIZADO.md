@@ -634,7 +634,7 @@ Fuera de alcance por decision:
 
 ## P19 - Validacion real contra Excel en Docker
 
-Estado: Activo - primer corte automatico aplicado.
+Estado: En staging - primer corte automatico aplicado, pendiente validacion visual.
 
 Problema:
 
@@ -683,7 +683,7 @@ Criterio de cierre:
 
 ## P20 - Workflow profesional de DDJJ
 
-Estado: Pendiente.
+Estado: Activo - primer corte aplicado en `feature/p20-workflow-ddjj`.
 
 Problema:
 
@@ -696,6 +696,26 @@ Accion recomendada:
 - Bloquear edicion de cerradas salvo reapertura controlada.
 - Reemplazar borrado por archivo/anulacion.
 - Requerir motivo para reapertura/rectificativa.
+
+Avance 2026-06-08:
+
+- Se agregaron reglas puras testeadas para normalizar estados y distinguir editables/inmutables.
+- Estados inmutables operativos: `Cerrada`, `Presentada`, `Rectificada`, `Anulada`.
+- `PUT /api/declaraciones/[id]` bloquea modificaciones normales sobre DDJJ inmutables.
+- Reapertura controlada: exige `workflowAction: "reopen"` y motivo; no modifica carga en el mismo request.
+- `DELETE /api/declaraciones/[id]` queda como anulacion operativa con motivo, sin borrar fisicamente.
+- Rollback tecnico conserva borrado fisico solo con header interno `X-JABA-Rollback: true` y estado `Borrador`.
+- Dashboard pide motivo para anular y no muestra anuladas en el listado normal.
+- Wizard muestra aviso de solo lectura y bloquea guardar/cerrar si se abre manualmente una DDJJ inmutable.
+
+Verificacion 2026-06-08:
+
+- `taxReturnWorkflow.test.ts` y `taxReturnSaveFlow.test.ts`: OK, 16 tests.
+- `vitest run`: OK, 39 archivos pasados, 1 omitido, 152 tests pasados, 1 omitido.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `next build --webpack`: OK.
+- `git diff --check`: OK, solo avisos CRLF habituales de Windows.
 
 Criterio de cierre:
 

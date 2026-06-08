@@ -35,6 +35,15 @@ export type WizardAxiDynamicReconciliation = {
   movementType: 'RetiroSocio' | 'AporteCapital' | 'Otro';
 };
 
+export function isMissingIpcWarning(warning: string): boolean {
+  const normalized = warning
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  return normalized.includes('axi estatico') && normalized.includes('indices ipc');
+}
+
 function asPositiveNumberString(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null;
   const normalized = String(value).replace(',', '.');

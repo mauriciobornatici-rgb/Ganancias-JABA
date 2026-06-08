@@ -4,6 +4,26 @@ Ultima actualizacion: 2026-06-08
 
 ## Entrada reciente
 
+### 2026-06-08 - Hotfix UX IPC en Paso 6
+
+- El usuario reporto que, aun revisando Parametros Manuales 2024, seguia apareciendo el aviso: `AXI Estatico: No se encontraron indices IPC validos de enero y/o diciembre`.
+- Se confirmo que Parametros Manuales no edita IPC; solo deducciones y topes. El editor de IPC operativo esta dentro de la liquidacion, en Paso 5 > Ajuste por Inflacion (AXI).
+- Causa raiz de UX: el aviso de Paso 6 no indicaba la ubicacion correcta ni permitia saltar directo al editor, por lo que era facil intentar corregirlo desde la pantalla equivocada.
+- Cambios aplicados:
+  - `isMissingIpcWarning` detecta la advertencia especifica de IPC faltante;
+  - Paso 6 muestra boton `Ir a cargar IPC en AXI`;
+  - el texto del aviso explica que debe cargarse en Paso 5 > AXI > Editor de Indices IPC;
+  - al guardar IPC se invalida el preview backend anterior para recalcular con los valores actualizados.
+- Verificacion ejecutada:
+  - `vitest run src/domain/ganancias/tests/wizardCalculationParams.test.ts`: OK, 5 tests;
+  - `tsc --noEmit`: OK;
+  - `vitest run`: OK, 36 archivos y 136 tests;
+  - `scripts/check-deployment-db-safety.mjs`: OK;
+  - `next build --webpack`: OK.
+- Pendiente:
+  - commit/push a `main`;
+  - validar en produccion el flujo Paso 6 > boton > Paso 5 AXI > Guardar Indices > Paso 6 sin aviso.
+
 ### 2026-06-08 - Hotfix produccion parametros, AXI y deducciones
 
 - El usuario reporto problemas observados directamente en produccion:

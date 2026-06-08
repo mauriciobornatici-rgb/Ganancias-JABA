@@ -35,7 +35,7 @@ Criterio de cierre:
 
 ## P28 - Hotfix produccion parametros, AXI y deducciones
 
-Estado: Resuelto y publicado en `main` con commit `09f3e2b fix: corregir parametros axi y deducciones`.
+Estado: Resuelto y publicado en `main` con commit `09f3e2b fix: corregir parametros axi y deducciones`. Cierre UX ampliado implementado, pendiente de commit/push.
 
 Problema:
 
@@ -52,6 +52,8 @@ Accion aplicada:
 - Normalizacion de coma decimal en IPC.
 - AXI estatico ignora IPC cero y evita `Infinity`/`-0`.
 - Retiro/aporte neto se calcula y muestra con signo.
+- Aviso de IPC faltante en Paso 6 guia directo a Paso 5 > AXI y aclara que no se corrige desde Parametros Manuales.
+- Guardar IPC invalida el preview backend anterior para recalcular con los valores vigentes.
 
 Criterio de cierre:
 
@@ -69,6 +71,7 @@ Verificacion:
 - Lint focalizado: OK.
 - `check-deployment-db-safety`: OK.
 - `next build --webpack`: OK.
+- Cierre UX IPC: test focal OK, `tsc --noEmit` OK, `vitest run` OK con 136 tests, `check-deployment-db-safety` OK y `next build --webpack` OK.
 
 ## P1 - Reducir riesgo operativo del wizard
 

@@ -34,6 +34,7 @@ import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purc
 import {
   buildWizardAxiDynamicReconciliation,
   buildWizardEffectiveCalculationParams,
+  isMissingIpcWarning,
   normalizeWizardIpcValue,
 } from '@/domain/ganancias/presentation/wizardCalculationParams';
 import {
@@ -1451,6 +1452,7 @@ export default function WizardPage() {
   const calculationResult = backendPreview?.key === calculationRequestKey
     ? backendPreview.result
     : localCalculationResult;
+  const hasMissingIpcWarning = calculationResult?.warnings.some(isMissingIpcWarning) ?? false;
 
   const dynamicPatrimonioInicio = sumTotalActivo - sumTotalPasivo;
 
@@ -1639,6 +1641,8 @@ export default function WizardPage() {
     .then(res => {
       if (res.success) {
         alert('Índices IPC guardados con éxito.');
+        setBackendPreview(null);
+        setBackendPreviewError(null);
         setParamRefetchTrigger(prev => prev + 1);
       } else {
         alert('Error al guardar índices: ' + res.error);
@@ -4312,10 +4316,29 @@ export default function WizardPage() {
                 {/* Mostrar Alertas del Contador Virtual */}
                 {calculationResult.warnings.length > 0 && (
                   <div className="p-4 rounded-lg bg-red-500/5 border border-red-500/20 space-y-2">
-                    <div className="flex items-center gap-2 text-red-400 text-xs font-bold uppercase tracking-wider">
-                      <AlertTriangle className="h-4 w-4" />
-                      Inconsistencias y Advertencias de AFIP Alertadas
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="flex items-center gap-2 text-red-400 text-xs font-bold uppercase tracking-wider">
+                        <AlertTriangle className="h-4 w-4" />
+                        Inconsistencias y Advertencias de AFIP Alertadas
+                      </div>
+                      {hasMissingIpcWarning && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateCurrentStep(5);
+                            setActiveSubTab('axi');
+                          }}
+                          className="self-start rounded-md border border-teal-500/30 bg-teal-500/10 px-3 py-2 text-[10px] font-extrabold uppercase tracking-wider text-teal-300 hover:bg-teal-500/20 transition-colors"
+                        >
+                          Ir a cargar IPC en AXI
+                        </button>
+                      )}
                     </div>
+                    {hasMissingIpcWarning && (
+                      <p className="text-[11px] leading-relaxed text-zinc-300">
+                        Este aviso no se corrige desde Parámetros Manuales. Cargue o confirme Diciembre anterior, Enero y Diciembre en Paso 5 &gt; Ajuste por Inflación (AXI) &gt; Editor de Índices IPC, y luego presione Guardar Índices.
+                      </p>
+                    )}
                     <ul className="list-disc pl-5 text-xs text-zinc-400 space-y-1">
                       {calculationResult.warnings.map((w, idx) => (
                         <li key={idx} className="leading-relaxed">{w}</li>

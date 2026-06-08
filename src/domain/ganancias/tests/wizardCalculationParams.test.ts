@@ -3,6 +3,7 @@ import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMappe
 import {
   buildWizardAxiDynamicReconciliation,
   buildWizardEffectiveCalculationParams,
+  isMissingIpcWarning,
   normalizeWizardIpcValue,
 } from '../presentation/wizardCalculationParams';
 
@@ -74,6 +75,11 @@ describe('wizardCalculationParams', () => {
   it('normaliza coma decimal en indices cargados por pantalla', () => {
     expect(normalizeWizardIpcValue('4261,5324')).toBe('4261.5324');
     expect(normalizeWizardIpcValue('sin-dato')).toBe('0');
+  });
+
+  it('detecta la advertencia especifica de IPC faltante para guiar al usuario al editor AXI', () => {
+    expect(isMissingIpcWarning('AXI Estatico: No se encontraron indices IPC validos de enero y/o diciembre.')).toBe(true);
+    expect(isMissingIpcWarning('Consumo elevado por variacion patrimonial.')).toBe(false);
   });
 
   it('calcula retiro/aporte neto como capital teorico menos capital real con signo', () => {

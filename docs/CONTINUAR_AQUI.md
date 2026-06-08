@@ -9,7 +9,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `main`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: hotfix produccion parametros/AXI/deducciones publicado en `main`.
+- Ultimo checkpoint documentado: hotfix UX IPC en Paso 6 pendiente de publicacion.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -67,6 +67,29 @@ Pendiente inmediato:
 
 - Esperar/confirmar deploy automatico de Vercel desde `main`.
 - Probar en produccion: guardar indices, revisar AXI, revisar deducciones.
+
+### Hotfix UX IPC - Aviso accionable en Paso 6
+
+Estado: implementado y verificado localmente, pendiente de commit/push.
+
+Origen:
+
+- El usuario intento corregir el aviso de IPC desde Parametros Manuales, pero esa ventana solo edita deducciones/topes.
+- El editor real de IPC esta dentro de la liquidacion: Paso 5 > Ajuste por Inflacion (AXI) > Editor de Indices IPC.
+
+Cambios aplicados:
+
+- El aviso de IPC faltante en Paso 6 ahora muestra un boton para ir directo a Paso 5 > AXI.
+- El aviso aclara que no se corrige desde Parametros Manuales.
+- Al guardar indices IPC se invalida el preview backend anterior para forzar recalculo con los valores vigentes.
+
+Verificacion ejecutada:
+
+- `vitest run src/domain/ganancias/tests/wizardCalculationParams.test.ts`: OK, 5 tests.
+- `tsc --noEmit`: OK.
+- `vitest run`: OK, 36 archivos y 136 tests.
+- `check-deployment-db-safety`: OK.
+- `next build --webpack`: OK.
 
 ### Parentesis - Instructivo de carga del caso Excel/capturas
 

@@ -9,8 +9,8 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `main`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: base Docker local de pruebas.
-- Fase activa: Base de datos productiva para persistir declaraciones, cargas y soportes.
+- Ultimo checkpoint documentado: plan App 10/10.
+- Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
 - Estado de uso: listo para iniciar piloto controlado, con salvedad de validar visualmente el caso real de capturas nuevas en navegador.
@@ -30,6 +30,38 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 11. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P18-P27 - Plan App 10/10
+
+Estado: planificado y registrado.
+
+Objetivo inmediato:
+
+- Ordenar todas las mejoras necesarias para que la app quede profesional, segura, auditable y validada.
+- Evitar frentes sueltos.
+- Registrar nuevos hallazgos como `Pxx` con criterio de cierre.
+
+Documentos creados:
+
+- `docs/PLAN_APP_10_10.md`.
+- `docs/superpowers/plans/2026-06-08-app-10-10.md`.
+
+Orden recomendado:
+
+1. P18 - Autenticacion y proteccion de acceso.
+2. P19 - Validacion real contra Excel en Docker.
+3. P20 - Workflow profesional de DDJJ.
+4. P21 - Backup/restauracion y salud operativa.
+5. P22 - Adjuntos, soportes y paquete final.
+6. P23 - Parametros fiscales, tipos de cambio y casos especiales.
+7. P24 - Calidad tecnica y mantenibilidad.
+8. P25 - UX 10/10 y controles por pantalla.
+9. P26 - E2E y prueba visual.
+10. P27 - Produccion controlada.
+
+Proximo frente recomendado:
+
+- P18 - Autenticacion y proteccion de acceso, porque la app ya esta publicada en Vercel.
 
 ### P17 - Base Docker local de pruebas
 
@@ -419,6 +451,8 @@ Siguiente corte recomendado:
 
 - Registro historico largo: `docs/REGISTRO_PROYECTO.md`.
 - Backlog ordenado: `docs/BACKLOG_PRIORIZADO.md`.
+- Plan App 10/10: `docs/PLAN_APP_10_10.md`.
+- Plan tecnico App 10/10: `docs/superpowers/plans/2026-06-08-app-10-10.md`.
 - Procedimiento obligatorio de desarrollo seguro: `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
 - Base Docker de pruebas: `docs/BASE_DOCKER_PRUEBAS.md`.
 - Flujo seguro de deploy: `docs/FLUJO_SEGURO_DEPLOY.md`.

@@ -531,6 +531,208 @@ Regla permanente:
 - No usar la base productiva de Hostinger para pruebas locales.
 - Preferir `npm run dev:testdb` sobre `npm run dev` durante desarrollo.
 
+## P18 - Autenticacion y proteccion de acceso
+
+Estado: Siguiente.
+
+Problema:
+
+- La app ya esta publicada en Vercel.
+- Existen modelos `User`, `Role` y permisos, pero no se observa login/middleware activo.
+- Sin autenticacion, clientes, CUITs y DDJJ podrian quedar expuestos si el dominio es accesible.
+
+Accion recomendada:
+
+- Implementar login, logout y sesion.
+- Proteger paginas y APIs.
+- Crear usuario administrador inicial sin commitear password real.
+- Registrar usuario real en auditoria.
+
+Criterio de cierre:
+
+- Usuario no autenticado no puede acceder al dashboard ni APIs de datos.
+- Usuario autenticado puede operar normalmente.
+- Acciones criticas guardan `userId`.
+- Tests de auth y acceso verdes.
+
+## P19 - Validacion real contra Excel en Docker
+
+Estado: Pendiente.
+
+Problema:
+
+- El desarrollo tecnico esta avanzado, pero falta validar una DDJJ real completa contra la planilla usada profesionalmente.
+
+Accion recomendada:
+
+- Cargar caso real en Docker.
+- Guardar, reabrir y comparar con Excel.
+- Validar wizard, papel de trabajo, informe cliente y legajo PDF.
+- Registrar diferencias si aparecen.
+
+Criterio de cierre:
+
+- Caso real coincide o diferencias quedan explicadas y resueltas/documentadas.
+- Checklist piloto completo.
+
+## P20 - Workflow profesional de DDJJ
+
+Estado: Pendiente.
+
+Problema:
+
+- Una herramienta profesional debe evitar cambios accidentales sobre DDJJ cerradas.
+- El borrado definitivo normal es riesgoso.
+
+Accion recomendada:
+
+- Formalizar estados: Borrador, En revision, Cerrada, Presentada, Rectificativa.
+- Bloquear edicion de cerradas salvo reapertura controlada.
+- Reemplazar borrado por archivo/anulacion.
+- Requerir motivo para reapertura/rectificativa.
+
+Criterio de cierre:
+
+- DDJJ cerrada queda protegida.
+- Cambios criticos dejan auditoria.
+- No hay borrado destructivo como camino normal.
+
+## P21 - Backups, restauracion y salud operativa
+
+Estado: Pendiente.
+
+Problema:
+
+- La base productiva conserva datos reales y debe poder recuperarse.
+
+Accion recomendada:
+
+- Documentar backup Hostinger.
+- Probar restauracion en Docker.
+- Crear health check de DB.
+- Registrar fecha, archivo y resultado.
+
+Criterio de cierre:
+
+- Backup descargado y restauracion probada fuera de produccion.
+- Health check operativo.
+
+## P22 - Adjuntos, soportes y paquete final
+
+Estado: Pendiente.
+
+Problema:
+
+- La DDJJ necesita expediente completo: archivos AFIP, comprobantes, legajo, informe y papel de trabajo.
+
+Accion recomendada:
+
+- Implementar adjuntos con `Attachment` y `AttachmentBlob`.
+- Guardar/listar/descargar soportes.
+- Generar paquete final por DDJJ.
+
+Criterio de cierre:
+
+- Una DDJJ puede descargarse con soporte completo y auditable.
+
+## P23 - Parametros fiscales, tipos de cambio y casos especiales
+
+Estado: Pendiente.
+
+Problema:
+
+- Para uso productivo, parametros, indices, tipos de cambio y casos fiscales especiales deben quedar versionados y probados.
+
+Accion recomendada:
+
+- Validar parametros oficiales.
+- Mapear tipos de cambio.
+- Agregar tests de casos especiales.
+- Bloquear parametros usados por DDJJ cerradas.
+
+Criterio de cierre:
+
+- Cada DDJJ conserva version de parametros usada.
+- Tipos de cambio quedan incorporados si aplican.
+- Casos especiales tienen fixtures/tests.
+
+## P24 - Calidad tecnica y mantenibilidad
+
+Estado: Pendiente.
+
+Problema:
+
+- `eslint` global sigue pendiente.
+- `src/app/page.tsx` concentra mucha UI/logica y usa `any`.
+
+Accion recomendada:
+
+- Hacer pasar `eslint` global.
+- Dividir dashboard en componentes/hooks.
+- Tipar respuestas principales.
+- Mantener tests/build verdes.
+
+Criterio de cierre:
+
+- `npm run lint` verde.
+- Dashboard mas mantenible.
+- Sin regresion funcional.
+
+## P25 - UX 10/10 y controles por pantalla
+
+Estado: Pendiente.
+
+Problema:
+
+- Antes de cerrar una DDJJ, el usuario necesita saber claramente que falta o que no cuadra.
+
+Accion recomendada:
+
+- Crear semaforo/checklist de cierre.
+- Mostrar bloqueos, advertencias y OK.
+- Mejorar previsualizacion de importaciones y mensajes de error.
+
+Criterio de cierre:
+
+- El usuario puede cerrar solo si la DDJJ esta lista o acepta conscientemente advertencias permitidas.
+
+## P26 - E2E y prueba visual
+
+Estado: Pendiente.
+
+Problema:
+
+- Falta prueba automatizada del flujo real de navegador.
+
+Accion recomendada:
+
+- Agregar Playwright o herramienta equivalente.
+- Probar login, cliente, DDJJ, carga, guardado, reapertura y legajo.
+- Ejecutar siempre contra Docker.
+
+Criterio de cierre:
+
+- Flujo critico automatizado y reproducible.
+
+## P27 - Produccion controlada
+
+Estado: Pendiente.
+
+Problema:
+
+- El paso a produccion debe seguir checklist estricto para no romper la app ni la DB.
+
+Accion recomendada:
+
+- Checklist final pre-produccion.
+- Verificar Vercel, backup, CI, auth, caso piloto y health.
+- Publicar desde `main`.
+- Verificar post-deploy sin modificar datos.
+
+Criterio de cierre:
+
+- App productiva validada con control y evidencia.
+
 ## Cierre de desarrollo tecnico
 
 Estado: 100% tecnico MVP al 2026-06-02.

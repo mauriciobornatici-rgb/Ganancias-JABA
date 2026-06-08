@@ -4,6 +4,27 @@ Ultima actualizacion: 2026-06-07
 
 ## Entrada reciente
 
+### 2026-06-08 - Plan App 10/10
+
+- El usuario solicito un plan para cubrir todas las cuestiones necesarias para que la app quede 10/10 y registrar tambien las que surjan conforme se avance.
+- Se creo `docs/PLAN_APP_10_10.md` como roadmap ejecutivo.
+- Se creo `docs/superpowers/plans/2026-06-08-app-10-10.md` como plan tecnico por tareas.
+- Se actualizaron `docs/CONTINUAR_AQUI.md` y `docs/BACKLOG_PRIORIZADO.md`.
+- Se definio el orden P18-P27:
+  - P18 autenticacion y proteccion de acceso;
+  - P19 validacion real contra Excel en Docker;
+  - P20 workflow profesional de DDJJ;
+  - P21 backup/restauracion y salud operativa;
+  - P22 adjuntos, soportes y paquete final;
+  - P23 parametros fiscales, tipos de cambio y casos especiales;
+  - P24 calidad tecnica y mantenibilidad;
+  - P25 UX 10/10 y controles por pantalla;
+  - P26 E2E y prueba visual;
+  - P27 produccion controlada.
+- Proximo frente recomendado: P18, porque la app ya esta publicada en Vercel y no se observo login/middleware activo.
+- Regla para nuevos hallazgos: todo nuevo problema o mejora se registra como `Pxx` con problema, impacto, accion, criterio de cierre, verificacion y commit asociado.
+- Decision de continuidad: no abrir mejoras sueltas fuera del backlog, salvo urgencia registrada.
+
 ### 2026-06-07 - P17 base Docker local de pruebas
 
 - Se configuro una base MySQL de pruebas local con Docker Desktop para simular persistencia sin tocar Hostinger.

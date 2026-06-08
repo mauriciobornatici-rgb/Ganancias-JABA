@@ -26,6 +26,15 @@ Ultima actualizacion: 2026-06-08
   - `npm run db:test:up`: OK;
   - `npm run db:test:migrate`: OK, sin migraciones pendientes;
   - `npm run db:test:validate:excel`: OK, 1 test.
+- Verificacion HTTP local adicional contra Docker:
+  - se intento usar el navegador integrado, pero fallo por runtime/sandbox Windows;
+  - no habia Playwright instalado localmente, por lo que no se obtuvieron screenshots;
+  - se detuvo el servidor dev ambiguo que estaba en `localhost:3000`;
+  - se levanto temporalmente Next contra `mysql://jaba_test:***@127.0.0.1:3317/ganancias_jaba_test`;
+  - login dev: HTTP 200;
+  - dashboard: HTTP 200 y contiene `Consola de Liquidacion`;
+  - `/api/declaraciones`: HTTP 200;
+  - resultado API: 1 DDJJ Lobato 2024 encontrada en Docker.
 - Resultado:
   - el caso Lobato 2024 se guarda, recalcula y reabre desde la base Docker con los totales esperados de CMV, AXI, resultado, patrimonio, consumo y JVP.
 - Pendiente:

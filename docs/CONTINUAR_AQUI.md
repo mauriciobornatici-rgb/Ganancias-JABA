@@ -56,12 +56,18 @@ Verificacion ejecutada:
 - `npm run db:test:up`: OK.
 - `npm run db:test:migrate`: OK, sin migraciones pendientes.
 - `npm run db:test:validate:excel`: OK, 1 test.
+- Smoke HTTP local contra Docker: OK.
+  - Login dev: HTTP 200.
+  - Dashboard: HTTP 200 y contiene `Consola de Liquidacion`.
+  - `/api/declaraciones`: HTTP 200.
+  - Base Docker: 1 DDJJ encontrada para `Lobato Francisco` periodo 2024.
 
 Pendiente para cerrar P19:
 
 - Probar visualmente el wizard con `npm run dev:testdb`.
 - Revisar papel de trabajo, informe cliente y legajo PDF contra los mismos totales.
 - Registrar diferencias si aparecen en UI/exportaciones.
+- Nota: el navegador integrado fallo por runtime/sandbox Windows y no habia Playwright instalado localmente; se realizo smoke HTTP como fallback sin screenshots.
 
 ## Ultima unidad cerrada
 

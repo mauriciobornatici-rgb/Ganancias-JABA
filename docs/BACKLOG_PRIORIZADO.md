@@ -659,12 +659,18 @@ Avance 2026-06-08:
 - Se agrego `npm run db:test:validate:excel`.
 - La validacion Docker guarda, recalcula y reabre Lobato 2024 en `ganancias_jaba_test`.
 - Verificacion ejecutada: `npm run db:test:validate:excel` OK con 1 test.
+- Smoke HTTP local contra Docker ejecutado:
+  - login dev OK;
+  - dashboard OK;
+  - `/api/declaraciones` OK;
+  - se encontro 1 DDJJ Lobato 2024 en la base Docker.
 
 Pendiente:
 
 - Probar visualmente el wizard con `npm run dev:testdb`.
 - Revisar papel de trabajo, informe cliente y legajo PDF contra los mismos totales.
 - Registrar diferencias si aparecen en UI/exportaciones.
+- Resolver/retomar validacion visual cuando el navegador integrado o Playwright esten disponibles.
 
 Criterio de cierre:
 

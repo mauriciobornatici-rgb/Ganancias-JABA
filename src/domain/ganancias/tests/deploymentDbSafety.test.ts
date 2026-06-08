@@ -53,9 +53,26 @@ describe('evaluateDeploymentDatabaseSafety', () => {
       VERCEL_ENV: 'production',
       VERCEL_GIT_COMMIT_REF: 'main',
       DATABASE_URL: productionDatabaseUrl,
+      AUTH_PASSWORD: 'ClaveProduccionSegura!',
+      AUTH_SECRET: 'secreto-largo-produccion-para-firmar-sesion',
     });
 
     expect(result.ok).toBe(true);
+  });
+
+  it('bloquea Vercel Production si falta la configuracion de autenticacion', async () => {
+    const { evaluateDeploymentDatabaseSafety } = await loadSafetyModule();
+
+    const result = evaluateDeploymentDatabaseSafety({
+      VERCEL: '1',
+      VERCEL_ENV: 'production',
+      VERCEL_GIT_COMMIT_REF: 'main',
+      DATABASE_URL: productionDatabaseUrl,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('AUTH_PASSWORD');
+    expect(result.message).toContain('AUTH_SECRET');
   });
 
   it('permite Preview sin DATABASE_URL para evitar tocar la base real', async () => {

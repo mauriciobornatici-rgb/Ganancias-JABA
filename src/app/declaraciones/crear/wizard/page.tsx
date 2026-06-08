@@ -14,6 +14,7 @@ import {
   CheckCircle,
   FileSpreadsheet,
   DollarSign,
+  LogOut,
   Printer
 } from 'lucide-react';
 import Link from 'next/link';
@@ -31,6 +32,10 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
 import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
+import {
+  WIZARD_UNSAVED_EXIT_MESSAGE,
+  shouldWarnBeforeWizardExit,
+} from '@/domain/ganancias/presentation/wizardExitGuard';
 import {
   buildWizardAxiDynamicReconciliation,
   buildWizardEffectiveCalculationParams,
@@ -1453,6 +1458,36 @@ export default function WizardPage() {
     ? backendPreview.result
     : localCalculationResult;
   const hasMissingIpcWarning = calculationResult?.warnings.some(isMissingIpcWarning) ?? false;
+  const hasStartedDeclaration = Boolean(clientName.trim() || cuit.trim() || currentStep > 1 || activeReturnId);
+  const isWizardPersisting = showSaveModal || modalLoading || isLoadingData;
+  const shouldConfirmWizardExit = shouldWarnBeforeWizardExit({
+    hasStartedDeclaration,
+    isPersisting: isWizardPersisting,
+  });
+
+  useEffect(() => {
+    if (!shouldConfirmWizardExit) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = WIZARD_UNSAVED_EXIT_MESSAGE;
+      return WIZARD_UNSAVED_EXIT_MESSAGE;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [shouldConfirmWizardExit]);
+
+  const handleWizardLogout = async () => {
+    if (shouldConfirmWizardExit && !window.confirm(`${WIZARD_UNSAVED_EXIT_MESSAGE}\n\nSi sale ahora, la base conservara el ultimo borrador guardado. ¿Desea cerrar sesion igualmente?`)) {
+      return;
+    }
+
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  };
 
   const dynamicPatrimonioInicio = sumTotalActivo - sumTotalPasivo;
 
@@ -1711,6 +1746,15 @@ export default function WizardPage() {
               <Sparkles className="h-3.5 w-3.5" />
             </div>
             <span className="text-xs font-bold text-zinc-300">Asistente de Liquidación JABA</span>
+            <button
+              type="button"
+              onClick={handleWizardLogout}
+              className="ml-2 flex h-8 items-center gap-1.5 rounded-lg border border-zinc-800 px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400 transition-colors hover:border-red-500/30 hover:text-red-300"
+              title="Cerrar sesion"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Salir</span>
+            </button>
           </div>
 
           <div className="text-xs text-zinc-500 font-semibold">

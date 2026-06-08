@@ -48,6 +48,12 @@ const buildResult = (ok, message) => ({
   message,
 });
 
+const hasConfiguredSecret = (value) => {
+  if (!value) return false;
+  const normalized = trimQuotes(value.trim());
+  return normalized.length > 0 && !normalized.toUpperCase().includes('REEMPLAZAR');
+};
+
 export const evaluateDeploymentDatabaseSafety = (env = process.env) => {
   const vercelEnv = env.VERCEL_ENV ?? '';
   const isVercel = env.VERCEL === '1' || vercelEnv.length > 0;
@@ -69,6 +75,10 @@ export const evaluateDeploymentDatabaseSafety = (env = process.env) => {
 
     if (!databaseUrl) {
       return buildResult(false, 'Vercel Production requiere DATABASE_URL configurada.');
+    }
+
+    if (!hasConfiguredSecret(env.AUTH_PASSWORD) || !hasConfiguredSecret(env.AUTH_SECRET)) {
+      return buildResult(false, 'Vercel Production requiere AUTH_PASSWORD y AUTH_SECRET configurados antes de publicar autenticacion.');
     }
 
     return buildResult(true, 'Vercel Production validado.');

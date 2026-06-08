@@ -4,6 +4,40 @@ Ultima actualizacion: 2026-06-08
 
 ## Entrada reciente
 
+### 2026-06-08 - P18 integracion segura de autenticacion sobre main actual
+
+- El usuario pidio realizar todas las correcciones y adaptaciones necesarias para no pisar ni romper la app productiva, que quedo funcionando luego de los hotfixes recientes.
+- Se evito mergear `feature/auth-simple` completo porque estaba basado antes de los hotfixes de AXI/IPC/deducciones.
+- Se creo la rama `integrate/auth-simple-safe-main` desde `main`.
+- Se incorporaron solo los archivos necesarios de autenticacion:
+  - middleware;
+  - login/logout;
+  - helper de cookie firmada;
+  - sanitizacion de redirect;
+  - tests de auth;
+  - placeholders de variables en `.env.example` y `.env.docker.example`.
+- Se agrego boton `Salir` en dashboard y wizard.
+- Se agrego `wizardExitGuard` para advertir antes de salir/refrescar una liquidacion iniciada.
+- Se agrego confirmacion al cerrar sesion desde el wizard si hay carga iniciada.
+- Se agrego guarda en `scripts/check-deployment-db-safety.mjs`: Vercel Production bloquea build si faltan `AUTH_PASSWORD` o `AUTH_SECRET`.
+- TDD ejecutado:
+  - `wizardExitGuard.test.ts` fallo inicialmente porque faltaba el helper;
+  - `deploymentDbSafety.test.ts` fallo inicialmente porque Production permitia auth sin variables.
+- Verificacion ejecutada:
+  - `vitest run src/domain/ganancias/tests/wizardExitGuard.test.ts src/domain/ganancias/tests/simpleAuth.test.ts`: OK, 8 tests;
+  - `vitest run src/domain/ganancias/tests/deploymentDbSafety.test.ts src/domain/ganancias/tests/simpleAuth.test.ts src/domain/ganancias/tests/wizardExitGuard.test.ts`: OK, 16 tests;
+  - `vitest run`: OK, 38 archivos y 145 tests;
+  - `tsc --noEmit`: OK;
+  - `prisma validate --schema prisma/schema.prisma`: OK;
+  - `scripts/check-deployment-db-safety.mjs`: OK en entorno local;
+  - `next build --webpack`: OK;
+  - lint focalizado en archivos nuevos/pequenos de auth/guardas: OK;
+  - lint incluyendo `src/app/page.tsx` y wizard completo: falla por deuda previa ya registrada (`any`, hooks y warnings historicos), no por los archivos nuevos de auth.
+- Pendiente antes de publicar:
+  - commit/push de la rama segura;
+  - configurar `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production;
+  - recien despues mergear/publicar en `main`.
+
 ### 2026-06-08 - Hotfix UX IPC en Paso 6
 
 - El usuario reporto que, aun revisando Parametros Manuales 2024, seguia apareciendo el aviso: `AXI Estatico: No se encontraron indices IPC validos de enero y/o diciembre`.

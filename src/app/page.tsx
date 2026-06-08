@@ -19,7 +19,8 @@ import {
   FileSpreadsheet,
   Upload,
   Trash2,
-  Edit2
+  Edit2,
+  LogOut
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -483,6 +484,11 @@ export default function Home() {
     return matchesSearch;
   });
 
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login';
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200 font-sans">
       
@@ -536,6 +542,14 @@ export default function Home() {
               JB
             </div>
             <span className="text-sm font-medium hidden md:inline text-zinc-300">JABA Contabilidad</span>
+            <button
+              onClick={handleLogout}
+              className="ml-2 flex h-8 items-center gap-1.5 rounded-lg border border-zinc-800 px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400 transition-colors hover:border-red-500/30 hover:text-red-300"
+              title="Cerrar sesion"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Salir</span>
+            </button>
           </div>
         </div>
       </header>

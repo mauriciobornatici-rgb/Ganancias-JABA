@@ -6,14 +6,14 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `main`.
+- Rama activa: `integrate/auth-simple-safe-main`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: hotfix UX IPC en Paso 6 pendiente de publicacion.
+- Ultimo checkpoint documentado: P18 autenticacion simple integrada sobre `main` actual, pendiente de publicacion controlada.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: listo para iniciar piloto controlado, con salvedad de validar visualmente el caso real de capturas nuevas en navegador.
+- Estado de uso: produccion sigue estable en `main`; autenticacion esta en rama segura y no debe publicarse sin variables de Vercel.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos
@@ -32,6 +32,39 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 12. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Ultima unidad cerrada
+
+### P18 - Autenticacion simple integrada sin pisar hotfixes
+
+Estado: en rama `integrate/auth-simple-safe-main`, pendiente de commit/push y publicacion controlada.
+
+Objetivo:
+
+- Proteger la app publicada con clave simple sin incorporar la rama vieja completa ni revertir los hotfixes de AXI/IPC/deducciones.
+- Evitar que un deploy de autenticacion deje produccion inaccesible por falta de variables en Vercel.
+- Evitar perdida accidental de carga en curso al cerrar sesion o refrescar el wizard.
+
+Cambios aplicados:
+
+- Se incorporaron middleware, login, logout, cookie firmada y tests de auth desde `feature/auth-simple`.
+- Se agrego boton `Salir` en dashboard y wizard.
+- El wizard advierte antes de cerrar/refrescar si hay una liquidacion iniciada.
+- El logout del wizard pide confirmacion cuando hay carga en curso.
+- `check-deployment-db-safety` bloquea Vercel Production si faltan `AUTH_PASSWORD` o `AUTH_SECRET`.
+
+Verificacion ejecutada:
+
+- `vitest run`: OK, 38 archivos y 145 tests.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `check-deployment-db-safety`: OK en entorno local.
+- `next build --webpack`: OK.
+- Lint focalizado en archivos nuevos/pequenos de auth/guardas: OK.
+- Lint incluyendo `src/app/page.tsx` y wizard completo: falla por deuda previa ya registrada, no por los archivos nuevos de auth.
+
+Pendiente inmediato:
+
+- Configurar `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production antes de mergear a `main`.
+- Publicar solo cuando el deploy pueda pasar la guarda.
 
 ### Hotfix produccion - Parametros, AXI y deducciones
 

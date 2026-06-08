@@ -573,7 +573,7 @@ Regla permanente:
 
 ## P18 - Autenticacion y proteccion de acceso
 
-Estado: Siguiente.
+Estado: Activo - integrado y verificado en rama segura `integrate/auth-simple-safe-main`, pendiente de variables en Vercel y publicacion controlada.
 
 Problema:
 
@@ -581,19 +581,46 @@ Problema:
 - Existen modelos `User`, `Role` y permisos, pero no se observa login/middleware activo.
 - Sin autenticacion, clientes, CUITs y DDJJ podrian quedar expuestos si el dominio es accesible.
 
-Accion recomendada:
+Decision 2026-06-08:
 
-- Implementar login, logout y sesion.
-- Proteger paginas y APIs.
-- Crear usuario administrador inicial sin commitear password real.
-- Registrar usuario real en auditoria.
+- Seguridad simple para uso personal: clave unica, cookie firmada y middleware.
+- Multiusuario, roles, permisos y auditoria por usuario quedan para etapa posterior.
+
+Accion aplicada:
+
+- Login en `/login`.
+- Logout en dashboard y wizard.
+- APIs `POST /api/auth/login`, `POST /api/auth/logout` y `GET /api/auth/logout`.
+- Middleware protege paginas y APIs por defecto.
+- Cookie `jaba_auth` firmada, `HttpOnly`, `SameSite=Lax`, 12 horas.
+- Sanitizacion de `next` para evitar redirecciones externas.
+- Guarda de deploy: Vercel Production bloquea si faltan `AUTH_PASSWORD` o `AUTH_SECRET`.
+- Wizard advierte antes de cerrar/refrescar y confirma antes de cerrar sesion con carga iniciada.
 
 Criterio de cierre:
 
 - Usuario no autenticado no puede acceder al dashboard ni APIs de datos.
 - Usuario autenticado puede operar normalmente.
-- Acciones criticas guardan `userId`.
 - Tests de auth y acceso verdes.
+- Build de produccion verde.
+- Vercel Production tiene `AUTH_PASSWORD` y `AUTH_SECRET` antes de publicar.
+- No se revierten hotfixes recientes de AXI/IPC/deducciones.
+
+Verificacion 2026-06-08:
+
+- `vitest run`: OK, 38 archivos y 145 tests.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `check-deployment-db-safety`: OK local.
+- `next build --webpack`: OK.
+- Lint focalizado en archivos nuevos/pequenos de auth/guardas: OK.
+- Lint de pantallas grandes sigue con deuda previa registrada.
+
+Fuera de alcance por decision:
+
+- Usuarios multiples.
+- Roles y permisos.
+- Auditoria con `userId` real.
 
 ## P19 - Validacion real contra Excel en Docker
 

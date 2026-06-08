@@ -61,6 +61,10 @@ Verificacion ejecutada:
   - Dashboard: HTTP 200 y contiene `Consola de Liquidacion`.
   - `/api/declaraciones`: HTTP 200.
   - Base Docker: 1 DDJJ encontrada para `Lobato Francisco` periodo 2024.
+- Smoke HTTP extendido contra Docker: OK.
+  - `/declaraciones/{id}/wizard`: HTTP 200.
+  - `/declaraciones/{id}/papel-de-trabajo`: HTTP 200.
+  - `/declaraciones/{id}/informe-cliente`: HTTP 200.
 
 Pendiente para cerrar P19:
 

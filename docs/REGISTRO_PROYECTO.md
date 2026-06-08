@@ -35,6 +35,12 @@ Ultima actualizacion: 2026-06-08
   - dashboard: HTTP 200 y contiene `Consola de Liquidacion`;
   - `/api/declaraciones`: HTTP 200;
   - resultado API: 1 DDJJ Lobato 2024 encontrada en Docker.
+- Verificacion HTTP extendida contra Docker:
+  - se uso la DDJJ Lobato 2024 generada por el fixture en Docker;
+  - `/declaraciones/{id}/wizard`: HTTP 200;
+  - `/declaraciones/{id}/papel-de-trabajo`: HTTP 200;
+  - `/declaraciones/{id}/informe-cliente`: HTTP 200;
+  - las tres rutas devolvieron shell/contenido identificable.
 - Resultado:
   - el caso Lobato 2024 se guarda, recalcula y reabre desde la base Docker con los totales esperados de CMV, AXI, resultado, patrimonio, consumo y JVP.
 - Pendiente:

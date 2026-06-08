@@ -664,6 +664,10 @@ Avance 2026-06-08:
   - dashboard OK;
   - `/api/declaraciones` OK;
   - se encontro 1 DDJJ Lobato 2024 en la base Docker.
+- Smoke HTTP extendido contra Docker ejecutado:
+  - wizard OK;
+  - papel de trabajo OK;
+  - informe cliente OK.
 
 Pendiente:
 

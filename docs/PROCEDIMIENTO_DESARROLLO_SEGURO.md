@@ -54,6 +54,29 @@ Abrir:
 http://localhost:3000
 ```
 
+## Validacion automatica del caso Excel/capturas
+
+Para validar el caso patron Lobato 2024 contra MySQL Docker:
+
+```powershell
+npm run db:test:up
+npm run db:test:migrate
+npm run db:test:validate:excel
+```
+
+Que cubre:
+
+- prepara el escenario 2024 en la base Docker `ganancias_jaba_test`;
+- carga el fixture documentado en `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`;
+- guarda la DDJJ usando la misma persistencia que usa la app;
+- recalcula y compara CMV, AXI, resultado, patrimonio, consumo y JVP;
+- vuelve a leer las tablas estructuradas para verificar que la reapertura conserva la carga.
+
+Regla de seguridad:
+
+- el comando falla si `DATABASE_URL` no apunta exactamente a `mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test`.
+- no se debe adaptar este comando para Hostinger produccion.
+
 ## Comandos que NO deben usarse para pruebas comunes
 
 No usar para desarrollo normal:

@@ -4,6 +4,35 @@ Ultima actualizacion: 2026-06-08
 
 ## Entrada reciente
 
+### 2026-06-08 - P19 primer corte automatico contra Docker
+
+- Se inicio el frente P19 en rama `feature/p19-validacion-excel-docker`.
+- Objetivo del corte:
+  - convertir el caso Excel/capturas Lobato 2024 en una validacion repetible;
+  - confirmar guardado, recalculo y reapertura contra MySQL Docker;
+  - no tocar Hostinger ni produccion.
+- Cambios aplicados:
+  - se agrego `src/domain/ganancias/fixtures/excelCaptureCaseFixture.ts` con el caso unico de referencia;
+  - `src/domain/ganancias/tests/simulacionUsuario.test.ts` dejo de duplicar importes y usa el fixture;
+  - se agrego `src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts`;
+  - se agrego `npm run db:test:validate:excel`;
+  - `scripts/run-test-db-command.mjs` activa `RUN_DOCKER_DB_VALIDATION=1` solo para esa validacion;
+  - se documento el comando en `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md` y `docs/GUIA_PRUEBA_PILOTO.md`.
+- Guarda de seguridad:
+  - el test exige que `DATABASE_URL` sea exactamente `mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test`;
+  - esto evita correr la validacion destructiva/recreativa contra Hostinger.
+- Verificacion ejecutada:
+  - `vitest run src/domain/ganancias/tests/simulacionUsuario.test.ts src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts`: OK, 1 archivo pasado, 1 omitido, 2 tests pasados;
+  - `npm run db:test:up`: OK;
+  - `npm run db:test:migrate`: OK, sin migraciones pendientes;
+  - `npm run db:test:validate:excel`: OK, 1 test.
+- Resultado:
+  - el caso Lobato 2024 se guarda, recalcula y reabre desde la base Docker con los totales esperados de CMV, AXI, resultado, patrimonio, consumo y JVP.
+- Pendiente:
+  - prueba visual/manual del wizard con `npm run dev:testdb`;
+  - revision de papel de trabajo, informe cliente y legajo PDF contra los mismos totales;
+  - registrar y corregir diferencias de UI/exportaciones si aparecen.
+
 ### 2026-06-08 - Cierre P18 y orden de ramas
 
 - El usuario confirmo que la autenticacion ya funciona en produccion y que aparece el boton `Salir`.

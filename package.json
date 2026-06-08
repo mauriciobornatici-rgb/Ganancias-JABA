@@ -20,6 +20,7 @@
     "db:test:migrate": "node scripts/run-test-db-command.mjs migrate",
     "db:test:seed": "node scripts/seed-test-db.mjs",
     "db:test:validate": "node scripts/run-test-db-command.mjs validate",
+    "db:test:validate:excel": "node scripts/run-test-db-command.mjs validate-excel",
     "db:test:studio": "node scripts/run-test-db-command.mjs studio",
     "dev:testdb": "node scripts/run-test-db-command.mjs dev"
   },

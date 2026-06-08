@@ -10,6 +10,7 @@ const commandMap = {
   dev: ['node_modules/next/dist/bin/next', 'dev', '--webpack'],
   studio: ['node_modules/prisma/build/index.js', 'studio', '--schema', 'prisma/schema.prisma'],
   validate: ['node_modules/prisma/build/index.js', 'validate', '--schema', 'prisma/schema.prisma'],
+  'validate-excel': ['node_modules/vitest/vitest.mjs', 'run', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts'],
 };
 
 const run = () => {
@@ -29,6 +30,7 @@ const run = () => {
       ...process.env,
       DATABASE_URL: TEST_DATABASE_URL,
       APP_ENV: 'test-db',
+      RUN_DOCKER_DB_VALIDATION: commandName === 'validate-excel' ? '1' : process.env.RUN_DOCKER_DB_VALIDATION,
     },
     shell: false,
   });

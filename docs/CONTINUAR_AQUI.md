@@ -6,14 +6,14 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama activa: `main`.
+- Rama activa: `feature/p19-validacion-excel-docker`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: P18 autenticacion simple publicada y ramas ordenadas.
+- Ultimo checkpoint documentado: P19 primer corte automatico contra Docker aplicado.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: produccion corre desde `main`; autenticacion simple activa; `main` y `staging` quedaron alineadas.
+- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en rama P19.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos
@@ -22,7 +22,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 2. Leer esta pagina completa.
 3. Abrir `docs/PROCEDIMIENTO_DESARROLLO_SEGURO.md`.
 4. Si se va a desarrollar o probar, usar `npm run dev:testdb` contra Docker, no `npm run dev`.
-5. Si se va a validar contra Excel/capturas, abrir `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
+5. Si se va a validar contra Excel/capturas, abrir `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md` y ejecutar `npm run db:test:validate:excel`.
 6. Abrir `docs/GUIA_PRUEBA_PILOTO.md`.
 7. Abrir `docs/BACKLOG_PRIORIZADO.md`.
 8. Tomar el primer item con estado `Activo` o `Siguiente`.
@@ -30,6 +30,38 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 10. Al terminar una unidad, actualizar `docs/REGISTRO_PROYECTO.md` y este archivo si cambia la prioridad.
 11. Correr verificacion fresca antes de decir que algo quedo terminado.
 12. Hacer commit y push a GitHub al cerrar cada bloque util.
+
+## Unidad activa
+
+### P19 - Validacion real contra Excel en Docker
+
+Estado: primer corte automatico aplicado en rama `feature/p19-validacion-excel-docker`.
+
+Objetivo:
+
+- Validar que el caso patron Lobato 2024 se pueda guardar, recalcular y reabrir desde MySQL Docker sin tocar Hostinger.
+- Evitar depender solo de prueba manual para saber si la app sigue cuadrando contra Excel/capturas.
+
+Cambios aplicados:
+
+- Se extrajo el caso Excel/capturas a `src/domain/ganancias/fixtures/excelCaptureCaseFixture.ts`.
+- `simulacionUsuario.test.ts` ahora usa ese fixture para evitar duplicacion de importes.
+- Se agrego `src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts`.
+- Se agrego `npm run db:test:validate:excel`.
+- El procedimiento seguro documenta el comando y la guarda de `DATABASE_URL` local.
+
+Verificacion ejecutada:
+
+- `vitest run src/domain/ganancias/tests/simulacionUsuario.test.ts src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts`: OK, 1 archivo pasado, 1 omitido, 2 tests pasados.
+- `npm run db:test:up`: OK.
+- `npm run db:test:migrate`: OK, sin migraciones pendientes.
+- `npm run db:test:validate:excel`: OK, 1 test.
+
+Pendiente para cerrar P19:
+
+- Probar visualmente el wizard con `npm run dev:testdb`.
+- Revisar papel de trabajo, informe cliente y legajo PDF contra los mismos totales.
+- Registrar diferencias si aparecen en UI/exportaciones.
 
 ## Ultima unidad cerrada
 
@@ -187,7 +219,7 @@ Orden recomendado:
 
 Proximo frente recomendado:
 
-- P18 - Autenticacion y proteccion de acceso, porque la app ya esta publicada en Vercel.
+- P19 - completar validacion visual/manual contra Docker antes de pasar a P20.
 
 ### P17 - Base Docker local de pruebas
 

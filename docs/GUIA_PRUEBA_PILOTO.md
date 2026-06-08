@@ -171,6 +171,25 @@ Comparar como minimo:
 - Saldo final.
 - JVP: columna I, columna II, consumo y diferencia.
 
+## Validacion automatica Docker del caso Excel/capturas
+
+El caso Lobato 2024 de las capturas tiene un control automatico repetible:
+
+```powershell
+npm run db:test:up
+npm run db:test:migrate
+npm run db:test:validate:excel
+```
+
+Resultado esperado:
+
+```text
+Test Files  1 passed
+Tests       1 passed
+```
+
+Esta validacion no reemplaza la prueba visual/manual del wizard, papel de trabajo, informe cliente y legajo PDF, pero confirma que la base Docker conserva los datos cargados y que los totales principales coinciden con el caso documentado.
+
 ## Criterio de cierre del piloto
 
 El piloto queda validado cuando:

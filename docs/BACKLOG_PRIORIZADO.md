@@ -634,7 +634,7 @@ Fuera de alcance por decision:
 
 ## P19 - Validacion real contra Excel en Docker
 
-Estado: Siguiente.
+Estado: Activo - primer corte automatico aplicado.
 
 Problema:
 
@@ -655,6 +655,16 @@ Avance 2026-06-08:
 - El instructivo separa valores cargables, valores calculados y controles esperados.
 - El caso coincide con `src/domain/ganancias/tests/simulacionUsuario.test.ts`.
 - Se documento la inconsistencia de fuente: Excel fisico sin datos y capturas con escenarios historicos distintos.
+- Se extrajo el caso a `src/domain/ganancias/fixtures/excelCaptureCaseFixture.ts` para evitar duplicaciones.
+- Se agrego `npm run db:test:validate:excel`.
+- La validacion Docker guarda, recalcula y reabre Lobato 2024 en `ganancias_jaba_test`.
+- Verificacion ejecutada: `npm run db:test:validate:excel` OK con 1 test.
+
+Pendiente:
+
+- Probar visualmente el wizard con `npm run dev:testdb`.
+- Revisar papel de trabajo, informe cliente y legajo PDF contra los mismos totales.
+- Registrar diferencias si aparecen en UI/exportaciones.
 
 Criterio de cierre:
 

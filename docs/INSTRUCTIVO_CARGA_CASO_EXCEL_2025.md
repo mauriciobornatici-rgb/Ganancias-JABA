@@ -456,3 +456,15 @@ Cuando los controles coincidan:
 2. Generar `Legajo de Carga (PDF)`.
 3. Revisar que el legajo muestre los mismos totales de venta, compras, patrimonio, JVP y AXI.
 4. No cerrar/bloquear si la diferencia JVP no esta en cero o si el resultado no coincide con esta guia.
+
+## Control automatico para desarrollo
+
+Antes o despues de la carga manual, el equipo puede ejecutar el control automatico contra MySQL Docker:
+
+```powershell
+npm run db:test:up
+npm run db:test:migrate
+npm run db:test:validate:excel
+```
+
+Este comando carga el mismo caso Lobato 2024 en la base local de pruebas, guarda la DDJJ, recalcula y verifica que la reapertura conserve los datos principales. No usa Hostinger produccion.

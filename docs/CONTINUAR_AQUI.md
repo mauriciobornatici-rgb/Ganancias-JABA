@@ -35,7 +35,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ### P18 - Autenticacion simple integrada sin pisar hotfixes
 
-Estado: en rama `integrate/auth-simple-safe-main`, pendiente de commit/push y publicacion controlada.
+Estado: en rama `integrate/auth-simple-safe-main`, pendiente de merge/push a `main`.
 
 Objetivo:
 
@@ -63,8 +63,11 @@ Verificacion ejecutada:
 
 Pendiente inmediato:
 
-- Configurar `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production antes de mergear a `main`.
 - Publicar solo cuando el deploy pueda pasar la guarda.
+
+Dato externo confirmado:
+
+- El usuario configuro `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production antes de publicar.
 
 ### Hotfix produccion - Parametros, AXI y deducciones
 

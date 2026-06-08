@@ -573,7 +573,7 @@ Regla permanente:
 
 ## P18 - Autenticacion y proteccion de acceso
 
-Estado: Activo - integrado y verificado en rama segura `integrate/auth-simple-safe-main`, pendiente de variables en Vercel y publicacion controlada.
+Estado: Activo - integrado y verificado en rama segura `integrate/auth-simple-safe-main`, variables de Vercel confirmadas por el usuario, pendiente de publicacion controlada.
 
 Problema:
 
@@ -615,6 +615,10 @@ Verificacion 2026-06-08:
 - `next build --webpack`: OK.
 - Lint focalizado en archivos nuevos/pequenos de auth/guardas: OK.
 - Lint de pantallas grandes sigue con deuda previa registrada.
+
+Dato externo:
+
+- El usuario confirmo que `AUTH_PASSWORD` y `AUTH_SECRET` quedaron cargadas en Vercel Production.
 
 Fuera de alcance por decision:
 

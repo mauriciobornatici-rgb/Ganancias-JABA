@@ -33,10 +33,12 @@ Ultima actualizacion: 2026-06-08
   - `next build --webpack`: OK;
   - lint focalizado en archivos nuevos/pequenos de auth/guardas: OK;
   - lint incluyendo `src/app/page.tsx` y wizard completo: falla por deuda previa ya registrada (`any`, hooks y warnings historicos), no por los archivos nuevos de auth.
+- Dato externo confirmado:
+  - el usuario configuro `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production antes de publicar.
 - Pendiente antes de publicar:
-  - commit/push de la rama segura;
-  - configurar `AUTH_PASSWORD` y `AUTH_SECRET` en Vercel Production;
-  - recien despues mergear/publicar en `main`.
+  - registrar este dato en commit;
+  - repetir verificacion final;
+  - mergear/publicar en `main`.
 
 ### 2026-06-08 - Hotfix UX IPC en Paso 6
 

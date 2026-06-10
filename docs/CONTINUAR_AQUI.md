@@ -9,7 +9,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `feature/p21-backup-health`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: P29 paridad de calculo con Excel IG 25 en curso (abierto por instruccion del usuario); P21 con primer corte aplicado pendiente de commit; P20 integrado a `staging`.
+- Ultimo checkpoint documentado: P21 y P29 commiteados (`495360c`, `e5ae003`), integrados a `staging` y publicados en `main` (`480476c`) el 2026-06-09. Confirmar tilde verde del CI en GitHub Actions.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
@@ -35,7 +35,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ### P29 - Paridad de calculo con Excel IG 25
 
-Estado: en curso sobre la rama `feature/p21-backup-health` (el arbol tenia P21 sin commitear; separar commits al cerrar).
+Estado: RESUELTO y publicado en `main` (2026-06-09). Queda solo el commit de esta documentacion de cierre. Proximo frente: tomar el primer item `Activo`/`Pendiente` del backlog (P7 validaciones visuales o P22 adjuntos), mas los pendientes menores de P29 (piso de anticipos vigente, parametro jubilados en DB, UI de campos nuevos).
 
 Objetivo:
 

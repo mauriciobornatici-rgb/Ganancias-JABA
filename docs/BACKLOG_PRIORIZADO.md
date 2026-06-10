@@ -75,7 +75,7 @@ Verificacion:
 
 ## P29 - Paridad de calculo con Excel IG 25
 
-Estado: Activo (abierto por instruccion del usuario el 2026-06-09 tras revision integral app vs Excel).
+Estado: Resuelto y publicado en `main` (commit `e5ae003`, merge `480476c` via staging, 2026-06-09). Verificacion: 147 tests de dominio en sandbox + CI de GitHub Actions sobre staging/main. Pendientes menores derivados: confirmar piso vigente de anticipos, parametro jubilados en DB, UI de los campos nuevos.
 
 Problema:
 

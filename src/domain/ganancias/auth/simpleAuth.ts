@@ -157,6 +157,30 @@ export async function verifySimpleAuthToken(
 }
 
 /**
+ * P31.8 - Renovacion deslizante: indica si conviene reemitir el token porque ya consumio
+ * mas de la mitad de su vida util. SOLO debe llamarse despues de verifySimpleAuthToken
+ * (no revalida la firma); ante cualquier payload anomalo devuelve false.
+ */
+export function shouldRenewSimpleAuthToken(
+  token: string | undefined,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): boolean {
+  if (!token) return false;
+
+  const [encodedPayload] = token.split('.');
+  if (!encodedPayload) return false;
+
+  try {
+    const payload = JSON.parse(decodeBase64UrlText(encodedPayload)) as Partial<SimpleAuthPayload>;
+    if (typeof payload.exp !== 'number' || payload.exp <= nowSeconds) return false;
+
+    return payload.exp - nowSeconds < SIMPLE_AUTH_TTL_SECONDS / 2;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * P31.5: autoriza /api/health sin sesión cuando un monitor externo presenta el token dedicado.
  * Requiere HEALTH_CHECK_TOKEN configurado con al menos 16 caracteres.
  * Vacío = deshabilitado.

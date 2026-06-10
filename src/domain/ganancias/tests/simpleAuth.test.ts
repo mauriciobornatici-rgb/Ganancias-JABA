@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  SIMPLE_AUTH_TTL_SECONDS,
   createSimpleAuthToken,
   getSimpleAuthConfig,
   isAuthorizedHealthToken,
   isProtectedPath,
+  shouldRenewSimpleAuthToken,
   verifySimpleAuthPassword,
   verifySimpleAuthToken,
 } from '../auth/simpleAuth';
@@ -70,5 +72,20 @@ describe('simpleAuth', () => {
     // Sin token configurado (o demasiado corto), el acceso por token queda deshabilitado.
     expect(isAuthorizedHealthToken('lo-que-sea', {})).toBe(false);
     expect(isAuthorizedHealthToken('corto', { HEALTH_CHECK_TOKEN: 'corto' })).toBe(false);
+  });
+
+  it('P31.8: renueva la sesion solo cuando consumio mas de la mitad de su vida util', async () => {
+    const issuedAt = 1_800_000_000;
+    const token = await createSimpleAuthToken(authEnv, issuedAt);
+
+    // Recien emitido: no renueva.
+    expect(shouldRenewSimpleAuthToken(token, issuedAt + 60)).toBe(false);
+    // Pasada la mitad del TTL: renueva.
+    expect(shouldRenewSimpleAuthToken(token, issuedAt + SIMPLE_AUTH_TTL_SECONDS / 2 + 60)).toBe(true);
+    // Vencido: no renueva (el verify ya lo rechaza; aca tampoco se reemite).
+    expect(shouldRenewSimpleAuthToken(token, issuedAt + SIMPLE_AUTH_TTL_SECONDS + 60)).toBe(false);
+    // Entradas anomalas.
+    expect(shouldRenewSimpleAuthToken(undefined, issuedAt)).toBe(false);
+    expect(shouldRenewSimpleAuthToken('basura-sin-formato', issuedAt)).toBe(false);
   });
 });

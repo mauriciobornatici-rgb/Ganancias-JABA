@@ -13,6 +13,7 @@ import {
   buildTaxReturnAnnulmentDecision,
   buildTaxReturnUpdateDecision,
 } from '@/domain/ganancias/workflow/taxReturnWorkflow';
+import { MAX_DECLARATION_PAYLOAD_BYTES, exceedsContentLength } from '@/domain/ganancias/presentation/apiValidation';
 
 export async function GET(
   req: NextRequest,
@@ -258,6 +259,15 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+
+    // P31.4: tope de tamano del payload de guardado (un snapshot legitimo no llega a esto).
+    if (exceedsContentLength(req.headers.get('content-length'), MAX_DECLARATION_PAYLOAD_BYTES)) {
+      return NextResponse.json(
+        { success: false, error: 'El payload de la declaracion supera el tamano maximo permitido (6 MB).' },
+        { status: 413 }
+      );
+    }
+
     const body = await req.json();
     const { clientName, status, workflowAction, workflowReason } = body;
 

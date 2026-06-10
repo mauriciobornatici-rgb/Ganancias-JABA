@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createSimpleAuthToken,
   getSimpleAuthConfig,
+  isAuthorizedHealthToken,
   isProtectedPath,
   verifySimpleAuthPassword,
   verifySimpleAuthToken,
@@ -57,5 +58,17 @@ describe('simpleAuth', () => {
     expect(sanitizeSimpleAuthRedirectPath('https://example.com')).toBe('/');
     expect(sanitizeSimpleAuthRedirectPath('//example.com/login')).toBe('/');
     expect(sanitizeSimpleAuthRedirectPath('/\\example.com')).toBe('/');
+  });
+
+  it('P31.5: autoriza /api/health solo con token dedicado configurado y coincidente', () => {
+    const healthEnv = { HEALTH_CHECK_TOKEN: 'token-monitor-externo-2026' };
+
+    expect(isAuthorizedHealthToken('token-monitor-externo-2026', healthEnv)).toBe(true);
+    expect(isAuthorizedHealthToken('token-equivocado-mismolargo', healthEnv)).toBe(false);
+    expect(isAuthorizedHealthToken('', healthEnv)).toBe(false);
+    expect(isAuthorizedHealthToken(null, healthEnv)).toBe(false);
+    // Sin token configurado (o demasiado corto), el acceso por token queda deshabilitado.
+    expect(isAuthorizedHealthToken('lo-que-sea', {})).toBe(false);
+    expect(isAuthorizedHealthToken('corto', { HEALTH_CHECK_TOKEN: 'corto' })).toBe(false);
   });
 });

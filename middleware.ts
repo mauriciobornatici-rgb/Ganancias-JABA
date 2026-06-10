@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   SIMPLE_AUTH_COOKIE_NAME,
   isApiPath,
+  isAuthorizedHealthToken,
   isProtectedPath,
   getSimpleAuthConfig,
   verifySimpleAuthToken,
@@ -17,6 +18,11 @@ function buildLoginUrl(req: NextRequest): URL {
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   if (!isProtectedPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  // P31.5: monitoreo externo de salud con token dedicado (sin sesion de usuario).
+  if (pathname === '/api/health' && isAuthorizedHealthToken(req.headers.get('x-health-token'))) {
     return NextResponse.next();
   }
 

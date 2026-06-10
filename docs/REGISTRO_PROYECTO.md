@@ -4,6 +4,15 @@ Ultima actualizacion: 2026-06-09
 
 ## Entrada reciente
 
+### 2026-06-10 - P31.3/4/5 aplicados (seguridad: rate limit, zod, health token)
+
+- Publicado previo confirmado: `main` = `2aee793` (P31.1/2/7 en produccion).
+- P31.3 rate limit de login: nueva logica pura `auth/loginRateLimit.ts` (5 fallos en 15 min -> bloqueo 15 min, demora fija de 1 s ante clave incorrecta, clave de cliente por primera IP de x-forwarded-for). La ruta de login responde 429 con Retry-After; estado en memoria por instancia (mejor esfuerzo en serverless, documentado).
+- P31.4 validacion: nuevo `presentation/apiValidation.ts` con zod. `POST /api/declaraciones` valida CUIT/nombre/periodo con mensajes legibles; `PUT /api/declaraciones/[id]` rechaza payloads > 6 MB (413); `/api/import` rechaza lotes > 15 MB (413).
+- P31.5 health token: `isAuthorizedHealthToken` en `simpleAuth.ts` (HEALTH_CHECK_TOKEN >= 16 chars, comparacion tiempo constante); el middleware permite `GET /api/health` con header `x-health-token` para monitores de uptime. Variable documentada en `.env.example`; falta cargarla en Vercel y configurar el monitor.
+- Tests nuevos: `loginRateLimit.test.ts` (5), `apiValidation.test.ts` (4), caso P31.5 en `simpleAuth.test.ts`. Verificacion sandbox: 15 tests OK.
+- Pendiente: commit/push/merge habitual; cargar HEALTH_CHECK_TOKEN en Vercel; configurar monitor externo (p.ej. UptimeRobot) apuntando a /api/health con el header.
+
 ### 2026-06-10 - P31.7 y carga agil aplicados (coma decimal + grillas paginadas)
 
 - CI de GitHub Actions del corte P21/P29 confirmado verde por el usuario.

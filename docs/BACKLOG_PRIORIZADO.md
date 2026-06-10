@@ -99,7 +99,7 @@ Criterio de cierre:
 
 ## P31 - Endurecimiento post-auditoria integral 2026-06-10
 
-Estado: En curso. Puntos 1, 2 y 7 aplicados el 2026-06-10: banner de error con reintento en dashboard (incluye `success:false`); `JSON.parse` del snapshot protegido por fila en `GET /api/declaraciones`; normalizacion de coma decimal centralizada (helper testeado + `handleCellChange` + paste-capture + backstop en mapper) y grillas de ventas/compras paginadas con buscador. Pendiente de commit y de los puntos 3, 4, 5, 6, 8 y 9.
+Estado: En curso. Puntos 1, 2 y 7 publicados en `main` (`2aee793`). Puntos 3, 4 y 5 aplicados el 2026-06-10 (rate limit de login con 429/Retry-After y demora ante fallo; zod en alta de DDJJ + topes 6 MB guardado / 15 MB import; /api/health accesible con HEALTH_CHECK_TOKEN para monitoreo), pendientes de commit. Restan: 6 (backup automatico Hostinger), 8 (renovacion deslizante de sesion) y 9 (rotar password DB). Operativo pendiente: cargar HEALTH_CHECK_TOKEN en Vercel y configurar monitor externo.
 
 Problema / hallazgos, en orden de prioridad:
 

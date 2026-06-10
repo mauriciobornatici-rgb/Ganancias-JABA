@@ -134,6 +134,20 @@ export async function verifySimpleAuthToken(
   }
 }
 
+/**
+ * P31.5: autoriza /api/health sin sesion cuando un monitor externo presenta el token dedicado.
+ * Requiere HEALTH_CHECK_TOKEN configurado con al menos 16 caracteres (vacio = deshabilitado);
+ * comparacion en tiempo constante.
+ */
+export function isAuthorizedHealthToken(
+  providedToken: string | null | undefined,
+  env: { HEALTH_CHECK_TOKEN?: string } = process.env,
+): boolean {
+  const expected = env.HEALTH_CHECK_TOKEN || '';
+  if (expected.length < 16 || !providedToken) return false;
+  return safeEqual(providedToken, expected);
+}
+
 export function isProtectedPath(pathname: string): boolean {
   if (pathname === '/login' || pathname.startsWith('/login/')) return false;
   if (pathname === '/api/auth/login' || pathname === '/api/auth/logout') return false;

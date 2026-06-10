@@ -7,6 +7,7 @@ import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persis
 import { buildInitialTaxReturnSnapshot } from '@/domain/ganancias/persistence/taxReturnSnapshot';
 import { hasDetailedTaxReturnPayload } from '@/domain/ganancias/persistence/taxReturnPayload';
 import { TAX_RETURN_STATUS } from '@/domain/ganancias/workflow/taxReturnWorkflow';
+import { createTaxReturnSchema, firstValidationError } from '@/domain/ganancias/presentation/apiValidation';
 
 export async function GET(req: NextRequest) {
   try {
@@ -79,14 +80,22 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { cuit, clientName, fiscalYear, status, taxParameterSetId } = body;
 
-    if (!cuit || !clientName || !fiscalYear) {
+    // P31.4: validacion zod del payload de alta antes de tocar la base.
+    const parsed = createTaxReturnSchema.safeParse({
+      cuit: body.cuit,
+      clientName: body.clientName,
+      fiscalYear: body.fiscalYear,
+      status: body.status,
+      taxParameterSetId: body.taxParameterSetId,
+    });
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'CUIT, nombre de cliente y año fiscal son obligatorios.' },
+        { success: false, error: firstValidationError(parsed) ?? 'Payload invalido.' },
         { status: 400 }
       );
     }
+    const { cuit, clientName, fiscalYear, status, taxParameterSetId } = parsed.data;
 
     const client = await prisma.client.findUnique({
       where: { cuit },
@@ -99,7 +108,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const yearInt = parseInt(fiscalYear, 10);
+    const yearInt = fiscalYear; // ya validado como entero por zod (P31.4)
     const result = await prisma.$transaction(async (tx: any) => {
       let fYear = await tx.fiscalYear.findUnique({
         where: { year: yearInt },

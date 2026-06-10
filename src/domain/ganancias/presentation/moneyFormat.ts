@@ -33,3 +33,32 @@ function numberValue(value: MoneyInput): number {
 
   return Number(value);
 }
+
+/**
+ * P31.7: normaliza importes escritos/pegados en formato argentino a formato numerico estandar.
+ * "1.234.567,89" -> "1234567.89" | "1234,56" -> "1234.56" | "$ 1.500" -> "1500" (con coma o
+ * patron claro de miles). Las cadenas ya estandar ("1234.56") se devuelven intactas para no
+ * corromper valores provenientes de la base o de importaciones.
+ */
+export function normalizeArgentineAmountInput(raw: string): string {
+  if (typeof raw !== 'string') return raw;
+
+  let value = raw.trim().replace(/\$/g, '').replace(/\s+/g, '');
+  if (value === '') return '';
+
+  const negative = value.startsWith('-');
+  if (negative) value = value.slice(1);
+
+  if (value.includes(',')) {
+    // Formato AR explicito: los puntos son separadores de miles y la coma es decimal.
+    value = value.replace(/\./g, '').replace(/,/, '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(value)) {
+    // Solo puntos en grupos de tres: patron inequivoco de miles ("1.234.567").
+    value = value.replace(/\./g, '');
+  }
+  // Caso restante sin coma (ej. "1234.56"): se asume decimal estandar y no se toca.
+
+  if (!/^\d*(\.\d*)?$/.test(value)) return raw.trim();
+
+  return negative ? `-${value}` : value;
+}

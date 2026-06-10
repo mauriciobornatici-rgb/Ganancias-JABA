@@ -35,22 +35,35 @@ export async function GET(req: NextRequest) {
       orderBy: { updatedAt: 'desc' },
     });
 
+    // P31.2: un snapshot corrupto en UNA fila no debe tirar abajo el listado completo
+    // (antes un JSON.parse fallido devolvia 500 y el dashboard quedaba "vacio").
+    const safeCurrentStep = (variablesSnapshot: unknown): number => {
+      if (typeof variablesSnapshot !== 'string' || variablesSnapshot === '') return 1;
+      try {
+        const parsed = JSON.parse(variablesSnapshot);
+        const step = Number(parsed?.currentStep);
+        return Number.isInteger(step) && step >= 1 && step <= 6 ? step : 1;
+      } catch {
+        return 1;
+      }
+    };
+
     // Mapear al formato plano que espera la interfaz de usuario
     const mapped = taxReturns.map((r: any) => {
       const latestCalc = r.calculations[0] || null;
       return {
         id: r.id,
         clientId: r.clientId,
-        clientName: r.client.name,
-        cuit: r.client.cuit,
-        year: r.fiscalYear.year,
+        clientName: r.client?.name ?? '(sin contribuyente)',
+        cuit: r.client?.cuit ?? '',
+        year: r.fiscalYear?.year ?? null,
         status: r.status,
         version: r.version,
         updatedAt: r.updatedAt.toISOString().replace('T', ' ').substring(0, 16),
         impuestoAPagar: latestCalc ? latestCalc.finalBalance : 0,
         consumoCalculado: latestCalc ? latestCalc.computedConsumo : 0,
         hasWarnings: latestCalc ? latestCalc.hasErrors : false,
-        currentStep: latestCalc && latestCalc.variablesSnapshot ? JSON.parse(latestCalc.variablesSnapshot).currentStep || 1 : 1,
+        currentStep: safeCurrentStep(latestCalc?.variablesSnapshot),
       };
     });
 

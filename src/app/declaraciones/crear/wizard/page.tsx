@@ -30,7 +30,7 @@ import {
 } from '@/domain/ganancias/presentation/deductionsBreakdown';
 import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
-import { formatCurrencyCents, formatCurrencyWhole as formatDecimal } from '@/domain/ganancias/presentation/moneyFormat';
+import { formatCurrencyCents, formatCurrencyWhole as formatDecimal, normalizeArgentineAmountInput } from '@/domain/ganancias/presentation/moneyFormat';
 import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
 import {
   WIZARD_UNSAVED_EXIT_MESSAGE,
@@ -932,6 +932,12 @@ export default function WizardPage() {
   // ==========================================
   const [selectedSales, setSelectedSales] = useState<number[]>([]);
   const [selectedPurchases, setSelectedPurchases] = useState<number[]>([]);
+  // P31 UX: paginacion y busqueda de grillas grandes (un periodo real supera el millar de comprobantes)
+  const GRID_PAGE_SIZE = 100;
+  const [salesPage, setSalesPage] = useState(1);
+  const [salesSearch, setSalesSearch] = useState('');
+  const [purchasesPage, setPurchasesPage] = useState(1);
+  const [purchasesSearch, setPurchasesSearch] = useState('');
 
   const handleSelectSale = (index: number) => {
     setSelectedSales(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -1097,18 +1103,28 @@ export default function WizardPage() {
     setOtherJustifications([...otherJustifications, buildWizardOtherJustificationFromPreset(key)]);
   };
 
+  // P31.7: campos monetarios que se normalizan de formato argentino ("1.234,56") al estandar.
+  const MONETARY_CELL_FIELDS = new Set([
+    'netAmount', 'ivaAmount', 'totalAmount', 'amount', 'originalCost',
+    'valueInitial', 'valueFinal', 'nominalInitial', 'nominalFinal',
+    'tcInitial', 'tcFinal', 'interests', 'balanceInitial', 'balanceFinal',
+  ]);
+
   const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+    const cellValue = typeof value === 'string' && MONETARY_CELL_FIELDS.has(field)
+      ? normalizeArgentineAmountInput(value)
+      : value;
     if (type === 'sales') {
       const updated = [...sales];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setSales(updated);
     } else if (type === 'purchases') {
       const updated = [...purchases];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setPurchases(updated);
     } else if (type === 'assets') {
       const updated = [...fixedAssets];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       if (field === 'purchaseDate') {
         const purchaseDate = value instanceof Date || typeof value === 'string' || value == null ? value : String(value);
         updated[index].yearsElapsed = calculateYearsElapsedAtClose(purchaseDate, fiscalYear);
@@ -1116,31 +1132,31 @@ export default function WizardPage() {
       setFixedAssets(updated);
     } else if (type === 'withholdings') {
       const updated = [...withholdings];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setWithholdings(updated);
     } else if (type === 'personalAssets') {
       const updated = [...personalAssets];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setPersonalAssets(updated);
     } else if (type === 'bankAccounts') {
       const updated = [...bankAccounts];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setBankAccounts(updated);
     } else if (type === 'cashHoldings') {
       const updated = [...cashHoldings];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setCashHoldings(updated);
     } else if (type === 'receivables') {
       const updated = [...receivables];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setReceivables(updated);
     } else if (type === 'liabilities') {
       const updated = [...liabilities];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setLiabilities(updated);
     } else if (type === 'personalLiabilities') {
       const updated = [...personalLiabilities];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setPersonalLiabilities(updated);
     } else if (type === 'otherJustifications') {
       const updated = [...otherJustifications];
@@ -1148,7 +1164,7 @@ export default function WizardPage() {
       setOtherJustifications(updated);
     } else if (type === 'axiDynamic') {
       const updated = [...axiDynamic];
-      updated[index][field] = value;
+      updated[index][field] = cellValue;
       setAxiDynamic(updated);
     }
   };
@@ -1708,8 +1724,48 @@ export default function WizardPage() {
     });
   };
 
+  // P31 UX: filas con indice original preservado para que los handlers sigan operando
+  // sobre la coleccion completa aunque la grilla este filtrada/paginada.
+  const buildPagedRows = <T,>(rows: T[], search: string, page: number, textOf: (row: T) => string) => {
+    const term = search.trim().toLowerCase();
+    const withIndex = rows.map((row, originalIndex) => ({ row, originalIndex }));
+    const filtered = term === '' ? withIndex : withIndex.filter(({ row }) => textOf(row).toLowerCase().includes(term));
+    const totalPages = Math.max(1, Math.ceil(filtered.length / GRID_PAGE_SIZE));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    return {
+      paged: filtered.slice((safePage - 1) * GRID_PAGE_SIZE, safePage * GRID_PAGE_SIZE),
+      totalPages,
+      safePage,
+      totalRows: filtered.length,
+    };
+  };
+  const salesGrid = buildPagedRows(sales, salesSearch, salesPage,
+    s => `${s.customerName ?? ''} ${s.counterpartyCuit ?? ''} ${s.invoiceNumber ?? ''} ${s.date ?? ''} ${s.netAmount ?? ''}`);
+  const purchasesGrid = buildPagedRows(purchases, purchasesSearch, purchasesPage,
+    p => `${p.vendorName ?? ''} ${p.counterpartyCuit ?? ''} ${p.invoiceNumber ?? ''} ${p.date ?? ''} ${p.netAmount ?? ''}`);
+
+  // P31.7: pegar "1.234,56" (formato AR, tipico de Excel) dentro de un input numerico
+  // se intercepta y normaliza; sin esto el navegador lo rechaza o lo malinterpreta.
+  const handleArMoneyPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== 'INPUT' || target.type !== 'number') return;
+    const text = e.clipboardData.getData('text');
+    if (!text) return;
+    const looksArgentine = text.includes(',') || /^\$?\s*\d{1,3}(\.\d{3})+\s*$/.test(text.trim());
+    if (!looksArgentine) return;
+    const normalized = normalizeArgentineAmountInput(text);
+    if (normalized === '' || Number.isNaN(Number(normalized))) return;
+    e.preventDefault();
+    const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    nativeSetter?.call(target, normalized);
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+
   return (
-    <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200">
+    <div
+      className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200"
+      onPasteCapture={handleArMoneyPaste}
+    >
 
       <style dangerouslySetInnerHTML={{__html: `
         .custom-wizard-scrollbar::-webkit-scrollbar {
@@ -2322,7 +2378,7 @@ export default function WizardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
-                    {sales.map((sale, index) => {
+                    {salesGrid.paged.map(({ row: sale, originalIndex: index }) => {
                       const invoiceTrace = buildInvoiceTraceSummary({
                         invoiceType: sale.invoiceType,
                         invoiceNumber: sale.invoiceNumber,
@@ -2400,8 +2456,33 @@ export default function WizardPage() {
                 </table>
               </div>
 
+              {sales.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <input
+                    value={salesSearch}
+                    onChange={(e) => { setSalesSearch(e.target.value); setSalesPage(1); }}
+                    placeholder="Buscar por cliente, CUIT, comprobante o fecha..."
+                    className="h-9 px-3 rounded bg-[#121216] border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-teal-500/40 w-full sm:w-80"
+                  />
+                  <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-mono">
+                    <span>{salesGrid.totalRows} comprobante{salesGrid.totalRows === 1 ? '' : 's'}{salesSearch.trim() !== '' ? ' (filtrados)' : ''}</span>
+                    {salesGrid.totalPages > 1 && (
+                      <>
+                        <button onClick={() => setSalesPage(salesGrid.safePage - 1)} disabled={salesGrid.safePage <= 1} className="px-2.5 h-7 rounded border border-zinc-800 disabled:opacity-30 hover:border-teal-500/40 cursor-pointer">←</button>
+                        <span>Página {salesGrid.safePage} / {salesGrid.totalPages}</span>
+                        <button onClick={() => setSalesPage(salesGrid.safePage + 1)} disabled={salesGrid.safePage >= salesGrid.totalPages} className="px-2.5 h-7 rounded border border-zinc-800 disabled:opacity-30 hover:border-teal-500/40 cursor-pointer">→</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <button
-                onClick={() => addRow('sales')}
+                onClick={() => {
+                  setSalesSearch('');
+                  addRow('sales');
+                  setSalesPage(Math.max(1, Math.ceil((sales.length + 1) / GRID_PAGE_SIZE)));
+                }}
                 className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider"
               >
                 <Plus className="h-4 w-4 stroke-[3.5]" />
@@ -2528,7 +2609,7 @@ export default function WizardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
-                    {purchases.map((purchase, index) => {
+                    {purchasesGrid.paged.map(({ row: purchase, originalIndex: index }) => {
                       const invoiceTrace = buildInvoiceTraceSummary({
                         invoiceType: purchase.invoiceType,
                         invoiceNumber: purchase.invoiceNumber,
@@ -2618,8 +2699,33 @@ export default function WizardPage() {
                 </table>
               </div>
 
+              {purchases.length > 0 && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <input
+                    value={purchasesSearch}
+                    onChange={(e) => { setPurchasesSearch(e.target.value); setPurchasesPage(1); }}
+                    placeholder="Buscar por proveedor, CUIT, comprobante o fecha..."
+                    className="h-9 px-3 rounded bg-[#121216] border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-teal-500/40 w-full sm:w-80"
+                  />
+                  <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-mono">
+                    <span>{purchasesGrid.totalRows} comprobante{purchasesGrid.totalRows === 1 ? '' : 's'}{purchasesSearch.trim() !== '' ? ' (filtrados)' : ''}</span>
+                    {purchasesGrid.totalPages > 1 && (
+                      <>
+                        <button onClick={() => setPurchasesPage(purchasesGrid.safePage - 1)} disabled={purchasesGrid.safePage <= 1} className="px-2.5 h-7 rounded border border-zinc-800 disabled:opacity-30 hover:border-teal-500/40 cursor-pointer">←</button>
+                        <span>Página {purchasesGrid.safePage} / {purchasesGrid.totalPages}</span>
+                        <button onClick={() => setPurchasesPage(purchasesGrid.safePage + 1)} disabled={purchasesGrid.safePage >= purchasesGrid.totalPages} className="px-2.5 h-7 rounded border border-zinc-800 disabled:opacity-30 hover:border-teal-500/40 cursor-pointer">→</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <button
-                onClick={() => addRow('purchases')}
+                onClick={() => {
+                  setPurchasesSearch('');
+                  addRow('purchases');
+                  setPurchasesPage(Math.max(1, Math.ceil((purchases.length + 1) / GRID_PAGE_SIZE)));
+                }}
                 className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider cursor-pointer"
               >
                 <Plus className="h-4 w-4 stroke-[3.5]" />

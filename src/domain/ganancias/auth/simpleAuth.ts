@@ -2,8 +2,10 @@ export const SIMPLE_AUTH_COOKIE_NAME = 'jaba_auth';
 export const SIMPLE_AUTH_TTL_SECONDS = 60 * 60 * 12;
 
 export type SimpleAuthEnv = {
+  [key: string]: string | undefined;
   AUTH_PASSWORD?: string;
   AUTH_SECRET?: string;
+  HEALTH_CHECK_TOKEN?: string;
   NODE_ENV?: string;
 };
 
@@ -55,6 +57,7 @@ function safeEqual(left: string, right: string): boolean {
   for (let index = 0; index < left.length; index += 1) {
     diff |= left.charCodeAt(index) ^ right.charCodeAt(index);
   }
+
   return diff === 0;
 }
 
@@ -66,7 +69,13 @@ async function signPayload(payload: string, secret: string): Promise<string> {
     false,
     ['sign'],
   );
-  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(payload),
+  );
+
   return encodeBase64UrlBytes(new Uint8Array(signature));
 }
 
@@ -83,9 +92,13 @@ export function getSimpleAuthConfig(env: SimpleAuthEnv = process.env): SimpleAut
   };
 }
 
-export function verifySimpleAuthPassword(password: string, env: SimpleAuthEnv = process.env): boolean {
+export function verifySimpleAuthPassword(
+  password: string,
+  env: SimpleAuthEnv = process.env,
+): boolean {
   const config = getSimpleAuthConfig(env);
   if (!config.isConfigured || !password) return false;
+
   return safeEqual(password, config.password);
 }
 
@@ -94,6 +107,7 @@ export async function createSimpleAuthToken(
   nowSeconds = Math.floor(Date.now() / 1000),
 ): Promise<string> {
   const config = getSimpleAuthConfig(env);
+
   if (!config.isConfigured) {
     throw new Error('Simple auth is not configured.');
   }
@@ -104,8 +118,10 @@ export async function createSimpleAuthToken(
     iat: nowSeconds,
     exp: nowSeconds + SIMPLE_AUTH_TTL_SECONDS,
   };
+
   const encodedPayload = encodeBase64UrlText(JSON.stringify(payload));
   const signature = await signPayload(encodedPayload, config.secret);
+
   return `${encodedPayload}.${signature}`;
 }
 
@@ -115,36 +131,45 @@ export async function verifySimpleAuthToken(
   nowSeconds = Math.floor(Date.now() / 1000),
 ): Promise<boolean> {
   const config = getSimpleAuthConfig(env);
+
   if (!config.isConfigured || !token) return false;
 
   const [encodedPayload, signature] = token.split('.');
+
   if (!encodedPayload || !signature) return false;
 
   const expectedSignature = await signPayload(encodedPayload, config.secret);
+
   if (!safeEqual(signature, expectedSignature)) return false;
 
   try {
     const payload = JSON.parse(decodeBase64UrlText(encodedPayload)) as Partial<SimpleAuthPayload>;
-    return payload.v === 1 &&
+
+    return (
+      payload.v === 1 &&
       payload.sub === 'single-user' &&
       typeof payload.exp === 'number' &&
-      payload.exp > nowSeconds;
+      payload.exp > nowSeconds
+    );
   } catch {
     return false;
   }
 }
 
 /**
- * P31.5: autoriza /api/health sin sesion cuando un monitor externo presenta el token dedicado.
- * Requiere HEALTH_CHECK_TOKEN configurado con al menos 16 caracteres (vacio = deshabilitado);
- * comparacion en tiempo constante.
+ * P31.5: autoriza /api/health sin sesión cuando un monitor externo presenta el token dedicado.
+ * Requiere HEALTH_CHECK_TOKEN configurado con al menos 16 caracteres.
+ * Vacío = deshabilitado.
+ * Comparación en tiempo constante.
  */
 export function isAuthorizedHealthToken(
   providedToken: string | null | undefined,
-  env: { HEALTH_CHECK_TOKEN?: string } = process.env,
+  env: SimpleAuthEnv = process.env,
 ): boolean {
   const expected = env.HEALTH_CHECK_TOKEN || '';
+
   if (expected.length < 16 || !providedToken) return false;
+
   return safeEqual(providedToken, expected);
 }
 
@@ -152,8 +177,13 @@ export function isProtectedPath(pathname: string): boolean {
   if (pathname === '/login' || pathname.startsWith('/login/')) return false;
   if (pathname === '/api/auth/login' || pathname === '/api/auth/logout') return false;
   if (pathname.startsWith('/_next/')) return false;
-  if (pathname === '/favicon.ico' || pathname === '/robots.txt' || pathname === '/sitemap.xml') return false;
-  if (/\.(?:css|js|map|png|jpg|jpeg|gif|svg|ico|webp|avif|woff2?)$/i.test(pathname)) return false;
+  if (pathname === '/favicon.ico' || pathname === '/robots.txt' || pathname === '/sitemap.xml') {
+    return false;
+  }
+  if (/\.(?:css|js|map|png|jpg|jpeg|gif|svg|ico|webp|avif|woff2?)$/i.test(pathname)) {
+    return false;
+  }
+
   return true;
 }
 

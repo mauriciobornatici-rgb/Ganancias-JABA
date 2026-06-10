@@ -47,6 +47,7 @@ export default function Home() {
   const [showEditParamsModal, setShowEditParamsModal] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
 
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -65,19 +66,43 @@ export default function Home() {
   const [editClientActivity, setEditClientActivity] = useState('');
 
 
-  useEffect(() => {
+  // P31.1: la carga del dashboard ya no traga errores. Si una API falla o devuelve
+  // success:false (p.ej. sesion vencida -> 401), se muestra un aviso con reintento
+  // en lugar de renderizar ceros como si la base estuviera vacia.
+  const loadDashboardData = () => {
+    setIsLoading(true);
+    setDashboardError(null);
     Promise.all([
       fetch('/api/clientes').then(res => res.json()),
       fetch('/api/declaraciones').then(res => res.json())
     ])
     .then(([clientsRes, returnsRes]) => {
-      if (clientsRes.success) setClients(clientsRes.data);
-      if (returnsRes.success) setTaxReturns(returnsRes.data);
+      const errors: string[] = [];
+      if (clientsRes.success) {
+        setClients(clientsRes.data);
+      } else {
+        errors.push(clientsRes.error || 'No se pudieron obtener los contribuyentes.');
+      }
+      if (returnsRes.success) {
+        setTaxReturns(returnsRes.data);
+      } else {
+        errors.push(returnsRes.error || 'No se pudieron obtener las declaraciones.');
+      }
+      if (errors.length > 0) {
+        setDashboardError(errors.join(' '));
+      }
     })
-    .catch(err => console.error("Error loading dashboard data:", err))
+    .catch(err => {
+      console.error("Error loading dashboard data:", err);
+      setDashboardError('No se pudo conectar con el servidor. Los totales en cero pueden no reflejar la base real.');
+    })
     .finally(() => setIsLoading(false));
+  };
 
+  useEffect(() => {
+    loadDashboardData();
     loadResolutions(2025);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync parameters when selectedYear or activeView changes
@@ -571,6 +596,22 @@ export default function Home() {
         
         {activeView === 'dashboard' && (
           <>
+            {/* P31.1: AVISO VISIBLE SI LA CARGA DE DATOS FALLO (evita "base vacia" enganosa) */}
+            {dashboardError && (
+              <div className="mb-8 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+                <div className="text-sm text-red-300">
+                  <span className="font-bold block text-red-400">No se pudieron cargar los datos del estudio.</span>
+                  <span className="text-red-300/80">{dashboardError}</span>
+                </div>
+                <button
+                  onClick={loadDashboardData}
+                  className="shrink-0 px-4 h-9 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-200 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Reintentar
+                </button>
+              </div>
+            )}
+
             {/* ENCABEZADO DE BIENVENIDA */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-dashed border-zinc-800">
               <div>

@@ -4,6 +4,38 @@ Ultima actualizacion: 2026-06-09
 
 ## Entrada reciente
 
+### 2026-06-10 - P31.7 y carga agil aplicados (coma decimal + grillas paginadas)
+
+- CI de GitHub Actions del corte P21/P29 confirmado verde por el usuario.
+- `moneyFormat.ts`: nueva `normalizeArgentineAmountInput` ("1.234.567,89" -> "1234567.89"; tolera $, espacios, negativos y miles sin coma; no altera decimales estandar). Testeada con 4 casos en `moneyFormat.test.ts`.
+- `calculationInputMapper.ts`: `decimalValue` tolera importes con coma (backstop para payloads/localStorage); antes `new Decimal("1.234,56")` tiraba excepcion.
+- Wizard:
+  - `handleCellChange` normaliza los campos monetarios de todas las grillas en un unico punto (`MONETARY_CELL_FIELDS`);
+  - `onPasteCapture` en el contenedor raiz intercepta pegado de importes AR dentro de inputs numericos (caso tipico: copiar desde Excel) y los normaliza antes de que el navegador los rechace o malinterprete;
+  - grillas de Ventas y Compras paginadas (100 filas por pagina) con buscador por contraparte/CUIT/comprobante/fecha; los handlers conservan el indice original, asi seleccion masiva y edicion siguen operando sobre la coleccion completa; "Añadir fila manual" salta a la ultima pagina.
+- Verificacion en sandbox Linux: moneyFormat (7), calculationInputMapper (4), golden y pagosACuenta OK (17 tests). Pendiente en Windows: `vitest run` completo + `tsc` + build (lo cubre el CI al pushear).
+- Pendiente: commit/push y prueba visual de paginacion y pegado.
+
+### 2026-06-10 - P31.1 y P31.2 aplicados (resiliencia dashboard y listado)
+
+- `src/app/page.tsx`: la carga inicial ya no traga errores; ante fallo de red o respuesta `success:false` (p.ej. sesion vencida) muestra banner rojo con boton Reintentar en vez de ceros enganosos. Funcion `loadDashboardData` reutilizable.
+- `src/app/api/declaraciones/route.ts`: `currentStep` se extrae con `safeCurrentStep` (parse protegido, rango 1-6); un snapshot corrupto en una fila ya no tira 500 el listado; `client`/`fiscalYear` tolerantes a nulos.
+- Analisis de confiabilidad de carga y UX realizado (ver conclusiones en conversacion y proximos puntos P31.7 y virtualizacion de grillas).
+- Pendiente: commit/push de estos cambios y validacion visual del banner.
+
+### 2026-06-10 - Auditoria integral de la app en produccion
+
+- Se reviso seguridad/auth (cookie HMAC httpOnly+secure, comparacion en tiempo constante: OK), rutas API, manejo de errores del frontend, payloads y operacion.
+- Resultado: 9 hallazgos priorizados registrados como P31 en el backlog. El hallazgo 1 (dashboard traga errores de fetch y muestra ceros) explica el incidente de "datos vacios" de hoy.
+- Fortalezas confirmadas: guardas de deploy (P16), workflow de inmutabilidad (P20), health check (P21), validacion de CUIT con digito verificador, auditoria de eventos, CI completo en GitHub Actions.
+
+### 2026-06-10 - Incidente: falsa alarma de perdida de datos en produccion
+
+- Tras publicar `7833cf5` en `main`, el dashboard de produccion se mostro vacio y se sospecho perdida de datos.
+- Verificacion realizada: `/api/health` confirmo conexion a `srv1199.hstgr.io/u669600172_ganancias_jaba`; phpMyAdmin mostro `Client` con 2 filas (Lobato 2026-06-07, Dominguez 2026-06-08) y `TaxReturn` con 1 borrador (Dominguez 2024, 2026-06-08); el diff de codigo publicado no toca conexion, schema ni datos; los logs de runtime de Vercel no muestran errores.
+- Conclusion: no hubo perdida; la base de produccion siempre tuvo solo esos registros (las cargas completas de prueba viven en la base Docker local). La pantalla vacia fue un fallo transitorio de carga/sesion; al reingresar los datos aparecieron.
+- Accion preventiva: exportar backup SQL manual desde phpMyAdmin como linea base (procedimiento en `docs/BACKUP_RESTAURACION_OPERATIVA.md`).
+
 ### 2026-06-09 - Cierre P21 + P29: commit, integracion y publicacion
 
 - Commits realizados en Windows sobre `feature/p21-backup-health`:

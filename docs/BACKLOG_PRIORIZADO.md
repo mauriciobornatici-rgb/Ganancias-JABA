@@ -97,6 +97,31 @@ Criterio de cierre:
 - Doceava parte y parametro de jubilados.
 - `vitest run`, `tsc --noEmit` y `next build --webpack` en verde en Windows.
 
+## P31 - Endurecimiento post-auditoria integral 2026-06-10
+
+Estado: En curso. Puntos 1, 2 y 7 aplicados el 2026-06-10: banner de error con reintento en dashboard (incluye `success:false`); `JSON.parse` del snapshot protegido por fila en `GET /api/declaraciones`; normalizacion de coma decimal centralizada (helper testeado + `handleCellChange` + paste-capture + backstop en mapper) y grillas de ventas/compras paginadas con buscador. Pendiente de commit y de los puntos 3, 4, 5, 6, 8 y 9.
+
+Problema / hallazgos, en orden de prioridad:
+
+1. El dashboard traga errores de fetch (`page.tsx` linea ~77: `catch -> console.error`) y muestra ceros como si la base estuviera vacia. Causa raiz del incidente del 2026-06-10. Falta estado de error visible con boton reintentar en dashboard y wizard.
+2. `GET /api/declaraciones` hace `JSON.parse(variablesSnapshot)` por cada fila sin try/catch: un snapshot corrupto tira 500 y vacia el dashboard completo. Ademas parsea snapshots enormes solo para extraer `currentStep`: persistir `currentStep` como columna y seleccionar campos minimos.
+3. Login sin rate limiting ni demora ante clave incorrecta: la clave unica es fuerza-bruteable. Minimo: delay fijo en fallo + contador de intentos. Futuro: usar los modelos `User`/`Role` ya existentes en el schema.
+4. `zod` esta en dependencias pero ninguna ruta API lo usa; validacion manual parcial. Sin limites de tamano de payload en `/api/import` ni `/api/declaraciones`. Definir schemas zod por ruta y tope de bytes en importaciones.
+5. `/api/health` exige sesion: no sirve para monitoreo externo. Permitir acceso con token dedicado (header) y configurar un monitor de uptime.
+6. Backups: solo procedimiento manual (P21). Configurar backup automatico en Hostinger y registrar verificacion mensual de restauracion.
+7. Carga agil: los inputs monetarios del wizard usan `type=number` (punto decimal); el usuario argentino escribe coma. P28 normalizo coma solo en IPC. Extender normalizacion de coma a toda la carga monetaria.
+8. Sesion de 12 hs sin renovacion deslizante: puede vencer en medio de una carga larga (el guard del wizard mitiga). Renovar token en actividad.
+9. Rotar la password de la base Hostinger (estuvo en capturas/chats; ya recomendado en P15).
+
+Criterio de cierre:
+
+- Dashboard y wizard muestran error visible con reintento ante fallo de API.
+- Lista de declaraciones tolera snapshots corruptos y no parsea JSON gigante por fila.
+- Login con demora/contador de intentos.
+- Schemas zod en rutas de escritura + tope de tamano en import.
+- Health con token para monitor externo y monitor configurado.
+- Backup automatico Hostinger activo y probado.
+
 ## P30 - Venta de bienes de uso con precio de venta
 
 Estado: Pendiente (abierto por P29, decision del usuario de no incluirlo en el nucleo critico).

@@ -3,6 +3,7 @@ import {
   parseAfipExportFiles,
   type AfipExpectedFileType,
 } from '@/domain/ganancias/mappers/afipImporter';
+import { MAX_IMPORT_TOTAL_BYTES } from '@/domain/ganancias/presentation/apiValidation';
 
 function expectedFileTypeFromImportKind(value: FormDataEntryValue | null): AfipExpectedFileType | undefined {
   if (value === 'sales') return 'LibroIVAVentas';
@@ -30,6 +31,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'No se ha subido ningun archivo.' },
         { status: 400 }
+      );
+    }
+
+    // P31.4: tope de tamano del lote para evitar payloads abusivos o subidas equivocadas.
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    if (totalBytes > MAX_IMPORT_TOTAL_BYTES) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `El lote supera el maximo de ${Math.round(MAX_IMPORT_TOTAL_BYTES / (1024 * 1024))} MB. Suba los archivos en tandas mas chicas.`,
+        },
+        { status: 413 }
       );
     }
 

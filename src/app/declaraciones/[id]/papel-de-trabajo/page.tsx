@@ -129,7 +129,7 @@ export default function PapelDeTrabajoPage() {
   const resultadoComercialNeto = calculationResult ? calculationResult.resultadoComercialNeto : new Decimal(0);
 
   const mni = calculationResult ? calculationResult.deduccionesPersonales.minimoNoImponible : new Decimal(0);
-  const deduccionEspecial = calculationResult ? calculationResult.deduccionesPersonales.deduccionEspecial : new Decimal(0);
+  const deduccionEspecial = calculationResult ? calculationResult.deduccionesPersonales.deduccionEspecial.plus(calculationResult.deduccionesPersonales.deduccionEspecialDoceavaParte || 0) : new Decimal(0);
   const cargasFamilia = calculationResult ? calculationResult.deduccionesPersonales.conyuge.plus(calculationResult.deduccionesPersonales.hijos).plus(calculationResult.deduccionesPersonales.hijosIncapacitados) : new Decimal(0);
   const deduccionesGenerales = calculationResult ? calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas : new Decimal(0);
   const generalDeductionsBreakdown = buildGeneralDeductionsBreakdown(calculationResult?.deduccionesGenerales);

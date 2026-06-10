@@ -1,8 +1,59 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-08
+Ultima actualizacion: 2026-06-09
 
 ## Entrada reciente
+
+### 2026-06-09 - P29 paridad de calculo con Excel IG 25
+
+- Revision integral de la app contra `DJ Ganancias 2025 - Tercera Categoría.xlsx` (todas las hojas con formulas) y `AXI Inflación IMPOSITIVO Comercial 2025.xlsx`.
+- Se detectaron 9 divergencias; detalle completo y decisiones en `docs/superpowers/plans/2026-06-09-paridad-excel-p29.md`.
+- Decisiones del usuario: criterio legal documentado ante errores internos del Excel (D27/D29/D30); alcance nucleo critico (venta de bienes de uso pasa a P30).
+- Nota operativa: el arbol de trabajo tenia cambios de P21 sin commitear en `feature/p21-backup-health`; P29 se aplico sobre esa misma rama sin tocar git. Al commitear, separar primero P21 y luego los archivos de P29 (motor de calculo, types, mapper, wizard, tests y docs de este frente).
+- Cambios aplicados:
+  - `types.ts`: `taxCode` extendido (AnticipoEfectivo, AnticipoIDCB, AnticipoMisFacilidades, IDCB, Combustibles), parametro opcional `deduccionEspecificaJubilados`, nuevos campos de salida (anticipos cancelados, computo IDCB, combustibles, saldo IDCB trasladable F70, quebranto trasladable, impuesto proyectado anticipos, doceava parte);
+  - `determinacionImpuesto.ts`: pagos a cuenta por concepto F61:F67 con logica F68/F70 (IDCB computable hasta el impuesto determinado, excedente trasladable), exclusion de `Otros` con warning, anticipos RG 5211 `(impuesto proyectado - retenciones - ITC)/5` con piso $5.000 y coeficiente IPC jul->dic, quebranto trasladable expuesto, JVP con resultado post-quebrantos (F38), doceava parte para dependientes, jubilados parametrizable con fallback;
+  - `calculationInputMapper.ts`: normalizacion de los nuevos `taxCode`;
+  - wizard Paso 5: opciones nuevas en el selector de tipo de credito;
+  - tests nuevos: `pagosACuenta.test.ts` (5 tests F61:F67/F68/F70), `anticiposProyectados.test.ts` (5 tests coef jul->dic, cuota, piso $5.000), `quebrantosYDeduccionesPersonales.test.ts` (6 tests quebranto, doceava, jubilados);
+  - `taxReturnPreview.test.ts` actualizado: el caso chico ya no espera anticipos (cuota bajo el piso de $5.000) y el payload de hidratacion incorpora los campos nuevos;
+  - informe cliente y papel de trabajo suman la doceava parte a la deduccion especial mostrada;
+  - `quebrantosApplied` y `totalPaymentsOnAccount` de `CalculationRun` dejan de estar en 0/solo-retenciones.
+- Verificacion ejecutada (sandbox Linux con vitest 2 + decimal.js, copia aislada del dominio):
+  - 38 archivos de test de dominio pasados, 147 tests OK, incluyendo los 16 nuevos de P29 y golden sin regresion;
+  - 6 suites no ejecutables en sandbox por dependencias de entorno (xlsx, prisma schema, Docker, scripts deploy): excelOracle, importer, parameterImporter, databaseSchemaArchitecture, excelCaptureCaseDockerPersistence, deploymentDbSafety.
+- Nota de seguridad (2026-06-09): se intento commitear desde el entorno sandbox del asistente y se aborto a proposito; el espejo de archivos del sandbox mostraba versiones truncadas de los archivos editados (en disco estan integros, verificado por lectura directa) y `git` no podia escribir `.git/index.lock`. El commit debe ejecutarse en Windows. Secuencia acordada: 1) verificacion fresca, 2) commit P21 (todo lo pendiente del arbol excepto archivos P29, incluye cierre UX P28), 3) commit P29 (motor, wizard, informes, tests y bitacora), 4) push de la rama, 5) merge a `staging` y push. Integracion a `main` recien despues de validar en staging.
+- Pendiente para cerrar P29 (en maquina Windows):
+  - `vitest run` completo, `tsc --noEmit`, `prisma validate`, `next build --webpack`;
+  - `git diff --check` y commit separado de P21 y P29 (secuencia de la nota anterior);
+  - decidir si se agrega `deduccionEspecificaJubilados` como columna de `TaxParameterSet` + seed (hoy es parametro opcional del motor con fallback);
+  - exponer en el wizard Paso 6 / papel de trabajo los campos nuevos (anticipos cancelados, IDCB, F70, quebranto trasladable) si se quiere verlos desglosados en pantalla.
+
+### 2026-06-08 - P21 primer corte backup y salud operativa
+
+- Se creo la rama `feature/p21-backup-health` desde `staging`, dejando `main` intacta.
+- P20 quedo integrado a `staging` con commit `f7d8713`, sin publicarse en produccion.
+- Objetivo del corte P21:
+  - tener un endpoint de salud de base de datos;
+  - diagnosticar host/base sin exponer usuario ni password;
+  - documentar backup Hostinger y restauracion segura primero en Docker.
+- Cambios aplicados:
+  - se agrego `src/domain/ganancias/operations/operationalHealth.ts`;
+  - se agrego `src/domain/ganancias/tests/operationalHealth.test.ts`;
+  - se agrego `GET /api/health`;
+  - se creo `docs/BACKUP_RESTAURACION_OPERATIVA.md`;
+  - se creo el plan `docs/superpowers/plans/2026-06-08-backup-health-p21.md`.
+- Verificacion ejecutada:
+  - `vitest run src/domain/ganancias/tests/operationalHealth.test.ts`: OK, 3 tests;
+  - `vitest run`: OK, 40 archivos pasados, 1 omitido, 155 tests pasados, 1 omitido;
+  - `tsc --noEmit`: OK;
+  - `prisma validate --schema prisma/schema.prisma`: OK;
+  - `next build --webpack`: OK;
+  - smoke HTTP local contra Docker: `/api/health` OK, `success: true`, DB `127.0.0.1:3317/ganancias_jaba_test`;
+  - `git diff --check`: OK, solo avisos CRLF habituales de Windows.
+- Pendiente:
+  - commit y push de la rama;
+  - probar `/api/health` en Vercel Preview/Staging si se decide publicar la rama de pruebas.
 
 ### 2026-06-08 - P20 primer corte workflow profesional de DDJJ
 

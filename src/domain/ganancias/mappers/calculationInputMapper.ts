@@ -79,7 +79,20 @@ function fixedAssetType(value: unknown): FixedAssetInput['type'] {
 }
 
 function taxCode(value: unknown): TaxWithholdingInput['taxCode'] {
-  return stringValue(value, 'Ganancias') === 'Otros' ? 'Otros' : 'Ganancias';
+  const rawCode = stringValue(value, 'Ganancias');
+  if (
+    rawCode === 'Ganancias' ||
+    rawCode === 'AnticipoEfectivo' ||
+    rawCode === 'AnticipoIDCB' ||
+    rawCode === 'AnticipoMisFacilidades' ||
+    rawCode === 'IDCB' ||
+    rawCode === 'Combustibles' ||
+    rawCode === 'Otros'
+  ) {
+    return rawCode;
+  }
+  // Codigos historicos no reconocidos: tratarlos como no computables contra Ganancias.
+  return 'Otros';
 }
 
 function personalDeductionType(value: unknown): PersonalDeductionsInput['tipoDeduccionEspecial'] {

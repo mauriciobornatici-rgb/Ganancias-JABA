@@ -48,6 +48,11 @@ export interface TaxParameters {
   escalaArt94: Art94Bracket[];
   indicesIPC: UpdateIndexValue[];
   usefulCoefficients?: UsefulTaxCoefficients;
+  /**
+   * Deduccion especifica de jubilados (8 haberes minimos anuales acumulados, Art. 30 inc. c).
+   * Si no se informa, el motor usa el fallback hardcodeado por anio fiscal y emite warning.
+   */
+  deduccionEspecificaJubilados?: Decimal;
 }
 
 // ==========================================
@@ -128,9 +133,28 @@ export interface PayableInput {
   balanceFinal: Decimal;
 }
 
+/**
+ * Codigos de credito computable contra el impuesto determinado (IG 25 F61:F67):
+ * - 'Ganancias': retenciones y percepciones de Ganancias (F67).
+ * - 'AnticipoEfectivo': anticipos cancelados en efectivo (F63).
+ * - 'AnticipoIDCB': anticipos cancelados con impuesto sobre creditos y debitos (F62).
+ * - 'AnticipoMisFacilidades': anticipos cancelados con plan Mis Facilidades (F64).
+ * - 'IDCB': computo directo del impuesto sobre creditos y debitos bancarios (F65).
+ * - 'Combustibles': impuesto sobre combustibles liquidos (F66).
+ * - 'Otros': retenciones de otros impuestos (IVA, IIBB...); NO computa contra Ganancias.
+ */
+export type TaxCreditCode =
+  | 'Ganancias'
+  | 'AnticipoEfectivo'
+  | 'AnticipoIDCB'
+  | 'AnticipoMisFacilidades'
+  | 'IDCB'
+  | 'Combustibles'
+  | 'Otros';
+
 export interface TaxWithholdingInput {
   amount: Decimal;
-  taxCode: 'Ganancias' | 'Otros';
+  taxCode: TaxCreditCode;
   cuitAgent?: string;
   agentName?: string;
   taxDescription?: string;
@@ -289,6 +313,8 @@ export interface PersonalDeductionsOutput {
   hijos: Decimal;
   hijosIncapacitados: Decimal;
   deduccionEspecial: Decimal;
+  /** Doceava parte adicional para dependientes/jubilados (IG 25 F50): (F41+F42+F43+F44+F49)/12 */
+  deduccionEspecialDoceavaParte: Decimal;
   totalDeduccionesPersonalesAdmitidas: Decimal;
 }
 
@@ -322,11 +348,19 @@ export interface TaxCalculationResult {
   // Cálculo impuesto determinado (Escala Art 94)
   impuestoDeterminado: Decimal;
   
-  // Pagos a cuenta y saldo final
-  retencionesYPercepciones: Decimal;
-  anticiposSiguientePeriodo: Decimal[]; // Proyección de los 5 anticipos
+  // Pagos a cuenta y saldo final (IG 25 F61:F67, F68 y F70)
+  retencionesYPercepciones: Decimal;        // F67: solo taxCode 'Ganancias'
+  anticiposCanceladosIdcb: Decimal;         // F62
+  anticiposCanceladosEfectivo: Decimal;     // F63
+  anticiposCanceladosMisFacilidades: Decimal; // F64
+  computoIdcb: Decimal;                     // F65
+  computoCombustibles: Decimal;             // F66
+  saldoTrasladableIdcb: Decimal;            // F70: IDCB que excede el impuesto, no es saldo de libre disponibilidad
+  anticiposSiguientePeriodo: Decimal[];     // Proyección de los 5 anticipos (RG 5211)
+  impuestoProyectadoAnticipos: Decimal;     // Anticipos!E20
   saldoAFavorAnterior: Decimal;
   impuestoAPagarOARCA: Decimal; // Resultado Final (Saldo a pagar si > 0, o saldo a favor si < 0)
+  quebrantoTrasladable: Decimal; // Quebranto del ejercicio (F38 negativo) trasladable a ejercicios futuros
   
   // Justificación Patrimonial (JVP)
   patrimonioInicioTotal: Decimal;

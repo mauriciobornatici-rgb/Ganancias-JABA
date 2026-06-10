@@ -1,19 +1,19 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-08
+Ultima actualizacion: 2026-06-09
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
 ## Estado actual
 
-- Rama activa: `feature/p20-workflow-ddjj`.
+- Rama activa: `feature/p21-backup-health`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: P20 workflow profesional de DDJJ en desarrollo; P19 integrado a `staging`.
+- Ultimo checkpoint documentado: P29 paridad de calculo con Excel IG 25 en curso (abierto por instruccion del usuario); P21 con primer corte aplicado pendiente de commit; P20 integrado a `staging`.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en rama P20.
+- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en rama P21.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos
@@ -32,6 +32,62 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 12. Hacer commit y push a GitHub al cerrar cada bloque util.
 
 ## Unidad activa
+
+### P29 - Paridad de calculo con Excel IG 25
+
+Estado: en curso sobre la rama `feature/p21-backup-health` (el arbol tenia P21 sin commitear; separar commits al cerrar).
+
+Objetivo:
+
+- Pagos a cuenta completos del IG 25 (F61:F67 y saldo IDCB trasladable F70).
+- Anticipos proyectados segun RG 5211: `(impuesto proyectado - retenciones - ITC)/5`, piso $5.000, coeficiente IPC jul->dic.
+- Quebranto del ejercicio expuesto como trasladable y JVP con resultado post-quebrantos (F38).
+- Doceava parte para dependientes (F50) y deduccion especifica de jubilados parametrizable.
+
+Referencias:
+
+- Plan con tabla de 9 divergencias y decisiones: `docs/superpowers/plans/2026-06-09-paridad-excel-p29.md`.
+- Backlog: P29 (Activo) y P30 venta de bienes de uso (Pendiente).
+
+Pendiente para cerrar P29:
+
+- `vitest run`, `tsc --noEmit` y `next build --webpack` en la maquina Windows.
+- Commit separado de P21 y de P29; push.
+
+## Unidad previa en la misma rama
+
+### P21 - Backups, restauracion y salud operativa
+
+Estado: primer corte aplicado en rama `feature/p21-backup-health`, pendiente de commit.
+
+Objetivo:
+
+- Saber rapidamente si la base responde sin exponer credenciales.
+- Documentar backup productivo y restauracion segura en Docker antes de tocar produccion.
+- Dejar una referencia operativa para validar backups sin improvisar.
+
+Cambios aplicados:
+
+- Se agrego `src/domain/ganancias/operations/operationalHealth.ts`.
+- Se agrego `src/domain/ganancias/tests/operationalHealth.test.ts`.
+- Se agrego `GET /api/health`.
+- Se creo `docs/BACKUP_RESTAURACION_OPERATIVA.md`.
+
+Verificacion ejecutada:
+
+- `vitest run src/domain/ganancias/tests/operationalHealth.test.ts`: OK, 3 tests.
+- `vitest run`: OK, 40 archivos pasados, 1 omitido, 155 tests pasados, 1 omitido.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `next build --webpack`: OK.
+- Smoke HTTP local contra Docker: `/api/health` OK, `success: true`, DB `127.0.0.1:3317/ganancias_jaba_test`.
+- `git diff --check`: OK, solo avisos CRLF habituales de Windows.
+
+Pendiente para cerrar P21:
+
+- Commit y push de la rama.
+
+## Unidad anterior en staging
 
 ### P20 - Workflow profesional de DDJJ
 
@@ -61,9 +117,8 @@ Verificacion ejecutada:
 - `next build --webpack`: OK.
 - `git diff --check`: OK, solo avisos CRLF habituales de Windows.
 
-Pendiente para cerrar P20:
+Pendiente posterior P20:
 
-- Commit y push de la rama.
 - Si se quiere una pantalla de reapertura/rectificativa desde dashboard, agregarla como segundo corte P20 o P20-b.
 
 ## Unidad anterior en staging

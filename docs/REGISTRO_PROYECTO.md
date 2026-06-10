@@ -4,6 +4,18 @@ Ultima actualizacion: 2026-06-09
 
 ## Entrada reciente
 
+### 2026-06-10 - HOTFIX CRITICO DE SEGURIDAD: middleware no se ejecutaba en produccion
+
+- Hallazgo: al verificar el health token, `web_fetch` SIN cookie ni token a `/api/clientes` y `/api/parametros` en produccion devolvio datos completos (CUITs, nombres, parametros). La app entera estaba expuesta sin autenticacion.
+- Causa raiz: con estructura `src/app`, Next 16 solo ejecuta el middleware si esta en `src/middleware.ts`. El archivo estaba en la raiz del repo (`./middleware.ts`), donde Next lo ignora silenciosamente. La autenticacion simple (P18) y el health token (P31.5) nunca se aplicaron en produccion; el login del navegador funcionaba como pantalla pero las APIs quedaban abiertas.
+- Antiguedad: preexistente desde P18 (incorporacion de auth). No fue introducido por los cortes P29/P31.
+- Correccion: se movio `middleware.ts` a `src/middleware.ts` (imports ajustados a rutas relativas de `src/`) y se elimino el de la raiz para evitar el conflicto E900 de Next.
+- Prueba de regresion: `src/domain/ganancias/tests/middlewareLocation.test.ts` fija que el middleware viva en `src/` y no en la raiz.
+- ACCIONES INMEDIATAS DEL USUARIO tras desplegar el fix:
+  1. Verificar con `web_fetch`/curl SIN cookie que `/api/clientes` devuelva 401 (no datos).
+  2. Asumir que los datos estuvieron accesibles publicamente: rotar `AUTH_PASSWORD`, `AUTH_SECRET` y la password de la base; evaluar exposicion de datos de contribuyentes.
+  3. Confirmar que el login del navegador sigue funcionando.
+
 ### 2026-06-10 - P31.3/4/5 aplicados (seguridad: rate limit, zod, health token)
 
 - Publicado previo confirmado: `main` = `2aee793` (P31.1/2/7 en produccion).

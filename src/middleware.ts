@@ -6,7 +6,7 @@ import {
   isProtectedPath,
   getSimpleAuthConfig,
   verifySimpleAuthToken,
-} from './src/domain/ganancias/auth/simpleAuth';
+} from './domain/ganancias/auth/simpleAuth';
 
 function buildLoginUrl(req: NextRequest): URL {
   const loginUrl = new URL('/login', req.url);

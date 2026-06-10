@@ -9,7 +9,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `feature/p21-backup-health`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- Ultimo checkpoint documentado: P21 y P29 commiteados (`495360c`, `e5ae003`), integrados a `staging` y publicados en `main` (`480476c`) el 2026-06-09. Confirmar tilde verde del CI en GitHub Actions.
+- ULTIMO CHECKPOINT (2026-06-10): HOTFIX CRITICO de seguridad pendiente de publicar -> el middleware estaba en la raiz y Next con `src/app` lo ignoraba, dejando todas las APIs sin autenticacion en produccion. Se movio a `src/middleware.ts`. DESPLEGAR YA y verificar que `/api/clientes` sin sesion devuelva 401. Rotar AUTH_PASSWORD, AUTH_SECRET y password de la base. Cortes P29 y P31 (1/2/3/4/5/7) ya estaban en `main`.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.

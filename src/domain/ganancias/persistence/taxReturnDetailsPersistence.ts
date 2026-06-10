@@ -799,12 +799,21 @@ export async function persistTaxReturnDetails({
       resultTotalNet: calcResult.resultadoNetoTodasCategorias.toNumber(),
       totalGeneralDeductions: calcResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas.toNumber(),
       impositiveResultBeforeQuebrantos: calcResult.resultadoNetoAntesQuebrantos.toNumber(),
-      quebrantosApplied: 0,
+      // Quebrantos efectivamente aplicados = resultado positivo antes de quebrantos - resultado neto
+      quebrantosApplied: Decimal.max(calcResult.resultadoNetoAntesQuebrantos, 0).sub(calcResult.resultadoImpositivoNeto).toNumber(),
       impositiveResultNet: calcResult.resultadoImpositivoNeto.toNumber(),
       totalPersonalDeductions: calcResult.deduccionesPersonales.totalDeduccionesPersonalesAdmitidas.toNumber(),
       taxableIncome: calcResult.gananciaNetaSujetaImpuesto.toNumber(),
       taxDetermined: calcResult.impuestoDeterminado.toNumber(),
-      totalPaymentsOnAccount: calcResult.retencionesYPercepciones.toNumber(),
+      // Retenciones + anticipos cancelados + IDCB computable + combustibles (IG 25 F62:F67)
+      totalPaymentsOnAccount: calcResult.retencionesYPercepciones
+        .add(calcResult.anticiposCanceladosEfectivo ?? 0)
+        .add(calcResult.anticiposCanceladosIdcb ?? 0)
+        .add(calcResult.anticiposCanceladosMisFacilidades ?? 0)
+        .add(calcResult.computoIdcb ?? 0)
+        .add(calcResult.computoCombustibles ?? 0)
+        .sub(calcResult.saldoTrasladableIdcb ?? 0)
+        .toNumber(),
       finalBalance: calcResult.impuestoAPagarOARCA.toNumber(),
       computedConsumo: calcResult.consumoDiferencial.toNumber(),
       justificationDiff: calcResult.jvpJustificationDiff.toNumber(),

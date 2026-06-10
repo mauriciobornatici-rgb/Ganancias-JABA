@@ -73,7 +73,11 @@ describe('buildTaxReturnPreview', () => {
     expect(preview.jvpTotalColumnaI).toBe(1000);
     expect(preview.jvpTotalColumnaII).toBe(1000);
     expect(preview.jvpJustificationDiff).toBe(0);
-    expect(preview.anticiposSiguientePeriodo).toEqual([10, 10, 10, 10, 10]);
+    // P29: la cuota (impuesto proyectado - retenciones - ITC) / 5 = 10 no supera el piso
+    // de $5.000 de la RG 5211, por lo que no corresponde proyectar anticipos (Anticipos!E24).
+    expect(preview.anticiposSiguientePeriodo).toEqual([]);
+    expect(preview.quebrantoTrasladable).toBe(0);
+    expect(preview.saldoTrasladableIdcb).toBe(0);
   });
 });
 
@@ -210,14 +214,23 @@ describe('hydrateTaxReturnPreviewResult', () => {
         hijos: 0,
         hijosIncapacitados: 0,
         deduccionEspecial: 0,
+        deduccionEspecialDoceavaParte: 0,
         totalDeduccionesPersonalesAdmitidas: 0,
       },
       gananciaNetaSujetaImpuesto: 1000,
       impuestoDeterminado: 50,
       retencionesYPercepciones: 0,
+      anticiposCanceladosIdcb: 0,
+      anticiposCanceladosEfectivo: 0,
+      anticiposCanceladosMisFacilidades: 0,
+      computoIdcb: 0,
+      computoCombustibles: 0,
+      saldoTrasladableIdcb: 0,
       anticiposSiguientePeriodo: [10, 10, 10, 10, 10],
+      impuestoProyectadoAnticipos: 50,
       saldoAFavorAnterior: 0,
       impuestoAPagarOARCA: 50,
+      quebrantoTrasladable: 0,
       patrimonioInicioTotal: 0,
       patrimonioCierreTotal: 1000,
       consumoDiferencial: 0,

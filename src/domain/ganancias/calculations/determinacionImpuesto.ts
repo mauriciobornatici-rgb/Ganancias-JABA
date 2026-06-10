@@ -322,7 +322,19 @@ export function calculateTaxReturn(
   // Ganancia Neta antes de Deducciones Personales
   const resultadoNetoAntesQuebrantos = resultadoNetoTodasCategorias.sub(totalDeduccionesGeneralesAdmitidas);
   const quebrantosAnteriores = new Decimal(input.quebrantosAnteriores || 0);
-  const resultadoImpositivoNet = Decimal.max(resultadoNetoAntesQuebrantos.sub(quebrantosAnteriores), new Decimal(0));
+  // Equivalente a IG 25!F38 = F34 - F36 (con signo: si es negativo hay quebranto del ejercicio)
+  const resultadoNetoDespuesQuebrantos = resultadoNetoAntesQuebrantos.sub(quebrantosAnteriores);
+  const resultadoImpositivoNet = Decimal.max(resultadoNetoDespuesQuebrantos, new Decimal(0));
+  // Quebranto trasladable a ejercicios futuros (Art. 25 LIG, 5 ejercicios)
+  const quebrantoTrasladable = resultadoNetoDespuesQuebrantos.isNegative()
+    ? resultadoNetoDespuesQuebrantos.abs()
+    : new Decimal(0);
+  if (quebrantoTrasladable.gt(0)) {
+    warnings.push(
+      `Quebranto del ejercicio: el resultado neto despues de quebrantos es negativo ` +
+      `($${quebrantoTrasladable.toFixed(2)}). Es trasladable a los proximos 5 ejercicios (Art. 25 LIG).`
+    );
+  }
 
   // ==========================================
   // 7. DEDUCCIONES PERSONALES (ARTÍCULO 30)
@@ -335,13 +347,23 @@ export function calculateTaxReturn(
   let especialAdmitida = new Decimal(0);
 
   if (pInput.esJubiladoOchoHaberes) {
-    const year = input.fiscalYear;
-    if (year === 2024) {
-      mniAdmitido = new Decimal(15660344); // 8 haberes mínimos 2024 acumulados
-    } else if (year === 2026) {
-      mniAdmitido = new Decimal(36000000); // Proyección 8 haberes mínimos 2026
+    // Deduccion especifica jubilados: preferir el parametro normativo cargado (IG 25!E53).
+    if (input.params.deduccionEspecificaJubilados && new Decimal(input.params.deduccionEspecificaJubilados).gt(0)) {
+      mniAdmitido = new Decimal(input.params.deduccionEspecificaJubilados);
     } else {
-      mniAdmitido = new Decimal(24800000); // 8 haberes mínimos 2025 acumulados
+      // Fallback hardcodeado por anio; mantener actualizado o cargar el parametro.
+      const year = input.fiscalYear;
+      if (year === 2024) {
+        mniAdmitido = new Decimal(15660344); // 8 haberes mínimos 2024 acumulados
+      } else if (year === 2026) {
+        mniAdmitido = new Decimal(36000000); // Proyección 8 haberes mínimos 2026
+      } else {
+        mniAdmitido = new Decimal(24800000); // 8 haberes mínimos 2025 acumulados
+      }
+      warnings.push(
+        'Deduccion especifica jubilados: no hay parametro "deduccionEspecificaJubilados" cargado; ' +
+        `se uso el valor de respaldo $${mniAdmitido.toFixed(2)} para ${input.fiscalYear}. Verificar contra normativa vigente.`
+      );
     }
   } else {
     // Deducción Especial común
@@ -358,11 +380,24 @@ export function calculateTaxReturn(
   const hijosAdmitido = new Decimal(art30.hijo).mul(pInput.cantidadHijos);
   const hijosIncapAdmitido = new Decimal(art30.hijoIncapacitado).mul(pInput.cantidadHijosIncapacitados);
 
+  // Doceava parte (IG 25!F50): solo para relacion de dependencia/jubilados con deduccion del
+  // Art. 30 inc. c apartado 2: (MNI + conyuge + hijos + hijos incapacitados + especial dependiente) / 12.
+  let doceavaParte = new Decimal(0);
+  if (!pInput.esJubiladoOchoHaberes && pInput.tipoDeduccionEspecial === 'Dependiente') {
+    doceavaParte = mniAdmitido
+      .add(conyugeAdmitida)
+      .add(hijosAdmitido)
+      .add(hijosIncapAdmitido)
+      .add(especialAdmitida)
+      .div(12);
+  }
+
   const totalDeduccionesPersonales = mniAdmitido
     .add(conyugeAdmitida)
     .add(hijosAdmitido)
     .add(hijosIncapAdmitido)
-    .add(especialAdmitida);
+    .add(especialAdmitida)
+    .add(doceavaParte);
 
   const deduccionesPersonales: PersonalDeductionsOutput = {
     minimoNoImponible: mniAdmitido.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
@@ -370,6 +405,7 @@ export function calculateTaxReturn(
     hijos: hijosAdmitido.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     hijosIncapacitados: hijosIncapAdmitido.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     deduccionEspecial: especialAdmitida.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    deduccionEspecialDoceavaParte: doceavaParte.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     totalDeduccionesPersonalesAdmitidas: totalDeduccionesPersonales.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
   };
 
@@ -387,20 +423,78 @@ export function calculateTaxReturn(
   const impuestoDeterminado = calculateArt94Tax(gananciaNetaSujetaImpuesto, input.params.escalaArt94);
 
   // ==========================================
-  // 10. PAGOS A CUENTA Y SALDO FINAL
+  // 10. PAGOS A CUENTA Y SALDO FINAL (IG 25 F61:F67, F68 y F70)
   // ==========================================
-  let retencionesYPercepciones = new Decimal(0);
+  let retencionesYPercepciones = new Decimal(0);      // F67: solo retenciones/percepciones de Ganancias
+  let anticiposCanceladosIdcb = new Decimal(0);       // F62
+  let anticiposCanceladosEfectivo = new Decimal(0);   // F63
+  let anticiposCanceladosMisFacilidades = new Decimal(0); // F64
+  let computoIdcb = new Decimal(0);                   // F65
+  let computoCombustibles = new Decimal(0);           // F66
+  let creditosOtrosNoComputables = new Decimal(0);    // No computan contra Ganancias
+
   input.withholdings.forEach(w => {
-    retencionesYPercepciones = retencionesYPercepciones.add(w.amount);
+    const amount = new Decimal(w.amount);
+    switch (w.taxCode) {
+      case 'Ganancias':
+        retencionesYPercepciones = retencionesYPercepciones.add(amount);
+        break;
+      case 'AnticipoIDCB':
+        anticiposCanceladosIdcb = anticiposCanceladosIdcb.add(amount);
+        break;
+      case 'AnticipoEfectivo':
+        anticiposCanceladosEfectivo = anticiposCanceladosEfectivo.add(amount);
+        break;
+      case 'AnticipoMisFacilidades':
+        anticiposCanceladosMisFacilidades = anticiposCanceladosMisFacilidades.add(amount);
+        break;
+      case 'IDCB':
+        computoIdcb = computoIdcb.add(amount);
+        break;
+      case 'Combustibles':
+        computoCombustibles = computoCombustibles.add(amount);
+        break;
+      default:
+        // 'Otros' (IVA, IIBB, etc.): no es pago a cuenta de Ganancias.
+        creditosOtrosNoComputables = creditosOtrosNoComputables.add(amount);
+        break;
+    }
   });
 
-  // Saldo a favor impositivo anterior o de libre disponibilidad
+  if (creditosOtrosNoComputables.gt(0)) {
+    warnings.push(
+      `Pagos a cuenta: hay $${creditosOtrosNoComputables.toFixed(2)} cargados con codigo "Otros" ` +
+      `que NO se computan contra el Impuesto a las Ganancias.`
+    );
+  }
+
+  // Saldo a favor impositivo anterior o de libre disponibilidad (F61)
   const saldoAFavorAnterior = new Decimal(input.saldoAFavorAnterior || 0);
 
-  // Impuesto a pagar o saldo a favor
+  // Logica de IG 25!F68 y F70: el IDCB (computo directo F65 + anticipos cancelados con IDCB F62)
+  // solo se computa hasta el impuesto determinado. El excedente no es saldo de libre
+  // disponibilidad: queda como saldo trasladable de IDCB (F70).
+  const idcbTotal = computoIdcb.add(anticiposCanceladosIdcb);
+  const idcbComputable = Decimal.min(idcbTotal, impuestoDeterminado);
+  const saldoTrasladableIdcb = idcbTotal.sub(idcbComputable); // F70
+
+  const creditosNoIdcb = saldoAFavorAnterior        // F61
+    .add(anticiposCanceladosEfectivo)               // F63
+    .add(anticiposCanceladosMisFacilidades)         // F64
+    .add(computoCombustibles)                       // F66
+    .add(retencionesYPercepciones);                 // F67
+
+  // Impuesto a pagar (positivo) o saldo a favor de libre disponibilidad (negativo)
   const impuestoAPagarOARCA = impuestoDeterminado
-    .sub(retencionesYPercepciones)
-    .sub(saldoAFavorAnterior);
+    .sub(idcbComputable)
+    .sub(creditosNoIdcb);
+
+  if (saldoTrasladableIdcb.gt(0)) {
+    warnings.push(
+      `IDCB: $${saldoTrasladableIdcb.toFixed(2)} exceden el impuesto determinado. ` +
+      `Ese excedente es trasladable a periodos siguientes y NO computa como saldo de libre disponibilidad (IG 25 F70).`
+    );
+  }
 
   // ==========================================
   // 11. JUSTIFICACIÓN PATRIMONIAL (JVP INTEGRADA)
@@ -457,7 +551,8 @@ export function calculateTaxReturn(
   const jvpResult = calculatePatrimonialJustification({
     personalAssets: jvpAssets,
     personalLiabilities: input.personalLiabilities,
-    resultadoImpositivo: resultadoNetoAntesQuebrantos,
+    // JVP!D14 referencia IG 25!F38: resultado DESPUES de quebrantos anteriores, con signo.
+    resultadoImpositivo: resultadoNetoDespuesQuebrantos,
     amortizaciones: amortizacionesBienesDeUso,
     ingresosExentos: ventasExentas,
     gastosNoDeducibles: gastosNoDeducibles.add(totalExcedenteDeduccionesGeneralesJvp),
@@ -466,31 +561,40 @@ export function calculateTaxReturn(
   warnings.push(...jvpResult.warnings);
 
   // ==========================================
-  // 12. PROYECCIÓN DE ANTICIPOS EJERCICIO SIGUIENTE
-  // Recalculo con factor de reexpresión IPC (e.g. 1.142939)
+  // 12. PROYECCIÓN DE ANTICIPOS EJERCICIO SIGUIENTE (hoja Anticipos / RG 5211)
   // ==========================================
-   // Factor de proyección IPC para anticipos: usar variación interanual de los índices cargados
+  // Factor de proyección IPC: la planilla usa IPC jul -> dic del período que se liquida
+  // (Anticipos!D5, e.g. 10121.3715 / 8855.56813 = 1.142939).
   let ipcAnticipoRate = new Decimal(1);
-  if (input.params.indicesIPC.length >= 2) {
-    const ipcDic = input.params.indicesIPC.find(i => i.monthIndex === 12);
-    const ipcEne = input.params.indicesIPC.find(i => i.monthIndex === 1);
-    if (ipcDic && ipcEne) {
-      ipcAnticipoRate = new Decimal(ipcDic.ipcValue).div(new Decimal(ipcEne.ipcValue));
-    }
+  const ipcDicAnt = input.params.indicesIPC.find(i => i.monthIndex === 12);
+  const ipcJulAnt = input.params.indicesIPC.find(i => i.monthIndex === 7);
+  if (ipcDicAnt && ipcJulAnt && new Decimal(ipcJulAnt.ipcValue).gt(0)) {
+    ipcAnticipoRate = new Decimal(ipcDicAnt.ipcValue)
+      .div(new Decimal(ipcJulAnt.ipcValue))
+      .toDecimalPlaces(6, Decimal.ROUND_HALF_UP);
+  } else {
+    warnings.push(
+      'Anticipos: no se encontraron indices IPC de julio y/o diciembre para proyectar (Anticipos!D5). ' +
+      'Se proyecto sin actualizacion (coeficiente 1).'
+    );
   }
+
+  // Base = IG 25!F38 actualizado (Anticipos!E5). Si hubo quebranto, la base es 0.
   const baseImponibleAnticipo = resultadoImpositivoNet.mul(ipcAnticipoRate);
 
-  // Deducciones personales proyectadas (todas, incluyendo cónyuge e hijos)
+  // Deducciones personales proyectadas (todas, incluyendo cónyuge, hijos y doceava parte)
   const mniAnticipo = mniAdmitido.mul(ipcAnticipoRate);
   const especialAnticipo = especialAdmitida.mul(ipcAnticipoRate);
   const conyugeAnticipo = conyugeAdmitida.mul(ipcAnticipoRate);
   const hijosAnticipo = hijosAdmitido.mul(ipcAnticipoRate);
   const hijosIncapAnticipo = hijosIncapAdmitido.mul(ipcAnticipoRate);
+  const doceavaAnticipo = doceavaParte.mul(ipcAnticipoRate);
   const deduccionesPersonalesAnticipo = mniAnticipo
     .add(especialAnticipo)
     .add(conyugeAnticipo)
     .add(hijosAnticipo)
-    .add(hijosIncapAnticipo);
+    .add(hijosIncapAnticipo)
+    .add(doceavaAnticipo);
 
   let gananciaAnticipo = baseImponibleAnticipo.sub(deduccionesPersonalesAnticipo);
   if (gananciaAnticipo.isNegative()) {
@@ -507,12 +611,26 @@ export function calculateTaxReturn(
   }));
 
   const impuestoAnticipoDeterminado = calculateArt94Tax(gananciaAnticipo, escalaActualizada);
-  
-  // Anticipos proyectados: 5 cuotas del 20% del impuesto proyectado
+
+  // Anticipos!E24 / RG 5211: cuota = (Impuesto proyectado - Retenciones - ITC) / 5.
+  // Si la cuota no supera $5.000, no corresponde ingresar anticipos.
+  const PISO_ANTICIPO = new Decimal(5000);
+  const baseAnticipos = impuestoAnticipoDeterminado
+    .sub(retencionesYPercepciones)
+    .sub(computoCombustibles);
   const anticiposSiguientePeriodo: Decimal[] = [];
-  const cuotaAnticipo = impuestoAnticipoDeterminado.mul('0.20');
-  for (let i = 0; i < 5; i++) {
-    anticiposSiguientePeriodo.push(cuotaAnticipo.toDecimalPlaces(0, Decimal.ROUND_HALF_UP));
+  if (baseAnticipos.gt(0)) {
+    const cuotaAnticipo = baseAnticipos.div(5).toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
+    if (cuotaAnticipo.gt(PISO_ANTICIPO)) {
+      for (let i = 0; i < 5; i++) {
+        anticiposSiguientePeriodo.push(cuotaAnticipo);
+      }
+    } else {
+      warnings.push(
+        `Anticipos: la cuota proyectada ($${cuotaAnticipo.toFixed(2)}) no supera el minimo de $5.000. ` +
+        'No se deberan ingresar anticipos (Anticipos!E24).'
+      );
+    }
   }
 
   return {
@@ -539,9 +657,17 @@ export function calculateTaxReturn(
     gananciaNetaSujetaImpuesto: gananciaNetaSujetaImpuesto.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     impuestoDeterminado: impuestoDeterminado.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     retencionesYPercepciones: retencionesYPercepciones.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    anticiposCanceladosIdcb: anticiposCanceladosIdcb.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    anticiposCanceladosEfectivo: anticiposCanceladosEfectivo.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    anticiposCanceladosMisFacilidades: anticiposCanceladosMisFacilidades.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    computoIdcb: computoIdcb.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    computoCombustibles: computoCombustibles.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    saldoTrasladableIdcb: saldoTrasladableIdcb.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     anticiposSiguientePeriodo,
+    impuestoProyectadoAnticipos: impuestoAnticipoDeterminado.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     saldoAFavorAnterior: saldoAFavorAnterior.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     impuestoAPagarOARCA: impuestoAPagarOARCA.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    quebrantoTrasladable: quebrantoTrasladable.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     patrimonioInicioTotal: jvpResult.patrimonioInicio,
     patrimonioCierreTotal: jvpResult.patrimonioCierre,
     consumoDiferencial: jvpResult.consumoDiferencial,
@@ -552,4 +678,5 @@ export function calculateTaxReturn(
     errors,
   };
 }
+// P29 (2026-06-09): pagos a cuenta F61:F67/F70, anticipos RG 5211, quebranto trasladable, doceava parte.
 

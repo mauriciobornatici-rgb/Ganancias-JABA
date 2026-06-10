@@ -1,6 +1,6 @@
 # Backlog Priorizado - Ganancias JABA
 
-Ultima actualizacion: 2026-06-08
+Ultima actualizacion: 2026-06-09
 
 Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usuario o por bloqueo tecnico, registrar el motivo en `docs/REGISTRO_PROYECTO.md`.
 
@@ -72,6 +72,42 @@ Verificacion:
 - `check-deployment-db-safety`: OK.
 - `next build --webpack`: OK.
 - Cierre UX IPC: test focal OK, `tsc --noEmit` OK, `vitest run` OK con 136 tests, `check-deployment-db-safety` OK y `next build --webpack` OK.
+
+## P29 - Paridad de calculo con Excel IG 25
+
+Estado: Activo (abierto por instruccion del usuario el 2026-06-09 tras revision integral app vs Excel).
+
+Problema:
+
+- Pagos a cuenta incompletos: IG 25 computa 7 conceptos (F61:F67) mas saldo IDCB trasladable (F70); la app solo restaba retenciones (incluyendo indebidamente `taxCode='Otros'`) y saldo a favor.
+- Anticipos proyectados no seguian RG 5211: faltaba restar retenciones/ITC, faltaba el piso de $5.000 y el coeficiente IPC usaba dic/ene en vez de jul->dic.
+- El quebranto del ejercicio (F38 negativo) se clampaba a 0 y se perdia para el arrastre.
+- JVP usaba el resultado antes de quebrantos (F34) cuando el Excel usa F38.
+- Faltaba la doceava parte (F50) para dependientes y los montos de jubilados 8 haberes estaban hardcodeados.
+
+Accion:
+
+- Plan detallado en `docs/superpowers/plans/2026-06-09-paridad-excel-p29.md` (incluye tabla completa de divergencias y decisiones: criterio legal documentado para los errores internos del Excel D27/D29/D30).
+
+Criterio de cierre:
+
+- Conceptos F61:F67 y F70 calculados y expuestos.
+- Anticipos `(impuesto proyectado - retenciones - ITC)/5` con piso $5.000.
+- Quebranto trasladable visible; JVP con resultado post-quebrantos.
+- Doceava parte y parametro de jubilados.
+- `vitest run`, `tsc --noEmit` y `next build --webpack` en verde en Windows.
+
+## P30 - Venta de bienes de uso con precio de venta
+
+Estado: Pendiente (abierto por P29, decision del usuario de no incluirlo en el nucleo critico).
+
+Problema:
+
+- El ER del Excel contempla "Resultado por venta de Bienes de Uso" (precio de venta - costo computable); la app solo modela la baja como perdida del valor residual, sin precio de venta. No permite reconocer ganancia por venta.
+
+Accion:
+
+- Agregar precio de venta al modelo `FixedAsset` (requiere migracion Prisma), calcular resultado por venta y reflejarlo en ER y JVP.
 
 ## P1 - Reducir riesgo operativo del wizard
 
@@ -683,7 +719,7 @@ Criterio de cierre:
 
 ## P20 - Workflow profesional de DDJJ
 
-Estado: Activo - primer corte aplicado en `feature/p20-workflow-ddjj`.
+Estado: En staging - primer corte aplicado y verificado.
 
 Problema:
 
@@ -725,7 +761,7 @@ Criterio de cierre:
 
 ## P21 - Backups, restauracion y salud operativa
 
-Estado: Pendiente.
+Estado: Activo - primer corte aplicado en `feature/p21-backup-health`.
 
 Problema:
 
@@ -737,6 +773,23 @@ Accion recomendada:
 - Probar restauracion en Docker.
 - Crear health check de DB.
 - Registrar fecha, archivo y resultado.
+
+Avance 2026-06-08:
+
+- Se agrego helper testeado `buildOperationalHealthReport`.
+- Se agrego enmascarado de destino de DB sin usuario/password.
+- Se agrego endpoint `GET /api/health` con consulta liviana a DB.
+- Se creo `docs/BACKUP_RESTAURACION_OPERATIVA.md`.
+
+Verificacion 2026-06-08:
+
+- `operationalHealth.test.ts`: OK, 3 tests.
+- `vitest run`: OK, 40 archivos pasados, 1 omitido, 155 tests pasados, 1 omitido.
+- `tsc --noEmit`: OK.
+- `prisma validate --schema prisma/schema.prisma`: OK.
+- `next build --webpack`: OK.
+- Smoke HTTP local contra Docker: `/api/health` OK, `success: true`, DB `127.0.0.1:3317/ganancias_jaba_test`.
+- `git diff --check`: OK, solo avisos CRLF habituales de Windows.
 
 Criterio de cierre:
 

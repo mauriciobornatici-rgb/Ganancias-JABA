@@ -3773,8 +3773,8 @@ export default function WizardPage() {
                         </div>
                         <div className="h-6 w-[1px] bg-teal-500/20"></div>
                         <div className="text-left text-[10px] text-zinc-400">
-                          <span className="block font-semibold">Ganancias: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode === 'Ganancias').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
-                          <span className="block font-semibold">Otros: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode !== 'Ganancias').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                          <span className="block font-semibold">Computa en Ganancias: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode !== 'Otros').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                          <span className="block font-semibold">Otros (no computa): <span className="text-zinc-200">${withholdings.filter(w => w.taxCode === 'Otros').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                         </div>
                       </div>
                     )}
@@ -3825,8 +3825,13 @@ export default function WizardPage() {
                               onChange={(e) => handleCellChange(index, 'taxCode', e.target.value, 'withholdings')}
                               className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none w-full"
                             >
-                              <option value="Ganancias">Impuesto a las Ganancias (Cómputo en cabecera)</option>
-                              <option value="Otros">Otros Impuestos</option>
+                              <option value="Ganancias">Retención/Percepción Ganancias (F67)</option>
+                              <option value="AnticipoEfectivo">Anticipo cancelado en efectivo (F63)</option>
+                              <option value="AnticipoIDCB">Anticipo cancelado con IDCB (F62)</option>
+                              <option value="AnticipoMisFacilidades">Anticipo cancelado Mis Facilidades (F64)</option>
+                              <option value="IDCB">Cómputo Imp. Créditos y Débitos (F65)</option>
+                              <option value="Combustibles">Combustibles líquidos (F66)</option>
+                              <option value="Otros">Otros Impuestos (no computa en Ganancias)</option>
                             </select>
                             <input
                               type="text"

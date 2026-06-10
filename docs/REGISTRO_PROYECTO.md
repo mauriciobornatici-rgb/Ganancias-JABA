@@ -4,6 +4,16 @@ Ultima actualizacion: 2026-06-09
 
 ## Entrada reciente
 
+### 2026-06-09 - Cierre P21 + P29: commit, integracion y publicacion
+
+- Commits realizados en Windows sobre `feature/p21-backup-health`:
+  - `495360c feat: backup, salud operativa y cierre ux p21/p28` (cierra el pendiente de commit de P21 y del cierre UX P28);
+  - `e5ae003 fix: paridad de calculo con excel ig 25 p29`.
+- Incidentes resueltos durante el commit: `index.lock` huerfano dejado por un intento de git desde el sandbox del asistente (eliminado); un primer commit mezclado `5f2594b` se deshizo con `reset --soft` y se rearmo en dos commits separados.
+- Merge `480476c` a `staging` y push; luego `main` integrada por fast-forward a `480476c` y pusheada. Produccion (Vercel desde `main`) toma este corte.
+- CI de GitHub Actions corre sobre `staging` y `main` (tests + typecheck + prisma validate + build); confirmar tilde verde en la pestania Actions del repo.
+- Pendiente menor trasladado al backlog: confirmar el importe minimo vigente de anticipos (piso $5.000 tomado del Excel), columna `deduccionEspecificaJubilados` en `TaxParameterSet`, y exposicion en UI de los campos nuevos (F62:F66, F70, quebranto trasladable).
+
 ### 2026-06-09 - P29 paridad de calculo con Excel IG 25
 
 - Revision integral de la app contra `DJ Ganancias 2025 - Tercera Categoría.xlsx` (todas las hojas con formulas) y `AXI Inflación IMPOSITIVO Comercial 2025.xlsx`.

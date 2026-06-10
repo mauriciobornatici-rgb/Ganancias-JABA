@@ -4,7 +4,22 @@ Ultima actualizacion: 2026-06-09
 
 ## Entrada reciente
 
-### 2026-06-10 - HOTFIX CRITICO DE SEGURIDAD: middleware no se ejecutaba en produccion
+### 2026-06-10 - P31.8 + migracion a proxy.ts (cierre de codigo de P31)
+
+- P31.8 renovacion deslizante de sesion: `shouldRenewSimpleAuthToken` en `simpleAuth.ts` (reemite el token cuando consumio mas de la mitad de sus 12 hs; solo tras verify; payloads anomalos -> false). El interceptor reemite la cookie con la actividad: una carga larga ya no pierde la sesion.
+- Migracion Next 16: `src/middleware.ts` -> `src/proxy.ts` con funcion exportada `proxy` (convencion verificada en `next/dist/build/templates/middleware.js`: `(isProxy ? mod.proxy : mod.middleware) || mod.default`). Elimina el warning de deprecacion.
+- `middlewareLocation.test.ts` actualizado: exige `src/proxy.ts`, prohibe middleware/proxy en raiz o `src/middleware.ts`, y verifica que el archivo exporte `function proxy` y `config`.
+- Verificacion: `simpleAuth.test.ts` 7/7 OK (incluye renovacion deslizante) ejecutado sobre los archivos reales.
+- IMPORTANTE tras deploy: por ser un cambio de convencion del interceptor (la clase de cambio que causo el incidente), reverificar OBLIGATORIO: `curl /api/clientes` sin sesion = 401, login navegador OK, health con token = 200.
+
+### 2026-06-10 - HOTFIX CRITICO: RESUELTO Y VERIFICADO EN PRODUCCION
+
+- Cronologia del cierre: el primer deploy del fix (f976cf6) fallo el type-check de Vercel (`isAuthorizedHealthToken` usaba un objeto literal no asignable desde `process.env`); se corrigio tipando con `SimpleAuthEnv` extendido (commit `942975f`, en el arbol via asistente de GitHub); las ramas divergieron y se unifico con merge normal: `staging`/`main` = `03c6e34`.
+- Deploy `dpl_8FyLta...` READY en produccion. Verificacion final: `curl /api/clientes` sin sesion devuelve 401 "Sesion no autenticada" (antes devolvia todos los datos). Middleware activo desde `src/middleware.ts`.
+- Leccion tecnica: los builds previos de Vercel y el smoke de P19 ya mostraban el dashboard accesible sin login; quedo enmascarado. El test `middlewareLocation.test.ts` fija la ubicacion. Nota: Next 16 avisa que `middleware` esta deprecado a favor de `proxy`; migrar el nombre en un corte futuro.
+- PENDIENTE DE SEGURIDAD (no cerrar P31 sin esto): rotar `AUTH_PASSWORD`, `AUTH_SECRET` y password de la base en Hostinger, porque los datos y endpoints estuvieron publicamente accesibles desde P18. Probar `curl -H "x-health-token: <token>" /api/health` (debe dar 200) y configurar monitor externo.
+
+### 2026-06-10 - HOTFIX CRITICO DE SEGURIDAD: middleware no se ejecutaba en produccion (detalle original)
 
 - Hallazgo: al verificar el health token, `web_fetch` SIN cookie ni token a `/api/clientes` y `/api/parametros` en produccion devolvio datos completos (CUITs, nombres, parametros). La app entera estaba expuesta sin autenticacion.
 - Causa raiz: con estructura `src/app`, Next 16 solo ejecuta el middleware si esta en `src/middleware.ts`. El archivo estaba en la raiz del repo (`./middleware.ts`), donde Next lo ignora silenciosamente. La autenticacion simple (P18) y el health token (P31.5) nunca se aplicaron en produccion; el login del navegador funcionaba como pantalla pero las APIs quedaban abiertas.

@@ -99,7 +99,7 @@ Criterio de cierre:
 
 ## P31 - Endurecimiento post-auditoria integral 2026-06-10
 
-Estado: En curso. Puntos 1, 2 y 7 publicados en `main` (`2aee793`). Puntos 3, 4 y 5 aplicados el 2026-06-10 (rate limit de login con 429/Retry-After y demora ante fallo; zod en alta de DDJJ + topes 6 MB guardado / 15 MB import; /api/health accesible con HEALTH_CHECK_TOKEN para monitoreo), pendientes de commit. Restan: 6 (backup automatico Hostinger), 8 (renovacion deslizante de sesion) y 9 (rotar password DB). Operativo pendiente: cargar HEALTH_CHECK_TOKEN en Vercel y configurar monitor externo.
+Estado: En curso. Puntos 1, 2 y 7 publicados en `main` (`2aee793`). Puntos 3, 4 y 5 aplicados el 2026-06-10 (rate limit de login con 429/Retry-After y demora ante fallo; zod en alta de DDJJ + topes 6 MB guardado / 15 MB import; /api/health accesible con HEALTH_CHECK_TOKEN para monitoreo), pendientes de commit. Punto 8 (renovacion deslizante) aplicado el 2026-06-10 junto con la migracion `middleware`->`proxy` de Next 16. CODIGO DE P31 COMPLETO. Restan solo pasos operativos del usuario: 6 (backup automatico Hostinger), 9 (rotar AUTH_PASSWORD/AUTH_SECRET/password DB tras la exposicion), restringir DATABASE_URL a Production en Vercel, y configurar monitor externo con HEALTH_CHECK_TOKEN.
 
 Problema / hallazgos, en orden de prioridad:
 

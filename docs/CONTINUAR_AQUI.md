@@ -9,7 +9,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `feature/p21-backup-health`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- ULTIMO CHECKPOINT (2026-06-10): hotfix critico de middleware RESUELTO y verificado (main `03c6e34`, deploy READY, `/api/clientes` sin sesion = 401). PENDIENTE INMEDIATO: rotar AUTH_PASSWORD, AUTH_SECRET y password de la base (estuvieron expuestos), probar health con token y configurar monitor externo. Cortes P29 y P31 (1/2/3/4/5/7) ya estaban en `main`.
+- ULTIMO CHECKPOINT (2026-06-10, cierre del dia): main = `816f7d4` en produccion (deploy READY, verificado: APIs sin sesion = 401, login OK). Publicado hoy: P29 paridad Excel completa, P31 codigo completo (resiliencia dashboard, coma decimal, grillas paginadas, rate limit login, zod, health token, sesion deslizante), hotfix critico del middleware (ahora `src/proxy.ts`). PENDIENTES OPERATIVOS DEL USUARIO: rotar AUTH_PASSWORD/AUTH_SECRET/password DB (exposicion desde P18), restringir DATABASE_URL a Production en Vercel (los Preview fallan a proposito por la guarda P16 hasta hacerlo), backup automatico Hostinger, monitor externo con HEALTH_CHECK_TOKEN. PROXIMO FRENTE FISCAL: protocolo de confianza (2-3 liquidaciones reales en paralelo app vs Excel), pendientes menores P29 y P30. Cortes P29 y P31 (1/2/3/4/5/7) ya estaban en `main`.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.

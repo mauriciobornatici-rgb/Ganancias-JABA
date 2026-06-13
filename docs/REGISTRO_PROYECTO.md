@@ -21,6 +21,7 @@ Ultima actualizacion: 2026-06-13
   - `prisma validate --schema prisma/schema.prisma`: OK;
   - `next build --webpack`: OK;
   - smoke DB solo lectura `SELECT 1`: OK.
+- Commit/push: `d706483 chore: sanear lint global p12` en `feature/p21-backup-health`.
 - No se modificaron formulas fiscales ni persistencia de datos productivos.
 
 ### 2026-06-10 - P31.8 + migracion a proxy.ts (cierre de codigo de P31)

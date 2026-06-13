@@ -12,7 +12,7 @@ async function main() {
   console.log('Seeding impositive database parameters...');
 
   // 1. Crear Roles y Permisos maestros
-  const roleAdmin = await prisma.role.upsert({
+  await prisma.role.upsert({
     where: { name: 'admin' },
     update: {},
     create: {
@@ -21,7 +21,7 @@ async function main() {
     },
   });
 
-  const roleContador = await prisma.role.upsert({
+  await prisma.role.upsert({
     where: { name: 'contador' },
     update: {},
     create: {

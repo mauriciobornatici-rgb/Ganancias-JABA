@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 
 // GET /api/auditoria — Obtener registros de auditoría con filtros opcionales
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const fiscalYear = searchParams.get('fiscalYear');
 
     // Construir filtro dinámico
-    const where: any = {};
+    const where: Prisma.AuditLogWhereInput = {};
     if (entityType) where.entityType = entityType;
     if (action) where.action = action;
     if (clientCuit) where.clientCuit = clientCuit;
@@ -36,9 +37,9 @@ export async function GET(req: NextRequest) {
       data: logs,
       meta: { total, limit, offset },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al obtener registros de auditoría: ${err.message}` },
+      { success: false, error: `Error al obtener registros de auditoría: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -71,10 +72,14 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: log }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al registrar evento de auditoría: ${err.message}` },
+      { success: false, error: `Error al registrar evento de auditoría: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

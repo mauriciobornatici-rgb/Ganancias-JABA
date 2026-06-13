@@ -503,19 +503,19 @@ Criterio de cierre:
 
 ## P12 - Saneamiento lint global
 
-Estado: Pendiente.
+Estado: Resuelto localmente en `feature/p21-backup-health` (2026-06-13), pendiente de integracion/publicacion.
 
 Problema:
 
-- `eslint` global no pasa por deuda acumulada fuera del alcance de P11.
-- Los errores actuales incluyen `any` en APIs/paginas, reglas de hooks en pantallas existentes, imports no usados, `require` en `seed.ts`/`test_db.js` y textos JSX sin escape.
-- No bloquea `tsc`, tests ni build, pero si bloquea usar lint global como puerta de calidad.
+- Resuelto: `eslint` global pasa sin errores ni warnings.
+- Se eliminaron `any` explicitos en APIs/paginas principales tocadas, reglas de hooks pendientes, imports/variables no usados, textos JSX sin escape y la excepcion controlada de `test_db.js`.
+- Ahora `eslint` puede volver a usarse como puerta de calidad junto con `tsc`, tests y build.
 
 Accion recomendada:
 
-- Resolver en una unidad separada, por cortes pequenos.
-- Priorizar APIs y paginas principales antes de archivos auxiliares.
-- No mezclar con nuevas reglas contables para evitar regresiones funcionales.
+- Mantener `eslint` global obligatorio antes de integrar cambios.
+- No reintroducir `any` en pantallas o APIs sin un motivo documentado.
+- Continuar la mejora de mantenibilidad separando componentes grandes en P24.
 
 Criterio de cierre:
 
@@ -866,19 +866,18 @@ Estado: Pendiente.
 
 Problema:
 
-- `eslint` global sigue pendiente.
-- `src/app/page.tsx` concentra mucha UI/logica y usa `any`.
+- `eslint` global ya fue saneado en P12.
+- `src/app/page.tsx`, wizard, papel de trabajo e informe cliente quedaron sin `any` explicitos, pero siguen siendo archivos grandes con mucha UI/logica.
 
 Accion recomendada:
 
-- Hacer pasar `eslint` global.
 - Dividir dashboard en componentes/hooks.
-- Tipar respuestas principales.
+- Seguir tipando respuestas principales en nuevas rutas/pantallas.
 - Mantener tests/build verdes.
 
 Criterio de cierre:
 
-- `npm run lint` verde.
+- `npm run lint`/`eslint` verde en cada cierre.
 - Dashboard mas mantenible.
 - Sin regresion funcional.
 

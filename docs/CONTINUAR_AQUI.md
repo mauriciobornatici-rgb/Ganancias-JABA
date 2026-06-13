@@ -1,6 +1,6 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-09
+Ultima actualizacion: 2026-06-13
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
@@ -9,6 +9,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama activa: `feature/p21-backup-health`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
+- CHECKPOINT LOCAL (2026-06-13): P12 saneamiento lint global aplicado en `feature/p21-backup-health`. `eslint` global queda verde, sin errores ni warnings. Verificacion fresca: `vitest run` OK (46 archivos, 189 tests, 1 skipped), `tsc --noEmit` OK, `prisma validate` OK, `next build --webpack` OK, smoke DB `SELECT 1` OK contra la `DATABASE_URL` del `.env`. Cambios aun no publicados a produccion; revisar/commitear/pushear la rama antes de integrarla.
 - ULTIMO CHECKPOINT (2026-06-10, cierre del dia): main = `816f7d4` en produccion (deploy READY, verificado: APIs sin sesion = 401, login OK). Publicado hoy: P29 paridad Excel completa, P31 codigo completo (resiliencia dashboard, coma decimal, grillas paginadas, rate limit login, zod, health token, sesion deslizante), hotfix critico del middleware (ahora `src/proxy.ts`). PENDIENTES OPERATIVOS DEL USUARIO: rotar AUTH_PASSWORD/AUTH_SECRET/password DB (exposicion desde P18), restringir DATABASE_URL a Production en Vercel (los Preview fallan a proposito por la guarda P16 hasta hacerlo), backup automatico Hostinger, monitor externo con HEALTH_CHECK_TOKEN. PROXIMO FRENTE FISCAL: protocolo de confianza (2-3 liquidaciones reales en paralelo app vs Excel), pendientes menores P29 y P30. Cortes P29 y P31 (1/2/3/4/5/7) ya estaban en `main`.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.

@@ -1,11 +1,9 @@
 ﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Users, 
-  FileText, 
   AlertTriangle, 
-  TrendingUp, 
   Plus, 
   Search, 
   ArrowUpRight, 
@@ -24,19 +22,111 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+type Numberish = string | number | null | undefined | { toNumber: () => number };
+
+type ApiResponse<T> = {
+  success: boolean;
+  data?: T;
+  error?: string;
+};
+
+type ClientRow = {
+  id: string;
+  cuit: string;
+  name: string;
+  type: string;
+  fiscalCondition: string;
+  mainActivity?: string | null;
+  status?: string | null;
+};
+
+type TaxReturnRow = {
+  id: string;
+  clientName: string;
+  cuit: string;
+  year: number | null;
+  status: string;
+  consumoCalculado?: Numberish;
+  impuestoAPagar?: Numberish;
+  hasWarnings?: boolean;
+};
+
+type ResolutionOption = {
+  id: string;
+  resolution: string;
+  version: number;
+};
+
+type TaxParameterSetView = {
+  minimoNoImponible: Numberish;
+  conyuge: Numberish;
+  hijo: Numberish;
+  hijoIncapacitado: Numberish;
+  especialAutonomo: Numberish;
+  especialEmprendedor: Numberish;
+  especialDependiente: Numberish;
+  topeServicioDomestico: Numberish;
+  topeSeguroVida: Numberish;
+  topeSeguroRetiro: Numberish;
+  topeGastosSepelio: Numberish;
+  topeInteresHipoteca: Numberish;
+  topeGastosEducativos: Numberish;
+};
+
+type TaxBracketView = {
+  id?: string;
+  fromAmount: Numberish;
+  toAmount: Numberish;
+  fixedAmount: Numberish;
+  percentage: Numberish;
+  excessOf: Numberish;
+};
+
+type IpcIndexView = {
+  monthIndex: number;
+  monthName: string;
+  ipcValue: Numberish;
+};
+
+type TaxParametersView = {
+  parameterSet: TaxParameterSetView | null;
+  brackets: TaxBracketView[];
+  indices: IpcIndexView[];
+};
+
+type EditParametersForm = {
+  minimoNoImponible: string;
+  conyuge: string;
+  hijo: string;
+  hijoIncapacitado: string;
+  especialAutonomo: string;
+  especialEmprendedor: string;
+  especialDependiente: string;
+  topeServicioDomestico: string;
+  topeSeguroVida: string;
+  topeSeguroRetiro: string;
+  topeGastosSepelio: string;
+  topeInteresHipoteca: string;
+  topeGastosEducativos: string;
+  brackets: TaxBracketView[];
+};
+
+function isDecimalLike(value: Numberish): value is { toNumber: () => number } {
+  return typeof value === 'object' && value !== null && typeof value.toNumber === 'function';
+}
+
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'todos' | 'borrador' | 'revision' | 'cerrada'>('todos');
   const [activeView, setActiveView] = useState<'dashboard' | 'clientes' | 'parametros' | 'auditoria'>('dashboard');
 
-  const [clients, setClients] = useState<any[]>([]);
-  const [taxReturns, setTaxReturns] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [clients, setClients] = useState<ClientRow[]>([]);
+  const [taxReturns, setTaxReturns] = useState<TaxReturnRow[]>([]);
 
   // States for live parameters
   const [selectedYear, setSelectedYear] = useState<number>(2025);
-  const [paramsData, setParamsData] = useState<any>(null);
-  const [resolutions, setResolutions] = useState<any[]>([]);
+  const [paramsData, setParamsData] = useState<TaxParametersView | null>(null);
+  const [resolutions, setResolutions] = useState<ResolutionOption[]>([]);
   const [selectedResolutionId, setSelectedResolutionId] = useState<string>('default');
   const [isUploadingParams, setIsUploadingParams] = useState(false);
   const [uploadParamsName, setUploadParamsName] = useState('');
@@ -45,7 +135,7 @@ export default function Home() {
   const [isParamsLoading, setIsParamsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showEditParamsModal, setShowEditParamsModal] = useState(false);
-  const [editForm, setEditForm] = useState<any>(null);
+  const [editForm, setEditForm] = useState<EditParametersForm | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
 
@@ -69,21 +159,20 @@ export default function Home() {
   // P31.1: la carga del dashboard ya no traga errores. Si una API falla o devuelve
   // success:false (p.ej. sesion vencida -> 401), se muestra un aviso con reintento
   // en lugar de renderizar ceros como si la base estuviera vacia.
-  const loadDashboardData = () => {
-    setIsLoading(true);
+  const loadDashboardData = useCallback(() => {
     setDashboardError(null);
     Promise.all([
-      fetch('/api/clientes').then(res => res.json()),
-      fetch('/api/declaraciones').then(res => res.json())
+      fetch('/api/clientes').then(res => res.json() as Promise<ApiResponse<ClientRow[]>>),
+      fetch('/api/declaraciones').then(res => res.json() as Promise<ApiResponse<TaxReturnRow[]>>)
     ])
     .then(([clientsRes, returnsRes]) => {
       const errors: string[] = [];
-      if (clientsRes.success) {
+      if (clientsRes.success && Array.isArray(clientsRes.data)) {
         setClients(clientsRes.data);
       } else {
         errors.push(clientsRes.error || 'No se pudieron obtener los contribuyentes.');
       }
-      if (returnsRes.success) {
+      if (returnsRes.success && Array.isArray(returnsRes.data)) {
         setTaxReturns(returnsRes.data);
       } else {
         errors.push(returnsRes.error || 'No se pudieron obtener las declaraciones.');
@@ -95,22 +184,8 @@ export default function Home() {
     .catch(err => {
       console.error("Error loading dashboard data:", err);
       setDashboardError('No se pudo conectar con el servidor. Los totales en cero pueden no reflejar la base real.');
-    })
-    .finally(() => setIsLoading(false));
-  };
-
-  useEffect(() => {
-    loadDashboardData();
-    loadResolutions(2025);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    });
   }, []);
-
-  // Sync parameters when selectedYear or activeView changes
-  useEffect(() => {
-    if (activeView === 'parametros') {
-      loadResolutions(selectedYear);
-    }
-  }, [activeView, selectedYear]);
 
   // Auto-dismiss notification after 5s
   useEffect(() => {
@@ -120,11 +195,30 @@ export default function Home() {
     }
   }, [notification]);
 
-  const loadResolutions = (year: number, defaultResId?: string) => {
-    fetch(`/api/parametros?year=${year}&listResolutions=true`)
-      .then(res => res.json())
+  const loadParameters = useCallback((year: number, resolutionId?: string) => {
+    setIsParamsLoading(true);
+    const targetResId = resolutionId || selectedResolutionId;
+    fetch(`/api/parametros?year=${year}&resolutionId=${targetResId}`)
+      .then(res => res.json() as Promise<ApiResponse<TaxParametersView>>)
       .then(res => {
         if (res.success && res.data) {
+          setParamsData(res.data);
+        } else {
+          setParamsData(null);
+        }
+      })
+      .catch(err => {
+        console.error("Error cargando parámetros:", err);
+        setParamsData(null);
+      })
+      .finally(() => setIsParamsLoading(false));
+  }, [selectedResolutionId]);
+
+  const loadResolutions = useCallback((year: number, defaultResId?: string) => {
+    fetch(`/api/parametros?year=${year}&listResolutions=true`)
+      .then(res => res.json() as Promise<ApiResponse<ResolutionOption[]>>)
+      .then(res => {
+        if (res.success && Array.isArray(res.data)) {
           setResolutions(res.data);
           if (res.data.length > 0) {
             const targetId = defaultResId || res.data[0].id;
@@ -146,26 +240,21 @@ export default function Home() {
         setSelectedResolutionId('default');
         loadParameters(year, 'default');
       });
-  };
+  }, [loadParameters]);
 
-  const loadParameters = (year: number, resolutionId?: string) => {
-    setIsParamsLoading(true);
-    const targetResId = resolutionId || selectedResolutionId;
-    fetch(`/api/parametros?year=${year}&resolutionId=${targetResId}`)
-      .then(res => res.json())
-      .then(res => {
-        if (res.success && res.data) {
-          setParamsData(res.data);
-        } else {
-          setParamsData(null);
-        }
-      })
-      .catch(err => {
-        console.error("Error cargando parámetros:", err);
-        setParamsData(null);
-      })
-      .finally(() => setIsParamsLoading(false));
-  };
+  useEffect(() => {
+    queueMicrotask(() => {
+      loadDashboardData();
+      loadResolutions(2025);
+    });
+  }, [loadDashboardData, loadResolutions]);
+
+  // Sync parameters when selectedYear or activeView changes
+  useEffect(() => {
+    if (activeView === 'parametros') {
+      loadResolutions(selectedYear);
+    }
+  }, [activeView, selectedYear, loadResolutions]);
 
   const handleLoadInternalBaseParameters = () => {
     setIsSyncing(true);
@@ -270,19 +359,19 @@ export default function Home() {
     }
     const ps = paramsData.parameterSet;
     setEditForm({
-      minimoNoImponible: ps.minimoNoImponible,
-      conyuge: ps.conyuge,
-      hijo: ps.hijo,
-      hijoIncapacitado: ps.hijoIncapacitado,
-      especialAutonomo: ps.especialAutonomo,
-      especialEmprendedor: ps.especialEmprendedor,
-      especialDependiente: ps.especialDependiente,
-      topeServicioDomestico: ps.topeServicioDomestico,
-      topeSeguroVida: ps.topeSeguroVida,
-      topeSeguroRetiro: ps.topeSeguroRetiro,
-      topeGastosSepelio: ps.topeGastosSepelio,
-      topeInteresHipoteca: ps.topeInteresHipoteca,
-      topeGastosEducativos: ps.topeGastosEducativos,
+      minimoNoImponible: String(ps.minimoNoImponible ?? ''),
+      conyuge: String(ps.conyuge ?? ''),
+      hijo: String(ps.hijo ?? ''),
+      hijoIncapacitado: String(ps.hijoIncapacitado ?? ''),
+      especialAutonomo: String(ps.especialAutonomo ?? ''),
+      especialEmprendedor: String(ps.especialEmprendedor ?? ''),
+      especialDependiente: String(ps.especialDependiente ?? ''),
+      topeServicioDomestico: String(ps.topeServicioDomestico ?? ''),
+      topeSeguroVida: String(ps.topeSeguroVida ?? ''),
+      topeSeguroRetiro: String(ps.topeSeguroRetiro ?? ''),
+      topeGastosSepelio: String(ps.topeGastosSepelio ?? ''),
+      topeInteresHipoteca: String(ps.topeInteresHipoteca ?? ''),
+      topeGastosEducativos: String(ps.topeGastosEducativos ?? ''),
       brackets: [...paramsData.brackets]
     });
     setShowEditParamsModal(true);
@@ -340,27 +429,27 @@ export default function Home() {
       });
   };
 
-  const formatCurrency = (val: any) => {
+  const formatCurrency = (val: Numberish) => {
     const num = Number(val);
-    if (isNaN(num)) return '$0,00';
+    if (Number.isNaN(num)) return '$0,00';
     return '$' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const formatPercent = (val: any) => {
+  const formatPercent = (val: Numberish) => {
     const num = Number(val);
-    if (isNaN(num)) return '0%';
+    if (Number.isNaN(num)) return '0%';
     // Si viene como decimal (e.g. 0.05) multiplicamos por 100
     const pct = num <= 1 ? num * 100 : num;
     return `${pct.toFixed(0)}%`;
   };
 
-  const getNumber = (val: any) => {
+  const getNumber = (val: Numberish) => {
     if (val === null || val === undefined) return 0;
-    if (typeof val === 'object' && typeof val.toNumber === 'function') {
+    if (isDecimalLike(val)) {
       return val.toNumber();
     }
     const parsed = Number(val);
-    return isNaN(parsed) ? 0 : parsed;
+    return Number.isNaN(parsed) ? 0 : parsed;
   };
 
   const isDashboardImmutableReturn = (status: string) => (
@@ -407,7 +496,7 @@ export default function Home() {
     });
   };
 
-  const openEditClientModal = (client: any) => {
+  const openEditClientModal = (client: ClientRow) => {
     setEditClientId(client.id);
     setEditClientName(client.name);
     setEditClientCuit(client.cuit);
@@ -818,7 +907,7 @@ export default function Home() {
                                 </Link>
                               )}
                               <button
-                                onClick={() => handleDeleteReturn(ret.id, ret.clientName, ret.year)}
+                                onClick={() => handleDeleteReturn(ret.id, ret.clientName, ret.year ?? selectedYear)}
                                 className="inline-flex items-center justify-center h-8 w-8 rounded bg-red-950/20 hover:bg-red-900/35 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all active:scale-[0.97] cursor-pointer"
                                 title="Anular declaración jurada"
                               >
@@ -1038,7 +1127,7 @@ export default function Home() {
                     className="bg-transparent text-sm font-bold text-teal-400 focus:outline-none cursor-pointer max-w-[200px]"
                   >
                     {resolutions.length > 0 ? (
-                      resolutions.map((res: any) => (
+                      resolutions.map((res) => (
                         <option key={res.id} value={res.id} className="bg-[#121216] text-[#f4f4f5]">
                           {res.resolution} (v{res.version})
                         </option>
@@ -1256,7 +1345,7 @@ export default function Home() {
                       </thead>
                       <tbody className="divide-y divide-zinc-850/50 text-zinc-300">
                         {paramsData.brackets && paramsData.brackets.length > 0 ? (
-                          paramsData.brackets.map((b: any, index: number) => (
+                          paramsData.brackets.map((b, index) => (
                             <tr key={b.id || index} className="hover:bg-zinc-800/10 transition-colors">
                               <td className="px-4 py-2.5">{formatCurrency(b.fromAmount)}</td>
                               <td className="px-4 py-2.5">{b.toAmount ? formatCurrency(b.toAmount) : 'Y más'}</td>
@@ -1283,7 +1372,7 @@ export default function Home() {
                       <span className="text-[10px] text-zinc-550 font-normal">Reexpresión impositiva de activos y AXI</span>
                     </h3>
                     <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
-                      {paramsData.indices.map((idx: any) => (
+                      {paramsData.indices.map((idx) => (
                         <div key={idx.monthIndex} className="p-3 rounded-lg bg-[#09090b] border border-zinc-850 text-center font-mono">
                           <span className="text-[9px] uppercase font-bold text-zinc-500 block mb-1">{idx.monthName}</span>
                           <span className="text-xs text-teal-400 font-extrabold">{Number(idx.ipcValue).toFixed(4)}</span>
@@ -1334,7 +1423,7 @@ export default function Home() {
                     </tr>
                     <tr className="hover:bg-zinc-800/10 transition-colors">
                       <td className="px-6 py-4 text-zinc-500">2026-05-27 22:12</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Parámetro "Disponibilidades"</td>
+                      <td className="px-6 py-4 font-sans font-semibold text-white">Parámetro &quot;Disponibilidades&quot;</td>
                       <td className="px-6 py-4 font-sans text-zinc-400">Modificación y adición interactiva de saldos en cuentas corrientes y de ahorro.</td>
                       <td className="px-6 py-4 font-sans text-zinc-400">Contador JABA</td>
                       <td className="px-6 py-4 text-center font-sans">

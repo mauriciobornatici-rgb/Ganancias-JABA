@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 
@@ -36,9 +37,9 @@ export async function GET(
     }
 
     return NextResponse.json({ success: true, data: client });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al obtener contribuyente: ${err.message}` },
+      { success: false, error: `Error al obtener contribuyente: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -64,7 +65,7 @@ export async function PUT(
     }
 
     // Construir objeto de actualización solo con campos proporcionados
-    const updateData: any = {};
+    const updateData: Prisma.ClientUpdateInput = {};
     if (name !== undefined) updateData.name = name;
     if (type !== undefined) updateData.type = type;
     if (fiscalCondition !== undefined) updateData.fiscalCondition = fiscalCondition;
@@ -98,9 +99,9 @@ export async function PUT(
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al actualizar contribuyente: ${err.message}` },
+      { success: false, error: `Error al actualizar contribuyente: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -161,10 +162,14 @@ export async function DELETE(
       success: true,
       data: { id, message: `Contribuyente ${existing.name} eliminado exitosamente.` },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al eliminar contribuyente: ${err.message}` },
+      { success: false, error: `Error al eliminar contribuyente: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

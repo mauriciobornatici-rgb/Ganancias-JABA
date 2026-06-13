@@ -1,8 +1,27 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-09
+Ultima actualizacion: 2026-06-13
 
 ## Entrada reciente
+
+### 2026-06-13 - P12 saneamiento lint global aplicado
+
+- Se atendio la deuda tecnica detectada tras corregir el `.env`: `eslint` global pasaba a ser el unico control rojo relevante, con 77 errores y 22 warnings iniciales.
+- Alcance: APIs de auditoria/clientes/declaraciones, dashboard principal, wizard, informe cliente, papel de trabajo, `wizardStateTypes`, `seed.ts` y `test_db.js`.
+- Cambios principales:
+  - reemplazo de `any` explicitos por tipos de Prisma, tipos de vista y `unknown` controlado;
+  - correccion de hooks React en dashboard y wizard;
+  - eliminacion de imports/variables sin uso;
+  - tipado de parametros activos IPC, papel de trabajo e informe cliente;
+  - registro del plan en `docs/superpowers/plans/2026-06-13-calidad-lint-hardening.md`.
+- Verificacion fresca:
+  - `eslint`: OK, sin errores ni warnings;
+  - `vitest run`: OK, 46 archivos pasados, 1 skipped; 189 tests pasados, 1 skipped;
+  - `tsc --noEmit`: OK;
+  - `prisma validate --schema prisma/schema.prisma`: OK;
+  - `next build --webpack`: OK;
+  - smoke DB solo lectura `SELECT 1`: OK.
+- No se modificaron formulas fiscales ni persistencia de datos productivos.
 
 ### 2026-06-10 - P31.8 + migracion a proxy.ts (cierre de codigo de P31)
 

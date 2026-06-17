@@ -164,6 +164,10 @@ export type WizardIpcIndex = Record<string, WizardParameterScalar> & {
 
 export type ActiveTaxParameters = WizardEditableRecord & {
   parameterSet?: WizardTaxParameterSet | null;
+  previousDecemberIndex?: {
+    year?: WizardParameterScalar;
+    ipcValue?: WizardParameterScalar;
+  } | null;
   brackets?: WizardTaxBracket[];
   indices?: WizardIpcIndex[];
 };

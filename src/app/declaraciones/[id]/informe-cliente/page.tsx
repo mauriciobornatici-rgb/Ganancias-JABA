@@ -1,35 +1,41 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ArrowLeft, 
   Printer, 
-  Sparkles, 
-  CheckCircle, 
-  DollarSign, 
   FileText,
   Building,
   User,
   Calendar,
   ShieldCheck,
   Percent,
-  CalendarDays,
-  FileSpreadsheet
 } from 'lucide-react';
 import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { sumDeductibleNonCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
 
+type ReportPurchase = NonNullable<Parameters<typeof sumDeductibleNonCostPurchases>[0]>[number];
+
+type ReportDeclarationData = Record<string, unknown> & {
+  clientName?: string;
+  cuit?: string;
+  fiscalYear?: number;
+  mainActivity?: string;
+  updatedAt?: string;
+  taxParameterSetId?: string | null;
+  purchases?: ReportPurchase[];
+};
+
 export default function InformeClientePage() {
   const params = useParams();
-  const router = useRouter();
   const id = params?.id as string;
 
-  const [data, setData] = useState<any>(null);
-  const [taxParams, setTaxParams] = useState<any>(null);
+  const [data, setData] = useState<ReportDeclarationData | null>(null);
+  const [taxParams, setTaxParams] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -70,11 +76,10 @@ export default function InformeClientePage() {
   const clientName = data ? data.clientName : '';
   const cuit = data ? data.cuit : '';
   const year = data ? data.fiscalYear : 2025;
-  const status = data ? data.status : 'Borrador';
   const updatedAt = data ? data.updatedAt : '';
 
   // Resúmenes de montos
-  const ventasGravadas = calculationResult ? calculationResult.ventasGravadas : new Decimal(0);
+  const ventasGravadas = React.useMemo(() => calculationResult ? calculationResult.ventasGravadas : new Decimal(0), [calculationResult]);
   const ventasExentas = calculationResult ? calculationResult.ventasExentas : new Decimal(0);
   const totalIngresos = ventasGravadas.plus(ventasExentas);
   const costoVentas = calculationResult ? calculationResult.costoVentas : new Decimal(0);
@@ -85,7 +90,6 @@ export default function InformeClientePage() {
     return sumDeductibleNonCostPurchases(data?.purchases || []);
   }, [calculationResult, data]);
 
-  const totalDeduccionesGenerales = calculationResult ? calculationResult.deduccionesGenerales.totalDeduccionesGeneralesAdmitidas : new Decimal(0);
   
   const mni = calculationResult ? calculationResult.deduccionesPersonales.minimoNoImponible : new Decimal(0);
   const deduccionEspecial = calculationResult ? calculationResult.deduccionesPersonales.deduccionEspecial.plus(calculationResult.deduccionesPersonales.deduccionEspecialDoceavaParte || 0) : new Decimal(0);
@@ -93,7 +97,7 @@ export default function InformeClientePage() {
   const totalDeduccionesPersonales = mni.plus(deduccionEspecial).plus(cargasFamilia);
 
   const baseImponible = calculationResult ? calculationResult.gananciaNetaSujetaImpuesto : new Decimal(0);
-  const impuestoDeterminado = calculationResult ? calculationResult.impuestoDeterminado : new Decimal(0);
+  const impuestoDeterminado = React.useMemo(() => calculationResult ? calculationResult.impuestoDeterminado : new Decimal(0), [calculationResult]);
   const retencionesYPercepciones = calculationResult ? calculationResult.retencionesYPercepciones : new Decimal(0);
   const saldoFinal = calculationResult ? calculationResult.impuestoAPagarOARCA : new Decimal(0);
 

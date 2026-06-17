@@ -5,6 +5,69 @@ import { SalesInput, PurchaseInput, TaxWithholdingInput } from '../types';
 type SheetCell = string | number | boolean | Date | null | undefined;
 type SheetRow = SheetCell[];
 
+/**
+ * Lector robusto de comprobantes AFIP/ARCA.
+ *
+ * Los CSV de "Mis Comprobantes" usan separador ';', codificacion Latin-1 (Windows-1252) y
+ * formato numerico argentino ("15123,97"). Si se delega en SheetJS, este interpreta la coma
+ * como separador de miles y convierte "15123,97" -> 1512397 (importe x100, error critico de
+ * liquidacion). Por eso los CSV se leen como texto plano preservando el valor original, y
+ * SheetJS se reserva para los .xlsx reales (donde numeros y fechas ya son tipos nativos).
+ */
+function isLikelyXlsxBuffer(fileBuffer: Buffer): boolean {
+  // Los .xlsx/.xls modernos son contenedores ZIP: empiezan con "PK" (0x50 0x4B).
+  return fileBuffer.length >= 2 && fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b;
+}
+
+function splitCsvLine(line: string, separator: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === separator && !inQuotes) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current);
+  return cells.map(c => c.trim());
+}
+
+function parseCsvRows(fileBuffer: Buffer): SheetRow[] {
+  // Decodificar como Latin-1 (Windows-1252), codificacion habitual de los export AFIP.
+  const text = fileBuffer.toString('latin1').replace(/^﻿/, '');
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+  if (lines.length === 0) return [];
+
+  // Autodeteccion de separador: ';' es el de AFIP; se contempla ',' por compatibilidad.
+  const header = lines[0];
+  const separator = (header.split(';').length >= header.split(',').length) ? ';' : ',';
+
+  return lines.map(line => splitCsvLine(line, separator));
+}
+
+function readSheetRows(fileBuffer: Buffer): SheetRow[] {
+  if (isLikelyXlsxBuffer(fileBuffer)) {
+    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
+    if (!sheet) return [];
+    return xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as SheetRow[];
+  }
+
+  return parseCsvRows(fileBuffer);
+}
+
 export interface ImportedDataSummary {
   fileType: 'MisRetenciones' | 'LibroIVAVentas' | 'LibroIVACompras' | 'Desconocido';
   withholdings?: TaxWithholdingInput[];
@@ -48,19 +111,11 @@ export function parseAfipExportFile(
   const totalAmount = new Decimal(0);
   
   try {
-    // 1. Leer el libro utilizando sheetjs
-    const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
-    
-    if (!sheet) {
-      return { fileType: 'Desconocido', totalRecords: 0, totalAmount, errors: ['El archivo no posee hojas válidas'] };
-    }
-
-    // Convertir a matriz de JSON con valores limpios
-    const rawData = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as SheetRow[];
+    // 1. Leer las filas: CSV como texto plano (preserva "15123,97" y la fecha original),
+    //    xlsx via SheetJS. Ver readSheetRows para el detalle del bug que esto evita.
+    const rawData = readSheetRows(fileBuffer);
     if (rawData.length === 0) {
-      return { fileType: 'Desconocido', totalRecords: 0, totalAmount, errors: ['La hoja de cálculo se encuentra vacía'] };
+      return { fileType: 'Desconocido', totalRecords: 0, totalAmount, errors: ['El archivo está vacío o no posee hojas válidas'] };
     }
 
     // 2. Detectar tipo de archivo en base a los encabezados de las primeras filas
@@ -312,6 +367,13 @@ function buildInvoiceNumber(row: SheetRow, pointOfSaleIndex: number, numberIndex
 }
 
 /**
+ * Las Notas de Credito en el export "Mis Comprobantes" de AFIP YA vienen con importe negativo
+ * (verificado 2026-06-10 con NC tipo 3 reales: neto -23.785,12). Por eso el importador NO invierte
+ * el signo: confia en el que entrega AFIP e importa todo importe distinto de cero (positivos de
+ * facturas, negativos de notas de credito), de modo que las devoluciones resten correctamente.
+ */
+
+/**
  * Parsea e importa ventas e ingresos (Libro de IVA Ventas / Comprobantes Emitidos)
  */
 function parseLibroVentas(
@@ -366,8 +428,9 @@ function parseLibroVentas(
         totalAmount: moneyCell(row, totalIndex),
       };
 
-      // Si tiene importe neto gravado
-      if (netVal.gt(0)) {
+      // Importe neto gravado (positivo en facturas, negativo en notas de credito: el signo ya
+      // viene de AFIP). Se importa cualquier valor distinto de cero para que las NC resten.
+      if (!netVal.isZero()) {
         sales.push({
           date: dateVal,
           netAmount: netVal,
@@ -376,10 +439,10 @@ function parseLibroVentas(
         });
         totalAmount = totalAmount.add(netVal);
       }
-      
+
       // Si posee montos exentos o no gravados
       const totalExemptVal = exemptVal.add(noGravadoVal);
-      if (totalExemptVal.gt(0)) {
+      if (!totalExemptVal.isZero()) {
         sales.push({
           date: dateVal,
           netAmount: totalExemptVal,
@@ -417,7 +480,9 @@ function parseLibroCompras(
   const invoiceTypeIndex = findColumnIndex(headers, ['tipo de comprobante', 'tipo de com']);
   const pointOfSaleIndex = findColumnIndex(headers, ['punto de ve', 'pto. vta', 'punto de venta']);
   const invoiceNumberIndex = findColumnIndex(headers, ['nro. comprobante', 'numero de c', 'número de c']);
-  const vendorNameIndex = findColumnIndex(headers, ['proveedor', 'emisor', 'vendedor', 'denominaci']);
+  // 'denominaci' primero: en AFIP el nombre esta en "Denominación Vendedor". Si se buscara
+  // 'vendedor' suelto, matchearia antes "Tipo Doc. Vendedor"/"Nro. Doc. Vendedor" (bug 2026-06-10).
+  const vendorNameIndex = findColumnIndex(headers, ['denominaci', 'razon social', 'razón social', 'proveedor', 'emisor']);
   const vendorCuitIndex = findColumnIndex(headers, ['nro. doc. ve', 'doc. ve']);
   const netIndex = findColumnIndex(headers, ['total neto g', 'total neto', 'importe neto', 'neto', 'gravado']);
   const ivaIndex = findColumnIndex(headers, ['total iva', 'credito fisc', 'crédito fisc', 'importe iva']);
@@ -448,6 +513,7 @@ function parseLibroCompras(
       const netVal = netIndex !== -1 ? parseSpanishDecimal(row[netIndex] || 0) : new Decimal(0);
       const exemptVal = exemptIndex !== -1 ? parseSpanishDecimal(row[exemptIndex] || 0) : new Decimal(0);
       const noGravadoVal = noGravadoIndex !== -1 ? parseSpanishDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
+      const totalVal = totalIndex !== -1 ? parseSpanishDecimal(row[totalIndex] || 0) : new Decimal(0);
       const importedDetail = {
         invoiceType: textCell(row, invoiceTypeIndex) || undefined,
         invoiceNumber: buildInvoiceNumber(row, pointOfSaleIndex, invoiceNumberIndex),
@@ -457,7 +523,8 @@ function parseLibroCompras(
         totalAmount: moneyCell(row, totalIndex),
       };
 
-      if (netVal.gt(0)) {
+      // Neto gravado con su signo de AFIP (negativo en notas de credito recibidas = resta).
+      if (!netVal.isZero()) {
         purchases.push({
           date: dateVal,
           netAmount: netVal,
@@ -469,7 +536,7 @@ function parseLibroCompras(
       }
 
       const totalExemptVal = exemptVal.add(noGravadoVal);
-      if (totalExemptVal.gt(0)) {
+      if (!totalExemptVal.isZero()) {
         purchases.push({
           date: dateVal,
           netAmount: totalExemptVal,
@@ -478,6 +545,22 @@ function parseLibroCompras(
           ...importedDetail,
         });
         totalAmount = totalAmount.add(totalExemptVal);
+      }
+
+      // Decision del usuario (2026-06-10): comprobantes sin neto/exento/no gravado discriminado
+      // (Facturas/Recibos C de monotributistas, Facturas B) se importan usando el Importe Total
+      // como gasto deducible. El signo de AFIP se preserva (una NC sin discriminar restaria).
+      const sinDiscriminar = netVal.isZero() && totalExemptVal.isZero();
+      if (sinDiscriminar && !totalVal.isZero()) {
+        purchases.push({
+          date: dateVal,
+          netAmount: totalVal,
+          isDeductible: true,
+          isExempt: false,
+          expenseType: 'GastosGenerales',
+          ...importedDetail,
+        });
+        totalAmount = totalAmount.add(totalVal);
       }
     } catch (err: unknown) {
       errors.push(`Fila ${i + 1}: Error de procesamiento: ${errorMessage(err)}`);
@@ -542,15 +625,28 @@ function parseExcelDate(val: unknown): Date {
 
   // Si es un String de fecha
   const str = String(val).trim();
+
+  // Formato ISO de AFIP/ARCA: AAAA-MM-DD (el separador es '-' y el primer bloque es el año).
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const d = new Date(year, month, day);
+    if (!isNaN(d.getTime())) return d;
+  }
+
   const parts = str.split(/[-/]/);
   if (parts.length === 3) {
-    // Intentar formato DD/MM/AAAA
+    // Formato DD/MM/AAAA (con año de 4 dígitos para no confundir con MM/DD/AA).
     const day = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10) - 1; // 0-indexed en JS
     const year = parseInt(parts[2], 10);
-    
-    const d = new Date(year, month, day);
-    if (!isNaN(d.getTime())) return d;
+
+    if (parts[2].length === 4) {
+      const d = new Date(year, month, day);
+      if (!isNaN(d.getTime())) return d;
+    }
   }
 
   const parsed = new Date(str);

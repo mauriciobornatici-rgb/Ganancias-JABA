@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const mariadb = require('mariadb');
 require('dotenv').config();
 

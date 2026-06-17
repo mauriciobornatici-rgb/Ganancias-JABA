@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persistence/taxReturnDuplicate';
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const clientId = searchParams.get('clientId');
     const includeAnnulled = searchParams.get('includeAnnulled') === 'true';
 
-    const whereClause: any = {};
+    const whereClause: Prisma.TaxReturnWhereInput = {};
     if (!includeAnnulled) {
       whereClause.status = { not: TAX_RETURN_STATUS.ANULADA };
     }
@@ -50,7 +51,7 @@ export async function GET(req: NextRequest) {
     };
 
     // Mapear al formato plano que espera la interfaz de usuario
-    const mapped = taxReturns.map((r: any) => {
+    const mapped = taxReturns.map((r) => {
       const latestCalc = r.calculations[0] || null;
       return {
         id: r.id,
@@ -69,9 +70,9 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: mapped });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al obtener declaraciones: ${err.message}` },
+      { success: false, error: `Error al obtener declaraciones: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    const { cuit, clientName, fiscalYear, status, taxParameterSetId } = parsed.data;
+    const { cuit, fiscalYear, status, taxParameterSetId } = parsed.data;
 
     const client = await prisma.client.findUnique({
       where: { cuit },
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
     }
 
     const yearInt = fiscalYear; // ya validado como entero por zod (P31.4)
-    const result = await prisma.$transaction(async (tx: any) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       let fYear = await tx.fiscalYear.findUnique({
         where: { year: yearInt },
       });
@@ -137,7 +138,15 @@ export async function POST(req: NextRequest) {
       });
 
       if (duplicateReturn) {
-        return { duplicateReturn, fYear, taxReturn: null };
+        // Una DDJJ ANULADA no debe bloquear la creacion de una nueva en el mismo periodo:
+        // el listado del dashboard la oculta, asi que el alta tambien debe ignorarla. Decision
+        // del usuario (2026-06-10): borrar fisicamente la anulada (era borrador descartado) y
+        // continuar con el alta. Solo las DDJJ activas (no anuladas) se tratan como duplicado real.
+        if (duplicateReturn.status === TAX_RETURN_STATUS.ANULADA) {
+          await tx.taxReturn.delete({ where: { id: duplicateReturn.id } });
+        } else {
+          return { duplicateReturn, fYear, taxReturn: null };
+        }
       }
 
       const taxReturn = await tx.taxReturn.create({
@@ -219,10 +228,14 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al crear declaración: ${err.message}` },
+      { success: false, error: `Error al crear declaración: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

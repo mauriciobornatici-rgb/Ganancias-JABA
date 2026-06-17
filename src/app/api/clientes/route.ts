@@ -10,9 +10,9 @@ export async function GET() {
       orderBy: { name: 'asc' },
     });
     return NextResponse.json({ success: true, data: clients });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al obtener contribuyentes: ${err.message}` },
+      { success: false, error: `Error al obtener contribuyentes: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
@@ -89,10 +89,14 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, data: client }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al registrar contribuyente: ${err.message}` },
+      { success: false, error: `Error al registrar contribuyente: ${errorMessage(err)}` },
       { status: 500 }
     );
   }
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

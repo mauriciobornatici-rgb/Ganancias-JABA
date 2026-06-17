@@ -133,9 +133,10 @@ export async function GET(
         totalAmount: p.totalAmount.toString(),
       })),
       fixedAssets: taxReturn.fixedAssets.map((a, index) => {
-        const extraAsset = Array.isArray(extraState.fixedAssets)
-          ? (extraState.fixedAssets.find((ea: any) => ea && ea.id === a.id) || extraState.fixedAssets[index])
+        const extraAssetSnapshot = Array.isArray(extraState.fixedAssets)
+          ? (extraState.fixedAssets.find((ea) => isRecord(ea) && ea.id === a.id) || extraState.fixedAssets[index])
           : null;
+        const extraAsset = isRecord(extraAssetSnapshot) ? extraAssetSnapshot : null;
         const isRetired = a.isRetired || (extraAsset && (extraAsset.isRetired === true || extraAsset.isRetired === 'true'));
         return {
           id: a.id,
@@ -446,6 +447,10 @@ export async function DELETE(
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 function appendWorkflowNote(previous: string | null | undefined, label: string, reason: string): string {

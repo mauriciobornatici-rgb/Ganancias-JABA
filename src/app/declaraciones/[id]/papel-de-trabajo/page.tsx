@@ -35,17 +35,105 @@ import { buildTaxParameterSourceNotice } from '@/domain/ganancias/presentation/t
 import { buildTaxParameterRequestUrl } from '@/domain/ganancias/presentation/taxParameterRequest';
 import { downloadTaxReturnExcel } from '@/domain/ganancias/exports/excelGenerator';
 
+type MoneyValue = Decimal.Value | Decimal | null | undefined;
+type ExportMoneyValue = string | number | Decimal | undefined;
+type PaperPurchase = NonNullable<Parameters<typeof sumDeductibleCostPurchases>[0]>[number] & {
+  isExempt?: unknown;
+};
+
+type PaperFixedAsset = Record<string, unknown> & {
+  name?: string;
+  type?: string;
+  purchaseDate?: string | Date;
+  originalCost?: ExportMoneyValue;
+  customReexpIndex?: ExportMoneyValue;
+  usefulLife?: number | string;
+  yearsElapsed?: number | string;
+  isRetired?: unknown;
+};
+
+type PaperBankAccount = {
+  nominalInitial?: MoneyValue;
+  nominalFinal?: MoneyValue;
+  tcInitial?: MoneyValue;
+  tcFinal?: MoneyValue;
+};
+
+type PaperCashHolding = {
+  nominalInitial?: MoneyValue;
+  nominalFinal?: MoneyValue;
+  tcFinal?: MoneyValue;
+};
+
+type PaperBalance = {
+  balanceInitial?: MoneyValue;
+  balanceFinal?: MoneyValue;
+};
+
+type PaperPersonalAsset = {
+  valueInitial?: MoneyValue;
+  valueFinal?: MoneyValue;
+};
+
+type PaperJustification = {
+  column?: MoneyValue;
+  concept?: string;
+  amount?: MoneyValue;
+};
+
+type PaperAxiDynamic = {
+  date?: string | number | Date;
+  type?: string;
+};
+
+type PaperBracket = {
+  fromAmount: Decimal.Value;
+  toAmount?: Decimal.Value | null;
+  fixedAmount: Decimal.Value;
+  percentage: Decimal.Value;
+  excessOf: Decimal.Value;
+};
+
+type PaperTaxParams = Record<string, unknown> & {
+  brackets?: PaperBracket[];
+};
+
+type PaperDeclarationData = Record<string, unknown> & {
+  clientName?: string;
+  cuit?: string;
+  fiscalYear?: number;
+  mainActivity?: string;
+  version?: number;
+  updatedAt?: string;
+  taxParameterSetId?: string | null;
+  initialStock?: MoneyValue;
+  finalStock?: MoneyValue;
+  bienesNoComputablesInicio?: MoneyValue;
+  activoTotalInicio?: MoneyValue;
+  pasivoTotalInicio?: MoneyValue;
+  fixedAssets?: PaperFixedAsset[];
+  purchases?: PaperPurchase[];
+  bankAccounts?: PaperBankAccount[];
+  cashHoldings?: PaperCashHolding[];
+  receivables?: PaperBalance[];
+  liabilities?: PaperBalance[];
+  personalAssets?: PaperPersonalAsset[];
+  personalLiabilities?: PaperPersonalAsset[];
+  otherJustifications?: PaperJustification[];
+  axiDynamic?: PaperAxiDynamic[];
+};
+
 export default function PapelDeTrabajoPage() {
   const params = useParams();
   const router = useRouter();
   const id = params?.id as string;
 
-  const [data, setData] = useState<any>(null);
-  const [taxParams, setTaxParams] = useState<any>(null);
+  const [data, setData] = useState<PaperDeclarationData | null>(null);
+  const [taxParams, setTaxParams] = useState<PaperTaxParams | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'resumen' | 'formulas'>('resumen');
 
-  const formatMoney = (amount: number | Decimal | string | undefined) => {
+  const formatMoney = (amount: MoneyValue) => {
     if (amount === undefined || amount === null || amount === '') return '$0,00';
     const num = amount instanceof Decimal ? amount.toNumber() : Number(amount);
     return '$' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -100,9 +188,7 @@ export default function PapelDeTrabajoPage() {
   const clientName = data ? data.clientName : '';
   const cuit = data ? data.cuit : '';
   const year = data ? data.fiscalYear : 2025;
-  const is2024 = year === 2024;
   const mainActivity = data ? data.mainActivity : '';
-  const status = data ? data.status : 'Borrador';
   const version = data ? data.version : 0;
   const updatedAt = data ? data.updatedAt : '';
 
@@ -112,11 +198,11 @@ export default function PapelDeTrabajoPage() {
   const amortizaciones = calculationResult ? calculationResult.amortizacionesBienesDeUso : new Decimal(0);
 
   const activeAssets = React.useMemo(() => {
-    return (data?.fixedAssets || []).filter((a: any) => !isWizardFixedAssetRetired(a));
+    return (data?.fixedAssets || []).filter((a) => !isWizardFixedAssetRetired(a));
   }, [data]);
 
   const retiredAssets = React.useMemo(() => {
-    return (data?.fixedAssets || []).filter((a: any) => isWizardFixedAssetRetired(a));
+    return (data?.fixedAssets || []).filter((a) => isWizardFixedAssetRetired(a));
   }, [data]);
 
   // Gastos deducibles generales cargados del wizard
@@ -136,12 +222,15 @@ export default function PapelDeTrabajoPage() {
   const taxParameterNotice = buildTaxParameterSourceNotice(data, taxParams);
 
   const totalDeducciones = mni.plus(deduccionEspecial).plus(cargasFamilia).plus(deduccionesGenerales);
-  const baseImponible = calculationResult ? calculationResult.gananciaNetaSujetaImpuesto : new Decimal(0);
+  const baseImponible = React.useMemo(
+    () => calculationResult ? calculationResult.gananciaNetaSujetaImpuesto : new Decimal(0),
+    [calculationResult]
+  );
   const impuestoDeterminado = calculationResult ? calculationResult.impuestoDeterminado : new Decimal(0);
 
   const appliedBracket = React.useMemo(() => {
     if (!taxParams?.brackets || !baseImponible) return null;
-    return taxParams.brackets.find((b: any) => {
+    return taxParams.brackets.find((b) => {
       const fromVal = new Decimal(b.fromAmount);
       const toVal = b.toAmount ? new Decimal(b.toAmount) : null;
       return baseImponible.gt(fromVal) && (toVal === null || baseImponible.lte(toVal));
@@ -150,7 +239,6 @@ export default function PapelDeTrabajoPage() {
 
   const retenciones = calculationResult ? calculationResult.retencionesYPercepciones : new Decimal(0);
   const saldoAFavorAnterior = calculationResult ? calculationResult.saldoAFavorAnterior : new Decimal(0);
-  const totalPagosACuenta = retenciones.plus(saldoAFavorAnterior);
   const saldoFinal = calculationResult ? calculationResult.impuestoAPagarOARCA : new Decimal(0);
 
   const anticipos = calculationResult ? calculationResult.anticiposSiguientePeriodo : [];
@@ -197,7 +285,7 @@ export default function PapelDeTrabajoPage() {
           </Link>
 
           <button
-            onClick={() => downloadTaxReturnExcel(data, calculationResult)}
+            onClick={() => downloadTaxReturnExcel(data ?? undefined, calculationResult)}
             className="inline-flex items-center gap-2 px-4 h-10 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold text-xs uppercase tracking-wider transition-all border border-zinc-700 shadow-lg active:scale-[0.98]"
           >
             <FileSpreadsheet className="h-4 w-4 stroke-[2.5] text-emerald-400" />
@@ -573,7 +661,7 @@ export default function PapelDeTrabajoPage() {
                     </thead>
                     <tbody className="divide-y divide-zinc-900 text-zinc-350">
                       {activeAssets.length > 0 ? (
-                        activeAssets.map((asset: any, idx: number) => {
+                        activeAssets.map((asset, idx) => {
                           const detail = buildFixedAssetDepreciationForPresentation(asset);
                           const cost = detail.originalCost.toNumber();
                           const coef = detail.customReexpIndex?.toNumber() ?? 1;
@@ -619,7 +707,7 @@ export default function PapelDeTrabajoPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-zinc-900 text-zinc-350">
-                        {retiredAssets.map((asset: any, idx: number) => {
+                        {retiredAssets.map((asset, idx) => {
                           const detail = buildFixedAssetDepreciationForPresentation(asset);
                           const cost = detail.originalCost.toNumber();
                           const coef = detail.customReexpIndex?.toNumber() ?? 1;
@@ -722,8 +810,8 @@ export default function PapelDeTrabajoPage() {
                     </thead>
                     <tbody className="divide-y divide-zinc-900 text-zinc-350">
                       {calculationResult?.axiDynamicLines && calculationResult.axiDynamicLines.length > 0 ? (
-                        calculationResult.axiDynamicLines.map((line: any, idx: number) => {
-                          const inputItem = data.axiDynamic?.[idx] || {};
+                        calculationResult.axiDynamicLines.map((line, idx) => {
+                          const inputItem = data?.axiDynamic?.[idx] || {};
                           const dateFormatted = inputItem.date ? new Date(inputItem.date).toLocaleDateString('es-AR') : '';
                           const movementTypeLabel = inputItem.type === 'AporteCapital' ? 'Aporte de Capital (-1)' : 'Retiro de Socio / Div. (+1)';
                           return (
@@ -802,15 +890,15 @@ export default function PapelDeTrabajoPage() {
                     <span className="text-[9px] uppercase text-zinc-550 font-bold block">Rubros Comerciales (Inicio)</span>
                     <div className="flex justify-between">
                       <span>Bancos (Saldos iniciales)</span>
-                      <span className="text-zinc-300">{formatMoney((data?.bankAccounts || []).reduce((sum: number, b: any) => sum + Number(b.nominalInitial || 0) * Number(b.tcInitial || 1), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.bankAccounts || []).reduce((sum, b) => sum + Number(b.nominalInitial || 0) * Number(b.tcInitial || 1), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Efectivo (Saldos iniciales)</span>
-                      <span className="text-zinc-300">{formatMoney((data?.cashHoldings || []).reduce((sum: number, c: any) => sum + Number(c.nominalInitial || 0) * Number(c.tcFinal || 1), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.cashHoldings || []).reduce((sum, c) => sum + Number(c.nominalInitial || 0) * Number(c.tcFinal || 1), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Créditos comerciales / fiscales</span>
-                      <span className="text-zinc-300">{formatMoney((data?.receivables || []).reduce((sum: number, r: any) => sum + Number(r.balanceInitial || 0), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.receivables || []).reduce((sum, r) => sum + Number(r.balanceInitial || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Existencia Inicial (Bienes de Cambio)</span>
@@ -818,11 +906,11 @@ export default function PapelDeTrabajoPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Bienes de Uso (Costo de origen)</span>
-                      <span className="text-zinc-300">{formatMoney(activeAssets.reduce((sum: number, f: any) => sum + Number(f.originalCost || 0), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney(activeAssets.reduce((sum, f) => sum + Number(f.originalCost || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between text-red-400">
                       <span>(-) Deudas Comerciales (Proveedores)</span>
-                      <span>-{formatMoney((data?.liabilities || []).reduce((sum: number, l: any) => sum + Number(l.balanceInitial || 0), 0))}</span>
+                      <span>-{formatMoney((data?.liabilities || []).reduce((sum, l) => sum + Number(l.balanceInitial || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between font-bold text-zinc-200 border-t border-zinc-900/60 pt-1 text-[11px]">
                       <span>(=) Subtotal Patrimonio Comercial</span>
@@ -833,15 +921,15 @@ export default function PapelDeTrabajoPage() {
                     <span className="text-[9px] uppercase text-zinc-550 font-bold block">Rubros Personales (Inicio)</span>
                     <div className="flex justify-between">
                       <span>Bienes y Activos Personales</span>
-                      <span className="text-zinc-300">{formatMoney((data?.personalAssets || []).reduce((sum: number, a: any) => sum + Number(a.valueInitial || 0), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.personalAssets || []).reduce((sum, a) => sum + Number(a.valueInitial || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between text-red-400">
                       <span>(-) Pasivos y Deudas Personales</span>
-                      <span>-{formatMoney((data?.personalLiabilities || []).reduce((sum: number, l: any) => sum + Number(l.valueInitial || 0), 0))}</span>
+                      <span>-{formatMoney((data?.personalLiabilities || []).reduce((sum, l) => sum + Number(l.valueInitial || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between font-bold text-zinc-200 border-t border-zinc-900/60 pt-1 text-[11px]">
                       <span>(=) Subtotal Patrimonio Personal</span>
-                      <span>{formatMoney((data?.personalAssets || []).reduce((sum: number, a: any) => sum + Number(a.valueInitial || 0), 0) - (data?.personalLiabilities || []).reduce((sum: number, l: any) => sum + Number(l.valueInitial || 0), 0))}</span>
+                      <span>{formatMoney((data?.personalAssets || []).reduce((sum, a) => sum + Number(a.valueInitial || 0), 0) - (data?.personalLiabilities || []).reduce((sum, l) => sum + Number(l.valueInitial || 0), 0))}</span>
                     </div>
                   </div>
                   <div className="flex justify-between py-2 border-t-2 border-zinc-800 font-extrabold text-teal-400 text-sm mt-4">
@@ -857,15 +945,15 @@ export default function PapelDeTrabajoPage() {
                     <span className="text-[9px] uppercase text-zinc-550 font-bold block">Rubros Comerciales (Cierre)</span>
                     <div className="flex justify-between">
                       <span>Bancos (Saldos finales)</span>
-                      <span className="text-zinc-300">{formatMoney((data?.bankAccounts || []).reduce((sum: number, b: any) => sum + Number(b.nominalFinal || 0) * Number(b.tcFinal || 1), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.bankAccounts || []).reduce((sum, b) => sum + Number(b.nominalFinal || 0) * Number(b.tcFinal || 1), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Efectivo (Saldos finales)</span>
-                      <span className="text-zinc-300">{formatMoney((data?.cashHoldings || []).reduce((sum: number, c: any) => sum + Number(c.nominalFinal || 0) * Number(c.tcFinal || 1), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.cashHoldings || []).reduce((sum, c) => sum + Number(c.nominalFinal || 0) * Number(c.tcFinal || 1), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Créditos comerciales / fiscales</span>
-                      <span className="text-zinc-300">{formatMoney((data?.receivables || []).reduce((sum: number, r: any) => sum + Number(r.balanceFinal || 0), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.receivables || []).reduce((sum, r) => sum + Number(r.balanceFinal || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Existencia Final (Bienes de Cambio)</span>
@@ -873,11 +961,11 @@ export default function PapelDeTrabajoPage() {
                     </div>
                     <div className="flex justify-between">
                       <span>Bienes de Uso (Costo de origen)</span>
-                      <span className="text-zinc-300">{formatMoney((data?.fixedAssets || []).reduce((sum: number, f: any) => sum + Number(f.originalCost || 0), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.fixedAssets || []).reduce((sum, f) => sum + Number(f.originalCost || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between text-red-400">
                       <span>(-) Deudas Comerciales (Proveedores)</span>
-                      <span>-{formatMoney((data?.liabilities || []).reduce((sum: number, l: any) => sum + Number(l.balanceFinal || 0), 0))}</span>
+                      <span>-{formatMoney((data?.liabilities || []).reduce((sum, l) => sum + Number(l.balanceFinal || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between font-bold text-zinc-200 border-t border-zinc-900/60 pt-1 text-[11px]">
                       <span>(=) Subtotal Patrimonio Comercial</span>
@@ -888,15 +976,15 @@ export default function PapelDeTrabajoPage() {
                     <span className="text-[9px] uppercase text-zinc-550 font-bold block">Rubros Personales (Cierre)</span>
                     <div className="flex justify-between">
                       <span>Bienes y Activos Personales</span>
-                      <span className="text-zinc-300">{formatMoney((data?.personalAssets || []).reduce((sum: number, a: any) => sum + Number(a.valueFinal || 0), 0))}</span>
+                      <span className="text-zinc-300">{formatMoney((data?.personalAssets || []).reduce((sum, a) => sum + Number(a.valueFinal || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between text-red-400">
                       <span>(-) Pasivos y Deudas Personales</span>
-                      <span>-{formatMoney((data?.personalLiabilities || []).reduce((sum: number, l: any) => sum + Number(l.valueFinal || 0), 0))}</span>
+                      <span>-{formatMoney((data?.personalLiabilities || []).reduce((sum, l) => sum + Number(l.valueFinal || 0), 0))}</span>
                     </div>
                     <div className="flex justify-between font-bold text-zinc-200 border-t border-zinc-900/60 pt-1 text-[11px]">
                       <span>(=) Subtotal Patrimonio Personal</span>
-                      <span>{formatMoney((data?.personalAssets || []).reduce((sum: number, a: any) => sum + Number(a.valueFinal || 0), 0) - (data?.personalLiabilities || []).reduce((sum: number, l: any) => sum + Number(l.valueFinal || 0), 0))}</span>
+                      <span>{formatMoney((data?.personalAssets || []).reduce((sum, a) => sum + Number(a.valueFinal || 0), 0) - (data?.personalLiabilities || []).reduce((sum, l) => sum + Number(l.valueFinal || 0), 0))}</span>
                     </div>
                   </div>
                   <div className="flex justify-between py-2 border-t-2 border-zinc-800 font-extrabold text-teal-400 text-sm mt-4">
@@ -942,7 +1030,7 @@ export default function PapelDeTrabajoPage() {
                       <span className="text-zinc-200">{formatMoney(calculationResult.resultadoAjustePorInflacion.abs())}</span>
                     </div>
                   )}
-                  {(data?.otherJustifications || []).filter((j: any) => Number(j.column) === 2).map((j: any, idx: number) => (
+                  {(data?.otherJustifications || []).filter((j) => Number(j.column) === 2).map((j, idx) => (
                     <div key={idx} className="flex justify-between text-[11px] pl-2 border-l border-zinc-900">
                       <span>{j.concept} <span className="text-zinc-650">[Manual]</span></span>
                       <span className="text-zinc-200">{formatMoney(j.amount)}</span>
@@ -967,7 +1055,7 @@ export default function PapelDeTrabajoPage() {
                   </div>
                   <div className="flex justify-between">
                     <span>Gastos comerciales No Deducibles</span>
-                    <span className="text-zinc-200">{formatMoney((data?.purchases || []).filter((p: any) => !p.isDeductible && !p.isExempt).reduce((sum: number, p: any) => sum + Number(p.netAmount || 0), 0))}</span>
+                    <span className="text-zinc-200">{formatMoney((data?.purchases || []).filter((p) => !p.isDeductible && !p.isExempt).reduce((sum, p) => sum + Number(p.netAmount || 0), 0))}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Excedentes Deducciones Generales (Tope)</span>
@@ -979,7 +1067,7 @@ export default function PapelDeTrabajoPage() {
                       <span className="text-zinc-200">{formatMoney(calculationResult.resultadoAjustePorInflacion)}</span>
                     </div>
                   )}
-                  {(data?.otherJustifications || []).filter((j: any) => Number(j.column) === 1).map((j: any, idx: number) => (
+                  {(data?.otherJustifications || []).filter((j) => Number(j.column) === 1).map((j, idx) => (
                     <div key={idx} className="flex justify-between text-[11px] pl-2 border-l border-zinc-900">
                       <span>{j.concept} <span className="text-zinc-650">[Manual]</span></span>
                       <span className="text-zinc-200">{formatMoney(j.amount)}</span>
@@ -1033,7 +1121,7 @@ export default function PapelDeTrabajoPage() {
                       </div>
                       <div className="flex justify-between py-1 border-b border-zinc-900">
                         <span>(x) Alícuota del Tramo (Porcentaje)</span>
-                        <span className="text-zinc-200">{(new Decimal(appliedBracket.percentage).mul(appliedBracket.percentage > 1 ? 1 : 100)).toNumber()}%</span>
+                        <span className="text-zinc-200">{(new Decimal(appliedBracket.percentage).mul(new Decimal(appliedBracket.percentage).gt(1) ? 1 : 100)).toNumber()}%</span>
                       </div>
                       <div className="flex justify-between py-1 border-b border-zinc-900 text-teal-400">
                         <span>(=) Impuesto Variable sobre Excedente</span>

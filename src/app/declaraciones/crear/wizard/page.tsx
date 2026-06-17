@@ -210,6 +210,14 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+function readInitialWizardStepFromUrl(): number {
+  if (typeof window === 'undefined') return 1;
+
+  const stepParam = new URLSearchParams(window.location.search).get('step');
+  const stepNum = stepParam ? parseInt(stepParam, 10) : 1;
+  return Number.isInteger(stepNum) && stepNum >= 1 && stepNum <= 6 ? stepNum : 1;
+}
+
 export default function WizardPage() {
   const params = useParams();
   const id = params?.id as string;
@@ -220,22 +228,8 @@ export default function WizardPage() {
   const isLoadedReturnImmutable = isTaxReturnImmutable(loadedReturnStatus);
   const initialCuitRef = React.useRef<string | null>(null);
   const isCreatingRef = React.useRef(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [maxVisitedStep, setMaxVisitedStep] = useState(1);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const stepParam = params.get('step');
-      if (stepParam) {
-        const stepNum = parseInt(stepParam, 10);
-        if (stepNum >= 1 && stepNum <= 6) {
-          setCurrentStep(stepNum);
-          setMaxVisitedStep(Math.max(maxVisitedStep, stepNum));
-        }
-      }
-    }
-  }, []);
+  const [currentStep, setCurrentStep] = useState(readInitialWizardStepFromUrl);
+  const [maxVisitedStep, setMaxVisitedStep] = useState(readInitialWizardStepFromUrl);
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -899,15 +893,19 @@ export default function WizardPage() {
   useEffect(() => {
     if (activeParams) {
       const values: Record<string, string> = {};
-      if ((activeParams as any).previousDecemberIndex) {
-        const prevDec = (activeParams as any).previousDecemberIndex as any;
-        values[`${prevDec.year}_12`] = String(prevDec.ipcValue || '0');
+      if (activeParams.previousDecemberIndex) {
+        const prevDec = activeParams.previousDecemberIndex;
+        const prevDecYear = Number(prevDec.year ?? fiscalYear - 1);
+        values[`${prevDecYear}_12`] = String(prevDec.ipcValue || '0');
       } else {
         values[`${fiscalYear - 1}_12`] = '0';
       }
-      if ((activeParams as any).indices) {
-        (activeParams as any).indices.forEach((idx: any) => {
-          values[`${fiscalYear}_${idx.monthIndex}`] = String(idx.ipcValue || '0');
+      if (activeParams.indices) {
+        activeParams.indices.forEach((idx) => {
+          const monthIndex = Number(idx.monthIndex);
+          if (Number.isInteger(monthIndex) && monthIndex >= 1 && monthIndex <= 12) {
+            values[`${fiscalYear}_${monthIndex}`] = String(idx.ipcValue || '0');
+          }
         });
       }
       for (let m = 1; m <= 12; m++) {
@@ -916,7 +914,7 @@ export default function WizardPage() {
           values[key] = '0';
         }
       }
-      setLocalIpcValues(values);
+      queueMicrotask(() => setLocalIpcValues(values));
     }
   }, [activeParams, fiscalYear]);
 
@@ -1527,7 +1525,7 @@ export default function WizardPage() {
   const dynamicCosto = calculationResult ? Number(calculationResult.costoVentas || 0) : 0;
   const dynamicGastos = calculationResult ? Number(calculationResult.gastosDeducibles || 0) : 0;
   const dynamicAmortizaciones = calculationResult ? Number(calculationResult.amortizacionesBienesDeUso || 0) : 0;
-  const dynamicLossBaja = calculationResult && (calculationResult as any).bajaBienesDeUsoLoss ? Number((calculationResult as any).bajaBienesDeUsoLoss || 0) : 0;
+  const dynamicLossBaja = calculationResult?.bajaBienesDeUsoLoss ? Number(calculationResult.bajaBienesDeUsoLoss || 0) : 0;
   const dynamicUtilidadHistorica = dynamicVentas - dynamicCosto - dynamicGastos - dynamicAmortizaciones - dynamicLossBaja;
 
   const dynamicCapitalTeorico = dynamicPatrimonioInicio + dynamicUtilidadHistorica + dynamicAmortizaciones;

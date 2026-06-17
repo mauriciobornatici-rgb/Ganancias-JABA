@@ -138,7 +138,15 @@ export async function POST(req: NextRequest) {
       });
 
       if (duplicateReturn) {
-        return { duplicateReturn, fYear, taxReturn: null };
+        // Una DDJJ ANULADA no debe bloquear la creacion de una nueva en el mismo periodo:
+        // el listado del dashboard la oculta, asi que el alta tambien debe ignorarla. Decision
+        // del usuario (2026-06-10): borrar fisicamente la anulada (era borrador descartado) y
+        // continuar con el alta. Solo las DDJJ activas (no anuladas) se tratan como duplicado real.
+        if (duplicateReturn.status === TAX_RETURN_STATUS.ANULADA) {
+          await tx.taxReturn.delete({ where: { id: duplicateReturn.id } });
+        } else {
+          return { duplicateReturn, fYear, taxReturn: null };
+        }
       }
 
       const taxReturn = await tx.taxReturn.create({

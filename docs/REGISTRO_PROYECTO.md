@@ -24,6 +24,20 @@ Ultima actualizacion: 2026-06-13
 - Commit/push: `d706483 chore: sanear lint global p12` en `feature/p21-backup-health`.
 - No se modificaron formulas fiscales ni persistencia de datos productivos.
 
+### 2026-06-10 - HALLAZGO CRITICO: importacion CSV AFIP multiplicaba importes x100
+
+- Origen: el usuario aporto los CSV reales de "Mis Comprobantes" (ventas y compras) de AFIP.
+- Bug critico de liquidacion: esos CSV usan separador ';', codificacion Latin-1 y coma decimal ("15123,97"). SheetJS interpretaba la coma como separador de miles y devolvia 1512397: TODOS los importes importados quedaban x100, inflando la base imponible 100 veces. Verificado: el "Total Neto Gravado" de la primera venta daba 1.512.397 en vez de 15.123,97; total de ventas 663M en vez de 6,6M.
+- Fix: nuevo lector `readSheetRows` que para CSV los lee como texto plano (decodifica Latin-1, autodetecta separador ';'/',', respeta comillas) preservando "15123,97" para que `parseSpanishDecimal` lo convierta bien; SheetJS queda solo para .xlsx (numeros/fechas nativos). `parseExcelDate` ahora maneja el formato ISO AAAA-MM-DD de AFIP (antes "2025-01-02" se interpretaba como 1925-02-01).
+- Bug secundario corregido: el nombre del proveedor tomaba "Tipo Doc. Vendedor" (valor "80") porque `findColumnIndex` matcheaba 'vendedor' antes que 'denominaci'. Corregido priorizando 'denominaci'.
+- Verificacion sobre los archivos reales del usuario (importador completo reconstruido + esbuild): ventas 234 registros, neto 15123.97, fecha 2025-01-02, total 6.633.777,76; compras 24 registros con nombres correctos; multiarchivo (12 CSV) compila 2808 registros; slot equivocado se rechaza con aviso. Tests nuevos en `importer.test.ts` (CSV ventas, CSV compras con tildes, multiarchivo).
+- Decisiones del usuario aplicadas (2026-06-10):
+  - Facturas/Recibos C y B sin IVA discriminado: se importan usando el Importe Total como gasto deducible (antes se omitian; en el caso real eran ~580k de gastos perdidos). 7 comprobantes recuperados.
+  - Notas de credito: AFIP ya las entrega con importe NEGATIVO; el importador confia en ese signo e importa todo importe distinto de cero (antes `net.gt(0)` descartaba los negativos), de modo que las NC restan. Verificado: ventas con 5 NC, compras con 2 NC (TELECOM -23.785,12).
+  - Alta de DDJJ: una DDJJ ANULADA ya no bloquea recrear el periodo; el alta la borra fisicamente y continua (decision: borrar la anulada). Solo las DDJJ activas se tratan como duplicado.
+- Verificacion final sobre archivos reales: ventas 239 comprobantes total neto 6.495.182,72; compras 33 comprobantes total neto 3.526.640,16. Tests nuevos: CSV ventas/compras, Facturas C, Notas de credito, multiarchivo.
+- PENDIENTE: commit/deploy a produccion; correr `vitest run` completo en Windows (el sandbox verifico la logica de forma aislada por el truncamiento del espejo, no la suite completa).
+
 ### 2026-06-10 - P31.8 + migracion a proxy.ts (cierre de codigo de P31)
 
 - P31.8 renovacion deslizante de sesion: `shouldRenewSimpleAuthToken` en `simpleAuth.ts` (reemite el token cuando consumio mas de la mitad de sus 12 hs; solo tras verify; payloads anomalos -> false). El interceptor reemite la cookie con la actividad: una carga larga ya no pierde la sesion.

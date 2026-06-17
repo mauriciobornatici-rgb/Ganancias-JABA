@@ -293,4 +293,96 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(summary.errors[0]).toContain('compras_02_2025.xlsx');
     expect(summary.errors[0]).toContain('no coincide');
   });
+
+  // Regresion del bug critico detectado el 2026-06-10: los CSV de "Mis Comprobantes" de AFIP
+  // usan separador ';', coma decimal ("15123,97") y fecha ISO ("2025-01-02"). Leidos por SheetJS,
+  // "15123,97" se convertia en 1512397 (importe x100 -> base imponible 100 veces mayor).
+  it('importa CSV real de ventas AFIP sin multiplicar importes por 100 (separador ; y coma decimal)', () => {
+    const csv = [
+      'Fecha de Emisión;Tipo de Comprobante;Punto de Venta;Número de Comprobante;Número de Comprobante Hasta;Tipo Doc. Comprador;Nro. Doc. Comprador;Denominación Comprador;Fecha de Vencimiento del Pago;Importe Total;Moneda Original;Tipo de Cambio;Importe No Gravado;Importe Exento;Importe de Per. o Pagos a Cta. de Otros Imp. Nac.;Importe de Percepciones de Ingresos Brutos;Importe de Impuestos Municipales;Percepción a No Categorizados;Importe de Impuestos Internos;Importe Otros Tributos;Neto Gravado IVA 0%;Neto Gravado IVA 2,5%;Importe IVA 2,5%;Neto Gravado IVA 5%;Importe IVA 5%;Neto Gravado IVA 10,5%;Importe IVA 10,5%;Neto Gravado IVA 21%;Importe IVA 21%;Neto Gravado IVA 27%;Importe IVA 27%;Total Neto Gravado;Total IVA',
+      '2025-01-02;1;3;1457;1457;80;20255755065;"DESIMONE MARCELO ADRIAN";;18300,00;"PES";1,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;;;;;;;;15123,97;3176,03;;;15123,97;3176,00',
+    ].join('\r\n');
+    // Codificacion Latin-1 como entrega AFIP.
+    const fileBuffer = Buffer.from(csv, 'latin1');
+
+    const summary = parseAfipExportFile(fileBuffer, 'comprobantes_ventas.csv');
+
+    expect(summary.fileType).toBe('LibroIVAVentas');
+    expect(summary.totalRecords).toBe(1);
+    expect(summary.errors.length).toBe(0);
+
+    const sale = summary.sales![0];
+    expect(sale.netAmount.toNumber()).toBe(15123.97); // NO 1512397
+    expect(sale.ivaAmount?.toNumber()).toBe(3176);
+    expect(sale.totalAmount?.toNumber()).toBe(18300);
+    expect(sale.customerName).toBe('DESIMONE MARCELO ADRIAN');
+    expect(sale.date?.toISOString().startsWith('2025-01-02')).toBe(true);
+  });
+
+  it('importa CSV real de compras AFIP preservando tildes (Latin-1) y fecha ISO', () => {
+    const csv = [
+      'Fecha de Emisión;Tipo de Comprobante;Punto de Venta;Número de Comprobante;Tipo Doc. Vendedor;Nro. Doc. Vendedor;Denominación Vendedor;Importe Total;Moneda Original;Tipo de Cambio;Importe No Gravado;Importe Exento;Crédito Fiscal Computable;Importe de Per. o Pagos a Cta. de Otros Imp. Nac.;Importe de Percepciones de Ingresos Brutos;Importe de Impuestos Municipales;Importe de Percepciones o Pagos a Cuenta de IVA;Importe de Impuestos Internos;Importe Otros Tributos;Neto Gravado IVA 0%;Neto Gravado IVA 2,5%;Importe IVA 2,5%;Neto Gravado IVA 5%;Importe IVA 5%;Neto Gravado IVA 10,5%;Importe IVA 10,5%;Neto Gravado IVA 21%;Importe IVA 21%;Neto Gravado IVA 27%;Importe IVA 27%;Total Neto Gravado;Total IVA',
+      '2025-01-01;11;1;356;80;27312532897;"AURIERI MARIA ANGELICA";26000,00;"PES";1,00;0,00;0,00;21487,60;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;21487,60;4512,40;0,00;0,00;21487,60;4512,40',
+    ].join('\r\n');
+    const fileBuffer = Buffer.from(csv, 'latin1');
+
+    const summary = parseAfipExportFile(fileBuffer, 'comprobantes_compras.csv');
+
+    expect(summary.fileType).toBe('LibroIVACompras');
+    expect(summary.totalRecords).toBe(1);
+    expect(summary.errors.length).toBe(0);
+
+    const purchase = summary.purchases![0];
+    expect(purchase.netAmount.toNumber()).toBe(21487.6); // NO 2148760
+    expect(purchase.totalAmount?.toNumber()).toBe(26000);
+    expect(purchase.vendorName).toBe('AURIERI MARIA ANGELICA');
+    expect(purchase.date?.toISOString().startsWith('2025-01-01')).toBe(true);
+  });
+
+  it('importa Facturas/Recibos C sin IVA discriminado usando el Importe Total como gasto', () => {
+    // Factura C (tipo 11) de monotributista: sin neto gravado discriminado, solo Importe Total.
+    const csv = [
+      'Fecha de Emisión;Tipo de Comprobante;Punto de Venta;Número de Comprobante;Tipo Doc. Vendedor;Nro. Doc. Vendedor;Denominación Vendedor;Importe Total;Moneda Original;Tipo de Cambio;Importe No Gravado;Importe Exento;Crédito Fiscal Computable;Importe de Per. o Pagos a Cta. de Otros Imp. Nac.;Importe de Percepciones de Ingresos Brutos;Importe de Impuestos Municipales;Importe de Percepciones o Pagos a Cuenta de IVA;Importe de Impuestos Internos;Importe Otros Tributos;Neto Gravado IVA 0%;Neto Gravado IVA 2,5%;Importe IVA 2,5%;Neto Gravado IVA 5%;Importe IVA 5%;Neto Gravado IVA 10,5%;Importe IVA 10,5%;Neto Gravado IVA 21%;Importe IVA 21%;Neto Gravado IVA 27%;Importe IVA 27%;Total Neto Gravado;Total IVA',
+      '2025-01-01;11;1;356;80;27312532897;"AURIERI MARIA ANGELICA";26000,00;"PES";1,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00',
+    ].join('\r\n');
+    const summary = parseAfipExportFile(Buffer.from(csv, 'latin1'), 'compras_c.csv');
+
+    expect(summary.fileType).toBe('LibroIVACompras');
+    expect(summary.totalRecords).toBe(1);
+    const purchase = summary.purchases![0];
+    expect(purchase.netAmount.toNumber()).toBe(26000); // Importe Total como gasto deducible
+    expect(purchase.isDeductible).toBe(true);
+    expect(purchase.vendorName).toBe('AURIERI MARIA ANGELICA');
+  });
+
+  it('importa Notas de Credito preservando el signo negativo de AFIP (restan)', () => {
+    // Nota de Credito A (tipo 3): AFIP la entrega con importes ya negativos.
+    const csv = [
+      'Fecha de Emisión;Tipo de Comprobante;Punto de Venta;Número de Comprobante;Tipo Doc. Vendedor;Nro. Doc. Vendedor;Denominación Vendedor;Importe Total;Moneda Original;Tipo de Cambio;Importe No Gravado;Importe Exento;Crédito Fiscal Computable;Importe de Per. o Pagos a Cta. de Otros Imp. Nac.;Importe de Percepciones de Ingresos Brutos;Importe de Impuestos Municipales;Importe de Percepciones o Pagos a Cuenta de IVA;Importe de Impuestos Internos;Importe Otros Tributos;Neto Gravado IVA 0%;Neto Gravado IVA 2,5%;Importe IVA 2,5%;Neto Gravado IVA 5%;Importe IVA 5%;Neto Gravado IVA 10,5%;Importe IVA 10,5%;Neto Gravado IVA 21%;Importe IVA 21%;Neto Gravado IVA 27%;Importe IVA 27%;Total Neto Gravado;Total IVA',
+      '2025-01-28;3;4264;220776;80;30639453738;"TELECOM ARGENTINA SOCIEDAD ANONIMA";-30088,18;"PES";1,00;0,00;0,00;-4994,88;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;-23785,12;-4994,88;0,00;0,00;-23785,12;-4994,90',
+    ].join('\r\n');
+    const summary = parseAfipExportFile(Buffer.from(csv, 'latin1'), 'compras_nc.csv');
+
+    expect(summary.fileType).toBe('LibroIVACompras');
+    expect(summary.totalRecords).toBe(1);
+    const nc = summary.purchases![0];
+    expect(nc.netAmount.toNumber()).toBe(-23785.12); // resta de las compras
+    expect(summary.totalAmount.toNumber()).toBe(-23785.12);
+  });
+
+  it('compila multiples CSV mensuales de AFIP en una sola importacion', () => {
+    const header = 'Fecha de Emisión;Tipo de Comprobante;Punto de Venta;Número de Comprobante;Número de Comprobante Hasta;Tipo Doc. Comprador;Nro. Doc. Comprador;Denominación Comprador;Fecha de Vencimiento del Pago;Importe Total;Moneda Original;Tipo de Cambio;Importe No Gravado;Importe Exento;Importe de Per. o Pagos a Cta. de Otros Imp. Nac.;Importe de Percepciones de Ingresos Brutos;Importe de Impuestos Municipales;Percepción a No Categorizados;Importe de Impuestos Internos;Importe Otros Tributos;Neto Gravado IVA 0%;Neto Gravado IVA 2,5%;Importe IVA 2,5%;Neto Gravado IVA 5%;Importe IVA 5%;Neto Gravado IVA 10,5%;Importe IVA 10,5%;Neto Gravado IVA 21%;Importe IVA 21%;Neto Gravado IVA 27%;Importe IVA 27%;Total Neto Gravado;Total IVA';
+    const mes = (cuit: string, neto: string) =>
+      Buffer.from([header, `2025-03-10;1;3;1000;1000;80;${cuit};"CLIENTE";;1000,00;"PES";1,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;;;;;;;;${neto};0,00;;;${neto};0,00`].join('\r\n'), 'latin1');
+
+    const summary = parseAfipExportFiles([
+      { fileName: 'ventas_enero.csv', fileBuffer: mes('20111111112', '1000,00') },
+      { fileName: 'ventas_febrero.csv', fileBuffer: mes('20222222223', '2000,50') },
+    ], { expectedFileType: 'LibroIVAVentas' });
+
+    expect(summary.totalFiles).toBe(2);
+    expect(summary.totalRecords).toBe(2);
+    expect(summary.fileResults.every(r => r.accepted)).toBe(true);
+    expect(summary.totalAmount.toNumber()).toBe(3000.5); // 1000 + 2000.50, sin inflar
+  });
 });

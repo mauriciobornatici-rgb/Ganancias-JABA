@@ -1,20 +1,21 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-13
+Ultima actualizacion: 2026-06-20
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
 ## Estado actual
 
-- Rama activa: `feature/p21-backup-health`.
+- Rama de trabajo activa: `feature/iva-iibb-mensual-core` en `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- CHECKPOINT RAMA (2026-06-13): P12 saneamiento lint global aplicado y pusheado en `feature/p21-backup-health` (`d706483`). `eslint` global queda verde, sin errores ni warnings. Verificacion fresca: `vitest run` OK (46 archivos, 189 tests, 1 skipped), `tsc --noEmit` OK, `prisma validate` OK, `next build --webpack` OK, smoke DB `SELECT 1` OK contra la `DATABASE_URL` del `.env`. Cambios aun no integrados a produccion; revisar/mergear la rama antes de publicar.
-- ULTIMO CHECKPOINT (2026-06-10, cierre del dia): main = `816f7d4` en produccion (deploy READY, verificado: APIs sin sesion = 401, login OK). Publicado hoy: P29 paridad Excel completa, P31 codigo completo (resiliencia dashboard, coma decimal, grillas paginadas, rate limit login, zod, health token, sesion deslizante), hotfix critico del middleware (ahora `src/proxy.ts`). PENDIENTES OPERATIVOS DEL USUARIO: rotar AUTH_PASSWORD/AUTH_SECRET/password DB (exposicion desde P18), restringir DATABASE_URL a Production en Vercel (los Preview fallan a proposito por la guarda P16 hasta hacerlo), backup automatico Hostinger, monitor externo con HEALTH_CHECK_TOKEN. PROXIMO FRENTE FISCAL: protocolo de confianza (2-3 liquidaciones reales en paralelo app vs Excel), pendientes menores P29 y P30. Cortes P29 y P31 (1/2/3/4/5/7) ya estaban en `main`.
+- MODULO IVA + IIBB (2026-06-20): diseno registrado en `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`. Alcance inicial: IVA Simple, IIBB local ARBA y Convenio Multilateral regimen general; desarrollo y pruebas solo contra Docker. No se tocaron Hostinger, Vercel ni las DDJJ existentes.
+- CHECKPOINT INTEGRADO: P12, P19, P20 y P21 ya estan contenidos en `main`/`staging`; las ramas historicas se mantienen solo como referencia. Antes de cualquier publicacion nueva, resolver el deploy fallido de Vercel asociado al commit `b7e765b` y verificar que la produccion tome el commit esperado.
+- PENDIENTES OPERATIVOS: rotar AUTH_PASSWORD/AUTH_SECRET/password DB por la exposicion historica, restringir DATABASE_URL a Production en Vercel, backup automatico Hostinger, prueba de restauracion Docker y monitor externo con HEALTH_CHECK_TOKEN.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.
 - Objetivo de producto: carga agil, explicable y auditable para un estudio chico/unipersonal.
-- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en rama P21.
+- Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en la rama IVA/IIBB.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
 ## Como retomar en 5 minutos

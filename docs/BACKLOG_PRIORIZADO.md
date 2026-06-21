@@ -1,5 +1,26 @@
 # Backlog Priorizado - Ganancias JABA
 
+## P32 - Modulo IVA + IIBB mensual integrado con Ganancias
+
+Estado: Diseno aprobado para planificacion en rama aislada `feature/iva-iibb-mensual-core`.
+
+Objetivo:
+
+- Cargar comprobantes mensuales una sola vez por cliente, preparar IVA Simple e IIBB, y reutilizar la informacion clasificada en Ganancias anual.
+- Cubrir IVA Simple/F.2051, IIBB local ARBA y Convenio Multilateral regimen general sin tocar DDJJ anuales existentes.
+
+Decisiones cerradas:
+
+- El libro fiscal mensual sera independiente; no se moveran destructivamente comprobantes existentes de `TaxReturn`.
+- Ganancias consumira snapshots de consolidacion inmutables.
+- Se usan parametros versionados y aprobados, nunca alicuotas o vencimientos hardcodeados.
+- Los regimenes especiales de CM y Monotributo Unificado quedan fuera del primer corte.
+- Desarrollo y pruebas exclusivamente con Docker; produccion se evalua solo despues de Preview, backup y aprobacion explicita.
+
+Referencia:
+
+- `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`.
+
 Ultima actualizacion: 2026-06-09
 
 Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usuario o por bloqueo tecnico, registrar el motivo en `docs/REGISTRO_PROYECTO.md`.

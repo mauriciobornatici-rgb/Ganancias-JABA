@@ -4,6 +4,15 @@ Ultima actualizacion: 2026-06-13
 
 ## Entrada reciente
 
+### 2026-06-20 - Diseno IVA + IIBB mensual integrado con Ganancias
+
+- Se reviso el plan inicial del usuario y se valido el marco operativo actual de ARCA/ARBA.
+- Decision de arquitectura: no mover destructivamente `SalesInvoice`/`PurchaseInvoice` desde `TaxReturn`; se creara un libro fiscal mensual independiente y Ganancias consumira snapshots de consolidacion inmutables.
+- Alcance inicial aprobado para planificacion: IVA Simple/F.2051, IIBB local ARBA y Convenio Multilateral regimen general con coeficientes CM05 cargados y aprobados. Regimenes especiales CM y Monotributo Unificado quedan expresamente fuera de la primera entrega.
+- Se creo worktree aislado `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual` sobre `main`, rama `feature/iva-iibb-mensual-core`.
+- Regla operativa: Docker `ganancias_jaba_test` es el unico ambiente de desarrollo. Hostinger, Vercel y datos productivos no se modificaron.
+- Especificacion: `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`.
+
 ### 2026-06-13 - P12 saneamiento lint global aplicado
 
 - Se atendio la deuda tecnica detectada tras corregir el `.env`: `eslint` global pasaba a ser el unico control rojo relevante, con 77 errores y 22 warnings iniciales.

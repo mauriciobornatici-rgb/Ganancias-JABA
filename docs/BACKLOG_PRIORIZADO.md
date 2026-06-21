@@ -4,6 +4,10 @@
 
 Estado: Diseno aprobado para planificacion en rama aislada `feature/iva-iibb-mensual-core`.
 
+Avance:
+
+- Corte 1 completado: Docker aislado por worktree en puerto configurable; esta rama opera en `3318` y no comparte contenedor ni volumen con el entorno existente de `3317`.
+
 Objetivo:
 
 - Cargar comprobantes mensuales una sola vez por cliente, preparar IVA Simple e IIBB, y reutilizar la informacion clasificada en Ganancias anual.

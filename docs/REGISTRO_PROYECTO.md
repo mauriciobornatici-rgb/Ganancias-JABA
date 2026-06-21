@@ -13,6 +13,13 @@ Ultima actualizacion: 2026-06-13
 - Regla operativa: Docker `ganancias_jaba_test` es el unico ambiente de desarrollo. Hostinger, Vercel y datos productivos no se modificaron.
 - Especificacion: `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`.
 
+### 2026-06-20 - P32 corte 1: Docker aislado por worktree
+
+- Hallazgo: `docker-compose.yml` usaba un `container_name` fijo y los scripts tenian `127.0.0.1:3317` hardcodeado. Un segundo worktree podia competir por el mismo contenedor y base de pruebas.
+- Correccion: se elimino el nombre fijo de contenedor; Compose usa `JABA_TEST_DB_PORT` con default `3317`; el nuevo helper `scripts/testDbConfig.mjs` construye la URL Docker y rechaza destinos no locales/no seguros; `run-test-db-command.mjs` y `seed-test-db.mjs` consumen esa unica fuente. Se agrego el comando seguro `create-migration` para que Prisma reciba siempre `DATABASE_URL` Docker.
+- Verificacion: test TDD rojo por helper ausente y luego verde (2 tests); Prisma validate OK; base exclusiva `127.0.0.1:3318/ganancias_jaba_test` creada, migracion inicial aplicada y seed OK.
+- El contenedor original `ganancias-jaba-test-db` en puerto `3317` no se modifico. Hostinger y Vercel no se tocaron.
+
 ### 2026-06-13 - P12 saneamiento lint global aplicado
 
 - Se atendio la deuda tecnica detectada tras corregir el `.env`: `eslint` global pasaba a ser el unico control rojo relevante, con 77 errores y 22 warnings iniciales.

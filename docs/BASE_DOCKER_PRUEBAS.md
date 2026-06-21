@@ -25,6 +25,20 @@ DATABASE_URL="mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_tes
 
 No es la base productiva.
 
+## Worktrees paralelos
+
+El puerto por defecto es `3317`. Si otra rama ya tiene una base Docker levantada, elegir un puerto libre para este worktree antes de ejecutar cualquier comando:
+
+```powershell
+$env:JABA_TEST_DB_PORT = '3318'
+npm run db:test:up
+npm run db:test:migrate
+npm run db:test:seed
+npm run dev:testdb
+```
+
+Los scripts forman la URL de prueba a partir de ese puerto y rechazan una URL que no sea `127.0.0.1/.../ganancias_jaba_test`. Docker ya no usa un nombre fijo de contenedor, por lo que los worktrees pueden convivir sin detenerse ni compartir volumenes.
+
 La base productiva sigue siendo:
 
 ```text

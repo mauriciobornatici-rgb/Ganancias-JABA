@@ -10,6 +10,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
 - MODULO IVA + IIBB (2026-06-20): diseno registrado en `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`. Alcance inicial: IVA Simple, IIBB local ARBA y Convenio Multilateral regimen general; desarrollo y pruebas solo contra Docker. No se tocaron Hostinger, Vercel ni las DDJJ existentes.
+- P32 CHECKPOINT 1: Docker ya queda aislado por worktree. Esta rama usa `JABA_TEST_DB_PORT=3318`, con MySQL `ganancias-jaba-iva-iibb-mensual-mysql-test-1`; el contenedor historico del proyecto conserva `3317`. Test `testDbConfig` OK, migracion inicial y seed OK. Proximo corte: schema no destructivo del libro fiscal mensual.
 - CHECKPOINT INTEGRADO: P12, P19, P20 y P21 ya estan contenidos en `main`/`staging`; las ramas historicas se mantienen solo como referencia. Antes de cualquier publicacion nueva, resolver el deploy fallido de Vercel asociado al commit `b7e765b` y verificar que la produccion tome el commit esperado.
 - PENDIENTES OPERATIVOS: rotar AUTH_PASSWORD/AUTH_SECRET/password DB por la exposicion historica, restringir DATABASE_URL a Production en Vercel, backup automatico Hostinger, prueba de restauracion Docker y monitor externo con HEALTH_CHECK_TOKEN.
 - Fase activa: endurecimiento profesional para uso operativo seguro.

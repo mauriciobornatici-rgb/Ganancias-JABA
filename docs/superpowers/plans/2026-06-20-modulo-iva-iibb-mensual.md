@@ -43,7 +43,7 @@
 - Modify: `docs/BASE_DOCKER_PRUEBAS.md`
 - Test: `src/domain/ganancias/tests/testDbConfig.test.ts`
 
-- [ ] **Step 0: Preparar dependencias sin modificar lockfiles**
+- [x] **Step 0: Preparar dependencias sin modificar lockfiles**
 
 El worktree no comparte automaticamente `node_modules`. Para no reinstalar ni modificar `package-lock.json`, crear una junction local ignorada hacia las dependencias ya verificadas del checkout original:
 
@@ -53,7 +53,7 @@ New-Item -ItemType Junction -Path node_modules -Target 'C:\Dev\Ganancia\Persona 
 
 Expected: el worktree puede ejecutar Node, Prisma, Next y Vitest; los artefactos `.next` y datos Docker permanecen propios de la rama.
 
-- [ ] **Step 1: Escribir el test rojo de URL Docker aislada**
+- [x] **Step 1: Escribir el test rojo de URL Docker aislada**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -72,7 +72,7 @@ describe('resolveTestDatabaseUrl', () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar el test y confirmar rojo**
+- [x] **Step 2: Ejecutar el test y confirmar rojo**
 
 Run:
 
@@ -82,7 +82,7 @@ npm run test -- src/domain/ganancias/tests/testDbConfig.test.ts
 
 Expected: falla porque `scripts/testDbConfig.mjs` aun no existe.
 
-- [ ] **Step 3: Implementar configuracion aislada**
+- [x] **Step 3: Implementar configuracion aislada**
 
 ```js
 const DEFAULT_TEST_PORT = '3317';
@@ -99,7 +99,7 @@ export function resolveTestDatabaseUrl(env = process.env) {
 }
 ```
 
-- [ ] **Step 4: Parametrizar Compose y scripts**
+- [x] **Step 4: Parametrizar Compose y scripts**
 
 Aplicar estas reglas:
 
@@ -118,7 +118,7 @@ services:
 $env:JABA_TEST_DB_PORT = '3318'
 ```
 
-- [ ] **Step 5: Verificar verde y levantar la base exclusiva**
+- [x] **Step 5: Verificar verde y levantar la base exclusiva**
 
 Run:
 
@@ -131,7 +131,7 @@ $env:JABA_TEST_DB_PORT = '3318'; npm run db:test:seed
 
 Expected: test verde; Docker crea un contenedor propio de esta rama en `3318`; el contenedor existente de `3317` no se recrea ni se detiene.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add docker-compose.yml scripts/testDbConfig.mjs scripts/run-test-db-command.mjs scripts/seed-test-db.mjs .env.docker.example docs/BASE_DOCKER_PRUEBAS.md src/domain/ganancias/tests/testDbConfig.test.ts

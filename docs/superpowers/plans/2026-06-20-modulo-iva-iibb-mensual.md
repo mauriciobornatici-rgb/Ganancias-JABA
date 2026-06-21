@@ -43,11 +43,21 @@
 - Modify: `docs/BASE_DOCKER_PRUEBAS.md`
 - Test: `src/domain/ganancias/tests/testDbConfig.test.ts`
 
+- [ ] **Step 0: Preparar dependencias sin modificar lockfiles**
+
+El worktree no comparte automaticamente `node_modules`. Para no reinstalar ni modificar `package-lock.json`, crear una junction local ignorada hacia las dependencias ya verificadas del checkout original:
+
+```powershell
+New-Item -ItemType Junction -Path node_modules -Target 'C:\Dev\Ganancia\Persona Fisica\ganancias-jaba\node_modules'
+```
+
+Expected: el worktree puede ejecutar Node, Prisma, Next y Vitest; los artefactos `.next` y datos Docker permanecen propios de la rama.
+
 - [ ] **Step 1: Escribir el test rojo de URL Docker aislada**
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { resolveTestDatabaseUrl } from '../../../scripts/testDbConfig.mjs';
+import { resolveTestDatabaseUrl } from '../../../../scripts/testDbConfig.mjs';
 
 describe('resolveTestDatabaseUrl', () => {
   it('usa el puerto elegido para el worktree', () => {

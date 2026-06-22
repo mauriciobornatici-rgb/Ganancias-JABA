@@ -1,9 +1,10 @@
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
-import { resolveTestDatabaseUrl } from './testDbConfig.mjs';
+import { resolveTestDatabaseUrl, resolveTestShadowDatabaseUrl } from './testDbConfig.mjs';
 
 export const TEST_DATABASE_URL = resolveTestDatabaseUrl();
+export const TEST_SHADOW_DATABASE_URL = resolveTestShadowDatabaseUrl();
 
 const commandMap = {
   migrate: ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
@@ -32,6 +33,7 @@ const run = () => {
     env: {
       ...process.env,
       DATABASE_URL: TEST_DATABASE_URL,
+      SHADOW_DATABASE_URL: TEST_SHADOW_DATABASE_URL,
       APP_ENV: 'test-db',
       RUN_DOCKER_DB_VALIDATION: commandName === 'validate-excel' ? '1' : process.env.RUN_DOCKER_DB_VALIDATION,
     },

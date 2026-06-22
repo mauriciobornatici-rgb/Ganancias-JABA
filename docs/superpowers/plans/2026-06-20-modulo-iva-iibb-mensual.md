@@ -138,15 +138,37 @@ git add docker-compose.yml scripts/testDbConfig.mjs scripts/run-test-db-command.
 git commit -m "chore: aislar docker de pruebas por worktree"
 ```
 
+## Task 1A: Shadow database fija para migraciones locales
+
+**Files:**
+- Modify: `scripts/testDbConfig.mjs`
+- Modify: `scripts/run-test-db-command.mjs`
+- Modify: `prisma.config.ts`
+- Modify: `docker-compose.yml`
+- Create: `docker/mysql-test-init/01-shadow-database.sql`
+- Modify: `.env.docker.example`
+- Modify: `docs/BASE_DOCKER_PRUEBAS.md`
+- Test: `src/domain/ganancias/tests/testDbMigrationSafetyConfig.test.ts`
+
+- [x] **Step 1: Registrar prueba roja para una URL shadow local separada**
+- [x] **Step 2: Confirmar que Prisma fallaba al crear una shadow database dinamica por permisos Docker acotados**
+- [x] **Step 3: Configurar `ganancias_jaba_test_shadow` con permisos limitados al usuario Docker**
+- [x] **Step 4: Regenerar solo el volumen Docker de `3318`, generar la migracion y comprobar ambas bases locales**
+
+Resultado: `prisma migrate dev --create-only` ya no requiere permiso global `CREATE DATABASE`; usa exclusivamente las dos bases locales del worktree.
+
 ## Task 2: Perfil fiscal versionado y schema del libro mensual
 
 **Files:**
 - Modify: `prisma/schema.prisma`
 - Create: `prisma/migrations/<timestamp>_add_fiscal_monthly_ledger/migration.sql`
-- Test: `src/domain/ganancias/tests/fiscalLedgerSchemaArchitecture.test.ts`
+- Modify: `src/generated/client/*`
 - Modify: `scripts/seed-test-db.mjs`
+- Modify: `src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts`
+- Test: `src/domain/ganancias/tests/fiscalLedgerSchemaArchitecture.test.ts`
+- Test: `src/domain/ganancias/tests/fiscalLedgerSeedDocker.test.ts`
 
-- [ ] **Step 1: Escribir tests rojos de arquitectura de schema**
+- [x] **Step 1: Escribir tests rojos de arquitectura de schema**
 
 ```ts
 it('conserva SalesInvoice y PurchaseInvoice vinculadas a TaxReturn', () => {
@@ -165,7 +187,7 @@ it('versiona perfiles, coeficientes y snapshots sin borrar declaraciones anuales
 });
 ```
 
-- [ ] **Step 2: Ejecutar test y confirmar rojo**
+- [x] **Step 2: Ejecutar test y confirmar rojo**
 
 Run:
 
@@ -175,7 +197,7 @@ npm run test -- src/domain/ganancias/tests/fiscalLedgerSchemaArchitecture.test.t
 
 Expected: falla por los modelos aun inexistentes.
 
-- [ ] **Step 3: Agregar enums y modelos nuevos sin alterar relaciones existentes**
+- [x] **Step 3: Agregar enums y modelos nuevos sin alterar relaciones existentes**
 
 Crear enums `VatCondition`, `GrossIncomeRegime`, `ConventionRegime`, `FiscalDocumentDirection`, `VatSettlementStatus`, `GrossIncomeSettlementStatus`, `TaxCreditKind` y `GainsAllocationKind`.
 
@@ -220,7 +242,7 @@ model FiscalDocument {
 
 Completar el resto de modelos definidos en el diseno: `ClientTaxProfileVersion`, `ClientTaxActivity`, `ClientTaxJurisdiction`, `FiscalDocumentVatLine`, `FiscalDocumentAllocation`, `TaxCreditRecord`, `VatSettlement`, `VatSettlementLine`, `GrossIncomeSettlement`, `GrossIncomeJurisdictionLine`, `ConventionCoefficientVersion`, `ConventionCoefficientLine`, `AnnualFiscalConsolidationSnapshot` y `AnnualFiscalConsolidationPeriod`.
 
-- [ ] **Step 4: Crear migracion Prisma y probarla solo en Docker 3318**
+- [x] **Step 4: Crear migracion Prisma y probarla solo en Docker 3318**
 
 Run:
 
@@ -231,7 +253,7 @@ $env:JABA_TEST_DB_PORT = '3318'; npm run db:test:migrate
 
 Expected: crea solo tablas nuevas; `SalesInvoice`, `PurchaseInvoice`, `TaxReturn` y sus filas existentes permanecen sin cambios destructivos.
 
-- [ ] **Step 5: Sembrar dos perfiles de prueba y verificar verde**
+- [x] **Step 5: Sembrar dos perfiles de prueba y verificar verde**
 
 Crear un cliente ARBA local y uno CM regimen general, con actividades, jurisdicciones y coeficientes cuya suma sea 1. Ejecutar:
 
@@ -243,10 +265,10 @@ npm run prisma:validate
 
 Expected: tests verdes y schema valido.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
-git add prisma/schema.prisma prisma/migrations scripts/seed-test-db.mjs src/domain/ganancias/tests/fiscalLedgerSchemaArchitecture.test.ts
+git add prisma/schema.prisma prisma/migrations src/generated/client scripts/seed-test-db.mjs src/domain/ganancias/tests/fiscalLedgerSchemaArchitecture.test.ts src/domain/ganancias/tests/fiscalLedgerSeedDocker.test.ts src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts
 git commit -m "feat: agregar libro fiscal mensual base"
 ```
 

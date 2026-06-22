@@ -516,10 +516,6 @@ export type AxiDynamicItemUncheckedUpdateManyWithoutTaxReturnNestedInput = {
   deleteMany?: Prisma.AxiDynamicItemScalarWhereInput | Prisma.AxiDynamicItemScalarWhereInput[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type AxiDynamicItemCreateWithoutTaxReturnInput = {
   id?: string
   concept: string

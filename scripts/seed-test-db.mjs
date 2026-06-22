@@ -48,6 +48,156 @@ const upsertFiscalYear = async (conn, year) => (
   })
 );
 
+const upsertTaxProfile = async (conn, profile) => {
+  const existing = await conn.query(
+    'SELECT id FROM ClientTaxProfileVersion WHERE clientId = ? AND validFrom = ? LIMIT 1',
+    [profile.clientId, profile.validFrom],
+  );
+
+  if (existing.length > 0) {
+    const id = existing[0].id;
+    await conn.query(
+      `UPDATE ClientTaxProfileVersion
+       SET validTo = ?, vatCondition = ?, grossIncomeRegime = ?, conventionRegime = ?,
+           arbaRegistrationNumber = ?, cmRegistrationNumber = ?, sourceReference = ?,
+           approvedBy = ?, approvedAt = ?, notes = ?, updatedAt = NOW()
+       WHERE id = ?`,
+      [
+        profile.validTo,
+        profile.vatCondition,
+        profile.grossIncomeRegime,
+        profile.conventionRegime,
+        profile.arbaRegistrationNumber,
+        profile.cmRegistrationNumber,
+        profile.sourceReference,
+        profile.approvedBy,
+        profile.approvedAt,
+        profile.notes,
+        id,
+      ],
+    );
+    return id;
+  }
+
+  await conn.query(
+    `INSERT INTO ClientTaxProfileVersion (
+      id, clientId, validFrom, validTo, vatCondition, grossIncomeRegime, conventionRegime,
+      arbaRegistrationNumber, cmRegistrationNumber, sourceReference, approvedBy, approvedAt,
+      notes, createdAt, updatedAt
+    ) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+    [
+      profile.clientId,
+      profile.validFrom,
+      profile.validTo,
+      profile.vatCondition,
+      profile.grossIncomeRegime,
+      profile.conventionRegime,
+      profile.arbaRegistrationNumber,
+      profile.cmRegistrationNumber,
+      profile.sourceReference,
+      profile.approvedBy,
+      profile.approvedAt,
+      profile.notes,
+    ],
+  );
+
+  const created = await conn.query(
+    'SELECT id FROM ClientTaxProfileVersion WHERE clientId = ? AND validFrom = ? LIMIT 1',
+    [profile.clientId, profile.validFrom],
+  );
+  return created[0].id;
+};
+
+const replaceProfileActivities = async (conn, taxProfileId, activities) => {
+  await conn.query('DELETE FROM ClientTaxActivity WHERE taxProfileId = ?', [taxProfileId]);
+
+  for (const activity of activities) {
+    await conn.query(
+      `INSERT INTO ClientTaxActivity (
+        id, taxProfileId, activityCode, description, isPrimary, createdAt, updatedAt
+      ) VALUES (UUID(), ?, ?, ?, ?, NOW(), NOW())`,
+      [taxProfileId, activity.activityCode, activity.description, activity.isPrimary],
+    );
+  }
+};
+
+const replaceProfileJurisdictions = async (conn, taxProfileId, jurisdictions) => {
+  await conn.query('DELETE FROM ClientTaxJurisdiction WHERE taxProfileId = ?', [taxProfileId]);
+
+  for (const jurisdiction of jurisdictions) {
+    await conn.query(
+      `INSERT INTO ClientTaxJurisdiction (
+        id, taxProfileId, jurisdictionCode, registrationNumber, isActive, createdAt, updatedAt
+      ) VALUES (UUID(), ?, ?, ?, ?, NOW(), NOW())`,
+      [taxProfileId, jurisdiction.jurisdictionCode, jurisdiction.registrationNumber, jurisdiction.isActive],
+    );
+  }
+};
+
+const upsertCoefficientVersion = async (conn, coefficientVersion) => {
+  const existing = await conn.query(
+    'SELECT id FROM ConventionCoefficientVersion WHERE clientId = ? AND year = ? LIMIT 1',
+    [coefficientVersion.clientId, coefficientVersion.year],
+  );
+
+  if (existing.length > 0) {
+    const id = existing[0].id;
+    await conn.query(
+      `UPDATE ConventionCoefficientVersion
+       SET sourceReference = ?, approvedBy = ?, approvedAt = ?, notes = ?, updatedAt = NOW()
+       WHERE id = ?`,
+      [
+        coefficientVersion.sourceReference,
+        coefficientVersion.approvedBy,
+        coefficientVersion.approvedAt,
+        coefficientVersion.notes,
+        id,
+      ],
+    );
+    return id;
+  }
+
+  await conn.query(
+    `INSERT INTO ConventionCoefficientVersion (
+      id, clientId, year, sourceReference, approvedBy, approvedAt, notes, createdAt, updatedAt
+    ) VALUES (UUID(), ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+    [
+      coefficientVersion.clientId,
+      coefficientVersion.year,
+      coefficientVersion.sourceReference,
+      coefficientVersion.approvedBy,
+      coefficientVersion.approvedAt,
+      coefficientVersion.notes,
+    ],
+  );
+
+  const created = await conn.query(
+    'SELECT id FROM ConventionCoefficientVersion WHERE clientId = ? AND year = ? LIMIT 1',
+    [coefficientVersion.clientId, coefficientVersion.year],
+  );
+  return created[0].id;
+};
+
+const replaceCoefficientLines = async (conn, coefficientVersionId, coefficientLines) => {
+  await conn.query('DELETE FROM ConventionCoefficientLine WHERE coefficientVersionId = ?', [coefficientVersionId]);
+
+  for (const coefficientLine of coefficientLines) {
+    await conn.query(
+      `INSERT INTO ConventionCoefficientLine (
+        id, coefficientVersionId, jurisdictionCode, incomeCoefficient, expenseCoefficient,
+        unifiedCoefficient, createdAt, updatedAt
+      ) VALUES (UUID(), ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        coefficientVersionId,
+        coefficientLine.jurisdictionCode,
+        coefficientLine.incomeCoefficient,
+        coefficientLine.expenseCoefficient,
+        coefficientLine.unifiedCoefficient,
+      ],
+    );
+  }
+};
+
 const seed = async () => {
   const conn = await mariadb.createConnection(connectionConfig);
 
@@ -150,7 +300,7 @@ const seed = async () => {
       updatedAt: new Date(),
     });
 
-    await upsertByUnique(conn, 'Client', 'cuit', '27-95430211-3', {
+    const arbaClientId = await upsertByUnique(conn, 'Client', 'cuit', '27-95430211-3', {
       cuit: '27-95430211-3',
       name: 'Maria Luz Gomez',
       type: 'Persona Humana',
@@ -161,13 +311,114 @@ const seed = async () => {
       updatedAt: new Date(),
     });
 
+    const cmClientId = await upsertByUnique(conn, 'Client', 'cuit', '30-71451236-3', {
+      cuit: '30-71451236-3',
+      name: 'Cliente Convenio General SA',
+      type: 'Persona Juridica',
+      fiscalCondition: 'Responsable Inscripto',
+      mainActivity: 'Convenio Multilateral - Actividad general',
+      status: 'Activo',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const validFrom = new Date('2025-01-01T00:00:00.000Z');
+    const approvedAt = new Date('2025-01-02T00:00:00.000Z');
+    const arbaProfileId = await upsertTaxProfile(conn, {
+      clientId: arbaClientId,
+      validFrom,
+      validTo: null,
+      vatCondition: 'RESPONSABLE_INSCRIPTO',
+      grossIncomeRegime: 'ARBA_LOCAL',
+      conventionRegime: 'NONE',
+      arbaRegistrationNumber: 'ARBA-TEST-902-001',
+      cmRegistrationNumber: null,
+      sourceReference: 'Seed Docker ARBA local 2025',
+      approvedBy: 'seed-test-db',
+      approvedAt,
+      notes: 'Perfil ficticio exclusivo para pruebas Docker.',
+    });
+    await replaceProfileActivities(conn, arbaProfileId, [
+      {
+        activityCode: '471120',
+        description: 'Venta al por menor en comercios no especializados',
+        isPrimary: true,
+      },
+    ]);
+    await replaceProfileJurisdictions(conn, arbaProfileId, [
+      {
+        jurisdictionCode: '902',
+        registrationNumber: 'ARBA-TEST-902-001',
+        isActive: true,
+      },
+    ]);
+
+    const cmProfileId = await upsertTaxProfile(conn, {
+      clientId: cmClientId,
+      validFrom,
+      validTo: null,
+      vatCondition: 'RESPONSABLE_INSCRIPTO',
+      grossIncomeRegime: 'CM_REGIMEN_GENERAL',
+      conventionRegime: 'GENERAL',
+      arbaRegistrationNumber: null,
+      cmRegistrationNumber: 'CM-TEST-901-902',
+      sourceReference: 'Seed Docker CM regimen general 2025',
+      approvedBy: 'seed-test-db',
+      approvedAt,
+      notes: 'Perfil ficticio exclusivo para pruebas Docker.',
+    });
+    await replaceProfileActivities(conn, cmProfileId, [
+      {
+        activityCode: '259900',
+        description: 'Fabricacion de productos elaborados de metal',
+        isPrimary: true,
+      },
+    ]);
+    await replaceProfileJurisdictions(conn, cmProfileId, [
+      {
+        jurisdictionCode: '901',
+        registrationNumber: 'CM-TEST-901-902',
+        isActive: true,
+      },
+      {
+        jurisdictionCode: '902',
+        registrationNumber: 'CM-TEST-901-902',
+        isActive: true,
+      },
+    ]);
+
+    const cmCoefficientVersionId = await upsertCoefficientVersion(conn, {
+      clientId: cmClientId,
+      year: 2025,
+      sourceReference: 'CM05 de prueba 2025',
+      approvedBy: 'seed-test-db',
+      approvedAt,
+      notes: 'Coeficientes ficticios para validar el regimen general.',
+    });
+    await replaceCoefficientLines(conn, cmCoefficientVersionId, [
+      {
+        jurisdictionCode: '901',
+        incomeCoefficient: 0.4,
+        expenseCoefficient: 0.4,
+        unifiedCoefficient: 0.4,
+      },
+      {
+        jurisdictionCode: '902',
+        incomeCoefficient: 0.6,
+        expenseCoefficient: 0.6,
+        unifiedCoefficient: 0.6,
+      },
+    ]);
+
     const counts = await conn.query(`
       SELECT
         (SELECT COUNT(*) FROM Client) AS clients,
         (SELECT COUNT(*) FROM FiscalYear) AS fiscalYears,
         (SELECT COUNT(*) FROM TaxParameterSet) AS parameterSets,
         (SELECT COUNT(*) FROM TaxArt94Bracket) AS brackets,
-        (SELECT COUNT(*) FROM UpdateIndex) AS indices
+        (SELECT COUNT(*) FROM UpdateIndex) AS indices,
+        (SELECT COUNT(*) FROM ClientTaxProfileVersion) AS taxProfiles,
+        (SELECT COUNT(*) FROM ConventionCoefficientLine) AS coefficientLines
     `);
 
     console.log('Seed test DB completed:', counts[0]);

@@ -2,11 +2,13 @@
 
 ## P32 - Modulo IVA + IIBB mensual integrado con Ganancias
 
-Estado: Diseno aprobado para planificacion en rama aislada `feature/iva-iibb-mensual-core`.
+Estado: Activo. Checkpoint 2 desarrollado y validado exclusivamente en `feature/iva-iibb-mensual-core`; proximo paso: importacion mensual y deduplicacion.
 
 Avance:
 
 - Corte 1 completado: Docker aislado por worktree en puerto configurable; esta rama opera en `3318` y no comparte contenedor ni volumen con el entorno existente de `3317`.
+- Corte 2 completado: schema Prisma, cliente generado y migracion `20260622002033_add_fiscal_monthly_ledger` aplicados solo en Docker `3318`. Se agregaron perfiles semilla ficticios ARBA local y CM regimen general con coeficientes que suman 1. No se modificaron modelos ni tablas anuales existentes.
+- Resguardo adicional: Prisma usa `ganancias_jaba_test_shadow` local para generar migraciones; el runner rechaza destinos que no sean Docker local. P19 ya usa el puerto configurable del worktree.
 
 Objetivo:
 
@@ -25,7 +27,7 @@ Referencia:
 
 - `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`.
 
-Ultima actualizacion: 2026-06-09
+Ultima actualizacion: 2026-06-21
 
 Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usuario o por bloqueo tecnico, registrar el motivo en `docs/REGISTRO_PROYECTO.md`.
 

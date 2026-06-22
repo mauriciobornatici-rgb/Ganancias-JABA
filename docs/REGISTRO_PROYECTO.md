@@ -3247,3 +3247,48 @@ Uso posterior:
 
 - Este instructivo queda como entrada directa para P19 - Validacion real contra Excel en Docker.
 - Cuando se ejecute P19, cargar el caso en `npm run dev:testdb`, guardar, reabrir y comparar wizard, papel de trabajo, informe cliente y legajo PDF.
+
+### 2026-06-21 - P32, Checkpoint 2: Libro fiscal mensual base aislado
+
+Solicitud y limite operativo:
+
+- Se continua el modulo IVA + IIBB como complemento de Ganancias.
+- El usuario pidio expresamente no tocar `main`, Produccion Vercel, Hostinger ni la base productiva hasta contar con pruebas completas en una rama independiente.
+- El trabajo permanece en `feature/iva-iibb-mensual-core`, worktree `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual`.
+
+Hallazgos y resguardo de Preview:
+
+- Los previews fallidos vistos en Vercel no provienen de cambios en `main`: `DATABASE_URL` esta alcanzando Preview y apunta a la DB Hostinger productiva.
+- Se reprodujo la guarda `check-deployment-db-safety` de forma local: Preview con esa URL queda bloqueado; Preview sin `DATABASE_URL` queda permitido.
+- La accion externa pendiente es limitar `DATABASE_URL` a `Production` en Vercel, o crear una DB staging distinta. La guarda no debe desactivarse.
+
+Implementacion local:
+
+- Se agrego el libro fiscal paralelo y versionado: perfiles fiscales, actividades, jurisdicciones, periodos mensuales, comprobantes y lineas IVA, creditos, liquidaciones IVA/IIBB, coeficientes CM05 y snapshots anuales hacia Ganancias.
+- Se mantuvieron `TaxReturn`, `SalesInvoice` y `PurchaseInvoice` sin cambios destructivos ni nueva vinculacion mensual.
+- Se genero `20260622002033_add_fiscal_monthly_ledger` y se aplico solo en Docker `3318`.
+- Prisma ahora usa `ganancias_jaba_test_shadow` para generar migraciones. La URL principal y shadow se validan como `127.0.0.1` con credenciales Docker; no pueden derivar a Hostinger por accidente.
+- El seeder local agrega exclusivamente datos ficticios: un perfil ARBA local y un CM regimen general con coeficientes `0,40 + 0,60 = 1,00`.
+- Se corrigio P19 para tomar el puerto seguro configurable del worktree en lugar de asumir `3317`.
+- Se regenero el cliente Prisma versionado para incluir los nuevos modelos.
+
+TDD y verificacion:
+
+- Rojo confirmado: falta de `resolveTestShadowDatabaseUrl`, luego pruebas verdes de configuracion Docker.
+- Rojo confirmado: inexistencia de perfiles fiscales semilla; luego seed Docker y prueba de lectura verdes.
+- Rojo confirmado: P19 esperaba `3317` y recibia `3318`; luego regresion Excel/capturas verde en `3318`.
+- `fiscalLedgerSchemaArchitecture.test.ts`: 5 pruebas verdes.
+- `testDbConfig.test.ts` y `testDbMigrationSafetyConfig.test.ts`: 4 pruebas verdes.
+- `fiscalLedgerSeedDocker.test.ts`: 1 prueba verde contra Docker.
+- `prisma validate`: schema valido.
+- `tsc --noEmit`: verde despues de ajustar el contrato tipado del helper de entorno.
+
+No se realizo:
+
+- No se hizo push ni deploy de este checkpoint.
+- No se modifico `main`, Vercel, Hostinger ni datos productivos.
+- No se implementaron todavia importacion mensual, API, motor IVA/IIBB ni pantallas.
+
+Siguiente paso:
+
+- Task 3 del plan `docs/superpowers/plans/2026-06-20-modulo-iva-iibb-mensual.md`: importador mensual AFIP/ARCA por alicuota, clave deterministica y deduplicacion, conservando intacto el importador anual de Ganancias.

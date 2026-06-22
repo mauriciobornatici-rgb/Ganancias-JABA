@@ -5,12 +5,13 @@ import { buildExcelCaptureCaseFixture } from '../fixtures/excelCaptureCaseFixtur
 import { buildUsefulCoefficientsFromIndexes } from '../mappers/taxParameterUsefulCoefficients';
 import { buildMariaDbConnectionConfig } from '../persistence/databaseConnection';
 import { persistTaxReturnDetails } from '../persistence/taxReturnDetailsPersistence';
+import { resolveTestDatabaseUrl } from '../../../../scripts/testDbConfig.mjs';
 import {
   mapAxiStaticItemsForWizard,
   mapPatrimonialJustificationForWizard,
 } from '../persistence/taxReturnReadMapper';
 
-const TEST_DATABASE_URL = 'mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test';
+const TEST_DATABASE_URL = resolveTestDatabaseUrl();
 const shouldRunDockerValidation = process.env.RUN_DOCKER_DB_VALIDATION === '1';
 const describeDocker = shouldRunDockerValidation ? describe : describe.skip;
 

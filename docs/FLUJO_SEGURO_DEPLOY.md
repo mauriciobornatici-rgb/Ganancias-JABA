@@ -57,6 +57,11 @@ En Environment Variables:
 
 Si Vercel actualmente tiene `DATABASE_URL` marcada como `Production and Preview`, cambiarla a `Production` solamente. Si no se cambia, los futuros previews fallaran por diseno para proteger la base real.
 
+Verificacion 2026-06-21:
+
+- Se reprodujo localmente la misma guarda con una URL que apunta a Hostinger productivo: Preview queda bloqueado con el mensaje `Preview/Staging no puede usar la base productiva`.
+- Sin `DATABASE_URL` en Preview, la guarda permite compilar. Esto confirma que los errores de Preview de la rama IVA/IIBB son una proteccion esperada, no una modificacion de `main` ni una falla funcional del modulo.
+
 ## Flujo diario de trabajo
 
 1. Trabajar cambios en una rama de desarrollo o en `staging`.

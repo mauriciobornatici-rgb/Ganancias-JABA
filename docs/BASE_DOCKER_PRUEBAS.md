@@ -25,6 +25,14 @@ DATABASE_URL="mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_tes
 
 No es la base productiva.
 
+Para generar migraciones Prisma tambien usa una segunda base local de trabajo:
+
+```env
+TEST_SHADOW_DATABASE_URL="mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test_shadow"
+```
+
+El runner la fuerza como `SHADOW_DATABASE_URL`; ambas URLs se validan contra `127.0.0.1` y las credenciales Docker antes de ejecutar Prisma.
+
 ## Worktrees paralelos
 
 El puerto por defecto es `3317`. Si otra rama ya tiene una base Docker levantada, elegir un puerto libre para este worktree antes de ejecutar cualquier comando:
@@ -37,7 +45,7 @@ npm run db:test:seed
 npm run dev:testdb
 ```
 
-Los scripts forman la URL de prueba a partir de ese puerto y rechazan una URL que no sea `127.0.0.1/.../ganancias_jaba_test`. Docker ya no usa un nombre fijo de contenedor, por lo que los worktrees pueden convivir sin detenerse ni compartir volumenes.
+Los scripts forman las URL principal y shadow a partir de ese puerto y rechazan una URL que no sea `127.0.0.1/.../ganancias_jaba_test` o `127.0.0.1/.../ganancias_jaba_test_shadow`. Docker ya no usa un nombre fijo de contenedor, por lo que los worktrees pueden convivir sin detenerse ni compartir volumenes.
 
 La base productiva sigue siendo:
 

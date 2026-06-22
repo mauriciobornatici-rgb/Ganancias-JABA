@@ -11,6 +11,7 @@ services:
       - '${JABA_TEST_DB_PORT:-3317}:3306'
     volumes:
       - mysql_test_data:/var/lib/mysql
+      - ./docker/mysql-test-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "jaba_test", "-pjaba_test_pass"]
       interval: 5s

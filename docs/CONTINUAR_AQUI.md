@@ -1,6 +1,6 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-20
+Ultima actualizacion: 2026-06-21
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
@@ -9,9 +9,10 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama de trabajo activa: `feature/iva-iibb-mensual-core` en `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual`.
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
-- MODULO IVA + IIBB (2026-06-20): diseno registrado en `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`. Alcance inicial: IVA Simple, IIBB local ARBA y Convenio Multilateral regimen general; desarrollo y pruebas solo contra Docker. No se tocaron Hostinger, Vercel ni las DDJJ existentes.
-- P32 CHECKPOINT 1: Docker ya queda aislado por worktree. Esta rama usa `JABA_TEST_DB_PORT=3318`, con MySQL `ganancias-jaba-iva-iibb-mensual-mysql-test-1`; el contenedor historico del proyecto conserva `3317`. Test `testDbConfig` OK, migracion inicial y seed OK. Proximo corte: schema no destructivo del libro fiscal mensual.
-- CHECKPOINT INTEGRADO: P12, P19, P20 y P21 ya estan contenidos en `main`/`staging`; las ramas historicas se mantienen solo como referencia. Antes de cualquier publicacion nueva, resolver el deploy fallido de Vercel asociado al commit `b7e765b` y verificar que la produccion tome el commit esperado.
+- MODULO IVA + IIBB (P32): diseno registrado en `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`. Alcance inicial: IVA Simple, IIBB local ARBA y Convenio Multilateral regimen general; desarrollo y pruebas solo contra Docker. No se tocaron Hostinger, Vercel, `main` ni las DDJJ existentes.
+- P32 CHECKPOINT 2: schema no destructivo y migracion `20260622002033_add_fiscal_monthly_ledger` generados y aplicados solo en Docker `3318`. El libro mensual queda paralelo a `TaxReturn`; las tablas anuales no cambian. El seed local agrega perfiles ficticios ARBA y CM general con coeficientes 1,00. Proximo corte: Task 3, importacion mensual de comprobantes y deduplicacion.
+- Docker de esta rama usa dos bases locales acotadas: `ganancias_jaba_test` y `ganancias_jaba_test_shadow`. El contenedor historico del proyecto conserva `3317`; este worktree usa `ganancias-jaba-iva-iibb-mensual-mysql-test-1` en `3318`.
+- Vercel Preview: los errores vistos en la rama IVA/IIBB son el bloqueo intencional de `prebuild` porque `DATABASE_URL` esta marcada para `Production and Preview` y apunta a Hostinger productivo. Antes de revisar Preview, marcar esa variable solo en `Production` o crear una DB staging separada. No se debe desactivar la guarda.
 - PENDIENTES OPERATIVOS: rotar AUTH_PASSWORD/AUTH_SECRET/password DB por la exposicion historica, restringir DATABASE_URL a Production en Vercel, backup automatico Hostinger, prueba de restauracion Docker y monitor externo con HEALTH_CHECK_TOKEN.
 - Fase activa: endurecimiento profesional para uso operativo seguro.
 - Fuente funcional principal: planilla `DJ Ganancias 2025 - Tercera Categoria.xlsx`.

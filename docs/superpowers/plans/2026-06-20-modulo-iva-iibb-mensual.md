@@ -282,7 +282,7 @@ git commit -m "feat: agregar libro fiscal mensual base"
 - Create: `src/domain/ganancias/fiscalLedger/documentKey.ts`
 - Create: `src/domain/ganancias/tests/documentKey.test.ts`
 
-- [ ] **Step 1: Escribir tests rojos de importacion por alicuota**
+- [x] **Step 1: Escribir tests rojos de importacion por alicuota**
 
 ```ts
 it('conserva las bases e IVA de 10,5 y 21 por separado', () => {
@@ -298,7 +298,7 @@ it('no duplica un comprobante al reimportar el mismo archivo mensual', () => {
 });
 ```
 
-- [ ] **Step 2: Ejecutar tests y confirmar rojo**
+- [x] **Step 2: Ejecutar tests y confirmar rojo**
 
 Run:
 
@@ -308,7 +308,7 @@ npm run test -- src/domain/ganancias/tests/afipFiscalLedgerImporter.test.ts src/
 
 Expected: falla porque el importador mensual y la clave deterministica no existen.
 
-- [ ] **Step 3: Implementar tipos y adaptador sin romper el importador anual**
+- [x] **Step 3: Implementar tipos y adaptador sin romper el importador anual**
 
 El nuevo importador debe reutilizar la lectura robusta de CSV Latin-1, separador `;`, coma decimal y notas de credito de `afipImporter.ts`, pero devolver `FiscalDocumentDraft[]`. No reemplaza `parseAfipExportFiles`, que debe conservar su salida actual para Ganancias existente.
 
@@ -326,7 +326,7 @@ export type FiscalDocumentDraft = {
 };
 ```
 
-- [ ] **Step 4: Probar verde y regresion del importador actual**
+- [x] **Step 4: Probar verde y regresion del importador actual**
 
 Run:
 
@@ -336,7 +336,7 @@ npm run test -- src/domain/ganancias/tests/afipFiscalLedgerImporter.test.ts src/
 
 Expected: el nuevo importador preserva lineas, y el importador actual sigue aceptando los archivos AFIP existentes sin importes x100.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add src/domain/ganancias/fiscalLedger src/domain/ganancias/mappers/afipFiscalLedgerImporter.ts src/domain/ganancias/mappers/afipImporter.ts src/domain/ganancias/tests/afipFiscalLedgerImporter.test.ts src/domain/ganancias/tests/documentKey.test.ts

@@ -2,8 +2,8 @@ import * as xlsx from 'xlsx';
 import { Decimal } from 'decimal.js';
 import { SalesInput, PurchaseInput, TaxWithholdingInput } from '../types';
 
-type SheetCell = string | number | boolean | Date | null | undefined;
-type SheetRow = SheetCell[];
+export type AfipSheetCell = string | number | boolean | Date | null | undefined;
+export type AfipSheetRow = AfipSheetCell[];
 
 /**
  * Lector robusto de comprobantes AFIP/ARCA.
@@ -43,7 +43,7 @@ function splitCsvLine(line: string, separator: string): string[] {
   return cells.map(c => c.trim());
 }
 
-function parseCsvRows(fileBuffer: Buffer): SheetRow[] {
+function parseCsvRows(fileBuffer: Buffer): AfipSheetRow[] {
   // Decodificar como Latin-1 (Windows-1252), codificacion habitual de los export AFIP.
   const text = fileBuffer.toString('latin1').replace(/^﻿/, '');
   const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
@@ -56,13 +56,13 @@ function parseCsvRows(fileBuffer: Buffer): SheetRow[] {
   return lines.map(line => splitCsvLine(line, separator));
 }
 
-function readSheetRows(fileBuffer: Buffer): SheetRow[] {
+export function readAfipSheetRows(fileBuffer: Buffer): AfipSheetRow[] {
   if (isLikelyXlsxBuffer(fileBuffer)) {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
     if (!sheet) return [];
-    return xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as SheetRow[];
+    return xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' }) as AfipSheetRow[];
   }
 
   return parseCsvRows(fileBuffer);
@@ -113,7 +113,7 @@ export function parseAfipExportFile(
   try {
     // 1. Leer las filas: CSV como texto plano (preserva "15123,97" y la fecha original),
     //    xlsx via SheetJS. Ver readSheetRows para el detalle del bug que esto evita.
-    const rawData = readSheetRows(fileBuffer);
+    const rawData = readAfipSheetRows(fileBuffer);
     if (rawData.length === 0) {
       return { fileType: 'Desconocido', totalRecords: 0, totalAmount, errors: ['El archivo está vacío o no posee hojas válidas'] };
     }
@@ -266,7 +266,7 @@ export function parseAfipExportFiles(
  * Parsea e importa retenciones y percepciones (Mis Retenciones)
  */
 function parseMisRetenciones(
-  rows: SheetRow[],
+  rows: AfipSheetRow[],
   headers: string[],
   errors: string[]
 ): ImportedDataSummary {
@@ -298,7 +298,7 @@ function parseMisRetenciones(
       if (rawAmount === undefined || rawAmount === '') continue;
 
       // Limpiar formato monetario español (coma para decimales, punto para miles)
-      const amountVal = parseSpanishDecimal(rawAmount);
+      const amountVal = parseAfipDecimal(rawAmount);
       const taxName = taxIndex !== -1 ? String(row[taxIndex]).trim() : 'Impuesto a las Ganancias';
       const rawTaxCode = textCell(row, taxCodeIndex);
 
@@ -312,7 +312,7 @@ function parseMisRetenciones(
           taxDescription: taxName || undefined,
           regimeCode: textCell(row, regimeCodeIndex) || undefined,
           regimeDescription: textCell(row, regimeDescriptionIndex) || undefined,
-          date: dateIndex !== -1 ? parseExcelDate(row[dateIndex]) : undefined,
+          date: dateIndex !== -1 ? parseAfipDate(row[dateIndex]) : undefined,
           certificateNumber: textCell(row, certificateIndex) || undefined,
           operationDescription: textCell(row, operationDescriptionIndex) || undefined,
         });
@@ -343,18 +343,18 @@ function findColumnIndex(headers: string[], options: string[]): number {
   return -1;
 }
 
-function textCell(row: SheetRow, index: number, fallback = ''): string {
+function textCell(row: AfipSheetRow, index: number, fallback = ''): string {
   if (index === -1) return fallback;
   const value = row[index];
   if (value === undefined || value === null) return fallback;
   return String(value).trim();
 }
 
-function moneyCell(row: SheetRow, index: number): Decimal {
-  return index !== -1 ? parseSpanishDecimal(row[index] || 0) : new Decimal(0);
+function moneyCell(row: AfipSheetRow, index: number): Decimal {
+  return index !== -1 ? parseAfipDecimal(row[index] || 0) : new Decimal(0);
 }
 
-function buildInvoiceNumber(row: SheetRow, pointOfSaleIndex: number, numberIndex: number): string | undefined {
+function buildInvoiceNumber(row: AfipSheetRow, pointOfSaleIndex: number, numberIndex: number): string | undefined {
   const rawNumber = textCell(row, numberIndex);
   if (!rawNumber) return undefined;
 
@@ -377,7 +377,7 @@ function buildInvoiceNumber(row: SheetRow, pointOfSaleIndex: number, numberIndex
  * Parsea e importa ventas e ingresos (Libro de IVA Ventas / Comprobantes Emitidos)
  */
 function parseLibroVentas(
-  rows: SheetRow[],
+  rows: AfipSheetRow[],
   headers: string[],
   errors: string[]
 ): ImportedDataSummary {
@@ -415,10 +415,10 @@ function parseLibroVentas(
     if (row.length === 0 || row.every(c => c === '')) continue;
 
     try {
-      const dateVal = parseExcelDate(row[dateIndex]);
-      const netVal = netIndex !== -1 ? parseSpanishDecimal(row[netIndex] || 0) : new Decimal(0);
-      const exemptVal = exemptIndex !== -1 ? parseSpanishDecimal(row[exemptIndex] || 0) : new Decimal(0);
-      const noGravadoVal = noGravadoIndex !== -1 ? parseSpanishDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
+      const dateVal = parseAfipDate(row[dateIndex]);
+      const netVal = netIndex !== -1 ? parseAfipDecimal(row[netIndex] || 0) : new Decimal(0);
+      const exemptVal = exemptIndex !== -1 ? parseAfipDecimal(row[exemptIndex] || 0) : new Decimal(0);
+      const noGravadoVal = noGravadoIndex !== -1 ? parseAfipDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
       const importedDetail = {
         invoiceType: textCell(row, invoiceTypeIndex) || undefined,
         invoiceNumber: buildInvoiceNumber(row, pointOfSaleIndex, invoiceNumberIndex),
@@ -469,7 +469,7 @@ function parseLibroVentas(
  * Parsea e importa compras y egresos (Libro de IVA Compras / Comprobantes Recibidos)
  */
 function parseLibroCompras(
-  rows: SheetRow[],
+  rows: AfipSheetRow[],
   headers: string[],
   errors: string[]
 ): ImportedDataSummary {
@@ -509,11 +509,11 @@ function parseLibroCompras(
     if (row.length === 0 || row.every(c => c === '')) continue;
 
     try {
-      const dateVal = parseExcelDate(row[dateIndex]);
-      const netVal = netIndex !== -1 ? parseSpanishDecimal(row[netIndex] || 0) : new Decimal(0);
-      const exemptVal = exemptIndex !== -1 ? parseSpanishDecimal(row[exemptIndex] || 0) : new Decimal(0);
-      const noGravadoVal = noGravadoIndex !== -1 ? parseSpanishDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
-      const totalVal = totalIndex !== -1 ? parseSpanishDecimal(row[totalIndex] || 0) : new Decimal(0);
+      const dateVal = parseAfipDate(row[dateIndex]);
+      const netVal = netIndex !== -1 ? parseAfipDecimal(row[netIndex] || 0) : new Decimal(0);
+      const exemptVal = exemptIndex !== -1 ? parseAfipDecimal(row[exemptIndex] || 0) : new Decimal(0);
+      const noGravadoVal = noGravadoIndex !== -1 ? parseAfipDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
+      const totalVal = totalIndex !== -1 ? parseAfipDecimal(row[totalIndex] || 0) : new Decimal(0);
       const importedDetail = {
         invoiceType: textCell(row, invoiceTypeIndex) || undefined,
         invoiceNumber: buildInvoiceNumber(row, pointOfSaleIndex, invoiceNumberIndex),
@@ -579,7 +579,7 @@ function parseLibroCompras(
 /**
  * Helper para parsear números decimales del formato local argentino (coma para decimales, punto para miles)
  */
-function parseSpanishDecimal(val: unknown): Decimal {
+export function parseAfipDecimal(val: unknown): Decimal {
   if (val instanceof Decimal) return val;
   if (typeof val === 'number') return new Decimal(val);
   
@@ -613,7 +613,7 @@ function parseSpanishDecimal(val: unknown): Decimal {
 /**
  * Helper para parsear fechas de Excel (ya sean strings o seriales numéricos de Excel)
  */
-function parseExcelDate(val: unknown): Date {
+export function parseAfipDate(val: unknown): Date {
   if (val instanceof Date) return val;
   
   // Si es un número serial de Excel (ej: 45657)

@@ -9,6 +9,7 @@ Avance:
 - Corte 1 completado: Docker aislado por worktree en puerto configurable; esta rama opera en `3318` y no comparte contenedor ni volumen con el entorno existente de `3317`.
 - Corte 2 completado: schema Prisma, cliente generado y migracion `20260622002033_add_fiscal_monthly_ledger` aplicados solo en Docker `3318`. Se agregaron perfiles semilla ficticios ARBA local y CM regimen general con coeficientes que suman 1. No se modificaron modelos ni tablas anuales existentes.
 - Resguardo adicional: Prisma usa `ganancias_jaba_test_shadow` local para generar migraciones; el runner rechaza destinos que no sean Docker local. P19 ya usa el puerto configurable del worktree.
+- Corte 3 completado: importador mensual separado conserva bases e IVA por alicuota y genera una clave de comprobante estable, sin usar el nombre de archivo. El importador anual de Ganancias mantiene sus pruebas de regresion verdes.
 
 Objetivo:
 

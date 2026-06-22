@@ -3292,3 +3292,29 @@ No se realizo:
 Siguiente paso:
 
 - Task 3 del plan `docs/superpowers/plans/2026-06-20-modulo-iva-iibb-mensual.md`: importador mensual AFIP/ARCA por alicuota, clave deterministica y deduplicacion, conservando intacto el importador anual de Ganancias.
+
+### 2026-06-21 - P32, Checkpoint 3: Importacion mensual AFIP/ARCA por alicuota
+
+Objetivo:
+
+- Reutilizar la lectura segura de CSV Latin-1/XLSX de AFIP sin mover ni alterar la importacion anual vigente.
+- Conservar el detalle IVA por alicuota para la liquidacion mensual y deduplicar reimportaciones sin depender del nombre del archivo.
+
+Implementacion:
+
+- Se expusieron de forma reutilizable el lector de filas AFIP, la conversion decimal argentina y el parser de fechas ya probados por el importador anual.
+- Se agrego `afipFiscalLedgerImporter.ts`, que detecta ventas/compras, genera lineas `TAXED`, `EXEMPT` o `NON_TAXED`, conserva las alicuotas 0%, 2,5%, 5%, 10,5%, 21% y 27%, y marca el credito IVA de compras como computable.
+- Se agrego `documentKey.ts`: la clave usa CUIT del titular, direccion, fecha, tipo, numero y CUIT contraparte; excluye el nombre de archivo para que una copia del mismo CSV no se duplique.
+- Las facturas sin IVA discriminado se conservan como una linea `NON_TAXED` para no perder el importe y poder revisarlas luego.
+
+TDD y verificacion:
+
+- Rojo confirmado: los modulos mensual y de clave no existian.
+- Verde: se conserva una venta con bases/IVA separadas de 10,5% y 21%, y una compra con credito computable 21%.
+- Una regresion inicial de `Mis Retenciones` revelo una referencia interna al nombre previo del parser decimal; se corrigio de forma puntual y las pruebas anuales volvieron a pasar.
+- `afipFiscalLedgerImporter.test.ts`, `documentKey.test.ts` e `importer.test.ts`: 14 pruebas verdes.
+- `tsc --noEmit`: verde.
+
+Siguiente paso:
+
+- Task 4: validacion de perfiles, persistencia idempotente y API de periodos fiscales mensuales contra Docker `3318`.

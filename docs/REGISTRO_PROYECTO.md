@@ -3574,6 +3574,62 @@ El worktree tiene `.git` con gitdir en ruta Windows; git no corre desde el sandb
 
 ---
 
+## Retenciones y percepciones de IVA (2026-06-24, sesion 2)
+
+Carga del archivo de AFIP de retenciones/percepciones para descontar del saldo de IVA (Art. 24, 2º párr.).
+El MOTOR ya hacia el calculo (validado al peso: aplico ret 34.590,12 + libre disp. anterior 167.342,88
+→ saldo 179.731,35). Lo que se agrego es la INGESTA del archivo + la UI.
+
+### Formato del archivo AFIP (clave para no re-investigar)
+
+Es **un solo CSV** (`<cuit>_IMP_PER_RET_<fecha>.csv`) con retenciones Y percepciones mezcladas:
+- Separador **coma**. Importe **entrecomillado con decimal coma** (`"24297,52"`), puede ser **negativo** (NC).
+- Algunos campos con **apóstrofo de Excel** (`'2026002188`) que se elimina.
+- Columnas: `CUIT Agente`, `Impuesto`, `Regimen`, `Fecha Ret./Perc.`(DD/MM/YYYY), `Numero Certificado`,
+  `Descripcion Operacion`(RETENCION|PERCEPCION), `Importe Ret./Perc.`, `Numero Comprobante`,
+  `Fecha Comprobante`, `Descripcion Comprobante`, `Fecha Ingreso`, `Codigo de Seguridad`.
+- **`Impuesto` = 767 → IVA.** Otros códigos (217 Ganancias, etc.) NO aplican contra IVA.
+- Encoding Latin-1.
+
+### Decisiones del usuario (cerradas)
+
+- **Solo IVA (767)** entra a este módulo; otros impuestos se ignoran con aviso.
+- Imputación **por `Fecha Ret./Perc.` validando el mes** del período; las de otro mes quedan fuera (no se cargan).
+- **Grilla con tilde por fila** (igual que comprobantes) + subtotales retenciones/percepciones + cotejo.
+
+### Mecánica (la respeta el motor, ya validado)
+
+- Saldo técnico del período = débito − crédito − saldo técnico a favor anterior. Si da a favor, ARRASTRA como saldo técnico (separado).
+- Contra el impuesto técnico a ingresar se aplican, juntos, la **libre disponibilidad anterior** + las **ret/perc del período**.
+- Si hay saldo a pagar → se descuentan. Si NO hay (o sobran) → el excedente queda como **saldo de libre disponibilidad** que arrastra.
+- Acumulación y uso sin doble cómputo: cada mes guarda su `freeAvailabilityBalance` neto; el mes siguiente lee ese neto (solo de liquidaciones CLOSED).
+
+### Implementado
+
+- **Schema**: `TaxCreditRecord.includedInSettlement` (aditivo). Migración `20260624140000_add_taxcredit_included_in_settlement`.
+- **Parser** `mappers/afipTaxCreditImporter.ts`: CSV coma + decimal coma + apóstrofo + negativos; filtra 767; mapea RETENCION→WITHHOLDING, PERCEPCION→PERCEPTION; valida mes; clave de idempotencia. **Validado contra el archivo REAL**: 6 ret = 335.012,48 / 11 perc = 8.797,98 / neto 343.810,46 (10/10 aserciones) + tests vitest.
+- **Persistencia** `persistence/taxCreditPersistence.ts` (idempotente por creditKey).
+- **Endpoints**: `tax-credits` (GET lista + POST import), `tax-credits/selection` (PATCH).
+- **Settlement**: GET y save filtran `includedInSettlement` en taxCredits; GET expone subtotales (retenciones/percepciones) para cotejo.
+- **UI**: sección "Paso 2b — Retenciones y percepciones" en la pantalla de IVA (subir archivo + grilla con selección + subtotales). El panel de totales ya muestra "percep./retenc. aplicadas", "saldo a pagar" y "libre disponibilidad (arrastra)".
+
+### REQUISITO antes de compilar (campo nuevo en Prisma)
+
+```powershell
+npx prisma generate    # OBLIGATORIO: las rutas usan TaxCreditRecord.includedInSettlement
+npm run build
+npx vitest run         # +5 tests nuevos (afipTaxCreditImporter)
+```
+
+Aplicar en base: `npx prisma migrate deploy` (ahora son varias migraciones nuevas acumuladas).
+
+### Pendiente
+
+- Probar end-to-end: subir el archivo real de ret/perc en la pantalla de IVA y verificar que el saldo a pagar baja y/o queda libre disponibilidad.
+- (Opcional) cotejo dedicado del total de ret/perc contra AFIP en la pantalla.
+
+---
+
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)
 
 Se conecto el libro fiscal mensual (IVA) con la DDJJ anual de Ganancias, comprobante por comprobante

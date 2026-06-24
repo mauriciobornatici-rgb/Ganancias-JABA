@@ -51,6 +51,7 @@ export type TaxCreditRecordMinAggregateOutputType = {
   originalAmount: runtime.Decimal | null
   appliedAmount: runtime.Decimal | null
   source: string | null
+  includedInSettlement: boolean | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -71,6 +72,7 @@ export type TaxCreditRecordMaxAggregateOutputType = {
   originalAmount: runtime.Decimal | null
   appliedAmount: runtime.Decimal | null
   source: string | null
+  includedInSettlement: boolean | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -91,6 +93,7 @@ export type TaxCreditRecordCountAggregateOutputType = {
   originalAmount: number
   appliedAmount: number
   source: number
+  includedInSettlement: number
   notes: number
   createdAt: number
   updatedAt: number
@@ -123,6 +126,7 @@ export type TaxCreditRecordMinAggregateInputType = {
   originalAmount?: true
   appliedAmount?: true
   source?: true
+  includedInSettlement?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -143,6 +147,7 @@ export type TaxCreditRecordMaxAggregateInputType = {
   originalAmount?: true
   appliedAmount?: true
   source?: true
+  includedInSettlement?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -163,6 +168,7 @@ export type TaxCreditRecordCountAggregateInputType = {
   originalAmount?: true
   appliedAmount?: true
   source?: true
+  includedInSettlement?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -270,6 +276,7 @@ export type TaxCreditRecordGroupByOutputType = {
   originalAmount: runtime.Decimal
   appliedAmount: runtime.Decimal
   source: string
+  includedInSettlement: boolean
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -313,6 +320,7 @@ export type TaxCreditRecordWhereInput = {
   originalAmount?: Prisma.DecimalFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFilter<"TaxCreditRecord"> | string
+  includedInSettlement?: Prisma.BoolFilter<"TaxCreditRecord"> | boolean
   notes?: Prisma.StringNullableFilter<"TaxCreditRecord"> | string | null
   createdAt?: Prisma.DateTimeFilter<"TaxCreditRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TaxCreditRecord"> | Date | string
@@ -335,6 +343,7 @@ export type TaxCreditRecordOrderByWithRelationInput = {
   originalAmount?: Prisma.SortOrder
   appliedAmount?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -362,6 +371,7 @@ export type TaxCreditRecordWhereUniqueInput = Prisma.AtLeast<{
   originalAmount?: Prisma.DecimalFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFilter<"TaxCreditRecord"> | string
+  includedInSettlement?: Prisma.BoolFilter<"TaxCreditRecord"> | boolean
   notes?: Prisma.StringNullableFilter<"TaxCreditRecord"> | string | null
   createdAt?: Prisma.DateTimeFilter<"TaxCreditRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TaxCreditRecord"> | Date | string
@@ -384,6 +394,7 @@ export type TaxCreditRecordOrderByWithAggregationInput = {
   originalAmount?: Prisma.SortOrder
   appliedAmount?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -412,6 +423,7 @@ export type TaxCreditRecordScalarWhereWithAggregatesInput = {
   originalAmount?: Prisma.DecimalWithAggregatesFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalWithAggregatesFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringWithAggregatesFilter<"TaxCreditRecord"> | string
+  includedInSettlement?: Prisma.BoolWithAggregatesFilter<"TaxCreditRecord"> | boolean
   notes?: Prisma.StringNullableWithAggregatesFilter<"TaxCreditRecord"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TaxCreditRecord"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"TaxCreditRecord"> | Date | string
@@ -430,6 +442,7 @@ export type TaxCreditRecordCreateInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -452,6 +465,7 @@ export type TaxCreditRecordUncheckedCreateInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -470,6 +484,7 @@ export type TaxCreditRecordUpdateInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -492,6 +507,7 @@ export type TaxCreditRecordUncheckedUpdateInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -512,6 +528,7 @@ export type TaxCreditRecordCreateManyInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -530,6 +547,7 @@ export type TaxCreditRecordUpdateManyMutationInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -550,6 +568,7 @@ export type TaxCreditRecordUncheckedUpdateManyInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -591,6 +610,7 @@ export type TaxCreditRecordCountOrderByAggregateInput = {
   originalAmount?: Prisma.SortOrder
   appliedAmount?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -616,6 +636,7 @@ export type TaxCreditRecordMaxOrderByAggregateInput = {
   originalAmount?: Prisma.SortOrder
   appliedAmount?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -636,6 +657,7 @@ export type TaxCreditRecordMinOrderByAggregateInput = {
   originalAmount?: Prisma.SortOrder
   appliedAmount?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -751,6 +773,7 @@ export type TaxCreditRecordCreateWithoutFiscalPeriodInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -771,6 +794,7 @@ export type TaxCreditRecordUncheckedCreateWithoutFiscalPeriodInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -820,6 +844,7 @@ export type TaxCreditRecordScalarWhereInput = {
   originalAmount?: Prisma.DecimalFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFilter<"TaxCreditRecord"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFilter<"TaxCreditRecord"> | string
+  includedInSettlement?: Prisma.BoolFilter<"TaxCreditRecord"> | boolean
   notes?: Prisma.StringNullableFilter<"TaxCreditRecord"> | string | null
   createdAt?: Prisma.DateTimeFilter<"TaxCreditRecord"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TaxCreditRecord"> | Date | string
@@ -838,6 +863,7 @@ export type TaxCreditRecordCreateWithoutFiscalDocumentInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -858,6 +884,7 @@ export type TaxCreditRecordUncheckedCreateWithoutFiscalDocumentInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -903,6 +930,7 @@ export type TaxCreditRecordCreateManyFiscalPeriodInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -921,6 +949,7 @@ export type TaxCreditRecordUpdateWithoutFiscalPeriodInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -941,6 +970,7 @@ export type TaxCreditRecordUncheckedUpdateWithoutFiscalPeriodInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -960,6 +990,7 @@ export type TaxCreditRecordUncheckedUpdateManyWithoutFiscalPeriodInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -979,6 +1010,7 @@ export type TaxCreditRecordCreateManyFiscalDocumentInput = {
   originalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: string
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -997,6 +1029,7 @@ export type TaxCreditRecordUpdateWithoutFiscalDocumentInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1017,6 +1050,7 @@ export type TaxCreditRecordUncheckedUpdateWithoutFiscalDocumentInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1036,6 +1070,7 @@ export type TaxCreditRecordUncheckedUpdateManyWithoutFiscalDocumentInput = {
   originalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   appliedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   source?: Prisma.StringFieldUpdateOperationsInput | string
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1058,6 +1093,7 @@ export type TaxCreditRecordSelect<ExtArgs extends runtime.Types.Extensions.Inter
   originalAmount?: boolean
   appliedAmount?: boolean
   source?: boolean
+  includedInSettlement?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1082,12 +1118,13 @@ export type TaxCreditRecordSelectScalar = {
   originalAmount?: boolean
   appliedAmount?: boolean
   source?: boolean
+  includedInSettlement?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TaxCreditRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "fiscalDocumentId" | "creditKey" | "tax" | "kind" | "jurisdictionCode" | "issueDate" | "agentCuit" | "agentName" | "certificateNumber" | "originalAmount" | "appliedAmount" | "source" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["taxCreditRecord"]>
+export type TaxCreditRecordOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "fiscalDocumentId" | "creditKey" | "tax" | "kind" | "jurisdictionCode" | "issueDate" | "agentCuit" | "agentName" | "certificateNumber" | "originalAmount" | "appliedAmount" | "source" | "includedInSettlement" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["taxCreditRecord"]>
 export type TaxCreditRecordInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fiscalPeriod?: boolean | Prisma.FiscalPeriodDefaultArgs<ExtArgs>
   fiscalDocument?: boolean | Prisma.TaxCreditRecord$fiscalDocumentArgs<ExtArgs>
@@ -1114,6 +1151,7 @@ export type $TaxCreditRecordPayload<ExtArgs extends runtime.Types.Extensions.Int
     originalAmount: runtime.Decimal
     appliedAmount: runtime.Decimal
     source: string
+    includedInSettlement: boolean
     notes: string | null
     createdAt: Date
     updatedAt: Date
@@ -1502,6 +1540,7 @@ export interface TaxCreditRecordFieldRefs {
   readonly originalAmount: Prisma.FieldRef<"TaxCreditRecord", 'Decimal'>
   readonly appliedAmount: Prisma.FieldRef<"TaxCreditRecord", 'Decimal'>
   readonly source: Prisma.FieldRef<"TaxCreditRecord", 'String'>
+  readonly includedInSettlement: Prisma.FieldRef<"TaxCreditRecord", 'Boolean'>
   readonly notes: Prisma.FieldRef<"TaxCreditRecord", 'String'>
   readonly createdAt: Prisma.FieldRef<"TaxCreditRecord", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"TaxCreditRecord", 'DateTime'>

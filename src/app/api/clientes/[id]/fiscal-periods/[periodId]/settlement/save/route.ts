@@ -78,7 +78,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
             vatLines: { select: { kind: true, taxableBase: true, rate: true, vatAmount: true, creditComputable: true } },
           },
         },
-        taxCredits: { select: { tax: true, originalAmount: true, appliedAmount: true } },
+        taxCredits: {
+          where: { includedInSettlement: true },
+          select: { tax: true, originalAmount: true, appliedAmount: true },
+        },
       },
     });
 

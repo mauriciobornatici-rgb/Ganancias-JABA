@@ -486,6 +486,8 @@ model TaxCreditRecord {
   originalAmount      Decimal         @db.Decimal(18, 2)
   appliedAmount       Decimal         @default(0) @db.Decimal(18, 2)
   source              String          @default("MANUAL")
+  // Revisión del usuario: si se desmarca, la ret/perc NO entra en la liquidación (queda registrada).
+  includedInSettlement Boolean        @default(true)
   notes               String?         @db.Text
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt

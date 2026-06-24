@@ -38,6 +38,16 @@ type VatView = {
   creditByRate: Array<{ rate: string; taxableBase: string; vatAmount: string; computable: boolean }>;
 };
 
+type TaxCreditRow = {
+  id: string;
+  kind: 'WITHHOLDING' | 'PERCEPTION' | string;
+  agentCuit: string | null;
+  certificateNumber: string | null;
+  issueDate: string;
+  amount: string;
+  includedInSettlement: boolean;
+};
+
 const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
 const ratePct = (r: string) => `${(Number(r) * 100).toFixed(1).replace(/\.0$/, '')}%`;
@@ -51,6 +61,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
 
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Retenciones y percepciones (créditos de IVA)
+  const [taxCredits, setTaxCredits] = useState<TaxCreditRow[]>([]);
+  const [uploadingCredits, setUploadingCredits] = useState(false);
+  const creditsFileInputRef = useRef<HTMLInputElement>(null);
 
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -81,7 +96,81 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
-  useEffect(() => { queueMicrotask(() => { void loadDocuments(); }); }, [loadDocuments]);
+  const loadTaxCredits = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) setTaxCredits(payload.data.credits);
+    } catch {
+      // si falla la carga de ret/perc no bloquea la pantalla de comprobantes
+    }
+  }, [clientId, periodId]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      void loadDocuments();
+      void loadTaxCredits();
+    });
+  }, [loadDocuments, loadTaxCredits]);
+
+  const includedWithholding = useMemo(
+    () => taxCredits.filter(c => c.includedInSettlement && c.kind === 'WITHHOLDING').reduce((s, c) => s + Number(c.amount), 0),
+    [taxCredits],
+  );
+  const includedPerception = useMemo(
+    () => taxCredits.filter(c => c.includedInSettlement && c.kind === 'PERCEPTION').reduce((s, c) => s + Number(c.amount), 0),
+    [taxCredits],
+  );
+
+  const uploadCreditsFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingCredits(true);
+    setError(null);
+    setNotice(null);
+    setSettlement(null);
+    try {
+      const form = new FormData();
+      Array.from(files).forEach(f => form.append('files', f));
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits`, { method: 'POST', body: form });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de retenciones/percepciones.');
+      const d = payload.data;
+      let msg = `Importadas ${d.inserted} ret./perc. (${d.duplicates} duplicadas).`;
+      if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
+      if (d.ignoredOtherTax) msg += ` ${d.ignoredOtherTax} de otros impuestos ignoradas.`;
+      setNotice(msg);
+      await loadTaxCredits();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de retenciones/percepciones.');
+    } finally {
+      setUploadingCredits(false);
+      if (creditsFileInputRef.current) creditsFileInputRef.current.value = '';
+    }
+  };
+
+  const persistCreditSelection = useCallback(async (changes: Array<{ creditId: string; included: boolean }>) => {
+    try {
+      await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits/selection`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ changes }),
+      });
+    } catch {
+      void loadTaxCredits();
+    }
+  }, [clientId, periodId, loadTaxCredits]);
+
+  const toggleCreditRow = (id: string, included: boolean) => {
+    setTaxCredits(prev => prev.map(c => (c.id === id ? { ...c, includedInSettlement: included } : c)));
+    setSettlement(null);
+    void persistCreditSelection([{ creditId: id, included }]);
+  };
+
+  const toggleAllCredits = (included: boolean) => {
+    setTaxCredits(prev => prev.map(c => ({ ...c, includedInSettlement: included })));
+    setSettlement(null);
+    void persistCreditSelection(taxCredits.map(c => ({ creditId: c.id, included })));
+  };
 
   const sales = useMemo(() => documents.filter(d => d.direction === 'SALE'), [documents]);
   const purchases = useMemo(() => documents.filter(d => d.direction === 'PURCHASE'), [documents]);
@@ -277,6 +366,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
               <DocTable title="Compras (crédito fiscal)" rows={purchases} onToggle={toggleRow} onToggleAll={inc => toggleAll('PURCHASE', inc)} vatTotal={includedPurchasesVat} />
             </div>
           )}
+        </section>
+
+        {/* Paso 2b — Retenciones y percepciones */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <StepTitle n="2b" icon={<ScanLine className="h-4 w-4" />} title="Retenciones y percepciones (IVA)" subtitle="Subí el archivo de 'Mis Retenciones' de ARCA. Se aplican contra el saldo a pagar; el excedente queda como saldo de libre disponibilidad." />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <input ref={creditsFileInputRef} type="file" accept=".csv,text/csv" multiple onChange={e => void uploadCreditsFiles(e.target.files)} className="hidden" id="retperc-files" />
+            <label htmlFor="retperc-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploadingCredits ? 'cursor-wait opacity-60' : ''}`}>
+              <UploadCloud className="h-4 w-4" /> {uploadingCredits ? 'Importando…' : 'Subir archivo de ret./perc.'}
+            </label>
+            <span className="text-[11px] text-zinc-400">
+              Retenciones: <strong className="font-mono text-teal-300">{fmt(includedWithholding)}</strong> · Percepciones: <strong className="font-mono text-teal-300">{fmt(includedPerception)}</strong>
+            </span>
+          </div>
+          {taxCredits.length > 0 ? (
+            <div className="mt-4">
+              <CreditTable rows={taxCredits} onToggle={toggleCreditRow} onToggleAll={toggleAllCredits} />
+            </div>
+          ) : (
+            <p className="mt-4 rounded border border-dashed border-zinc-700 px-4 py-4 text-center text-[11px] text-zinc-500">Sin retenciones/percepciones cargadas (opcional).</p>
+          )}
+
           <div className="mt-5">
             <button type="button" onClick={() => void calculate()} disabled={calculating || documents.length === 0} className="inline-flex h-10 items-center gap-2 rounded bg-zinc-100 px-4 text-xs font-extrabold text-zinc-900 transition-colors hover:bg-white disabled:opacity-40">
               <Calculator className="h-4 w-4" /> {calculating ? 'Calculando…' : 'Calcular liquidación'}
@@ -363,7 +474,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   );
 }
 
-function StepTitle({ n, icon, title, subtitle }: { n: number; icon: ReactNode; title: string; subtitle: string }) {
+function StepTitle({ n, icon, title, subtitle }: { n: number | string; icon: ReactNode; title: string; subtitle: string }) {
   return (
     <div className="flex items-start gap-3">
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-500/30 bg-teal-500/10 text-xs font-extrabold text-teal-300">{n}</span>
@@ -421,6 +532,56 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
                 <td className="px-2 py-1.5 text-zinc-300">{r.counterpartyName || r.counterpartyCuit || '—'}</td>
                 <td className="px-2 py-1.5 text-right font-mono text-zinc-400">{fmt(r.netAmount)}</td>
                 <td className="px-2 py-1.5 text-right font-mono text-zinc-200">{fmt(r.vatAmount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function CreditTable({ rows, onToggle, onToggleAll }: {
+  rows: TaxCreditRow[];
+  onToggle: (id: string, included: boolean) => void;
+  onToggleAll: (included: boolean) => void;
+}) {
+  const allOn = rows.length > 0 && rows.every(r => r.includedInSettlement);
+  const includedCount = rows.filter(r => r.includedInSettlement).length;
+  const kindLabel = (k: string) => (k === 'WITHHOLDING' ? 'Retención' : k === 'PERCEPTION' ? 'Percepción' : k);
+  const includedTotal = rows.filter(r => r.includedInSettlement).reduce((s, r) => s + Number(r.amount), 0);
+  return (
+    <div className="overflow-hidden rounded-lg border border-zinc-800">
+      <div className="flex items-center justify-between gap-3 bg-zinc-900/60 px-3 py-2">
+        <p className="text-xs font-bold text-zinc-200">Retenciones y percepciones <span className="font-mono text-zinc-500">· {includedCount}/{rows.length}</span></p>
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] text-zinc-400">Total a aplicar: <strong className="font-mono text-teal-300">{fmt(includedTotal)}</strong></span>
+          <label className="flex cursor-pointer items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+            <input type="checkbox" checked={allOn} onChange={e => onToggleAll(e.target.checked)} className="h-3.5 w-3.5 accent-teal-400" /> Todos
+          </label>
+        </div>
+      </div>
+      <div className="max-h-72 overflow-y-auto">
+        <table className="w-full text-left text-[11px]">
+          <thead className="sticky top-0 bg-zinc-950/90 text-[10px] uppercase tracking-wider text-zinc-500">
+            <tr>
+              <th className="px-3 py-1.5 w-8"></th>
+              <th className="px-2 py-1.5">Tipo</th>
+              <th className="px-2 py-1.5">Fecha</th>
+              <th className="px-2 py-1.5">Agente (CUIT)</th>
+              <th className="px-2 py-1.5">Certificado</th>
+              <th className="px-2 py-1.5 text-right">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.id} className={`border-t border-zinc-900 ${r.includedInSettlement ? '' : 'opacity-40'}`}>
+                <td className="px-3 py-1.5"><input type="checkbox" checked={r.includedInSettlement} onChange={e => onToggle(r.id, e.target.checked)} className="h-3.5 w-3.5 accent-teal-400" /></td>
+                <td className={`px-2 py-1.5 font-semibold ${r.kind === 'WITHHOLDING' ? 'text-sky-300' : 'text-violet-300'}`}>{kindLabel(r.kind)}</td>
+                <td className="px-2 py-1.5 font-mono text-zinc-400">{r.issueDate}</td>
+                <td className="px-2 py-1.5 font-mono text-zinc-400">{r.agentCuit || '—'}</td>
+                <td className="px-2 py-1.5 font-mono text-zinc-500">{r.certificateNumber || '—'}</td>
+                <td className={`px-2 py-1.5 text-right font-mono ${Number(r.amount) < 0 ? 'text-amber-300' : 'text-zinc-200'}`}>{fmt(r.amount)}</td>
               </tr>
             ))}
           </tbody>

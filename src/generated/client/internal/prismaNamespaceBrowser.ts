@@ -408,6 +408,7 @@ export const TaxCreditRecordScalarFieldEnum = {
   originalAmount: 'originalAmount',
   appliedAmount: 'appliedAmount',
   source: 'source',
+  includedInSettlement: 'includedInSettlement',
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

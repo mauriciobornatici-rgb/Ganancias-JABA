@@ -41,7 +41,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             vatLines: { select: { kind: true, taxableBase: true, rate: true, vatAmount: true, creditComputable: true } },
           },
         },
-        taxCredits: { select: { tax: true, jurisdictionCode: true, originalAmount: true, appliedAmount: true } },
+        // Solo las retenciones/percepciones marcadas entran; se incluye kind para los subtotales.
+        taxCredits: {
+          where: { includedInSettlement: true },
+          select: { tax: true, kind: true, jurisdictionCode: true, originalAmount: true, appliedAmount: true },
+        },
       },
     });
 
@@ -69,9 +73,22 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const previousVat = await findPreviousVatTechnicalBalance(clientId, period.year, period.month);
     const previousFreeAvailability = await findPreviousVatFreeAvailability(clientId, period.year, period.month);
 
-    const vatCredits = period.taxCredits
-      .filter(c => String(c.tax) === 'VAT')
-      .map(c => ({ amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) }));
+    const vatCreditRecords = period.taxCredits.filter(c => String(c.tax) === 'VAT');
+    const vatCredits = vatCreditRecords.map(c => ({
+      amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()),
+    }));
+
+    // Subtotales por tipo para mostrar y cotejar contra AFIP (retenciones vs percepciones).
+    const sumKind = (k: string) =>
+      vatCreditRecords
+        .filter(c => String(c.kind) === k)
+        .reduce((s, c) => s.add(new Decimal(c.originalAmount.toString())), new Decimal(0));
+    const vatCreditsBreakdown = {
+      withholding: sumKind('WITHHOLDING').toFixed(2),
+      perception: sumKind('PERCEPTION').toFixed(2),
+      paymentOnAccount: sumKind('PAYMENT_ON_ACCOUNT').toFixed(2),
+      total: vatCredits.reduce((s, c) => s.add(c.amount), new Decimal(0)).toFixed(2),
+    };
 
     const vat = buildVatSettlement({
       documents,
@@ -110,6 +127,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       data: {
         period: { id: period.id, year: period.year, month: period.month, client: period.client },
         vat: serializeVat(vat),
+        vatCredits: vatCreditsBreakdown,
         grossIncome: grossIncome ? serializeGrossIncome(grossIncome) : null,
         grossIncomeNotice,
       },

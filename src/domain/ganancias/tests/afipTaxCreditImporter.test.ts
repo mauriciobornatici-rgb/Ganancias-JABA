@@ -63,6 +63,34 @@ describe('parseAfipTaxCredits — archivo AFIP de retenciones/percepciones', () 
     expect(result.outOfPeriod[0].date).toBe('28/04/2026');
   });
 
+  it('acepta filas envueltas en comillas (re-guardadas por Excel) y las des-encomilla', () => {
+    // Cada fila viene como UN campo entrecomillado con comillas internas duplicadas.
+    const wrapped = [
+      `"30710278071,767,212,04/02/2025,'2026002188,RETENCION,""24297,52"",'x,04/02/2025,FACTURA,08/06/2026,'0000"`,
+      `"30703088534,767,493,10/02/2025,'4551127,PERCEPCION,""744,30"",'y,10/02/2025,FACTURA,11/06/2026,'0000"`,
+    ];
+    const result = parseAfipTaxCredits({ fileName: 'ret.csv', fileBuffer: buf(wrapped) }, { periodYear: 2025, periodMonth: 2 });
+    expect(result.totals.count).toBe(2);
+    expect(result.totals.withholding).toBe('24297.52');
+    expect(result.totals.perception).toBe('744.30');
+    expect(result.credits[0].agentCuit).toBe('30710278071');
+  });
+
+  it('rechaza fechas inexistentes (29/02 en año no bisiesto) con error claro, no las carga', () => {
+    const result = parseAfipTaxCredits(
+      {
+        fileName: 'ret.csv',
+        fileBuffer: buf([
+          `30710278071,767,212,28/02/2025,'1,RETENCION,"1000,00",'x,28/02/2025,FACTURA,08/06/2026,'0000`,
+          `30710278071,767,212,29/02/2025,'2,RETENCION,"2000,00",'y,29/02/2025,FACTURA,08/06/2026,'0000`, // no existe
+        ]),
+      },
+      { periodYear: 2025, periodMonth: 2 },
+    );
+    expect(result.totals.count).toBe(1);
+    expect(result.errors.some(e => e.includes('29/02/2025'))).toBe(true);
+  });
+
   it('genera claves de idempotencia únicas por certificado/agente/importe', () => {
     const result = parseAfipTaxCredits(
       {

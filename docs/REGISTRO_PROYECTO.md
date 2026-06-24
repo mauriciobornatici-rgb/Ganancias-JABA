@@ -3591,6 +3591,13 @@ Es **un solo CSV** (`<cuit>_IMP_PER_RET_<fecha>.csv`) con retenciones Y percepci
 - **`Impuesto` = 767 → IVA.** Otros códigos (217 Ganancias, etc.) NO aplican contra IVA.
 - Encoding Latin-1.
 
+**Variante de formato (importante):** si el archivo se abre y se guarda en Excel, cada fila puede
+quedar ENVUELTA entera entre comillas con las comillas internas duplicadas
+(`"30710278071,767,...,""24297,52"",..."`). El parser detecta esto (las filas normales empiezan con
+el CUIT, nunca con comilla), desenvuelve y des-duplica antes de parsear (`unwrapQuotedRow`). Sin esto,
+toda la fila se leía como un solo campo y NO se cargaba nada. Además, se validan fechas inexistentes
+(p. ej. 29/02 en año no bisiesto): dan error claro de "fecha inválida" en vez de imputarse mal.
+
 ### Decisiones del usuario (cerradas)
 
 - **Solo IVA (767)** entra a este módulo; otros impuestos se ignoran con aviso.

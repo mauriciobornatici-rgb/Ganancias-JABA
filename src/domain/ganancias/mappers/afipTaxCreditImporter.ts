@@ -76,12 +76,31 @@ function parseAmount(raw: string): Decimal {
   return new Decimal(plain || '0');
 }
 
-/** Parsea DD/MM/YYYY a Date (UTC mediodía para evitar corrimientos por zona horaria). */
+/** Parsea DD/MM/YYYY a Date (UTC mediodía). Devuelve null si la fecha no existe (ej. 29/02 no bisiesto). */
 function parseDate(raw: string): Date | null {
   const m = clean(raw).match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m) return null;
-  const [, dd, mm, yyyy] = m;
-  return new Date(Date.UTC(Number(yyyy), Number(mm) - 1, Number(dd), 12, 0, 0));
+  const day = Number(m[1]);
+  const month = Number(m[2]);
+  const year = Number(m[3]);
+  const d = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  // Validar que no hubo "rollover" (29/02 en año no bisiesto, 31/04, etc.).
+  if (d.getUTCFullYear() !== year || d.getUTCMonth() !== month - 1 || d.getUTCDate() !== day) return null;
+  return d;
+}
+
+/**
+ * Algunas descargas/ediciones (típicamente al abrir y guardar en Excel) envuelven la fila ENTERA
+ * entre comillas y duplican las comillas internas: `"a,b,""1,5"",c"`. Las filas normales de AFIP
+ * empiezan con el CUIT (un dígito), nunca con comilla. Si la línea viene envuelta, se desenvuelve y
+ * se des-duplican las comillas para recuperar el formato estándar antes de parsear.
+ */
+function unwrapQuotedRow(line: string): string {
+  const t = line.trim();
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    return t.slice(1, -1).replace(/""/g, '"');
+  }
+  return line;
 }
 
 export function parseAfipTaxCredits(
@@ -99,7 +118,7 @@ export function parseAfipTaxCredits(
 
   // La primera línea es el encabezado.
   for (let i = 1; i < lines.length; i += 1) {
-    const cols = parseCsvLine(lines[i]);
+    const cols = parseCsvLine(unwrapQuotedRow(lines[i]));
     if (cols.length < 7) continue;
 
     const taxCode = clean(cols[1]);

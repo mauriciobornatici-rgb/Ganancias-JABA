@@ -609,7 +609,7 @@ git commit -m "feat: consolidar libro mensual hacia ganancias"
 - Test: `src/domain/ganancias/tests/monthlyFiscalDashboardState.test.ts`
 - Test: `src/domain/ganancias/tests/monthlySettlementPrint.test.ts`
 
-- [ ] **Step 1: Escribir tests rojos de estado visual**
+- [~] **Step 1: Escribir tests rojos de estado visual**
 
 ```ts
 it('marca un mes como pendiente cuando falta IVA, IIBB o conciliacion', () => {
@@ -622,7 +622,7 @@ it('muestra alerta cuando un periodo cerrado tiene diferencia contra el portal',
 });
 ```
 
-- [ ] **Step 2: Ejecutar tests y confirmar rojo**
+- [~] **Step 2: Ejecutar tests y confirmar rojo**
 
 ```powershell
 npm run test -- src/domain/ganancias/tests/monthlyFiscalDashboardState.test.ts src/domain/ganancias/tests/monthlySettlementPrint.test.ts
@@ -630,9 +630,11 @@ npm run test -- src/domain/ganancias/tests/monthlyFiscalDashboardState.test.ts s
 
 Expected: falla por helpers y pantallas inexistentes.
 
-- [ ] **Step 3: Implementar pantallas sin alterar wizard actual**
+- [~] **Step 3: Implementar pantallas sin alterar wizard actual**
 
 El tablero muestra doce meses, estado IVA, estado IIBB, saldo, alertas y acceso al periodo. El wizard mensual tiene tres pasos: importar/revisar documentos, IVA, IIBB. El PDF incluye cliente, periodo, perfil fiscal, detalle por alicuota/jurisdiccion, creditos, conciliacion, parametros, usuario y fecha. La pantalla anual agrega un boton `Previsualizar consolidacion mensual` que no guarda nada hasta confirmacion explicita.
+
+Avance parcial registrado 2026-06-21: se implemento el tablero de doce meses, sus estados puros testeados, el acceso desde Clientes y el alta/listado real de `FiscalPeriod`. El wizard de detalle, PDF y consolidacion anual todavia no se implementaron.
 
 - [ ] **Step 4: Verificar UI local con Docker aislado**
 

@@ -20,6 +20,16 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Estado de uso: produccion corre desde `main`; autenticacion simple activa; desarrollo actual aislado en la rama IVA/IIBB.
 - Caso patron de carga documentado: `docs/INSTRUCTIVO_CARGA_CASO_EXCEL_2025.md`.
 
+### P32 - Estado operativo real al 2026-06-23
+
+- Rama aislada confirmada: `feature/iva-iibb-mensual-core` en worktree enlazado; `main` no fue modificada.
+- Los CSV AFIP de mayo 2026 fueron leidos localmente como evidencia, sin incorporarlos al repositorio: 39 compras y 48 ventas.
+- El calculo por alicuota y NC en lado opuesto reproduce el F2002: debito `9.090.888,61`, credito `2.630.946,77`, tecnico `381.664,35` y saldo final `179.731,35` con los arrastres de la captura.
+- El modulo tiene dominio, rutas y pantalla IVA en desarrollo, pero aun no esta habilitado para prueba funcional: falta migrar `includedInSettlement`, regenerar Prisma y dejar `tsc`/build verdes.
+- Bloqueos a resolver antes de la prueba: normalizacion de importes argentinos en guardado, cotejo AFIP completo obligatorio para `CLOSED`, arrastre solo desde periodo previo `CLOSED`, versionado seguro ante reintentos y mensaje UI correcto para `DRAFT`/`IN_REVIEW`.
+- Plan inmediato: `docs/superpowers/plans/2026-06-23-piloto-iva-afip-mayo-2026.md`.
+- Regla permanente: no hacer push, Preview, migracion Hostinger ni merge a `main` hasta pasar el Gate de integracion de ese plan.
+
 ## Como retomar en 5 minutos
 
 1. Ejecutar `git status --short --branch`.
@@ -658,6 +668,41 @@ Avance:
 - Tests agregados: `axiDynamicAverageCoefficient.test.ts` y regresiones en `taxReturnDetailsPersistence.test.ts` y `taxReturnReadMapper.test.ts`.
 
 ## Prioridad siguiente
+
+### P32 - Checkpoint 4: Periodos fiscales mensuales y pantalla de prueba
+
+Estado: implementado en rama aislada, pendiente de prueba visual manual local.
+
+Alcance completado:
+
+- Se agrego el contrato validado para alta de periodos mensuales (`ano` 2020-2100 y `mes` 1-12).
+- La API `GET/POST /api/clientes/[id]/fiscal-periods` lista y crea periodos sin tocar las DDJJ anuales.
+- El alta busca el perfil fiscal vigente al cierre del mes; si no existe, devuelve un bloqueo explicito en lugar de crear un periodo sin regimen.
+- Se creo el tablero `clientes/[id]/periodos-fiscales`: muestra los doce meses, perfil fiscal asociado, estado IVA/IIBB, cantidad de comprobantes y alertas de diferencia oficial.
+- Desde el Padron de Contribuyentes, el icono de libro abre el tablero mensual del cliente.
+- La accion real disponible en este corte es `Crear periodo`. La importacion, revision IVA, IIBB y PDF siguen siendo los proximos hitos; se muestran como siguiente etapa, no como acciones ficticias.
+
+TDD y verificacion:
+
+- Rojo confirmado y verde posterior para `fiscalPeriodRequest.test.ts`, `activeFiscalProfile.test.ts` y `monthlyFiscalDashboardState.test.ts`.
+- Suite completa: 213 pruebas aprobadas, 5 omitidas.
+- `tsc --noEmit` y `prisma validate`: verdes.
+- La prueba visual automatizada contra `localhost:3000` fue bloqueada por la politica del navegador del entorno. No se uso un bypass; queda pendiente una prueba manual desde el navegador local.
+
+Como probar este checkpoint:
+
+```powershell
+cd 'C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual'
+$env:JABA_TEST_DB_PORT = '3318'
+& 'C:\Users\mauri\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe' scripts/run-test-db-command.mjs dev
+```
+
+Luego ingresar con `JabaDev2026!`, abrir `Clientes`, elegir el icono de libro del cliente ficticio `Maria Luz Gomez` (ARBA local) o `Cliente Convenio General SA` (CM general), y crear un mes 2025. Todo queda solamente en Docker `3318`.
+
+Siguiente corte recomendado:
+
+- Completar API y wizard de detalle del periodo: importacion de comprobantes, deduplicacion, revision y primer calculo IVA.
+- Agregar una prueba visual manual del tablero antes de abrir la rama a Preview.
 
 ### P4 - H7: patrimonio y justificacion patrimonial
 

@@ -1,8 +1,58 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-13
+Ultima actualizacion: 2026-06-22
 
 ## Entrada reciente
+
+### 2026-06-22 - VALIDACION CONTRA AFIP REAL: motor IVA clava la liquidacion al peso
+
+- El usuario aporto una pantalla real de liquidacion de IVA (F2002) + los CSV de ventas/compras del mes. Cotejo:
+  - debito fiscal 9.090.888,61 | credito 2.630.946,77 | saldo tecnico a ARCA 381.664,35 | saldo impuesto a ARCA 179.731,35.
+- Dos hallazgos que el caso real revelo (ningun test los habia detectado):
+  1. NOTAS DE CREDITO: AFIP las computa en el lado CONTRARIO (NC emitida -> credito; NC recibida -> debito). El neto no cambia, pero los TOTALES de debito/credito que se cotejan con ARCA si. La app las restaba en su propio lado (mostraba debito 8.885.532 vs ARCA 9.090.888). Corregido en `settlementBuilders.ts` (clasificacion estilo F2002).
+  2. SALDO DE LIBRE DISPONIBILIDAD ANTERIOR: AFIP lo aplica en la posicion mensual separado del saldo tecnico. El motor solo arrastraba el tecnico. Agregado `previousFreeAvailability` a `vatSettlement.ts`.
+- Resultado: con los 2 fixes, la app reproduce los 4 valores de ARCA AL PESO leyendo directamente los CSV. Validacion fiscal real superada.
+- PENDIENTE: actualizar tests de vatSettlement/settlementBuilders con el caso AFIP; flujo de pantalla (subir -> seleccionar filas -> cotejar -> guardar); persistir el settlement.
+
+### 2026-06-22 - Fase 5 (parte): armador de liquidacion + ruta API de settlement
+
+- `settlementBuilders.ts`: orquestadores puros que toman los documentos del periodo y arman los inputs de los motores. `buildVatSettlement` separa debito (ventas) de credito computable (compras), aplica percep/ret y saldo tecnico anterior, y devuelve el desglose por alicuota (lo que la pantalla muestra). `buildGrossIncomeSettlement` deriva la base imponible de las ventas gravadas netas y llama al motor IIBB. Tests: `settlementBuilders.test.ts`, 7/7 en sandbox.
+- Ruta `GET /api/clientes/[id]/fiscal-periods/[periodId]/settlement`: lee documentos + percep/ret + perfil + saldo tecnico del mes anterior, calcula IVA (siempre) e IIBB (si el perfil tiene regimen y jurisdicciones), y devuelve los numeros serializados. IIBB informa "pendiente de configurar alicuotas" hasta que el perfil las tenga.
+- PENDIENTE: pantalla React de liquidacion (consume esta ruta); cargar alicuotas IIBB por jurisdiccion en el editor de perfil; persistir el settlement (hoy solo calcula); decision de imputacion inferida (flujo) ya elegida por el usuario, falta implementar la heuristica.
+
+### 2026-06-22 - Fase 4 (parte): consolidador anual a Ganancias
+
+- Nuevo `annualConsolidation.ts`: funcion pura que toma los 12 periodos mensuales (con sus comprobantes ya imputados a una categoria de Ganancias via `GainsAllocationKind`) y agrega los netos por categoria: ventas gravadas/exentas, compras de bienes de cambio (CMV), gastos deducibles, bienes de uso, gastos no deducibles, IVA no computable (al costo) e IIBB pagado (gasto deducible). Produce el snapshot + `sourceHash` (djb2 determinista para detectar cambios y reconsolidar). Fidelidad fiscal: IVA neutro, solo viajan netos; IVA no computable al costo; percep/ret de IVA/IIBB NO entran a Ganancias.
+- Avisos: meses faltantes para cerrar el año, mes repetido, imputaciones OTHER sin categoria.
+- Tests: `annualConsolidation.test.ts`, 7 casos / 14 aserciones, 14/14 en sandbox.
+- PENDIENTE para cerrar la integracion: (a) el flujo de imputacion (como se llena la allocation de cada compra: manual / inferida por tipo de comprobante / mixta) -> decision del usuario; (b) adaptador snapshot -> `TaxReturnCalculationInput` del motor de Ganancias; (c) persistencia del snapshot; (d) pantallas (Fase 5).
+
+### 2026-06-22 - Fase 3: endpoint de importacion por periodo
+
+- Nueva ruta `POST /api/clientes/[id]/fiscal-periods/[periodId]/documents`: valida que el periodo pertenezca al cliente, recibe FormData multiarchivo (ventas y/o compras), parsea con `parseAfipFiscalLedgerDocuments`, persiste con `persistFiscalDocuments` (idempotente) y devuelve `inserted`/`duplicates`/`warnings`/`fileResults`. Tope de 15 MB por lote (413), auditoria `IMPORT`.
+- Verificacion con los CSV reales del usuario sobre el importador del modulo (`afipFiscalLedgerImporter`): ventas 239 documentos (doc1 neto 15.123,97 SIN x100; vatLine TAXED 21% base/iva separados); compras 32 documentos (Factura C tipo 11 -> NON_TAXED, creditComputable=false, correcto: no da credito fiscal). El importador del modulo YA trae el fix de CSV (Latin-1, `;`, coma decimal) y el desglose por alicuota con kind TAXED/EXEMPT/NON_TAXED.
+- Pendiente: prueba de integracion HTTP contra Docker (levantar app, subir archivo a un periodo); UI de importacion (Fase 5).
+
+### 2026-06-22 - Fase 2: motor IIBB construido (local + Convenio Multilateral)
+
+- Se creo `grossIncomeSettlement.ts` (no existia). Cubre los regimenes del enum: ARBA_LOCAL/ARBA_SIMPLIFICADO (una jurisdiccion), CM_REGIMEN_GENERAL/ESPECIAL (reparte la base por coeficiente unificado), NONE.
+- Por jurisdiccion: base asignada (base total x coeficiente en CM, o base total en local) x alicuota = impuesto determinado; percepciones/retenciones de IIBB de esa jurisdiccion se aplican contra su impuesto; el excedente queda como saldo a favor que se arrastra. Soporta saldo a favor anterior por jurisdiccion.
+- Defensa: avisa si en CM los coeficientes no suman 1 (ademas de la validacion al guardar el perfil).
+- Output alineado al modelo `GrossIncomeJurisdictionLine` (assignedBase, taxRate, determinedTax, creditsApplied, balance) + totales.
+- Tests: `grossIncomeSettlement.test.ts`, 8 casos (local, percep/ret, excedente a favor, favor anterior, CM reparto, CM aviso suma!=1, CM percep por jurisdiccion, NONE). 8/8 en sandbox aislado.
+- Pendiente: alicuotas reales por actividad/jurisdiccion como parametros; caso real de IIBB para cotejar.
+
+### 2026-06-22 - Fase 1: motor IVA corregido y blindado
+
+- Hallazgo corregido: `vatSettlement.ts` calculaba `freeAvailabilityBalance` sumando todas las percepciones/retenciones SIN aplicarlas contra el saldo a pagar (`amountDue` no las restaba). Resultado: liquidaba IVA pagando de mas. No es solo falta de tests, era un error conceptual del Art. 24 Ley 23.349.
+- Correccion: el motor ahora aplica la mecanica completa del Art. 24:
+  - Saldo tecnico (1er parr.): debito - credito - saldo tecnico anterior; si queda a favor se arrastra (`technicalCarryForward`).
+  - Percepciones/retenciones/pagos a cuenta de IVA (2do parr.): se aplican contra el impuesto tecnico; el EXCEDENTE es saldo de libre disponibilidad (`freeAvailabilityBalance`).
+  - Nuevos campos trazables en el resultado: `technicalBalance`, `technicalDue`, `creditsAvailable`, `creditsApplied`.
+- Tests: `vatSettlement.test.ts` pasa de 1 a 10 casos (debito>credito, credito>debito con arrastre, saldo previo a favor/insuficiente, no computables excluidos, multi-alicuota, percep/ret que reducen, percep/ret que exceden -> libre disponibilidad, periodo vacio).
+- Verificacion: 10/10 en sandbox aislado (vitest + decimal.js). Falta correr `vitest run` completo en Windows.
+- PENDIENTE Fase 1: caso real de control con un F2002 real (el usuario lo aportara) para cotejar al peso.
+- `calculateVatSettlement` no estaba conectado a ninguna ruta/persistencia, asi que la correccion no rompe consumidores.
 
 ### 2026-06-20 - Diseno IVA + IIBB mensual integrado con Ganancias
 
@@ -3318,3 +3368,74 @@ TDD y verificacion:
 Siguiente paso:
 
 - Task 4: validacion de perfiles, persistencia idempotente y API de periodos fiscales mensuales contra Docker `3318`.
+
+### 2026-06-21 - P32, Checkpoint 4: API y tablero inicial de periodos IVA/IIBB
+
+Objetivo:
+
+- Llegar a una pantalla local de prueba que permita crear y visualizar los doce periodos mensuales de un cliente, sin impactar Ganancias anual ni Produccion.
+
+Implementacion:
+
+- Se agrego `createFiscalPeriodSchema`, que admite exclusivamente anios operativos y meses calendario.
+- `resolveActiveFiscalProfile` fija el perfil fiscal que estaba vigente al cierre de cada mes. No se permite crear un `FiscalPeriod` sin esa referencia versionada.
+- Se agrego `GET/POST /api/clientes/[id]/fiscal-periods`; el listado devuelve cliente, periodos, perfil, ultimo estado IVA/IIBB y cantidad de comprobantes. El alta audita la operacion y protege el unico `[cliente, anio, mes]`.
+- Se agrego el tablero de doce meses y el acceso desde Clientes. Los periodos inexistentes se pueden crear; los creados exponen los controles reales hoy disponibles y no simulan importacion ni liquidaciones que aun no existen.
+
+TDD y verificacion:
+
+- Rojo confirmado para contratos inexistentes de solicitud, perfil vigente y estado de tablero; verde posterior con 6 pruebas nuevas.
+- Suite completa: 213 pruebas aprobadas, 5 omitidas; `tsc --noEmit` y `prisma validate` verdes.
+- El navegador integrado rechazo navegar a `localhost:3000` por su politica de seguridad. No se intento eludir esa limitacion; la prueba visual manual queda registrada.
+
+No se realizo:
+
+- No se modifico `main`, no se hizo push, deploy ni Preview.
+- No se consulto ni modifico Hostinger/Vercel/Produccion.
+- No se toco `TaxReturn`, `SalesInvoice` ni `PurchaseInvoice`.
+
+Siguiente paso:
+
+- Detail wizard por periodo: importacion AFIP/ARCA, resumen por alicuota, persistencia idempotente y liquidacion IVA inicial sobre Docker 3318.
+
+### 2026-06-23 - P32, piloto IVA AFIP mayo 2026: contrato funcional y resguardo de integracion
+
+Evidencia revisada localmente, no incorporada al repositorio:
+
+- `C:\Users\mauri\Downloads\dudas\comprobantes_compras.csv`: 39 filas, CSV AFIP con `;`, coma decimal y columnas por alicuota.
+- `C:\Users\mauri\Downloads\dudas\comprobantes_ventas.csv`: 48 filas, mismo formato AFIP.
+- `C:\Users\mauri\Downloads\dudas\iva.jpeg`: cotejo de Portal IVA / F2002.
+
+Resultado reproducido a partir de las columnas por alicuota y las notas de credito:
+
+- Debito fiscal: `9.090.888,61`.
+- Credito fiscal: `2.630.946,77`.
+- Saldo tecnico anterior: `6.078.277,49`.
+- Saldo tecnico ARCA: `381.664,35`.
+- Libre disponibilidad anterior: `167.342,88`.
+- Retenciones, percepciones y pagos a cuenta IVA: `34.590,12`.
+- Saldo final de impuesto a favor de ARCA: `179.731,35`.
+
+Decisiones operativas cerradas:
+
+- Se importan ambos CSV a un `FiscalPeriod` del cliente y mes elegidos; cada fila se conserva aun si el usuario la excluye del calculo.
+- Solo las filas `includedInSettlement=true` forman debito, credito y bases para IIBB/Ganancias.
+- Las NC se computan en el lado opuesto, segun F2002: compra NC suma debito; venta NC suma credito.
+- Debito, credito y saldo final oficiales deben estar presentes y coincidir para cerrar IVA. Una diferencia puede guardarse solo como `IN_REVIEW` con motivo; nunca habilita Ganancias.
+- Los arrastres tecnico y de libre disponibilidad se toman solo del ultimo IVA `CLOSED` del mes anterior o de una excepcion auditada.
+- Ganancias no recibe debito/credito IVA como ingreso/gasto: recibe un snapshot de operaciones netas clasificadas, IVA no computable e IIBB cerrado/determinado conforme al plan maestro.
+
+Resguardo:
+
+- Se confirma que el trabajo sigue en worktree enlazado y rama `feature/iva-iibb-mensual-core`.
+- No se modifica `main`, Hostinger, Vercel, datos productivos ni DDJJ anuales durante este piloto.
+- Los CSV reales no se subiran a Git; se creara una regresion anonimizada con los mismos importes/tipos relevantes.
+
+Plan creado:
+
+- `docs/superpowers/plans/2026-06-23-piloto-iva-afip-mayo-2026.md`.
+
+Bloqueo actual antes de prueba funcional:
+
+- Agregar migracion de `FiscalDocument.includedInSettlement`, regenerar Prisma y recuperar `tsc`/build verdes.
+- Corregir cierre parcial, normalizacion argentina de importes y arrastres desde estados no cerrados.

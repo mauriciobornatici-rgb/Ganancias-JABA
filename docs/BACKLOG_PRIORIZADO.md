@@ -2,7 +2,7 @@
 
 ## P32 - Modulo IVA + IIBB mensual integrado con Ganancias
 
-Estado: Activo. Checkpoint 2 desarrollado y validado exclusivamente en `feature/iva-iibb-mensual-core`; proximo paso: importacion mensual y deduplicacion.
+Estado: Activo. Desarrollo exclusivamente en `feature/iva-iibb-mensual-core` y Docker `3318`. El siguiente bloque es el piloto IVA AFIP mayo 2026; no se habilita merge, Preview ni Produccion hasta completar sus gates.
 
 Avance:
 
@@ -10,6 +10,9 @@ Avance:
 - Corte 2 completado: schema Prisma, cliente generado y migracion `20260622002033_add_fiscal_monthly_ledger` aplicados solo en Docker `3318`. Se agregaron perfiles semilla ficticios ARBA local y CM regimen general con coeficientes que suman 1. No se modificaron modelos ni tablas anuales existentes.
 - Resguardo adicional: Prisma usa `ganancias_jaba_test_shadow` local para generar migraciones; el runner rechaza destinos que no sean Docker local. P19 ya usa el puerto configurable del worktree.
 - Corte 3 completado: importador mensual separado conserva bases e IVA por alicuota y genera una clave de comprobante estable, sin usar el nombre de archivo. El importador anual de Ganancias mantiene sus pruebas de regresion verdes.
+- Corte 4 en curso: tablero mensual, seleccion de comprobantes, motor IVA, persistencia, cotejo y pantalla existen como avance local sin commit. La base de dominio pasa sus pruebas, pero TypeScript aun falla porque `includedInSettlement` no tiene migracion ni cliente Prisma regenerado.
+- Caso AFIP de referencia validado fuera del repositorio: mayo 2026, 39 compras, 48 ventas; el resultado esperado F2002 es debito `9.090.888,61`, credito `2.630.946,77`, tecnico `381.664,35` y saldo final `179.731,35`.
+- Plan de cierre del piloto: `docs/superpowers/plans/2026-06-23-piloto-iva-afip-mayo-2026.md`.
 
 Objetivo:
 

@@ -4240,6 +4240,8 @@ export const SalesInvoiceScalarFieldEnum = {
   ivaAmount: 'ivaAmount',
   totalAmount: 'totalAmount',
   isExempt: 'isExempt',
+  importSource: 'importSource',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -4261,6 +4263,8 @@ export const PurchaseInvoiceScalarFieldEnum = {
   isDeductible: 'isDeductible',
   isExempt: 'isExempt',
   expenseType: 'expenseType',
+  importSource: 'importSource',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -4911,7 +4915,9 @@ export const SalesInvoiceOrderByRelevanceFieldEnum = {
   invoiceType: 'invoiceType',
   invoiceNumber: 'invoiceNumber',
   customerName: 'customerName',
-  counterpartyCuit: 'counterpartyCuit'
+  counterpartyCuit: 'counterpartyCuit',
+  importSource: 'importSource',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId'
 } as const
 
 export type SalesInvoiceOrderByRelevanceFieldEnum = (typeof SalesInvoiceOrderByRelevanceFieldEnum)[keyof typeof SalesInvoiceOrderByRelevanceFieldEnum]
@@ -4924,7 +4930,9 @@ export const PurchaseInvoiceOrderByRelevanceFieldEnum = {
   invoiceNumber: 'invoiceNumber',
   vendorName: 'vendorName',
   counterpartyCuit: 'counterpartyCuit',
-  expenseType: 'expenseType'
+  expenseType: 'expenseType',
+  importSource: 'importSource',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId'
 } as const
 
 export type PurchaseInvoiceOrderByRelevanceFieldEnum = (typeof PurchaseInvoiceOrderByRelevanceFieldEnum)[keyof typeof PurchaseInvoiceOrderByRelevanceFieldEnum]

@@ -52,6 +52,8 @@ export type PurchaseInvoiceMinAggregateOutputType = {
   isDeductible: boolean | null
   isExempt: boolean | null
   expenseType: string | null
+  importSource: string | null
+  sourceFiscalDocumentId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -70,6 +72,8 @@ export type PurchaseInvoiceMaxAggregateOutputType = {
   isDeductible: boolean | null
   isExempt: boolean | null
   expenseType: string | null
+  importSource: string | null
+  sourceFiscalDocumentId: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -88,6 +92,8 @@ export type PurchaseInvoiceCountAggregateOutputType = {
   isDeductible: number
   isExempt: number
   expenseType: number
+  importSource: number
+  sourceFiscalDocumentId: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -120,6 +126,8 @@ export type PurchaseInvoiceMinAggregateInputType = {
   isDeductible?: true
   isExempt?: true
   expenseType?: true
+  importSource?: true
+  sourceFiscalDocumentId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -138,6 +146,8 @@ export type PurchaseInvoiceMaxAggregateInputType = {
   isDeductible?: true
   isExempt?: true
   expenseType?: true
+  importSource?: true
+  sourceFiscalDocumentId?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -156,6 +166,8 @@ export type PurchaseInvoiceCountAggregateInputType = {
   isDeductible?: true
   isExempt?: true
   expenseType?: true
+  importSource?: true
+  sourceFiscalDocumentId?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -261,6 +273,8 @@ export type PurchaseInvoiceGroupByOutputType = {
   isDeductible: boolean
   isExempt: boolean
   expenseType: string | null
+  importSource: string | null
+  sourceFiscalDocumentId: string | null
   createdAt: Date
   updatedAt: Date
   _count: PurchaseInvoiceCountAggregateOutputType | null
@@ -302,6 +316,8 @@ export type PurchaseInvoiceWhereInput = {
   isDeductible?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  importSource?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  sourceFiscalDocumentId?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
@@ -321,6 +337,8 @@ export type PurchaseInvoiceOrderByWithRelationInput = {
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrderInput | Prisma.SortOrder
+  importSource?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFiscalDocumentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   taxReturn?: Prisma.TaxReturnOrderByWithRelationInput
@@ -344,6 +362,8 @@ export type PurchaseInvoiceWhereUniqueInput = Prisma.AtLeast<{
   isDeductible?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  importSource?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  sourceFiscalDocumentId?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
@@ -363,6 +383,8 @@ export type PurchaseInvoiceOrderByWithAggregationInput = {
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrderInput | Prisma.SortOrder
+  importSource?: Prisma.SortOrderInput | Prisma.SortOrder
+  sourceFiscalDocumentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.PurchaseInvoiceCountOrderByAggregateInput
@@ -389,6 +411,8 @@ export type PurchaseInvoiceScalarWhereWithAggregatesInput = {
   isDeductible?: Prisma.BoolWithAggregatesFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolWithAggregatesFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableWithAggregatesFilter<"PurchaseInvoice"> | string | null
+  importSource?: Prisma.StringNullableWithAggregatesFilter<"PurchaseInvoice"> | string | null
+  sourceFiscalDocumentId?: Prisma.StringNullableWithAggregatesFilter<"PurchaseInvoice"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseInvoice"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"PurchaseInvoice"> | Date | string
 }
@@ -406,6 +430,8 @@ export type PurchaseInvoiceCreateInput = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  importSource?: string | null
+  sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   taxReturn: Prisma.TaxReturnCreateNestedOneWithoutPurchasesInput
@@ -425,6 +451,8 @@ export type PurchaseInvoiceUncheckedCreateInput = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  importSource?: string | null
+  sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -442,6 +470,8 @@ export type PurchaseInvoiceUpdateInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutPurchasesNestedInput
@@ -461,6 +491,8 @@ export type PurchaseInvoiceUncheckedUpdateInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -479,6 +511,8 @@ export type PurchaseInvoiceCreateManyInput = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  importSource?: string | null
+  sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -496,6 +530,8 @@ export type PurchaseInvoiceUpdateManyMutationInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -514,6 +550,8 @@ export type PurchaseInvoiceUncheckedUpdateManyInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -548,6 +586,8 @@ export type PurchaseInvoiceCountOrderByAggregateInput = {
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrder
+  importSource?: Prisma.SortOrder
+  sourceFiscalDocumentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -572,6 +612,8 @@ export type PurchaseInvoiceMaxOrderByAggregateInput = {
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrder
+  importSource?: Prisma.SortOrder
+  sourceFiscalDocumentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -590,6 +632,8 @@ export type PurchaseInvoiceMinOrderByAggregateInput = {
   isDeductible?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
   expenseType?: Prisma.SortOrder
+  importSource?: Prisma.SortOrder
+  sourceFiscalDocumentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -655,6 +699,8 @@ export type PurchaseInvoiceCreateWithoutTaxReturnInput = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  importSource?: string | null
+  sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -672,6 +718,8 @@ export type PurchaseInvoiceUncheckedCreateWithoutTaxReturnInput = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  importSource?: string | null
+  sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -719,6 +767,8 @@ export type PurchaseInvoiceScalarWhereInput = {
   isDeductible?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   isExempt?: Prisma.BoolFilter<"PurchaseInvoice"> | boolean
   expenseType?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  importSource?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
+  sourceFiscalDocumentId?: Prisma.StringNullableFilter<"PurchaseInvoice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"PurchaseInvoice"> | Date | string
 }
@@ -736,6 +786,8 @@ export type PurchaseInvoiceCreateManyTaxReturnInput = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: string | null
+  importSource?: string | null
+  sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -753,6 +805,8 @@ export type PurchaseInvoiceUpdateWithoutTaxReturnInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -770,6 +824,8 @@ export type PurchaseInvoiceUncheckedUpdateWithoutTaxReturnInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -787,6 +843,8 @@ export type PurchaseInvoiceUncheckedUpdateManyWithoutTaxReturnInput = {
   isDeductible?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
   expenseType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -807,6 +865,8 @@ export type PurchaseInvoiceSelect<ExtArgs extends runtime.Types.Extensions.Inter
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: boolean
+  importSource?: boolean
+  sourceFiscalDocumentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
@@ -828,11 +888,13 @@ export type PurchaseInvoiceSelectScalar = {
   isDeductible?: boolean
   isExempt?: boolean
   expenseType?: boolean
+  importSource?: boolean
+  sourceFiscalDocumentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PurchaseInvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "date" | "invoiceType" | "invoiceNumber" | "vendorName" | "counterpartyCuit" | "netAmount" | "ivaAmount" | "totalAmount" | "isDeductible" | "isExempt" | "expenseType" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseInvoice"]>
+export type PurchaseInvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "date" | "invoiceType" | "invoiceNumber" | "vendorName" | "counterpartyCuit" | "netAmount" | "ivaAmount" | "totalAmount" | "isDeductible" | "isExempt" | "expenseType" | "importSource" | "sourceFiscalDocumentId" | "createdAt" | "updatedAt", ExtArgs["result"]["purchaseInvoice"]>
 export type PurchaseInvoiceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }
@@ -856,6 +918,8 @@ export type $PurchaseInvoicePayload<ExtArgs extends runtime.Types.Extensions.Int
     isDeductible: boolean
     isExempt: boolean
     expenseType: string | null
+    importSource: string | null
+    sourceFiscalDocumentId: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["purchaseInvoice"]>
@@ -1241,6 +1305,8 @@ export interface PurchaseInvoiceFieldRefs {
   readonly isDeductible: Prisma.FieldRef<"PurchaseInvoice", 'Boolean'>
   readonly isExempt: Prisma.FieldRef<"PurchaseInvoice", 'Boolean'>
   readonly expenseType: Prisma.FieldRef<"PurchaseInvoice", 'String'>
+  readonly importSource: Prisma.FieldRef<"PurchaseInvoice", 'String'>
+  readonly sourceFiscalDocumentId: Prisma.FieldRef<"PurchaseInvoice", 'String'>
   readonly createdAt: Prisma.FieldRef<"PurchaseInvoice", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"PurchaseInvoice", 'DateTime'>
 }

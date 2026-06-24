@@ -678,12 +678,16 @@ model SalesInvoice {
   ivaAmount     Decimal   @db.Decimal(18, 2)
   totalAmount   Decimal   @db.Decimal(18, 2)
   isExempt      Boolean   @default(false) // Soporte para Ingresos Exentos (Monotributo/Exenciones)
+  // Trazabilidad de la importación desde el libro fiscal mensual (módulo IVA). Nulos = carga manual.
+  importSource         String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
+  sourceFiscalDocumentId String? // Comprobante mensual de origen, para auditar registro anual ↔ mensual.
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   @@index([taxReturnId])
   @@index([taxReturnId, invoiceNumber])
   @@index([counterpartyCuit])
+  @@index([taxReturnId, importSource])
 }
 
 model PurchaseInvoice {
@@ -702,12 +706,16 @@ model PurchaseInvoice {
   isDeductible  Boolean   @default(true)  // Indica si es deducible en ganancias
   isExempt      Boolean   @default(false) // Gastos exentos / no gravados
   expenseType   String?   // Combustibles, Alquileres, PapelerÃ­a, etc.
+  // Trazabilidad de la importación desde el libro fiscal mensual (módulo IVA). Nulos = carga manual.
+  importSource         String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
+  sourceFiscalDocumentId String? // Comprobante mensual de origen, para auditar registro anual ↔ mensual.
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@index([taxReturnId])
   @@index([taxReturnId, invoiceNumber])
   @@index([counterpartyCuit])
+  @@index([taxReturnId, importSource])
 }
 
 model FixedAsset {

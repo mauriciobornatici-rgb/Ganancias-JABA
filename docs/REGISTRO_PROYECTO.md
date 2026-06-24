@@ -3525,3 +3525,93 @@ Pendiente del tramo anual:
 ### Nota sobre el commit
 
 El worktree tiene `.git` con gitdir en ruta Windows; git no corre desde el sandbox Linux (garantiza que no se toco `main` desde aqui). El commit se hace en Windows siguiendo `docs/COMMIT_FLUJO_IVA_ANUAL.md` (migracion → build/test verdes → commit sin push).
+
+---
+
+## CIERRE DE SESION — 2026-06-24
+
+### Donde quedamos (estado actual, verificado)
+
+- **Commit + push hechos.** Rama `feature/iva-iibb-mensual-core`, commit `7a133bc` (amend incluyo el cliente Prisma regenerado). Pusheado a `origin`. `main` y produccion INTACTOS.
+- **Build verde:** `npm run build` → `✓ Finished TypeScript` sin errores. Las 4 rutas nuevas compilan.
+- **Tests verdes:** 269 passed | 5 skipped (vitest, en Windows).
+- **Motor IVA validado al peso** contra el F2002 real de AFIP (debito 9.090.888,61 / credito 2.630.946,77 / saldo 179.731,35).
+
+### Que se construyo (todo en esta rama, nada en produccion)
+
+1. **Flujo completo de liquidacion de IVA**: subir CSV AFIP (compras+ventas) → grilla con seleccion de filas (`includedInSettlement`) → calcular totales estilo F2002 → cotejar contra AFIP (exige los 3 importes) → guardar (CLOSED si coteja, IN_REVIEW si difiere). Pantalla en `clientes/[id]/periodos-fiscales/[periodId]/liquidacion-iva/`.
+2. **Endpoints**: `documents` (GET lista + POST import), `documents/selection` (PATCH), `settlement` (GET preview), `settlement/save` (POST con cotejo y versionado seguro).
+3. **Persistencia**: `fiscalSettlementPersistence.ts` (versionado con reintento P2002, cotejo completo, lineas por alicuota).
+4. **Correcciones de la revision de codigo** (7 hallazgos): #2 cotejo parcial no cierra, #4 arrastre solo desde CLOSED, #6 mensaje condicional, #7 versionado con reintento. #3 ya estaba. #1 (migracion) y #5 (IIBB params) quedaron como pendientes.
+5. **Cadena mensual → anual**: `gainsImputation.ts` (imputacion inferida), `annualConsolidationAssembler.ts` (compuerta CLOSED + consolidacion), `annualConsolidationRead.ts` (lector DB + API `GET /api/clientes/[id]/consolidacion-anual?year=`), `annualConsolidationSnapshot.ts` (snapshot durable con sourceHash).
+6. **Migracion** `20260624120000_add_included_in_settlement` creada a mano (ADD COLUMN, prod-safe via `migrate deploy`).
+
+### Que falta (pendientes)
+
+**Del lado del usuario (Windows), cuando retome:**
+- Aplicar la columna en la base: `npx prisma migrate deploy` con `.env` apuntando a la base correcta. **NUNCA `migrate dev` contra produccion.** El worktree no tiene `.env` (no se comparte entre worktrees): copiar el `.env` con `DATABASE_URL`.
+- Revisar `src/app/page.tsx` (quedo modificado sin commitear, NO lo toque yo esta sesion): `git --no-pager diff src/app/page.tsx`. Decidir si entra o se descarta.
+- Probar el flujo end-to-end en la app con los CSV reales contra la DB antes de pensar en merge a `main`.
+
+**Del lado del desarrollo (proxima sesion):**
+- **INYECCION AL WIZARD DE GANANCIAS (tramo en curso, NO empezado a codear).** Es el unico tramo que toca codigo compartido con produccion, por eso se encara con cuidado. Exploracion ya hecha:
+  - `TaxReturn` (schema linea 267) YA tiene la relacion `annualFiscalConsolidations AnnualFiscalConsolidationSnapshot[]` y los inputs transaccionales `sales` (SalesInvoice), `purchases` (PurchaseInvoice), `fixedAssets`, `inventory`.
+  - La determinacion anual vive en `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+  - **Decision de diseño pendiente (clave):** como inyectar el snapshot sin romper la determinacion validada. Dos caminos: (a) el snapshot PRE-LLENA registros transaccionales (SalesInvoice/PurchaseInvoice) que el usuario revisa/edita; (b) la determinacion lee opcionalmente los totales del snapshot como fuente alternativa. Mi recomendacion preliminar: (a) con confirmacion, para no tocar la matematica de la determinacion. **Falta leer `determinacionImpuesto.ts` y el wizard a fondo antes de decidir/codear.**
+- Pendientes menores arrastrados: cargar alicuotas de IIBB por jurisdiccion en el editor de perfil (#5); pantalla de revision de imputacion de compras (confirmar mercaderia/gasto/bien de uso).
+
+### Por donde seguir (orden recomendado)
+
+1. Usuario: `migrate deploy` + resolver `page.tsx` + prueba end-to-end con CSV reales.
+2. Desarrollo: leer `determinacionImpuesto.ts` + wizard, decidir el camino (a)/(b) de inyeccion, e implementar de forma ADITIVA (paso opt-in "importar del modulo mensual" que pre-llena y el usuario confirma). Validar que la determinacion del caso Mariano sigue dando identico despues del cambio.
+3. Recien con todo verde y validado: considerar merge a `main`.
+
+### Recordatorios de seguridad vigentes
+
+- Rotar credenciales expuestas durante el agujero de middleware (AUTH_PASSWORD, AUTH_SECRET, password de DB).
+- No mergear a `main` ni tocar produccion hasta validar el flujo end-to-end.
+- `migrate dev` jamas contra prod; usar `migrate deploy`.
+
+---
+
+## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)
+
+Se conecto el libro fiscal mensual (IVA) con la DDJJ anual de Ganancias, comprobante por comprobante
+(decision del usuario: granularidad "por comprobante" para maxima trazabilidad). ADITIVO: NO se toco
+`determinacionImpuesto.ts` ni ningun archivo de calculo.
+
+- **Schema**: `SalesInvoice` y `PurchaseInvoice` suman `importSource` y `sourceFiscalDocumentId`
+  (nullable, aditivo). Migracion `20260624130000_add_taxreturn_monthly_import_link`. Vinculan cada
+  registro anual con su comprobante mensual de origen y permiten reimportar sin pisar cargas manuales.
+- **Mapper puro** `fiscalLedger/taxReturnMonthlyImport.ts`: comprobantes CLOSED → SalesInvoice/
+  PurchaseInvoice con el `expenseType` correcto (Mercaderia→CMV, gasto→deducible, no deducible→
+  gasto no deducible). Bienes de uso NO se crean como compra: se devuelven como candidatos a cargar
+  vida util en amortizaciones. NC con neto negativo reducen ventas/compras. 15/15 aserciones verdes.
+- **Ruta** `POST /api/declaraciones/[id]/importar-mensual`: solo meses con IVA CLOSED; idempotente
+  (borra importSource='MONTHLY_LEDGER' y recrea; cargas manuales intactas); persiste el snapshot
+  (sourceHash) y audita. Reporta candidatos a bien de uso, compras pendientes de revisar imputacion,
+  y total de IIBB cotejado (no se crea automaticamente).
+- **UI**: componente aislado `MonthlyImportButton.tsx` insertado en el Paso 2 del wizard con 2 lineas
+  (import + 1 JSX). Tras importar, recarga la pagina para repoblar desde la base (evita que el autosave
+  del wizard pise lo importado). No se reescribio el wizard.
+
+Como la determinacion no se modifico, el caso Mariano sigue identico por construccion (lo confirma la
+suite existente de tests de determinacion).
+
+### REQUISITO antes de compilar este tramo
+
+Hay campos nuevos en `SalesInvoice`/`PurchaseInvoice`, asi que hay que **regenerar el cliente Prisma**:
+
+```powershell
+npx prisma generate    # OBLIGATORIO: el route usa importSource/sourceFiscalDocumentId
+npm run build          # confirmar tsc verde
+npx vitest run         # +15 tests nuevos (taxReturnMonthlyImport)
+```
+
+Aplicar la columna en la base con `npx prisma migrate deploy` (las DOS migraciones nuevas: includedInSettlement y el link mensual). Nunca `migrate dev` contra prod.
+
+### Pendiente del tramo (proxima sesion)
+
+- Probar la importacion end-to-end en la app (clic en "Importar del modulo mensual" en el wizard) con datos reales.
+- Verificar que el GET `/api/declaraciones/[id]` devuelve los SalesInvoice/PurchaseInvoice importados para que el wizard los muestre tras la recarga (si no, ajustar el read).
+- Opcional: auto-crear el IIBB como gasto deducible (hoy se reporta el total para carga manual); pantalla de revision de imputacion de compras.

@@ -419,6 +419,9 @@ model FiscalDocument {
   source              String                  @default("ARCA")
   sourceFileName      String?
   sourceFileHash      String?
+  // Revisión del usuario antes de liquidar: si se desmarca, el comprobante NO entra en la
+  // liquidación de IVA/IIBB (queda en el libro para trazabilidad, pero excluido del cálculo).
+  includedInSettlement Boolean                @default(true)
   notes               String?                 @db.Text
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt

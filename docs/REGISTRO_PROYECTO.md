@@ -1,6 +1,6 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-22
+Ultima actualizacion: 2026-06-24
 
 ## Entrada reciente
 
@@ -3439,3 +3439,89 @@ Bloqueo actual antes de prueba funcional:
 
 - Agregar migracion de `FiscalDocument.includedInSettlement`, regenerar Prisma y recuperar `tsc`/build verdes.
 - Corregir cierre parcial, normalizacion argentina de importes y arrastres desde estados no cerrados.
+
+---
+
+## 2026-06-24 — Flujo completo de liquidacion de IVA (subir → revisar → cotejar → guardar → anual)
+
+Se construyo el flujo punta a punta que pidio el contador, sobre el motor de IVA ya validado al peso contra AFIP.
+
+Modelo / schema:
+
+- `FiscalDocument.includedInSettlement Boolean @default(true)`: bandera de seleccion de filas. El comprobante excluido queda en el libro (trazabilidad) pero NO entra al calculo. Requiere migracion Prisma en Windows.
+
+Endpoints (todos bajo `/api/clientes/[id]/fiscal-periods/[periodId]`):
+
+- `GET documents`: lista los comprobantes del periodo (ventas y compras) con su IVA y estado de inclusion, para la grilla de revision.
+- `PATCH documents/selection`: marca/desmarca filas en lote (defiende ids ajenos al periodo).
+- `GET settlement`: recalcula IVA solo con las filas `includedInSettlement=true`, aplicando arrastre tecnico y libre disponibilidad del ultimo IVA `CLOSED` del mes anterior. Pasa `voucherType` para el criterio NC del F2002.
+- `POST settlement/save`: recalcula del lado servidor (no confia en el cliente), coteja contra los valores oficiales de AFIP y persiste. Coincide → `CLOSED` (cotejada, habilita Ganancias). Difiere y `forceSave=false` → 409 con el detalle de diferencias. Difiere y `forceSave=true` → `IN_REVIEW` con observacion. Audita el evento.
+
+Persistencia (`persistence/fiscalSettlementPersistence.ts`):
+
+- `persistVatSettlement`: versiona (no pisa), guarda totales + lineas de desglose por alicuota + valores oficiales del cotejo + `filedAt` al cerrar.
+- `checkVatCotejo`: concilia debito/credito/saldo contra AFIP con tolerancia de 1 centavo.
+- `persistGrossIncomeSettlement`: idem para IIBB.
+
+Compuerta mensual → anual (`fiscalLedger/annualConsolidation.ts`):
+
+- `selectCotejadoPeriodsForAnnual`: regla de negocio dura — SOLO los meses con IVA `CLOSED` alimentan la liquidacion anual de Ganancias. Borrador, en revision o faltante quedan bloqueados con motivo; el año solo consolida con los 12 meses cotejados.
+
+Pantalla (`clientes/[id]/periodos-fiscales/[periodId]/liquidacion-iva/`):
+
+- 3 pasos: (1) subir CSV de compras y ventas, (2) grilla con tilde por fila + "todos" + subtotal de IVA incluido en vivo, (3) totales estilo F2002 + campos de cotejo de AFIP con verificacion en vivo + guardar. La tarjeta del mes en el dashboard ahora enlaza a "Liquidar IVA".
+
+Normalizacion de importes:
+
+- Cotejo acepta formato argentino (`9.090.888,61`) y plano; `toPlain`/`norm` unificados en validacion zod y en el guardado (se corrigio un bug que dejaba puntos de miles antes de Decimal).
+
+Verificacion (sandbox, logica replicada por truncado del espejo):
+
+- 15/15 aserciones del flujo IVA (NC a lado contrario, libre disponibilidad, cotejo, versionado/estado).
+- 10/10 aserciones de la compuerta anual (CLOSED usable; DRAFT/IN_REVIEW/faltante bloquean).
+- Tests vitest agregados: `settlementBuilders.test.ts` (regresion NC + libre disp.), `fiscalSettlementPersistence.test.ts`, `annualConsolidation.test.ts` (compuerta). Pendiente correrlos en Windows con node_modules.
+
+Pendiente para produccion:
+
+- Migracion Prisma de `includedInSettlement` + `prisma generate` + `tsc`/build en Windows.
+- Reader DB de consolidacion anual (toma settlements `CLOSED` + imputacion por comprobante) y heuristica de imputacion inferida.
+- Cargar alicuotas de IIBB por jurisdiccion en el editor de perfil.
+
+### Correcciones tras revision de codigo (2026-06-24)
+
+Revision externa marco 7 hallazgos. Estado y accion:
+
+- #1 No compila sin migracion Prisma de `includedInSettlement`: valido. Bloqueo principal; se resuelve en Windows con `prisma migrate dev` + `generate`.
+- #2 Cotejo parcial podia cerrar (CLOSED) cargando solo 1 importe: CORREGIDO. `checkVatCotejo` ahora expone `complete`/`missing`; `matches` exige los tres importes (debito, credito, saldo) presentes y coincidentes. El save route devuelve 409 distinto para "incompleto" (no permite forzar) vs "con diferencias" (permite `IN_REVIEW`).
+- #3 Miles argentinos (`9.090.888,61`) rompian el guardado: YA estaba corregido antes de la revision (`toPlain`/`norm` sacan puntos de miles). El revisor miro estado previo.
+- #4 Arrastre tomaba la ultima version aunque fuera borrador/observada: CORREGIDO. GET y save filtran `where:{status:'CLOSED'}` en los arrastres tecnico y de libre disponibilidad.
+- #5 IIBB devuelve 0 (alicuotas en cero): valido/aceptado. Es andamiaje; falta el editor de parametros por jurisdiccion. No se presenta como IIBB funcional.
+- #6 La pantalla decia "disponible para Ganancias" aun en DRAFT/IN_REVIEW: CORREGIDO. El mensaje ahora es condicional a `CLOSED`; si no, aclara que todavia NO alimenta Ganancias.
+- #7 Versionado sin transaccion ante doble envio: CORREGIDO. `persistVatSettlement` reintenta (hasta 4) ante violacion de unicidad P2002 recomputando la version.
+
+Verificacion sandbox de los fixes: 11/11 aserciones (cotejo completo vs parcial, status CLOSED/IN_REVIEW, reintento ante P2002). Tests vitest ampliados en `fiscalSettlementPersistence.test.ts`.
+
+### Reader de consolidacion anual a Ganancias (2026-06-24)
+
+Se conecto el eslabon mensual → anual (paso 6 del orden recomendado), a nivel dominio + API.
+
+- `fiscalLedger/gainsImputation.ts`: heuristica de imputacion inferida. VENTAS se clasifican con certeza (gravada vs exenta, sin revision); COMPRAS van a `DEDUCTIBLE_EXPENSE` por default con `needsReview=true` (AFIP no informa mercaderia vs gasto vs bien de uso; lo confirma el contador). Convencion de signos: las NC con neto negativo reducen la categoria.
+- `fiscalLedger/annualConsolidationAssembler.ts`: ensamblador PURO. Aplica la compuerta (solo meses IVA `CLOSED`), respeta imputaciones persistidas confirmadas o infiere, suma el IIBB `CLOSED` del mes como gasto deducible, y consolida con `consolidateAnnualFiscalLedger`. Reporta comprobantes pendientes de revision por mes.
+- `persistence/annualConsolidationRead.ts`: unica capa Prisma; lee 12 periodos (estado IVA, IIBB CLOSED, comprobantes incluidos con sus imputaciones) y delega en el ensamblador. Incluye serializador JSON.
+- `app/api/clientes/[id]/consolidacion-anual/route.ts`: `GET ...?year=AAAA` devuelve compuerta, totales por categoria y pendientes de revision.
+
+Verificacion sandbox: 17/17 aserciones (inferencia ventas/compras, compuerta CLOSED, imputacion persistida respetada, IIBB sumado, NC reduce ventas, consolidacion null sin meses cotejados). Tests vitest: `annualConsolidationAssembler.test.ts`.
+
+Pendiente del tramo anual:
+
+- ~~Persistir el snapshot~~ HECHO (ver abajo). Falta conectar al `TaxReturn`/wizard de Ganancias (inyectar el snapshot en la DDJJ anual).
+- Pantalla de revision de imputacion de compras (confirmar mercaderia/gasto/bien de uso) y de la consolidacion anual.
+
+### Snapshot durable de consolidacion anual (2026-06-24)
+
+- `persistence/annualConsolidationSnapshot.ts`: `persistAnnualConsolidationSnapshot` guarda el snapshot en `AnnualFiscalConsolidationSnapshot/Period` ligado a un `TaxReturn`, con su `sourceHash`. Reglas: solo persiste si hay al menos un mes CLOSED; CONFIRMA (`confirmedAt`) unicamente si el año esta completo y firme; idempotente por `sourceHash` (no duplica). `isSnapshotStale` detecta si la base mensual cambio (recotejo/imputacion) y el snapshot quedo obsoleto antes de usarse en la DDJJ.
+- Verificacion sandbox: 10/10 aserciones (confirma año completo, no confirma con mes faltante, idempotencia, error sin meses CLOSED, deteccion de obsolescencia). Test vitest: `annualConsolidationSnapshot.test.ts`.
+
+### Nota sobre el commit
+
+El worktree tiene `.git` con gitdir en ruta Windows; git no corre desde el sandbox Linux (garantiza que no se toco `main` desde aqui). El commit se hace en Windows siguiendo `docs/COMMIT_FLUJO_IVA_ANUAL.md` (migracion → build/test verdes → commit sin push).

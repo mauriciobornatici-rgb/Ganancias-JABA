@@ -4026,6 +4026,7 @@ export const FiscalDocumentScalarFieldEnum = {
   source: 'source',
   sourceFileName: 'sourceFileName',
   sourceFileHash: 'sourceFileHash',
+  includedInSettlement: 'includedInSettlement',
   notes: 'notes',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

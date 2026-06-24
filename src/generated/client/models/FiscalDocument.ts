@@ -51,6 +51,7 @@ export type FiscalDocumentMinAggregateOutputType = {
   source: string | null
   sourceFileName: string | null
   sourceFileHash: string | null
+  includedInSettlement: boolean | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -71,6 +72,7 @@ export type FiscalDocumentMaxAggregateOutputType = {
   source: string | null
   sourceFileName: string | null
   sourceFileHash: string | null
+  includedInSettlement: boolean | null
   notes: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -91,6 +93,7 @@ export type FiscalDocumentCountAggregateOutputType = {
   source: number
   sourceFileName: number
   sourceFileHash: number
+  includedInSettlement: number
   notes: number
   createdAt: number
   updatedAt: number
@@ -123,6 +126,7 @@ export type FiscalDocumentMinAggregateInputType = {
   source?: true
   sourceFileName?: true
   sourceFileHash?: true
+  includedInSettlement?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -143,6 +147,7 @@ export type FiscalDocumentMaxAggregateInputType = {
   source?: true
   sourceFileName?: true
   sourceFileHash?: true
+  includedInSettlement?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -163,6 +168,7 @@ export type FiscalDocumentCountAggregateInputType = {
   source?: true
   sourceFileName?: true
   sourceFileHash?: true
+  includedInSettlement?: true
   notes?: true
   createdAt?: true
   updatedAt?: true
@@ -270,6 +276,7 @@ export type FiscalDocumentGroupByOutputType = {
   source: string
   sourceFileName: string | null
   sourceFileHash: string | null
+  includedInSettlement: boolean
   notes: string | null
   createdAt: Date
   updatedAt: Date
@@ -313,6 +320,7 @@ export type FiscalDocumentWhereInput = {
   source?: Prisma.StringFilter<"FiscalDocument"> | string
   sourceFileName?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
   sourceFileHash?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
+  includedInSettlement?: Prisma.BoolFilter<"FiscalDocument"> | boolean
   notes?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
   createdAt?: Prisma.DateTimeFilter<"FiscalDocument"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FiscalDocument"> | Date | string
@@ -337,6 +345,7 @@ export type FiscalDocumentOrderByWithRelationInput = {
   source?: Prisma.SortOrder
   sourceFileName?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceFileHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -366,6 +375,7 @@ export type FiscalDocumentWhereUniqueInput = Prisma.AtLeast<{
   source?: Prisma.StringFilter<"FiscalDocument"> | string
   sourceFileName?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
   sourceFileHash?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
+  includedInSettlement?: Prisma.BoolFilter<"FiscalDocument"> | boolean
   notes?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
   createdAt?: Prisma.DateTimeFilter<"FiscalDocument"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FiscalDocument"> | Date | string
@@ -390,6 +400,7 @@ export type FiscalDocumentOrderByWithAggregationInput = {
   source?: Prisma.SortOrder
   sourceFileName?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceFileHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -418,6 +429,7 @@ export type FiscalDocumentScalarWhereWithAggregatesInput = {
   source?: Prisma.StringWithAggregatesFilter<"FiscalDocument"> | string
   sourceFileName?: Prisma.StringNullableWithAggregatesFilter<"FiscalDocument"> | string | null
   sourceFileHash?: Prisma.StringNullableWithAggregatesFilter<"FiscalDocument"> | string | null
+  includedInSettlement?: Prisma.BoolWithAggregatesFilter<"FiscalDocument"> | boolean
   notes?: Prisma.StringNullableWithAggregatesFilter<"FiscalDocument"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"FiscalDocument"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"FiscalDocument"> | Date | string
@@ -437,6 +449,7 @@ export type FiscalDocumentCreateInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -461,6 +474,7 @@ export type FiscalDocumentUncheckedCreateInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -483,6 +497,7 @@ export type FiscalDocumentUpdateInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -507,6 +522,7 @@ export type FiscalDocumentUncheckedUpdateInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -530,6 +546,7 @@ export type FiscalDocumentCreateManyInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -549,6 +566,7 @@ export type FiscalDocumentUpdateManyMutationInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -569,6 +587,7 @@ export type FiscalDocumentUncheckedUpdateManyInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -610,6 +629,7 @@ export type FiscalDocumentCountOrderByAggregateInput = {
   source?: Prisma.SortOrder
   sourceFileName?: Prisma.SortOrder
   sourceFileHash?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -635,6 +655,7 @@ export type FiscalDocumentMaxOrderByAggregateInput = {
   source?: Prisma.SortOrder
   sourceFileName?: Prisma.SortOrder
   sourceFileHash?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -655,6 +676,7 @@ export type FiscalDocumentMinOrderByAggregateInput = {
   source?: Prisma.SortOrder
   sourceFileName?: Prisma.SortOrder
   sourceFileHash?: Prisma.SortOrder
+  includedInSettlement?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -779,6 +801,7 @@ export type FiscalDocumentCreateWithoutFiscalPeriodInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -801,6 +824,7 @@ export type FiscalDocumentUncheckedCreateWithoutFiscalPeriodInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -853,6 +877,7 @@ export type FiscalDocumentScalarWhereInput = {
   source?: Prisma.StringFilter<"FiscalDocument"> | string
   sourceFileName?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
   sourceFileHash?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
+  includedInSettlement?: Prisma.BoolFilter<"FiscalDocument"> | boolean
   notes?: Prisma.StringNullableFilter<"FiscalDocument"> | string | null
   createdAt?: Prisma.DateTimeFilter<"FiscalDocument"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"FiscalDocument"> | Date | string
@@ -872,6 +897,7 @@ export type FiscalDocumentCreateWithoutVatLinesInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -895,6 +921,7 @@ export type FiscalDocumentUncheckedCreateWithoutVatLinesInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -932,6 +959,7 @@ export type FiscalDocumentUpdateWithoutVatLinesInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -955,6 +983,7 @@ export type FiscalDocumentUncheckedUpdateWithoutVatLinesInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -976,6 +1005,7 @@ export type FiscalDocumentCreateWithoutAllocationsInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -999,6 +1029,7 @@ export type FiscalDocumentUncheckedCreateWithoutAllocationsInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1036,6 +1067,7 @@ export type FiscalDocumentUpdateWithoutAllocationsInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1059,6 +1091,7 @@ export type FiscalDocumentUncheckedUpdateWithoutAllocationsInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1080,6 +1113,7 @@ export type FiscalDocumentCreateWithoutTaxCreditsInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1103,6 +1137,7 @@ export type FiscalDocumentUncheckedCreateWithoutTaxCreditsInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1140,6 +1175,7 @@ export type FiscalDocumentUpdateWithoutTaxCreditsInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1163,6 +1199,7 @@ export type FiscalDocumentUncheckedUpdateWithoutTaxCreditsInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1184,6 +1221,7 @@ export type FiscalDocumentCreateManyFiscalPeriodInput = {
   source?: string
   sourceFileName?: string | null
   sourceFileHash?: string | null
+  includedInSettlement?: boolean
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -1203,6 +1241,7 @@ export type FiscalDocumentUpdateWithoutFiscalPeriodInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1225,6 +1264,7 @@ export type FiscalDocumentUncheckedUpdateWithoutFiscalPeriodInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1247,6 +1287,7 @@ export type FiscalDocumentUncheckedUpdateManyWithoutFiscalPeriodInput = {
   source?: Prisma.StringFieldUpdateOperationsInput | string
   sourceFileName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFileHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  includedInSettlement?: Prisma.BoolFieldUpdateOperationsInput | boolean
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1316,6 +1357,7 @@ export type FiscalDocumentSelect<ExtArgs extends runtime.Types.Extensions.Intern
   source?: boolean
   sourceFileName?: boolean
   sourceFileHash?: boolean
+  includedInSettlement?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -1343,12 +1385,13 @@ export type FiscalDocumentSelectScalar = {
   source?: boolean
   sourceFileName?: boolean
   sourceFileHash?: boolean
+  includedInSettlement?: boolean
   notes?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type FiscalDocumentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "documentKey" | "direction" | "issueDate" | "voucherType" | "voucherNumber" | "counterpartyName" | "counterpartyCuit" | "netAmount" | "totalAmount" | "source" | "sourceFileName" | "sourceFileHash" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["fiscalDocument"]>
+export type FiscalDocumentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "documentKey" | "direction" | "issueDate" | "voucherType" | "voucherNumber" | "counterpartyName" | "counterpartyCuit" | "netAmount" | "totalAmount" | "source" | "sourceFileName" | "sourceFileHash" | "includedInSettlement" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["fiscalDocument"]>
 export type FiscalDocumentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fiscalPeriod?: boolean | Prisma.FiscalPeriodDefaultArgs<ExtArgs>
   vatLines?: boolean | Prisma.FiscalDocument$vatLinesArgs<ExtArgs>
@@ -1380,6 +1423,7 @@ export type $FiscalDocumentPayload<ExtArgs extends runtime.Types.Extensions.Inte
     source: string
     sourceFileName: string | null
     sourceFileHash: string | null
+    includedInSettlement: boolean
     notes: string | null
     createdAt: Date
     updatedAt: Date
@@ -1770,6 +1814,7 @@ export interface FiscalDocumentFieldRefs {
   readonly source: Prisma.FieldRef<"FiscalDocument", 'String'>
   readonly sourceFileName: Prisma.FieldRef<"FiscalDocument", 'String'>
   readonly sourceFileHash: Prisma.FieldRef<"FiscalDocument", 'String'>
+  readonly includedInSettlement: Prisma.FieldRef<"FiscalDocument", 'Boolean'>
   readonly notes: Prisma.FieldRef<"FiscalDocument", 'String'>
   readonly createdAt: Prisma.FieldRef<"FiscalDocument", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"FiscalDocument", 'DateTime'>

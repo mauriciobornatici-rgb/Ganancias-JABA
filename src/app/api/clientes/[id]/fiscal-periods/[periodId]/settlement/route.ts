@@ -7,9 +7,23 @@ import {
   buildVatSettlement,
   buildGrossIncomeSettlement,
   type SettlementDocument,
-  type GrossIncomeJurisdictionConfig,
 } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
+import { buildPeriodGrossIncome } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
+
+/** Carga el mapa de coeficientes unificados CM (CM05) del año, solo si el régimen es Convenio. */
+async function loadConventionCoefficients(clientId: string, year: number, regime: GrossIncomeRegime): Promise<Map<string, Decimal>> {
+  const map = new Map<string, Decimal>();
+  if (regime !== 'CM_REGIMEN_GENERAL' && regime !== 'CM_REGIMEN_ESPECIAL') return map;
+  const version = await prisma.conventionCoefficientVersion.findFirst({
+    where: { clientId, year },
+    select: { coefficientLines: { select: { jurisdictionCode: true, unifiedCoefficient: true } } },
+  });
+  for (const line of version?.coefficientLines ?? []) {
+    map.set(line.jurisdictionCode, new Decimal(line.unifiedCoefficient.toString()));
+  }
+  return map;
+}
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -97,50 +111,26 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       previousFreeAvailability,
     });
 
-    // IIBB: se calcula si el perfil tiene régimen y jurisdicciones. Las alícuotas/coeficientes
-    // por jurisdicción son parámetros del perfil; si faltan, se informa como pendiente de configurar.
+    // IIBB: se arma con el helper compartido (mismo cálculo que el guardado). Alícuotas y coeficientes
+    // CM vienen del perfil; si faltan, el helper avisa.
     const regime = (period.taxProfile?.grossIncomeRegime ?? 'NONE') as GrossIncomeRegime;
     const activeJurisdictions = (period.taxProfile?.jurisdictions ?? []).filter(j => j.isActive);
-    let grossIncome: ReturnType<typeof buildGrossIncomeSettlement> | null = null;
-    let grossIncomeNotice: string | null = null;
+    const coefficientMap = await loadConventionCoefficients(clientId, period.year, regime);
+    const giCredits = period.taxCredits
+      .filter(c => String(c.tax) === 'GROSS_INCOME')
+      .map(c => ({ jurisdictionCode: c.jurisdictionCode, amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) }));
 
-    const isConvenio = regime === 'CM_REGIMEN_GENERAL' || regime === 'CM_REGIMEN_ESPECIAL';
-
-    if (regime === 'NONE') {
-      grossIncomeNotice = 'El contribuyente no liquida Ingresos Brutos en este período (régimen NONE).';
-    } else if (activeJurisdictions.length === 0) {
-      grossIncomeNotice = 'Falta configurar jurisdicciones y alícuotas de IIBB en el perfil fiscal.';
-    } else {
-      // Para Convenio Multilateral, los coeficientes unificados (CM05) vienen de la versión del año.
-      const coefficientMap = new Map<string, Decimal>();
-      if (isConvenio) {
-        const coefVersion = await prisma.conventionCoefficientVersion.findFirst({
-          where: { clientId, year: period.year },
-          select: { coefficientLines: { select: { jurisdictionCode: true, unifiedCoefficient: true } } },
-        });
-        for (const line of coefVersion?.coefficientLines ?? []) {
-          coefficientMap.set(line.jurisdictionCode, new Decimal(line.unifiedCoefficient.toString()));
-        }
-      }
-
-      const jurisdictions: GrossIncomeJurisdictionConfig[] = activeJurisdictions.map(j => ({
+    const { view: grossIncome, notice: grossIncomeNotice } = buildPeriodGrossIncome({
+      regime,
+      jurisdictions: activeJurisdictions.map(j => ({
         jurisdictionCode: j.jurisdictionCode,
-        taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : new Decimal(0),
-        coefficient: isConvenio ? coefficientMap.get(j.jurisdictionCode) : undefined,
-        credits: period.taxCredits
-          .filter(c => String(c.tax) === 'GROSS_INCOME' && c.jurisdictionCode === j.jurisdictionCode)
-          .map(c => ({ amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) })),
-      }));
-      grossIncome = buildGrossIncomeSettlement({ regime, documents, jurisdictions });
-
-      // Avisos de configuración pendiente.
-      const sinAlicuota = activeJurisdictions.filter(j => j.taxRate == null).map(j => j.jurisdictionCode);
-      const sinCoef = isConvenio ? activeJurisdictions.filter(j => !coefficientMap.has(j.jurisdictionCode)).map(j => j.jurisdictionCode) : [];
-      const avisos: string[] = [];
-      if (sinAlicuota.length) avisos.push(`Sin alícuota cargada: ${sinAlicuota.join(', ')} (se toman como 0).`);
-      if (sinCoef.length) avisos.push(`Sin coeficiente CM ${period.year}: ${sinCoef.join(', ')}.`);
-      grossIncomeNotice = avisos.length ? avisos.join(' ') : null;
-    }
+        taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : null,
+      })),
+      documents,
+      coefficientMap,
+      credits: giCredits,
+      year: period.year,
+    });
 
     return NextResponse.json({
       success: true,

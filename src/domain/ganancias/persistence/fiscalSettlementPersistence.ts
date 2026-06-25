@@ -185,6 +185,8 @@ export type PersistGrossIncomeSettlementInput = {
   fiscalPeriodId: string;
   view: GrossIncomeSettlementView;
   status?: 'DRAFT' | 'IN_REVIEW' | 'READY_TO_FILE' | 'FILED_EXTERNALLY' | 'CLOSED' | 'ANNULLED';
+  /** Cotejo opcional contra el organismo (total a pagar oficial + referencia). */
+  official?: { amount?: DecimalLike | null; reference?: string | null } | null;
   notes?: string | null;
 };
 
@@ -192,37 +194,50 @@ export async function persistGrossIncomeSettlement(
   store: GrossIncomeSettlementStore,
   input: PersistGrossIncomeSettlementInput,
 ) {
-  const last = await store.grossIncomeSettlement.findFirst({
-    where: { fiscalPeriodId: input.fiscalPeriodId },
-    orderBy: { version: 'desc' },
-    select: { version: true },
-  });
-  const version = (last?.version ?? -1) + 1;
   const s = input.view.settlement;
+  const status = input.status ?? 'DRAFT';
 
-  const created = await store.grossIncomeSettlement.create({
-    data: {
-      fiscalPeriodId: input.fiscalPeriodId,
-      version,
-      regime: s.regime,
-      status: input.status ?? 'DRAFT',
-      totalDeterminedTax: s.totalDeterminedTax.toFixed(2),
-      totalCredits: s.totalCreditsApplied.toFixed(2),
-      totalBalance: s.totalBalanceDue.toFixed(2),
-      notes: input.notes ?? null,
-      jurisdictionLines: {
-        create: s.jurisdictionLines.map(l => ({
-          jurisdictionCode: l.jurisdictionCode,
-          coefficient: l.coefficient ? new Decimal(l.coefficient.toString()).toFixed(10) : null,
-          assignedBase: l.assignedBase.toFixed(2),
-          taxRate: l.taxRate.toFixed(6),
-          determinedTax: l.determinedTax.toFixed(2),
-          creditsApplied: l.creditsApplied.toFixed(2),
-          balance: l.balanceDue.toFixed(2),
-        })),
-      },
+  const buildData = (version: number) => ({
+    fiscalPeriodId: input.fiscalPeriodId,
+    version,
+    regime: s.regime,
+    status,
+    totalDeterminedTax: s.totalDeterminedTax.toFixed(2),
+    totalCredits: s.totalCreditsApplied.toFixed(2),
+    totalBalance: s.totalBalanceDue.toFixed(2),
+    officialAmount: toStr(input.official?.amount),
+    officialReference: input.official?.reference ?? null,
+    filedAt: status === 'CLOSED' ? new Date() : null,
+    notes: input.notes ?? null,
+    jurisdictionLines: {
+      create: s.jurisdictionLines.map(l => ({
+        jurisdictionCode: l.jurisdictionCode,
+        coefficient: l.coefficient ? new Decimal(l.coefficient.toString()).toFixed(10) : null,
+        assignedBase: l.assignedBase.toFixed(2),
+        taxRate: l.taxRate.toFixed(6),
+        determinedTax: l.determinedTax.toFixed(2),
+        creditsApplied: l.creditsApplied.toFixed(2),
+        balance: l.balanceDue.toFixed(2),
+      })),
     },
   });
 
-  return { id: created.id, version: created.version, status: created.status };
+  // Versionado seguro ante doble envío (mismo criterio que IVA).
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const last = await store.grossIncomeSettlement.findFirst({
+      where: { fiscalPeriodId: input.fiscalPeriodId },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    const version = (last?.version ?? -1) + 1;
+    try {
+      const created = await store.grossIncomeSettlement.create({ data: buildData(version) });
+      return { id: created.id, version: created.version, status: created.status };
+    } catch (error) {
+      lastError = error;
+      if (!isUniqueViolation(error)) throw error;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('No se pudo asignar una versión de liquidación de IIBB.');
 }

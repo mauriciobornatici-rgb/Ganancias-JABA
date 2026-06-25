@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
-  Calculator, Save, FileSpreadsheet, ScanLine,
+  Calculator, Save, FileSpreadsheet, ScanLine, MapPin,
 } from 'lucide-react';
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -48,6 +48,17 @@ type TaxCreditRow = {
   includedInSettlement: boolean;
 };
 
+type GrossIncomeView = {
+  regime: string;
+  taxableBase: string;
+  totalDeterminedTax: string;
+  totalCreditsApplied: string;
+  totalBalanceDue: string;
+  totalFavorCarryForward: string;
+  jurisdictionLines: Array<{ jurisdictionCode: string; assignedBase: string; taxRate: string; determinedTax: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
+  warnings: string[];
+};
+
 type SavedSettlement = {
   id: string;
   version: number;
@@ -84,6 +95,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
 
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
+
+  // IIBB calculado del período + cotejo/guardado
+  const [grossIncome, setGrossIncome] = useState<GrossIncomeView | null>(null);
+  const [grossIncomeNotice, setGrossIncomeNotice] = useState<string | null>(null);
+  const [iibbOfficial, setIibbOfficial] = useState('');
+  const [iibbRef, setIibbRef] = useState('');
+  const [savingIibb, setSavingIibb] = useState(false);
+  const [savedIibbStatus, setSavedIibbStatus] = useState<{ status: string; version: number } | null>(null);
 
   // Liquidación ya guardada (al volver a un mes cerrado) + modo "reliquidar".
   const [savedSettlement, setSavedSettlement] = useState<SavedSettlement | null>(null);
@@ -135,13 +154,49 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
+  const loadSavedIibb = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/iibb/saved`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success && payload.data.saved) {
+        setSavedIibbStatus({ status: payload.data.saved.status, version: payload.data.saved.version });
+        if (payload.data.saved.officialAmount) setIibbOfficial(payload.data.saved.officialAmount);
+      }
+    } catch {
+      // opcional
+    }
+  }, [clientId, periodId]);
+
   useEffect(() => {
     queueMicrotask(() => {
       void loadDocuments();
       void loadTaxCredits();
       void loadSaved();
+      void loadSavedIibb();
     });
-  }, [loadDocuments, loadTaxCredits, loadSaved]);
+  }, [loadDocuments, loadTaxCredits, loadSaved, loadSavedIibb]);
+
+  const saveIibb = async (force: boolean) => {
+    setSavingIibb(true);
+    setError(null);
+    try {
+      const official = (iibbOfficial || iibbRef) ? { amount: iibbOfficial || null, reference: iibbRef || null } : null;
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/iibb/save`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ official, forceSave: force }),
+      });
+      const payload = await res.json();
+      if (res.status === 409) { setError(payload.error || 'El saldo de IIBB no coincide con el oficial.'); return; }
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar IIBB.');
+      setSavedIibbStatus({ status: payload.data.status, version: payload.data.version });
+      setNotice(payload.data.status === 'CLOSED'
+        ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
+        : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar IIBB.');
+    } finally {
+      setSavingIibb(false);
+    }
+  };
 
   const includedWithholding = useMemo(
     () => taxCredits.filter(c => c.includedInSettlement && c.kind === 'WITHHOLDING').reduce((s, c) => s + Number(c.amount), 0),
@@ -272,6 +327,8 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo calcular la liquidación.');
       setSettlement(payload.data.vat);
+      setGrossIncome(payload.data.grossIncome ?? null);
+      setGrossIncomeNotice(payload.data.grossIncomeNotice ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo calcular la liquidación.');
     } finally {
@@ -519,8 +576,90 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             </div>
           </section>
         ) : null}
+
+        {/* IIBB — Ingresos Brutos */}
+        {settlement && (grossIncome || grossIncomeNotice) ? (
+          <IibbSection
+            view={grossIncome}
+            notice={grossIncomeNotice}
+            official={iibbOfficial}
+            onOfficial={setIibbOfficial}
+            reference={iibbRef}
+            onReference={setIibbRef}
+            saving={savingIibb}
+            savedStatus={savedIibbStatus}
+            onSave={saveIibb}
+          />
+        ) : null}
       </div>
     </main>
+  );
+}
+
+function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave }: {
+  view: GrossIncomeView | null;
+  notice: string | null;
+  official: string;
+  onOfficial: (v: string) => void;
+  reference: string;
+  onReference: (v: string) => void;
+  saving: boolean;
+  savedStatus: { status: string; version: number } | null;
+  onSave: (force: boolean) => void;
+}) {
+  const liveMatch = view && official.trim() !== '' && Math.abs(Number(view.totalBalanceDue) - Number(official.replace(/\./g, '').replace(',', '.'))) <= 0.01;
+  return (
+    <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+      <div className="flex items-start justify-between gap-3">
+        <StepTitle n="IIBB" icon={<MapPin className="h-4 w-4" />} title="Ingresos Brutos" subtitle="Base × coeficiente (Convenio) × alícuota por jurisdicción. Se cierra cotejando contra el organismo y alimenta Ganancias como gasto deducible." />
+        {savedStatus ? <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${savedStatus.status === 'CLOSED' ? 'border border-emerald-400/25 bg-emerald-400/10 text-emerald-300' : 'border border-amber-400/25 bg-amber-400/10 text-amber-200'}`}>{humanStatus(savedStatus.status)} v{savedStatus.version}</span> : null}
+      </div>
+
+      {notice ? <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">{notice}</p> : null}
+
+      {view ? (
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-teal-400">Por jurisdicción</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[11px]">
+                <thead className="text-[10px] uppercase tracking-wider text-zinc-500">
+                  <tr><th className="px-2 py-1">Juris.</th><th className="px-2 py-1 text-right">Base asig.</th><th className="px-2 py-1 text-right">Alíc.</th><th className="px-2 py-1 text-right">Determinado</th><th className="px-2 py-1 text-right">Saldo</th></tr>
+                </thead>
+                <tbody>
+                  {view.jurisdictionLines.map(l => (
+                    <tr key={l.jurisdictionCode} className="border-t border-zinc-900">
+                      <td className="px-2 py-1 font-mono text-zinc-300">{l.jurisdictionCode}</td>
+                      <td className="px-2 py-1 text-right font-mono text-zinc-400">{fmt(l.assignedBase)}</td>
+                      <td className="px-2 py-1 text-right font-mono text-zinc-500">{(Number(l.taxRate) * 100).toFixed(2)}%</td>
+                      <td className="px-2 py-1 text-right font-mono text-zinc-300">{fmt(l.determinedTax)}</td>
+                      <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(l.balanceDue)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-3 border-t border-zinc-800 pt-2">
+              <Row label="Impuesto determinado total" value={view.totalDeterminedTax} strong />
+              {Number(view.totalCreditsApplied) > 0 ? <Row label="Percep./retenc. IIBB aplicadas" value={view.totalCreditsApplied} muted /> : null}
+              <Row label="Saldo a pagar IIBB" value={view.totalBalanceDue} highlight />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400">Cotejo y guardado</p>
+            <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Saldo a pagar oficial (organismo)</label>
+            <input inputMode="decimal" value={official} onChange={e => onOfficial(e.target.value)} placeholder="0,00" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+            <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Referencia (opcional)</label>
+            <input value={reference} onChange={e => onReference(e.target.value)} placeholder="N° presentación, jurisdicción…" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-200 outline-none focus:border-teal-400" />
+            {official.trim() !== '' ? (
+              <p className={`mt-3 flex items-center gap-2 text-xs font-bold ${liveMatch ? 'text-emerald-300' : 'text-amber-300'}`}>{liveMatch ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}{liveMatch ? 'Coincide — listo para cerrar' : 'No coincide con el cálculo'}</p>
+            ) : null}
+            <button type="button" onClick={() => onSave(false)} disabled={saving} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 

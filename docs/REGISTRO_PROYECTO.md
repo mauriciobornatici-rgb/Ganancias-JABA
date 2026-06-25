@@ -3700,9 +3700,32 @@ npx prisma migrate deploy    # aplica 20260624150000 a la base
 ### Pendiente IIBB
 
 - Alicuota por ACTIVIDAD dentro de una jurisdiccion (hoy una alicuota por jurisdiccion).
-- Persistir la liquidacion de IIBB (hoy se calcula en el GET; falta el save/cierre como en IVA).
-- Mostrar el resultado de IIBB en la pantalla de liquidacion (hoy el GET lo devuelve pero la pantalla
-  se enfoca en IVA).
+- ~~Persistir la liquidacion de IIBB~~ HECHO (ver abajo).
+- ~~Mostrar el resultado de IIBB en la pantalla~~ HECHO (ver abajo).
+
+## Ciclo de IIBB completo: guardar/cerrar + mostrar en pantalla (2026-06-24, sesion 2)
+
+Quedo parejo con IVA. NO hay cambios de schema (GrossIncomeSettlement y officialAmount ya existian).
+
+- **Helper compartido** `fiscalLedger/grossIncomeFromProfile.ts` (`buildPeriodGrossIncome`): centraliza el
+  armado de IIBB desde el perfil (alicuotas + coeficientes CM + creditos) para que el PREVIEW (GET
+  settlement) y el GUARDADO usen exactamente la misma logica. El GET settlement se refactorizo para usarlo.
+- **Persistencia** `persistGrossIncomeSettlement`: ahora acepta cotejo (officialAmount/reference), setea
+  filedAt al cerrar, y tiene reintento de version ante P2002 (igual que IVA).
+- **Endpoints**: `POST .../settlement/iibb/save` (recalcula server-side, coteja el saldo a pagar contra
+  el oficial: coincide → CLOSED; difiere → 409 o IN_REVIEW con forceSave; sin oficial → DRAFT) y
+  `GET .../settlement/iibb/saved` (ultima guardada).
+- **Pantalla**: seccion "Ingresos Brutos" en la liquidacion (aparece al Calcular): grilla por
+  jurisdiccion (base asignada, alicuota, determinado, saldo), totales, cotejo del saldo oficial con
+  match en vivo, y boton "Guardar IIBB". Badge de estado si ya hay una guardada.
+- **Integracion anual**: el reader anual ya tomaba el IIBB CLOSED como gasto deducible; ahora que se
+  puede CERRAR, el circuito IIBB→Ganancias queda activo.
+- **Tests**: `grossIncomeFromProfile.test.ts` (NONE, sin jurisdicciones, local, CM, sin alicuota).
+
+### REQUISITO de este tramo
+
+No hay cambios de schema. Solo `npm run build` + `npx vitest run` antes de commitear (no hace falta
+`prisma generate` ni `migrate deploy`).
 
 ---
 

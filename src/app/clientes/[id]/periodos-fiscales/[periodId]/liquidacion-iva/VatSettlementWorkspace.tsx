@@ -6,6 +6,7 @@ import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
   Calculator, Save, FileSpreadsheet, ScanLine, MapPin,
 } from 'lucide-react';
+import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -342,7 +343,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     const checks: Array<{ concept: string; ok: boolean; app: string; official: string }> = [];
     const cmp = (concept: string, app: string, off: string) => {
       if (off.trim() === '') return;
-      const offNum = Number(off.replace(/\./g, '').replace(',', '.'));
+      const offNum = Number(parseMoneyToPlain(off) ?? NaN);
       checks.push({ concept, ok: Math.abs(Number(app) - offNum) <= 0.01, app, official: String(offNum) });
     };
     cmp('Débito fiscal', settlement.debitFiscal, offDebit);
@@ -607,7 +608,7 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
   savedStatus: { status: string; version: number } | null;
   onSave: (force: boolean) => void;
 }) {
-  const liveMatch = view && official.trim() !== '' && Math.abs(Number(view.totalBalanceDue) - Number(official.replace(/\./g, '').replace(',', '.'))) <= 0.01;
+  const liveMatch = view && official.trim() !== '' && Math.abs(Number(view.totalBalanceDue) - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
   return (
     <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
       <div className="flex items-start justify-between gap-3">

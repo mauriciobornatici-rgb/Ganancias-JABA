@@ -13,16 +13,15 @@ import {
   persistVatSettlement,
   checkVatCotejo,
 } from '@/domain/ganancias/persistence/fiscalSettlementPersistence';
+import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
-// Acepta números en formato argentino ("9.090.888,61"), con punto de miles y coma decimal, o
-// formato plano ("9090888.61"). La normalización a Decimal se hace después con `norm`.
-const toPlain = (v: string): string => v.replace(/\./g, '').replace(',', '.').trim();
+// Acepta formato argentino ("9.090.888,61"), punto decimal de teclado ("9090888.61") y formato US.
 const decimalString = z
   .union([z.string(), z.number()])
   .transform(v => String(v))
-  .refine(v => v.trim() === '' || !Number.isNaN(Number(toPlain(v))), 'Importe inválido')
+  .refine(v => v.trim() === '' || parseMoneyToPlain(v) !== null, 'Importe inválido')
   .optional()
   .nullable();
 
@@ -43,11 +42,7 @@ const saveSchema = z.object({
 });
 
 // Normaliza un importe en formato AR ("9.090.888,61") o plano a string Decimal ("9090888.61").
-const norm = (v: string | number | null | undefined): string | null => {
-  if (v === null || v === undefined || v === '') return null;
-  const plain = toPlain(String(v));
-  return plain === '' || Number.isNaN(Number(plain)) ? null : plain;
-};
+const norm = (v: string | number | null | undefined): string | null => parseMoneyToPlain(v);
 
 /**
  * Guarda la liquidación de IVA del período tras el cotejo con AFIP.

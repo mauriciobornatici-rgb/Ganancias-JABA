@@ -3757,6 +3757,21 @@ para clientes nuevos, y para IIBB hacia falta poder setear el regimen (no-NONE).
 
 Pendiente menor: el seed podria crear un perfil demo para acelerar pruebas (hoy se carga desde la UI).
 
+## Hallazgos del E2E en vivo (2026-06-24, sesion 2)
+
+- **Config IIBB: jurisdiccion "desaparecia" al guardar.** Causa: la fila se descartaba si el codigo
+  quedaba vacio. Fix: se exige el codigo, se avisa si falta, y el mensaje de exito muestra cuantas
+  quedaron. (commit a6dd1f2)
+- **Cotejo: importes con punto decimal del teclado numerico se leian x100.** El teclado mete "176032.11"
+  (punto) pero el parser asumia formato AR (punto=miles). Fix: `presentation/parseMoney.ts`
+  (`parseMoneyToPlain`) acepta AR ("1.151.226,93"), punto decimal ("176032.11") y US ("1,151,226.93").
+  Se usa en el cotejo en vivo (front) y en el guardado (save IVA e IIBB). 13/13 aserciones + test vitest.
+- Confirmado por el usuario: puntos 3 (jurisdicciones) y 8 (IIBB no calculaba) resueltos.
+
+Pendiente a vigilar en el E2E: si el periodo se creo ANTES de configurar jurisdicciones, el settlement
+lee el perfil del snapshot del alta del periodo; como el perfil se edita in-place, deberia reflejarse,
+pero conviene confirmarlo en la prueba.
+
 ---
 
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)

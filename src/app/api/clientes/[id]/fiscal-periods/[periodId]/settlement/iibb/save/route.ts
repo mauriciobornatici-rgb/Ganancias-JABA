@@ -7,6 +7,7 @@ import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { buildPeriodGrossIncome } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import { persistGrossIncomeSettlement } from '@/domain/ganancias/persistence/fiscalSettlementPersistence';
+import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 import type { SettlementDocument } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
 
@@ -19,11 +20,7 @@ const saveSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
 });
 
-const norm = (v: string | number | null | undefined): string | null => {
-  if (v === null || v === undefined || v === '') return null;
-  const plain = String(v).replace(/\./g, '').replace(',', '.').trim();
-  return plain === '' || Number.isNaN(Number(plain)) ? null : plain;
-};
+const norm = (v: string | number | null | undefined): string | null => parseMoneyToPlain(v);
 
 /**
  * Guarda la liquidación de IIBB del período. Recalcula del lado servidor (alícuotas/coeficientes del

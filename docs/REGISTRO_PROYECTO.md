@@ -3635,6 +3635,75 @@ Aplicar en base: `npx prisma migrate deploy` (ahora son varias migraciones nueva
 - Probar end-to-end: subir el archivo real de ret/perc en la pantalla de IVA y verificar que el saldo a pagar baja y/o queda libre disponibilidad.
 - (Opcional) cotejo dedicado del total de ret/perc contra AFIP en la pantalla.
 
+### Validacion en vivo OK (2026-06-24)
+
+Probado en la app contra base de prueba: mayo 2026, debito 1.151.226,93 / credito 631.384,36 /
+ret-perc aplicadas 343.810,46 / saldo a pagar 176.032,11 — coincidio con AFIP y guardo CLOSED v1.
+Aprendizaje operativo: ante cambios de schema, correr SIEMPRE `prisma generate` (cliente) **y**
+`prisma migrate deploy` (base). Si falta el deploy, la app tira "column X does not exist".
+
+### Reload de liquidacion guardada + Reporte de avance anual (2026-06-24, sesion 2)
+
+Dos pedidos del usuario, ambos resueltos:
+
+1. **Volver a un mes cerrado muestra lo guardado** (antes obligaba a recalcular y recotejar a mano).
+   - `GET .../settlement/saved`: devuelve la ultima VatSettlement persistida del periodo (estado, version, montos, cotejo, lineas).
+   - Pantalla IVA: al montar carga lo guardado; si existe, muestra el panel `SavedSettlementPanel` (estado, debito/credito/saldo/libre disp., cotejo) y oculta los pasos de carga. Boton "Reliquidar / Modificar" reabre el flujo (pre-llena el saldo oficial). Al guardar, refresca el panel.
+
+2. **Reporte de avance anual "a hoy"** que impacta la liquidacion anual.
+   - Aprovecha el API que ya existia (`GET /api/clientes/[id]/consolidacion-anual?year=`), que aplica la COMPUERTA (solo meses IVA CLOSED) y agrega netos por categoria.
+   - Nueva pantalla `clientes/[id]/consolidacion-anual` (`AnnualProgressReport`): muestra que meses estan cotejados (verde) vs pendientes, el acumulado del ejercicio por categoria (ventas grav./exentas, mercaderia, gastos, bienes de uso, IIBB, IVA no computable), un **margen bruto PROVISORIO** (orientativo, NO el impuesto final) y el detalle por mes. Avisa de compras con imputacion pendiente de confirmar.
+   - Acceso desde el dashboard mensual (boton "Reporte anual").
+
+Como impacta el flujo completo: cada mes que el contador cierra (IVA cotejado) suma automaticamente al
+reporte anual; cuando estan los 12, el año esta "listo para liquidar" y se inyecta al wizard con un boton
+(ver tramo "Inyeccion al wizard"). Mes a mes se va viendo como va el cliente sin rehacer nada.
+
+### REQUISITO de este tramo
+
+No hay cambios de schema (solo lectura + UI), asi que **no** hace falta `prisma generate` ni migracion.
+Solo `npm run build` + `npx vitest run` antes de commitear.
+
+---
+
+## IIBB liquidable: alicuotas + Convenio Multilateral (2026-06-24, sesion 2)
+
+El motor de IIBB ya existia (8 tests) pero el settlement le pasaba alicuotas en 0 (devolvia 0). Se cerro:
+ahora el perfil guarda alicuotas por jurisdiccion y, para CM, los coeficientes unificados (CM05).
+
+- **Schema**: `ClientTaxJurisdiction.taxRate` (Decimal 8,6, nullable). Migracion `20260624150000_add_jurisdiction_tax_rate`.
+- **Settlement** (`GET .../settlement`): arma las jurisdicciones con la alicuota real del perfil y, si el
+  regimen es Convenio Multilateral (CM_REGIMEN_GENERAL/ESPECIAL), con el coeficiente unificado de la
+  `ConventionCoefficientVersion` del año. Avisa de jurisdicciones sin alicuota o sin coeficiente.
+  Motor: `assignedBase = base × coef` (CM) o `base` (local), `determinedTax = assignedBase × alicuota`.
+- **Endpoints** `GET/PUT /api/clientes/[id]/iibb-config`: leen/guardan alicuotas por jurisdiccion y
+  coeficientes CM por año. El PUT valida que los coeficientes CM sumen 1 (tolerancia 0.0001) y hace
+  upsert (jurisdicciones + ConventionCoefficientVersion/Line). Alicuota como fraccion (0.05 = 5%).
+- **Pantalla** `clientes/[id]/iibb-config` (`IibbConfigEditor`): grilla de jurisdicciones (codigo,
+  inscripcion, alicuota en %, activa) + columna de coeficiente unificado solo en CM, con suma en vivo
+  que debe dar 1. Acceso desde el dashboard mensual ("Config. IIBB").
+- **Tests**: settlementBuilders gana 2 casos (CM reparte por coeficiente y aplica alicuota; avisa si no
+  suman 1). Verificado el calculo: 902 → 650.000×5%=32.500; total 46.500.
+
+Convencion: alicuota se ingresa en % en la UI y se guarda como fraccion. CM05 se ingresa como decimal
+(0.6500) y debe sumar 1. income/expense coefficient se igualan al unificado (el calculo usa el unificado).
+
+### REQUISITO antes de compilar/usar (campo nuevo en Prisma)
+
+```powershell
+npx prisma generate          # OBLIGATORIO: el settlement y la config usan ClientTaxJurisdiction.taxRate
+npm run build
+npx vitest run               # +2 tests CM en settlementBuilders
+npx prisma migrate deploy    # aplica 20260624150000 a la base
+```
+
+### Pendiente IIBB
+
+- Alicuota por ACTIVIDAD dentro de una jurisdiccion (hoy una alicuota por jurisdiccion).
+- Persistir la liquidacion de IIBB (hoy se calcula en el GET; falta el save/cierre como en IVA).
+- Mostrar el resultado de IIBB en la pantalla de liquidacion (hoy el GET lo devuelve pero la pantalla
+  se enfoca en IVA).
+
 ---
 
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)

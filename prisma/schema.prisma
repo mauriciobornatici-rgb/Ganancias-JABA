@@ -371,6 +371,8 @@ model ClientTaxJurisdiction {
   taxProfileId        String
   jurisdictionCode    String
   registrationNumber  String?
+  // Alícuota de IIBB de la jurisdicción (fracción, ej. 0.050000 = 5%). Null = sin cargar (se trata como 0).
+  taxRate             Decimal?                @db.Decimal(8, 6)
   isActive            Boolean                 @default(true)
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt

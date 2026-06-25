@@ -48,6 +48,21 @@ type TaxCreditRow = {
   includedInSettlement: boolean;
 };
 
+type SavedSettlement = {
+  id: string;
+  version: number;
+  status: string;
+  debitFiscal: string;
+  creditFiscal: string;
+  technicalCarryForward: string;
+  freeAvailabilityBalance: string;
+  amountDue: string;
+  creditsApplied: string;
+  officialAmount: string | null;
+  officialReference: string | null;
+  updatedAt: string;
+};
+
 const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
 const ratePct = (r: string) => `${(Number(r) * 100).toFixed(1).replace(/\.0$/, '')}%`;
@@ -69,6 +84,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
 
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
+
+  // Liquidación ya guardada (al volver a un mes cerrado) + modo "reliquidar".
+  const [savedSettlement, setSavedSettlement] = useState<SavedSettlement | null>(null);
+  const [reliquidating, setReliquidating] = useState(false);
 
   // Cotejo contra AFIP
   const [offDebit, setOffDebit] = useState('');
@@ -106,12 +125,23 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
+  const loadSaved = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/saved`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) setSavedSettlement(payload.data.saved);
+    } catch {
+      // si falla, la pantalla funciona en modo cálculo normal
+    }
+  }, [clientId, periodId]);
+
   useEffect(() => {
     queueMicrotask(() => {
       void loadDocuments();
       void loadTaxCredits();
+      void loadSaved();
     });
-  }, [loadDocuments, loadTaxCredits]);
+  }, [loadDocuments, loadTaxCredits, loadSaved]);
 
   const includedWithholding = useMemo(
     () => taxCredits.filter(c => c.includedInSettlement && c.kind === 'WITHHOLDING').reduce((s, c) => s + Number(c.amount), 0),
@@ -300,6 +330,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
           ? `Liquidación cotejada y cerrada (versión ${payload.data.version}). Ya disponible para la liquidación anual de Ganancias.`
           : `Liquidación guardada como ${humanStatus(payload.data.status)} (versión ${payload.data.version}). Todavía NO alimenta Ganancias: cotejá los tres importes con AFIP y cerrala para habilitarla.`,
       );
+      // Refresca el panel de "liquidación guardada" y vuelve al modo lectura.
+      setReliquidating(false);
+      setSettlement(null);
+      await loadSaved();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar la liquidación.');
     } finally {
@@ -339,6 +373,20 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
           </div>
         ) : null}
 
+        {/* Liquidación ya guardada (al volver a un mes cerrado) */}
+        {savedSettlement && !reliquidating ? (
+          <SavedSettlementPanel
+            saved={savedSettlement}
+            onReliquidar={() => {
+              setReliquidating(true);
+              setSettlement(null);
+              if (savedSettlement.officialAmount) setOffDue(savedSettlement.officialAmount);
+            }}
+          />
+        ) : null}
+
+        {(!savedSettlement || reliquidating) ? (
+        <>
         {/* Paso 1 — Subir archivos */}
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
           <StepTitle n={1} icon={<UploadCloud className="h-4 w-4" />} title="Subir archivos de AFIP" subtitle="Compras y ventas exportados de Mis Comprobantes (.csv). El sistema detecta automáticamente cuál es cuál." />
@@ -394,6 +442,8 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             </button>
           </div>
         </section>
+        </>
+        ) : null}
 
         {/* Paso 3 — Totales + cotejo + guardar */}
         {settlement ? (
@@ -471,6 +521,55 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         ) : null}
       </div>
     </main>
+  );
+}
+
+function SavedSettlementPanel({ saved, onReliquidar }: { saved: SavedSettlement; onReliquidar: () => void }) {
+  const closed = saved.status === 'CLOSED';
+  const fecha = saved.updatedAt ? new Date(saved.updatedAt).toLocaleDateString('es-AR') : '';
+  return (
+    <section className={`rounded-xl border p-5 shadow-xl ${closed ? 'border-emerald-500/30 bg-emerald-950/[0.15]' : 'border-amber-500/30 bg-amber-950/[0.12]'}`}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className={`flex items-center gap-2 text-sm font-extrabold ${closed ? 'text-emerald-300' : 'text-amber-300'}`}>
+            <CheckCircle2 className="h-4 w-4" />
+            Liquidación guardada — {humanStatus(saved.status)} · versión {saved.version}
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            {closed
+              ? 'Este mes ya está cotejado y cerrado. Alimenta la liquidación anual de Ganancias.'
+              : 'Guardada pero todavía no cerrada. Reliquidá y cotejá los tres importes para cerrarla.'}
+            {fecha ? ` · Última actualización: ${fecha}` : ''}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onReliquidar}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-4 text-xs font-bold text-zinc-200 transition-colors hover:border-teal-500/50 hover:text-teal-300"
+        >
+          <RefreshCw className="h-4 w-4" /> Reliquidar / Modificar
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+          <Row label="Débito fiscal" value={saved.debitFiscal} strong />
+          <Row label="Crédito fiscal" value={saved.creditFiscal} strong />
+          {Number(saved.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={saved.creditsApplied} muted /> : null}
+          {Number(saved.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={saved.technicalCarryForward} muted /> : null}
+          <div className="my-2 border-t border-zinc-800" />
+          <Row label="Saldo a pagar" value={saved.amountDue} highlight />
+          {Number(saved.freeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad (arrastra)" value={saved.freeAvailabilityBalance} muted /> : null}
+        </div>
+        {saved.officialAmount != null ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400">Cotejo con AFIP</p>
+            <Row label="Saldo a pagar AFIP" value={saved.officialAmount} />
+            {saved.officialReference ? <p className="mt-2 text-xs text-zinc-500">Ref.: {saved.officialReference}</p> : null}
+          </div>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

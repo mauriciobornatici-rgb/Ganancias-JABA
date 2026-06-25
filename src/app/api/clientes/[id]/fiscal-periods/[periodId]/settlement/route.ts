@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         taxProfile: {
           select: {
             grossIncomeRegime: true,
-            jurisdictions: { select: { jurisdictionCode: true, isActive: true } },
+            jurisdictions: { select: { jurisdictionCode: true, isActive: true, taxRate: true } },
           },
         },
         documents: {
@@ -104,22 +104,42 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     let grossIncome: ReturnType<typeof buildGrossIncomeSettlement> | null = null;
     let grossIncomeNotice: string | null = null;
 
+    const isConvenio = regime === 'CM_REGIMEN_GENERAL' || regime === 'CM_REGIMEN_ESPECIAL';
+
     if (regime === 'NONE') {
       grossIncomeNotice = 'El contribuyente no liquida Ingresos Brutos en este período (régimen NONE).';
     } else if (activeJurisdictions.length === 0) {
       grossIncomeNotice = 'Falta configurar jurisdicciones y alícuotas de IIBB en el perfil fiscal.';
     } else {
-      // Nota: las alícuotas y coeficientes vienen del perfil; aquí se arma el esqueleto a 0 hasta
-      // que el editor de perfil cargue esos parámetros. El motor calcula igual con lo provisto.
+      // Para Convenio Multilateral, los coeficientes unificados (CM05) vienen de la versión del año.
+      const coefficientMap = new Map<string, Decimal>();
+      if (isConvenio) {
+        const coefVersion = await prisma.conventionCoefficientVersion.findFirst({
+          where: { clientId, year: period.year },
+          select: { coefficientLines: { select: { jurisdictionCode: true, unifiedCoefficient: true } } },
+        });
+        for (const line of coefVersion?.coefficientLines ?? []) {
+          coefficientMap.set(line.jurisdictionCode, new Decimal(line.unifiedCoefficient.toString()));
+        }
+      }
+
       const jurisdictions: GrossIncomeJurisdictionConfig[] = activeJurisdictions.map(j => ({
         jurisdictionCode: j.jurisdictionCode,
-        taxRate: new Decimal(0),
+        taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : new Decimal(0),
+        coefficient: isConvenio ? coefficientMap.get(j.jurisdictionCode) : undefined,
         credits: period.taxCredits
           .filter(c => String(c.tax) === 'GROSS_INCOME' && c.jurisdictionCode === j.jurisdictionCode)
           .map(c => ({ amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) })),
       }));
       grossIncome = buildGrossIncomeSettlement({ regime, documents, jurisdictions });
-      grossIncomeNotice = 'Alícuotas de IIBB en cero: cargue las alícuotas por jurisdicción en el perfil para obtener el impuesto determinado.';
+
+      // Avisos de configuración pendiente.
+      const sinAlicuota = activeJurisdictions.filter(j => j.taxRate == null).map(j => j.jurisdictionCode);
+      const sinCoef = isConvenio ? activeJurisdictions.filter(j => !coefficientMap.has(j.jurisdictionCode)).map(j => j.jurisdictionCode) : [];
+      const avisos: string[] = [];
+      if (sinAlicuota.length) avisos.push(`Sin alícuota cargada: ${sinAlicuota.join(', ')} (se toman como 0).`);
+      if (sinCoef.length) avisos.push(`Sin coeficiente CM ${period.year}: ${sinCoef.join(', ')}.`);
+      grossIncomeNotice = avisos.length ? avisos.join(' ') : null;
     }
 
     return NextResponse.json({

@@ -98,4 +98,31 @@ describe('buildGrossIncomeSettlement — arma la liquidación de IIBB', () => {
     expect(view.taxableBase.toString()).toBe('1000000');
     expect(view.settlement.totalDeterminedTax.toString()).toBe('50000');
   });
+
+  it('Convenio Multilateral: reparte la base por coeficiente unificado y aplica alícuota por jurisdicción', () => {
+    const view = buildGrossIncomeSettlement({
+      regime: 'CM_REGIMEN_GENERAL',
+      documents: [{ direction: 'SALE', vatLines: [vatLine('0.21', '1000000', '210000')] }],
+      jurisdictions: [
+        { jurisdictionCode: '902', taxRate: D('0.05'), coefficient: D('0.65') }, // 650.000 × 5% = 32.500
+        { jurisdictionCode: '901', taxRate: D('0.04'), coefficient: D('0.35') }, // 350.000 × 4% = 14.000
+      ],
+    });
+    const bsAs = view.settlement.jurisdictionLines.find(l => l.jurisdictionCode === '902');
+    expect(bsAs?.assignedBase.toString()).toBe('650000');
+    expect(bsAs?.determinedTax.toString()).toBe('32500');
+    expect(view.settlement.totalDeterminedTax.toString()).toBe('46500'); // 32.500 + 14.000
+  });
+
+  it('Convenio Multilateral: avisa si los coeficientes no suman 1', () => {
+    const view = buildGrossIncomeSettlement({
+      regime: 'CM_REGIMEN_GENERAL',
+      documents: [{ direction: 'SALE', vatLines: [vatLine('0.21', '1000000', '210000')] }],
+      jurisdictions: [
+        { jurisdictionCode: '902', taxRate: D('0.05'), coefficient: D('0.60') },
+        { jurisdictionCode: '901', taxRate: D('0.04'), coefficient: D('0.30') }, // suma 0.90 ≠ 1
+      ],
+    });
+    expect(view.settlement.warnings.length).toBeGreaterThan(0);
+  });
 });

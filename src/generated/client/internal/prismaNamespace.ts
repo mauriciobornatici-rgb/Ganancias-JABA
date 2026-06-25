@@ -3989,6 +3989,7 @@ export const ClientTaxJurisdictionScalarFieldEnum = {
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
   registrationNumber: 'registrationNumber',
+  taxRate: 'taxRate',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

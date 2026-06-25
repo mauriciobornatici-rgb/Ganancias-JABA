@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CalendarDays, FilePlus2, RefreshCw, ScanLine, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, CalendarDays, FilePlus2, MapPin, RefreshCw, ScanLine, ShieldAlert, TrendingUp } from 'lucide-react';
 import { buildMonthlyDashboardState } from '@/domain/ganancias/fiscalLedger/monthlyFiscalDashboardState';
 
 const MONTHS = [
@@ -161,6 +161,18 @@ export default function MonthlyFiscalDashboard({ clientId }: { clientId: string 
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
+            <Link
+              href={`/clientes/${clientId}/consolidacion-anual`}
+              className="inline-flex h-9 items-center gap-2 rounded border border-teal-500/40 bg-teal-500/10 px-3 text-xs font-bold text-teal-300 transition-colors hover:bg-teal-500/20"
+            >
+              <TrendingUp className="h-4 w-4" /> Reporte anual
+            </Link>
+            <Link
+              href={`/clientes/${clientId}/iibb-config`}
+              className="inline-flex h-9 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300"
+            >
+              <MapPin className="h-4 w-4" /> Config. IIBB
+            </Link>
           </div>
         </div>
 

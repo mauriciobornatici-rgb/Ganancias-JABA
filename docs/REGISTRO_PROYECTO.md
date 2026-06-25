@@ -3833,6 +3833,35 @@ Orden del checklist: backup (+restore test) → `migrate deploy` en prod → rot
 (DB/AUTH_PASSWORD/AUTH_SECRET) en Vercel → merge a main → smoke test → plan de rollback.
 La ejecucion es del usuario (operativo); el plan esta documentado.
 
+## ✅ DEPLOY A PRODUCCION EXITOSO (2026-06-25)
+
+El modulo IVA + IIBB + Convenio Multilateral mensual esta EN PRODUCCION y funcionando. Ejecutado:
+1. Backup de la base productiva (+ verificado).
+2. `prisma migrate deploy` contra prod (`u669600172_ganancias_jaba` @ srv1199.hstgr.io): las 5
+   migraciones nuevas aplicadas OK ("All migrations have been successfully applied").
+3. Rotacion de credenciales: password de DB (Hostinger + DATABASE_URL en Vercel), AUTH_PASSWORD y
+   AUTH_SECRET (Vercel Production). La password vieja de DB que se expuso quedo invalidada.
+4. Merge `feature/iva-iibb-mensual-core` → `main` via PR #1. Deploy de Vercel: **Ready** (commit 42c878d).
+5. Smoke test en prod OK: login con la clave nueva, carga de datos (conexion a DB OK = passwords
+   coinciden), modulo nuevo abre sin error de columnas (migraciones OK).
+
+`main`/produccion ahora INCLUYE el modulo. La feature branch quedo mergeada.
+
+### Loose ends post-deploy
+
+- **Actualizar el `.env` del repo principal** (`C:\Dev\Ganancia\Persona Fisica\ganancias-jaba\.env`) con
+  la password de DB NUEVA en su `DATABASE_URL`; si no, ese checkout local fallara al conectar.
+- Operativo no bloqueante: backup automatico programado + prueba de restauracion periodica; monitor
+  externo (uptime + /api/health con HEALTH_CHECK_TOKEN).
+- Acceso: hoy clave compartida (simpleAuth). Multiusuario (User/Role/Permiso) es feature futura si se quiere.
+- La app tiene UN login compartido; al rotar AUTH_PASSWORD, todos usan la nueva (la esposa del usuario
+  incluida).
+
+### Fuera de alcance (fase siguiente, ya en produccion la base)
+
+Alicuota IIBB por actividad, regimenes especiales de CM, vencimientos/acuses, refactor de pantallas
+grandes, seed con perfil demo.
+
 ---
 
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)

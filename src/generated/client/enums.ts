@@ -9,7 +9,107 @@
 * 🟢 You can import this file directly.
 */
 
+export const VatCondition = {
+  RESPONSABLE_INSCRIPTO: 'RESPONSABLE_INSCRIPTO',
+  EXENTO: 'EXENTO',
+  MONOTRIBUTO: 'MONOTRIBUTO',
+  OTRO: 'OTRO'
+} as const
+
+export type VatCondition = (typeof VatCondition)[keyof typeof VatCondition]
 
 
-// This file is empty because there are no enums in the schema.
-export {}
+export const GrossIncomeRegime = {
+  NONE: 'NONE',
+  ARBA_LOCAL: 'ARBA_LOCAL',
+  CM_REGIMEN_GENERAL: 'CM_REGIMEN_GENERAL',
+  CM_REGIMEN_ESPECIAL: 'CM_REGIMEN_ESPECIAL',
+  ARBA_SIMPLIFICADO: 'ARBA_SIMPLIFICADO'
+} as const
+
+export type GrossIncomeRegime = (typeof GrossIncomeRegime)[keyof typeof GrossIncomeRegime]
+
+
+export const ConventionRegime = {
+  NONE: 'NONE',
+  GENERAL: 'GENERAL',
+  ESPECIAL: 'ESPECIAL'
+} as const
+
+export type ConventionRegime = (typeof ConventionRegime)[keyof typeof ConventionRegime]
+
+
+export const FiscalDocumentDirection = {
+  SALE: 'SALE',
+  PURCHASE: 'PURCHASE',
+  ADJUSTMENT: 'ADJUSTMENT'
+} as const
+
+export type FiscalDocumentDirection = (typeof FiscalDocumentDirection)[keyof typeof FiscalDocumentDirection]
+
+
+export const VatLineKind = {
+  TAXED: 'TAXED',
+  EXEMPT: 'EXEMPT',
+  NON_TAXED: 'NON_TAXED'
+} as const
+
+export type VatLineKind = (typeof VatLineKind)[keyof typeof VatLineKind]
+
+
+export const VatSettlementStatus = {
+  DRAFT: 'DRAFT',
+  IN_REVIEW: 'IN_REVIEW',
+  READY_TO_FILE: 'READY_TO_FILE',
+  FILED_EXTERNALLY: 'FILED_EXTERNALLY',
+  CLOSED: 'CLOSED',
+  ANNULLED: 'ANNULLED'
+} as const
+
+export type VatSettlementStatus = (typeof VatSettlementStatus)[keyof typeof VatSettlementStatus]
+
+
+export const GrossIncomeSettlementStatus = {
+  DRAFT: 'DRAFT',
+  IN_REVIEW: 'IN_REVIEW',
+  READY_TO_FILE: 'READY_TO_FILE',
+  FILED_EXTERNALLY: 'FILED_EXTERNALLY',
+  CLOSED: 'CLOSED',
+  ANNULLED: 'ANNULLED'
+} as const
+
+export type GrossIncomeSettlementStatus = (typeof GrossIncomeSettlementStatus)[keyof typeof GrossIncomeSettlementStatus]
+
+
+export const TaxCreditTax = {
+  VAT: 'VAT',
+  GROSS_INCOME: 'GROSS_INCOME',
+  GANANCIAS: 'GANANCIAS'
+} as const
+
+export type TaxCreditTax = (typeof TaxCreditTax)[keyof typeof TaxCreditTax]
+
+
+export const TaxCreditKind = {
+  WITHHOLDING: 'WITHHOLDING',
+  PERCEPTION: 'PERCEPTION',
+  PAYMENT_ON_ACCOUNT: 'PAYMENT_ON_ACCOUNT',
+  TECHNICAL_CARRY_FORWARD: 'TECHNICAL_CARRY_FORWARD',
+  FREE_AVAILABILITY: 'FREE_AVAILABILITY'
+} as const
+
+export type TaxCreditKind = (typeof TaxCreditKind)[keyof typeof TaxCreditKind]
+
+
+export const GainsAllocationKind = {
+  SALE_TAXED: 'SALE_TAXED',
+  SALE_EXEMPT: 'SALE_EXEMPT',
+  INVENTORY_PURCHASE: 'INVENTORY_PURCHASE',
+  DEDUCTIBLE_EXPENSE: 'DEDUCTIBLE_EXPENSE',
+  FIXED_ASSET: 'FIXED_ASSET',
+  NON_DEDUCTIBLE: 'NON_DEDUCTIBLE',
+  VAT_NON_COMPUTABLE: 'VAT_NON_COMPUTABLE',
+  OTHER: 'OTHER'
+} as const
+
+export type GainsAllocationKind = (typeof GainsAllocationKind)[keyof typeof GainsAllocationKind]

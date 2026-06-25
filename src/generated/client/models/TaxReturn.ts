@@ -270,6 +270,7 @@ export type TaxReturnWhereInput = {
   calculations?: Prisma.CalculationRunListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   importBatches?: Prisma.ImportBatchListRelationFilter
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotListRelationFilter
   rectificationLinksAsOriginal?: Prisma.RectificationLinkListRelationFilter
   rectificationLinksAsRectified?: Prisma.RectificationLinkListRelationFilter
 }
@@ -306,6 +307,7 @@ export type TaxReturnOrderByWithRelationInput = {
   calculations?: Prisma.CalculationRunOrderByRelationAggregateInput
   attachments?: Prisma.AttachmentOrderByRelationAggregateInput
   importBatches?: Prisma.ImportBatchOrderByRelationAggregateInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotOrderByRelationAggregateInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkOrderByRelationAggregateInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkOrderByRelationAggregateInput
   _relevance?: Prisma.TaxReturnOrderByRelevanceInput
@@ -347,6 +349,7 @@ export type TaxReturnWhereUniqueInput = Prisma.AtLeast<{
   calculations?: Prisma.CalculationRunListRelationFilter
   attachments?: Prisma.AttachmentListRelationFilter
   importBatches?: Prisma.ImportBatchListRelationFilter
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotListRelationFilter
   rectificationLinksAsOriginal?: Prisma.RectificationLinkListRelationFilter
   rectificationLinksAsRectified?: Prisma.RectificationLinkListRelationFilter
 }, "id" | "clientId_fiscalYearId_version">
@@ -412,6 +415,7 @@ export type TaxReturnCreateInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -445,6 +449,7 @@ export type TaxReturnUncheckedCreateInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -478,6 +483,7 @@ export type TaxReturnUpdateInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -511,6 +517,7 @@ export type TaxReturnUncheckedUpdateInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -771,6 +778,20 @@ export type TaxReturnUpdateOneRequiredWithoutRectificationLinksAsRectifiedNested
   upsert?: Prisma.TaxReturnUpsertWithoutRectificationLinksAsRectifiedInput
   connect?: Prisma.TaxReturnWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.TaxReturnUpdateToOneWithWhereWithoutRectificationLinksAsRectifiedInput, Prisma.TaxReturnUpdateWithoutRectificationLinksAsRectifiedInput>, Prisma.TaxReturnUncheckedUpdateWithoutRectificationLinksAsRectifiedInput>
+}
+
+export type TaxReturnCreateNestedOneWithoutAnnualFiscalConsolidationsInput = {
+  create?: Prisma.XOR<Prisma.TaxReturnCreateWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUncheckedCreateWithoutAnnualFiscalConsolidationsInput>
+  connectOrCreate?: Prisma.TaxReturnCreateOrConnectWithoutAnnualFiscalConsolidationsInput
+  connect?: Prisma.TaxReturnWhereUniqueInput
+}
+
+export type TaxReturnUpdateOneRequiredWithoutAnnualFiscalConsolidationsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaxReturnCreateWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUncheckedCreateWithoutAnnualFiscalConsolidationsInput>
+  connectOrCreate?: Prisma.TaxReturnCreateOrConnectWithoutAnnualFiscalConsolidationsInput
+  upsert?: Prisma.TaxReturnUpsertWithoutAnnualFiscalConsolidationsInput
+  connect?: Prisma.TaxReturnWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaxReturnUpdateToOneWithWhereWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUpdateWithoutAnnualFiscalConsolidationsInput>, Prisma.TaxReturnUncheckedUpdateWithoutAnnualFiscalConsolidationsInput>
 }
 
 export type TaxReturnCreateNestedOneWithoutSalesInput = {
@@ -1067,6 +1088,7 @@ export type TaxReturnCreateWithoutClientInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1099,6 +1121,7 @@ export type TaxReturnUncheckedCreateWithoutClientInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1172,6 +1195,7 @@ export type TaxReturnCreateWithoutFiscalYearInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1204,6 +1228,7 @@ export type TaxReturnUncheckedCreateWithoutFiscalYearInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1262,6 +1287,7 @@ export type TaxReturnCreateWithoutTaxParameterSetInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1294,6 +1320,7 @@ export type TaxReturnUncheckedCreateWithoutTaxParameterSetInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1353,6 +1380,7 @@ export type TaxReturnCreateWithoutRectificationLinksAsOriginalInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
 
@@ -1385,6 +1413,7 @@ export type TaxReturnUncheckedCreateWithoutRectificationLinksAsOriginalInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
 
@@ -1422,6 +1451,7 @@ export type TaxReturnCreateWithoutRectificationLinksAsRectifiedInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
 }
 
@@ -1454,6 +1484,7 @@ export type TaxReturnUncheckedCreateWithoutRectificationLinksAsRectifiedInput = 
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
 }
 
@@ -1502,6 +1533,7 @@ export type TaxReturnUpdateWithoutRectificationLinksAsOriginalInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
 
@@ -1534,6 +1566,7 @@ export type TaxReturnUncheckedUpdateWithoutRectificationLinksAsOriginalInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
 
@@ -1577,6 +1610,7 @@ export type TaxReturnUpdateWithoutRectificationLinksAsRectifiedInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
 }
 
@@ -1609,7 +1643,156 @@ export type TaxReturnUncheckedUpdateWithoutRectificationLinksAsRectifiedInput = 
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
+}
+
+export type TaxReturnCreateWithoutAnnualFiscalConsolidationsInput = {
+  id?: string
+  status?: string
+  version?: number
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  client: Prisma.ClientCreateNestedOneWithoutTaxReturnsInput
+  fiscalYear: Prisma.FiscalYearCreateNestedOneWithoutTaxReturnsInput
+  taxParameterSet?: Prisma.TaxParameterSetCreateNestedOneWithoutTaxReturnsInput
+  sales?: Prisma.SalesInvoiceCreateNestedManyWithoutTaxReturnInput
+  purchases?: Prisma.PurchaseInvoiceCreateNestedManyWithoutTaxReturnInput
+  fixedAssets?: Prisma.FixedAssetCreateNestedManyWithoutTaxReturnInput
+  inventory?: Prisma.InventoryValueCreateNestedManyWithoutTaxReturnInput
+  bankAccounts?: Prisma.BankAccountBalanceCreateNestedManyWithoutTaxReturnInput
+  cashHoldings?: Prisma.CashHoldingCreateNestedManyWithoutTaxReturnInput
+  receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
+  liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
+  withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
+  personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
+  justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
+  generalDeduction?: Prisma.GeneralDeductionCreateNestedOneWithoutTaxReturnInput
+  personalDeduction?: Prisma.PersonalDeductionCreateNestedOneWithoutTaxReturnInput
+  axiStaticItems?: Prisma.AxiStaticItemCreateNestedManyWithoutTaxReturnInput
+  axiDynamicItems?: Prisma.AxiDynamicItemCreateNestedManyWithoutTaxReturnInput
+  calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
+  importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
+}
+
+export type TaxReturnUncheckedCreateWithoutAnnualFiscalConsolidationsInput = {
+  id?: string
+  clientId: string
+  fiscalYearId: string
+  taxParameterSetId?: string | null
+  status?: string
+  version?: number
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sales?: Prisma.SalesInvoiceUncheckedCreateNestedManyWithoutTaxReturnInput
+  purchases?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutTaxReturnInput
+  fixedAssets?: Prisma.FixedAssetUncheckedCreateNestedManyWithoutTaxReturnInput
+  inventory?: Prisma.InventoryValueUncheckedCreateNestedManyWithoutTaxReturnInput
+  bankAccounts?: Prisma.BankAccountBalanceUncheckedCreateNestedManyWithoutTaxReturnInput
+  cashHoldings?: Prisma.CashHoldingUncheckedCreateNestedManyWithoutTaxReturnInput
+  receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
+  liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
+  withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
+  personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
+  justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
+  generalDeduction?: Prisma.GeneralDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
+  personalDeduction?: Prisma.PersonalDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
+  axiStaticItems?: Prisma.AxiStaticItemUncheckedCreateNestedManyWithoutTaxReturnInput
+  axiDynamicItems?: Prisma.AxiDynamicItemUncheckedCreateNestedManyWithoutTaxReturnInput
+  calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
+  importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
+}
+
+export type TaxReturnCreateOrConnectWithoutAnnualFiscalConsolidationsInput = {
+  where: Prisma.TaxReturnWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaxReturnCreateWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUncheckedCreateWithoutAnnualFiscalConsolidationsInput>
+}
+
+export type TaxReturnUpsertWithoutAnnualFiscalConsolidationsInput = {
+  update: Prisma.XOR<Prisma.TaxReturnUpdateWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUncheckedUpdateWithoutAnnualFiscalConsolidationsInput>
+  create: Prisma.XOR<Prisma.TaxReturnCreateWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUncheckedCreateWithoutAnnualFiscalConsolidationsInput>
+  where?: Prisma.TaxReturnWhereInput
+}
+
+export type TaxReturnUpdateToOneWithWhereWithoutAnnualFiscalConsolidationsInput = {
+  where?: Prisma.TaxReturnWhereInput
+  data: Prisma.XOR<Prisma.TaxReturnUpdateWithoutAnnualFiscalConsolidationsInput, Prisma.TaxReturnUncheckedUpdateWithoutAnnualFiscalConsolidationsInput>
+}
+
+export type TaxReturnUpdateWithoutAnnualFiscalConsolidationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  client?: Prisma.ClientUpdateOneRequiredWithoutTaxReturnsNestedInput
+  fiscalYear?: Prisma.FiscalYearUpdateOneRequiredWithoutTaxReturnsNestedInput
+  taxParameterSet?: Prisma.TaxParameterSetUpdateOneWithoutTaxReturnsNestedInput
+  sales?: Prisma.SalesInvoiceUpdateManyWithoutTaxReturnNestedInput
+  purchases?: Prisma.PurchaseInvoiceUpdateManyWithoutTaxReturnNestedInput
+  fixedAssets?: Prisma.FixedAssetUpdateManyWithoutTaxReturnNestedInput
+  inventory?: Prisma.InventoryValueUpdateManyWithoutTaxReturnNestedInput
+  bankAccounts?: Prisma.BankAccountBalanceUpdateManyWithoutTaxReturnNestedInput
+  cashHoldings?: Prisma.CashHoldingUpdateManyWithoutTaxReturnNestedInput
+  receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
+  liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
+  withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
+  personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
+  justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
+  generalDeduction?: Prisma.GeneralDeductionUpdateOneWithoutTaxReturnNestedInput
+  personalDeduction?: Prisma.PersonalDeductionUpdateOneWithoutTaxReturnNestedInput
+  axiStaticItems?: Prisma.AxiStaticItemUpdateManyWithoutTaxReturnNestedInput
+  axiDynamicItems?: Prisma.AxiDynamicItemUpdateManyWithoutTaxReturnNestedInput
+  calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
+  importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
+}
+
+export type TaxReturnUncheckedUpdateWithoutAnnualFiscalConsolidationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  fiscalYearId?: Prisma.StringFieldUpdateOperationsInput | string
+  taxParameterSetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sales?: Prisma.SalesInvoiceUncheckedUpdateManyWithoutTaxReturnNestedInput
+  purchases?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutTaxReturnNestedInput
+  fixedAssets?: Prisma.FixedAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
+  inventory?: Prisma.InventoryValueUncheckedUpdateManyWithoutTaxReturnNestedInput
+  bankAccounts?: Prisma.BankAccountBalanceUncheckedUpdateManyWithoutTaxReturnNestedInput
+  cashHoldings?: Prisma.CashHoldingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
+  liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
+  withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
+  personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
+  justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
+  generalDeduction?: Prisma.GeneralDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
+  personalDeduction?: Prisma.PersonalDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
+  axiStaticItems?: Prisma.AxiStaticItemUncheckedUpdateManyWithoutTaxReturnNestedInput
+  axiDynamicItems?: Prisma.AxiDynamicItemUncheckedUpdateManyWithoutTaxReturnNestedInput
+  calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
+  importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
 
 export type TaxReturnCreateWithoutSalesInput = {
@@ -1640,6 +1823,7 @@ export type TaxReturnCreateWithoutSalesInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1672,6 +1856,7 @@ export type TaxReturnUncheckedCreateWithoutSalesInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1720,6 +1905,7 @@ export type TaxReturnUpdateWithoutSalesInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -1752,6 +1938,7 @@ export type TaxReturnUncheckedUpdateWithoutSalesInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -1784,6 +1971,7 @@ export type TaxReturnCreateWithoutPurchasesInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1816,6 +2004,7 @@ export type TaxReturnUncheckedCreateWithoutPurchasesInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1864,6 +2053,7 @@ export type TaxReturnUpdateWithoutPurchasesInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -1896,6 +2086,7 @@ export type TaxReturnUncheckedUpdateWithoutPurchasesInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -1928,6 +2119,7 @@ export type TaxReturnCreateWithoutFixedAssetsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -1960,6 +2152,7 @@ export type TaxReturnUncheckedCreateWithoutFixedAssetsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2008,6 +2201,7 @@ export type TaxReturnUpdateWithoutFixedAssetsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2040,6 +2234,7 @@ export type TaxReturnUncheckedUpdateWithoutFixedAssetsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2072,6 +2267,7 @@ export type TaxReturnCreateWithoutInventoryInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2104,6 +2300,7 @@ export type TaxReturnUncheckedCreateWithoutInventoryInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2152,6 +2349,7 @@ export type TaxReturnUpdateWithoutInventoryInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2184,6 +2382,7 @@ export type TaxReturnUncheckedUpdateWithoutInventoryInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2216,6 +2415,7 @@ export type TaxReturnCreateWithoutBankAccountsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2248,6 +2448,7 @@ export type TaxReturnUncheckedCreateWithoutBankAccountsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2296,6 +2497,7 @@ export type TaxReturnUpdateWithoutBankAccountsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2328,6 +2530,7 @@ export type TaxReturnUncheckedUpdateWithoutBankAccountsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2360,6 +2563,7 @@ export type TaxReturnCreateWithoutCashHoldingsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2392,6 +2596,7 @@ export type TaxReturnUncheckedCreateWithoutCashHoldingsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2440,6 +2645,7 @@ export type TaxReturnUpdateWithoutCashHoldingsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2472,6 +2678,7 @@ export type TaxReturnUncheckedUpdateWithoutCashHoldingsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2504,6 +2711,7 @@ export type TaxReturnCreateWithoutReceivablesInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2536,6 +2744,7 @@ export type TaxReturnUncheckedCreateWithoutReceivablesInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2584,6 +2793,7 @@ export type TaxReturnUpdateWithoutReceivablesInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2616,6 +2826,7 @@ export type TaxReturnUncheckedUpdateWithoutReceivablesInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2648,6 +2859,7 @@ export type TaxReturnCreateWithoutLiabilitiesInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2680,6 +2892,7 @@ export type TaxReturnUncheckedCreateWithoutLiabilitiesInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2728,6 +2941,7 @@ export type TaxReturnUpdateWithoutLiabilitiesInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2760,6 +2974,7 @@ export type TaxReturnUncheckedUpdateWithoutLiabilitiesInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2792,6 +3007,7 @@ export type TaxReturnCreateWithoutWithholdingsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2824,6 +3040,7 @@ export type TaxReturnUncheckedCreateWithoutWithholdingsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2872,6 +3089,7 @@ export type TaxReturnUpdateWithoutWithholdingsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2904,6 +3122,7 @@ export type TaxReturnUncheckedUpdateWithoutWithholdingsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -2936,6 +3155,7 @@ export type TaxReturnCreateWithoutPersonalAssetsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -2968,6 +3188,7 @@ export type TaxReturnUncheckedCreateWithoutPersonalAssetsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3016,6 +3237,7 @@ export type TaxReturnUpdateWithoutPersonalAssetsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3048,6 +3270,7 @@ export type TaxReturnUncheckedUpdateWithoutPersonalAssetsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3080,6 +3303,7 @@ export type TaxReturnCreateWithoutPersonalLiabilitiesInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3112,6 +3336,7 @@ export type TaxReturnUncheckedCreateWithoutPersonalLiabilitiesInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3160,6 +3385,7 @@ export type TaxReturnUpdateWithoutPersonalLiabilitiesInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3192,6 +3418,7 @@ export type TaxReturnUncheckedUpdateWithoutPersonalLiabilitiesInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3224,6 +3451,7 @@ export type TaxReturnCreateWithoutJustificationsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3256,6 +3484,7 @@ export type TaxReturnUncheckedCreateWithoutJustificationsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3304,6 +3533,7 @@ export type TaxReturnUpdateWithoutJustificationsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3336,6 +3566,7 @@ export type TaxReturnUncheckedUpdateWithoutJustificationsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3368,6 +3599,7 @@ export type TaxReturnCreateWithoutGeneralDeductionInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3400,6 +3632,7 @@ export type TaxReturnUncheckedCreateWithoutGeneralDeductionInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3448,6 +3681,7 @@ export type TaxReturnUpdateWithoutGeneralDeductionInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3480,6 +3714,7 @@ export type TaxReturnUncheckedUpdateWithoutGeneralDeductionInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3512,6 +3747,7 @@ export type TaxReturnCreateWithoutPersonalDeductionInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3544,6 +3780,7 @@ export type TaxReturnUncheckedCreateWithoutPersonalDeductionInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3592,6 +3829,7 @@ export type TaxReturnUpdateWithoutPersonalDeductionInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3624,6 +3862,7 @@ export type TaxReturnUncheckedUpdateWithoutPersonalDeductionInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3656,6 +3895,7 @@ export type TaxReturnCreateWithoutAxiStaticItemsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3688,6 +3928,7 @@ export type TaxReturnUncheckedCreateWithoutAxiStaticItemsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3736,6 +3977,7 @@ export type TaxReturnUpdateWithoutAxiStaticItemsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3768,6 +4010,7 @@ export type TaxReturnUncheckedUpdateWithoutAxiStaticItemsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3800,6 +4043,7 @@ export type TaxReturnCreateWithoutAxiDynamicItemsInput = {
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3832,6 +4076,7 @@ export type TaxReturnUncheckedCreateWithoutAxiDynamicItemsInput = {
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3880,6 +4125,7 @@ export type TaxReturnUpdateWithoutAxiDynamicItemsInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3912,6 +4158,7 @@ export type TaxReturnUncheckedUpdateWithoutAxiDynamicItemsInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -3944,6 +4191,7 @@ export type TaxReturnCreateWithoutCalculationsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -3976,6 +4224,7 @@ export type TaxReturnUncheckedCreateWithoutCalculationsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -4024,6 +4273,7 @@ export type TaxReturnUpdateWithoutCalculationsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4056,6 +4306,7 @@ export type TaxReturnUncheckedUpdateWithoutCalculationsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4088,6 +4339,7 @@ export type TaxReturnCreateWithoutAttachmentsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemCreateNestedManyWithoutTaxReturnInput
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -4120,6 +4372,7 @@ export type TaxReturnUncheckedCreateWithoutAttachmentsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUncheckedCreateNestedManyWithoutTaxReturnInput
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -4168,6 +4421,7 @@ export type TaxReturnUpdateWithoutAttachmentsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUpdateManyWithoutTaxReturnNestedInput
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4200,6 +4454,7 @@ export type TaxReturnUncheckedUpdateWithoutAttachmentsInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUncheckedUpdateManyWithoutTaxReturnNestedInput
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4232,6 +4487,7 @@ export type TaxReturnCreateWithoutImportBatchesInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemCreateNestedManyWithoutTaxReturnInput
   calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -4264,6 +4520,7 @@ export type TaxReturnUncheckedCreateWithoutImportBatchesInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUncheckedCreateNestedManyWithoutTaxReturnInput
   calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
   attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
 }
@@ -4312,6 +4569,7 @@ export type TaxReturnUpdateWithoutImportBatchesInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUpdateManyWithoutTaxReturnNestedInput
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4344,6 +4602,7 @@ export type TaxReturnUncheckedUpdateWithoutImportBatchesInput = {
   axiDynamicItems?: Prisma.AxiDynamicItemUncheckedUpdateManyWithoutTaxReturnNestedInput
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4387,6 +4646,7 @@ export type TaxReturnUpdateWithoutClientInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4419,6 +4679,7 @@ export type TaxReturnUncheckedUpdateWithoutClientInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4473,6 +4734,7 @@ export type TaxReturnUpdateWithoutFiscalYearInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4505,6 +4767,7 @@ export type TaxReturnUncheckedUpdateWithoutFiscalYearInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4559,6 +4822,7 @@ export type TaxReturnUpdateWithoutTaxParameterSetInput = {
   calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4591,6 +4855,7 @@ export type TaxReturnUncheckedUpdateWithoutTaxParameterSetInput = {
   calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
   attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
   rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
   rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
 }
@@ -4629,6 +4894,7 @@ export type TaxReturnCountOutputType = {
   calculations: number
   attachments: number
   importBatches: number
+  annualFiscalConsolidations: number
   rectificationLinksAsOriginal: number
   rectificationLinksAsRectified: number
 }
@@ -4651,6 +4917,7 @@ export type TaxReturnCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   calculations?: boolean | TaxReturnCountOutputTypeCountCalculationsArgs
   attachments?: boolean | TaxReturnCountOutputTypeCountAttachmentsArgs
   importBatches?: boolean | TaxReturnCountOutputTypeCountImportBatchesArgs
+  annualFiscalConsolidations?: boolean | TaxReturnCountOutputTypeCountAnnualFiscalConsolidationsArgs
   rectificationLinksAsOriginal?: boolean | TaxReturnCountOutputTypeCountRectificationLinksAsOriginalArgs
   rectificationLinksAsRectified?: boolean | TaxReturnCountOutputTypeCountRectificationLinksAsRectifiedArgs
 }
@@ -4787,6 +5054,13 @@ export type TaxReturnCountOutputTypeCountImportBatchesArgs<ExtArgs extends runti
 /**
  * TaxReturnCountOutputType without action
  */
+export type TaxReturnCountOutputTypeCountAnnualFiscalConsolidationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AnnualFiscalConsolidationSnapshotWhereInput
+}
+
+/**
+ * TaxReturnCountOutputType without action
+ */
 export type TaxReturnCountOutputTypeCountRectificationLinksAsOriginalArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.RectificationLinkWhereInput
 }
@@ -4831,6 +5105,7 @@ export type TaxReturnSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   calculations?: boolean | Prisma.TaxReturn$calculationsArgs<ExtArgs>
   attachments?: boolean | Prisma.TaxReturn$attachmentsArgs<ExtArgs>
   importBatches?: boolean | Prisma.TaxReturn$importBatchesArgs<ExtArgs>
+  annualFiscalConsolidations?: boolean | Prisma.TaxReturn$annualFiscalConsolidationsArgs<ExtArgs>
   rectificationLinksAsOriginal?: boolean | Prisma.TaxReturn$rectificationLinksAsOriginalArgs<ExtArgs>
   rectificationLinksAsRectified?: boolean | Prisma.TaxReturn$rectificationLinksAsRectifiedArgs<ExtArgs>
   _count?: boolean | Prisma.TaxReturnCountOutputTypeDefaultArgs<ExtArgs>
@@ -4874,6 +5149,7 @@ export type TaxReturnInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   calculations?: boolean | Prisma.TaxReturn$calculationsArgs<ExtArgs>
   attachments?: boolean | Prisma.TaxReturn$attachmentsArgs<ExtArgs>
   importBatches?: boolean | Prisma.TaxReturn$importBatchesArgs<ExtArgs>
+  annualFiscalConsolidations?: boolean | Prisma.TaxReturn$annualFiscalConsolidationsArgs<ExtArgs>
   rectificationLinksAsOriginal?: boolean | Prisma.TaxReturn$rectificationLinksAsOriginalArgs<ExtArgs>
   rectificationLinksAsRectified?: boolean | Prisma.TaxReturn$rectificationLinksAsRectifiedArgs<ExtArgs>
   _count?: boolean | Prisma.TaxReturnCountOutputTypeDefaultArgs<ExtArgs>
@@ -4904,6 +5180,7 @@ export type $TaxReturnPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     calculations: Prisma.$CalculationRunPayload<ExtArgs>[]
     attachments: Prisma.$AttachmentPayload<ExtArgs>[]
     importBatches: Prisma.$ImportBatchPayload<ExtArgs>[]
+    annualFiscalConsolidations: Prisma.$AnnualFiscalConsolidationSnapshotPayload<ExtArgs>[]
     rectificationLinksAsOriginal: Prisma.$RectificationLinkPayload<ExtArgs>[]
     rectificationLinksAsRectified: Prisma.$RectificationLinkPayload<ExtArgs>[]
   }
@@ -5279,6 +5556,7 @@ export interface Prisma__TaxReturnClient<T, Null = never, ExtArgs extends runtim
   calculations<T extends Prisma.TaxReturn$calculationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$calculationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CalculationRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   attachments<T extends Prisma.TaxReturn$attachmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$attachmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AttachmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   importBatches<T extends Prisma.TaxReturn$importBatchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$importBatchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImportBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  annualFiscalConsolidations<T extends Prisma.TaxReturn$annualFiscalConsolidationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$annualFiscalConsolidationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AnnualFiscalConsolidationSnapshotPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rectificationLinksAsOriginal<T extends Prisma.TaxReturn$rectificationLinksAsOriginalArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$rectificationLinksAsOriginalArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RectificationLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   rectificationLinksAsRectified<T extends Prisma.TaxReturn$rectificationLinksAsRectifiedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$rectificationLinksAsRectifiedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RectificationLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -6129,6 +6407,30 @@ export type TaxReturn$importBatchesArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.ImportBatchScalarFieldEnum | Prisma.ImportBatchScalarFieldEnum[]
+}
+
+/**
+ * TaxReturn.annualFiscalConsolidations
+ */
+export type TaxReturn$annualFiscalConsolidationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AnnualFiscalConsolidationSnapshot
+   */
+  select?: Prisma.AnnualFiscalConsolidationSnapshotSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AnnualFiscalConsolidationSnapshot
+   */
+  omit?: Prisma.AnnualFiscalConsolidationSnapshotOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AnnualFiscalConsolidationSnapshotInclude<ExtArgs> | null
+  where?: Prisma.AnnualFiscalConsolidationSnapshotWhereInput
+  orderBy?: Prisma.AnnualFiscalConsolidationSnapshotOrderByWithRelationInput | Prisma.AnnualFiscalConsolidationSnapshotOrderByWithRelationInput[]
+  cursor?: Prisma.AnnualFiscalConsolidationSnapshotWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AnnualFiscalConsolidationSnapshotScalarFieldEnum | Prisma.AnnualFiscalConsolidationSnapshotScalarFieldEnum[]
 }
 
 /**

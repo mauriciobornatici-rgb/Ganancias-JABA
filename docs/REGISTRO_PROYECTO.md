@@ -1,8 +1,74 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-13
+Ultima actualizacion: 2026-06-24
 
 ## Entrada reciente
+
+### 2026-06-22 - VALIDACION CONTRA AFIP REAL: motor IVA clava la liquidacion al peso
+
+- El usuario aporto una pantalla real de liquidacion de IVA (F2002) + los CSV de ventas/compras del mes. Cotejo:
+  - debito fiscal 9.090.888,61 | credito 2.630.946,77 | saldo tecnico a ARCA 381.664,35 | saldo impuesto a ARCA 179.731,35.
+- Dos hallazgos que el caso real revelo (ningun test los habia detectado):
+  1. NOTAS DE CREDITO: AFIP las computa en el lado CONTRARIO (NC emitida -> credito; NC recibida -> debito). El neto no cambia, pero los TOTALES de debito/credito que se cotejan con ARCA si. La app las restaba en su propio lado (mostraba debito 8.885.532 vs ARCA 9.090.888). Corregido en `settlementBuilders.ts` (clasificacion estilo F2002).
+  2. SALDO DE LIBRE DISPONIBILIDAD ANTERIOR: AFIP lo aplica en la posicion mensual separado del saldo tecnico. El motor solo arrastraba el tecnico. Agregado `previousFreeAvailability` a `vatSettlement.ts`.
+- Resultado: con los 2 fixes, la app reproduce los 4 valores de ARCA AL PESO leyendo directamente los CSV. Validacion fiscal real superada.
+- PENDIENTE: actualizar tests de vatSettlement/settlementBuilders con el caso AFIP; flujo de pantalla (subir -> seleccionar filas -> cotejar -> guardar); persistir el settlement.
+
+### 2026-06-22 - Fase 5 (parte): armador de liquidacion + ruta API de settlement
+
+- `settlementBuilders.ts`: orquestadores puros que toman los documentos del periodo y arman los inputs de los motores. `buildVatSettlement` separa debito (ventas) de credito computable (compras), aplica percep/ret y saldo tecnico anterior, y devuelve el desglose por alicuota (lo que la pantalla muestra). `buildGrossIncomeSettlement` deriva la base imponible de las ventas gravadas netas y llama al motor IIBB. Tests: `settlementBuilders.test.ts`, 7/7 en sandbox.
+- Ruta `GET /api/clientes/[id]/fiscal-periods/[periodId]/settlement`: lee documentos + percep/ret + perfil + saldo tecnico del mes anterior, calcula IVA (siempre) e IIBB (si el perfil tiene regimen y jurisdicciones), y devuelve los numeros serializados. IIBB informa "pendiente de configurar alicuotas" hasta que el perfil las tenga.
+- PENDIENTE: pantalla React de liquidacion (consume esta ruta); cargar alicuotas IIBB por jurisdiccion en el editor de perfil; persistir el settlement (hoy solo calcula); decision de imputacion inferida (flujo) ya elegida por el usuario, falta implementar la heuristica.
+
+### 2026-06-22 - Fase 4 (parte): consolidador anual a Ganancias
+
+- Nuevo `annualConsolidation.ts`: funcion pura que toma los 12 periodos mensuales (con sus comprobantes ya imputados a una categoria de Ganancias via `GainsAllocationKind`) y agrega los netos por categoria: ventas gravadas/exentas, compras de bienes de cambio (CMV), gastos deducibles, bienes de uso, gastos no deducibles, IVA no computable (al costo) e IIBB pagado (gasto deducible). Produce el snapshot + `sourceHash` (djb2 determinista para detectar cambios y reconsolidar). Fidelidad fiscal: IVA neutro, solo viajan netos; IVA no computable al costo; percep/ret de IVA/IIBB NO entran a Ganancias.
+- Avisos: meses faltantes para cerrar el año, mes repetido, imputaciones OTHER sin categoria.
+- Tests: `annualConsolidation.test.ts`, 7 casos / 14 aserciones, 14/14 en sandbox.
+- PENDIENTE para cerrar la integracion: (a) el flujo de imputacion (como se llena la allocation de cada compra: manual / inferida por tipo de comprobante / mixta) -> decision del usuario; (b) adaptador snapshot -> `TaxReturnCalculationInput` del motor de Ganancias; (c) persistencia del snapshot; (d) pantallas (Fase 5).
+
+### 2026-06-22 - Fase 3: endpoint de importacion por periodo
+
+- Nueva ruta `POST /api/clientes/[id]/fiscal-periods/[periodId]/documents`: valida que el periodo pertenezca al cliente, recibe FormData multiarchivo (ventas y/o compras), parsea con `parseAfipFiscalLedgerDocuments`, persiste con `persistFiscalDocuments` (idempotente) y devuelve `inserted`/`duplicates`/`warnings`/`fileResults`. Tope de 15 MB por lote (413), auditoria `IMPORT`.
+- Verificacion con los CSV reales del usuario sobre el importador del modulo (`afipFiscalLedgerImporter`): ventas 239 documentos (doc1 neto 15.123,97 SIN x100; vatLine TAXED 21% base/iva separados); compras 32 documentos (Factura C tipo 11 -> NON_TAXED, creditComputable=false, correcto: no da credito fiscal). El importador del modulo YA trae el fix de CSV (Latin-1, `;`, coma decimal) y el desglose por alicuota con kind TAXED/EXEMPT/NON_TAXED.
+- Pendiente: prueba de integracion HTTP contra Docker (levantar app, subir archivo a un periodo); UI de importacion (Fase 5).
+
+### 2026-06-22 - Fase 2: motor IIBB construido (local + Convenio Multilateral)
+
+- Se creo `grossIncomeSettlement.ts` (no existia). Cubre los regimenes del enum: ARBA_LOCAL/ARBA_SIMPLIFICADO (una jurisdiccion), CM_REGIMEN_GENERAL/ESPECIAL (reparte la base por coeficiente unificado), NONE.
+- Por jurisdiccion: base asignada (base total x coeficiente en CM, o base total en local) x alicuota = impuesto determinado; percepciones/retenciones de IIBB de esa jurisdiccion se aplican contra su impuesto; el excedente queda como saldo a favor que se arrastra. Soporta saldo a favor anterior por jurisdiccion.
+- Defensa: avisa si en CM los coeficientes no suman 1 (ademas de la validacion al guardar el perfil).
+- Output alineado al modelo `GrossIncomeJurisdictionLine` (assignedBase, taxRate, determinedTax, creditsApplied, balance) + totales.
+- Tests: `grossIncomeSettlement.test.ts`, 8 casos (local, percep/ret, excedente a favor, favor anterior, CM reparto, CM aviso suma!=1, CM percep por jurisdiccion, NONE). 8/8 en sandbox aislado.
+- Pendiente: alicuotas reales por actividad/jurisdiccion como parametros; caso real de IIBB para cotejar.
+
+### 2026-06-22 - Fase 1: motor IVA corregido y blindado
+
+- Hallazgo corregido: `vatSettlement.ts` calculaba `freeAvailabilityBalance` sumando todas las percepciones/retenciones SIN aplicarlas contra el saldo a pagar (`amountDue` no las restaba). Resultado: liquidaba IVA pagando de mas. No es solo falta de tests, era un error conceptual del Art. 24 Ley 23.349.
+- Correccion: el motor ahora aplica la mecanica completa del Art. 24:
+  - Saldo tecnico (1er parr.): debito - credito - saldo tecnico anterior; si queda a favor se arrastra (`technicalCarryForward`).
+  - Percepciones/retenciones/pagos a cuenta de IVA (2do parr.): se aplican contra el impuesto tecnico; el EXCEDENTE es saldo de libre disponibilidad (`freeAvailabilityBalance`).
+  - Nuevos campos trazables en el resultado: `technicalBalance`, `technicalDue`, `creditsAvailable`, `creditsApplied`.
+- Tests: `vatSettlement.test.ts` pasa de 1 a 10 casos (debito>credito, credito>debito con arrastre, saldo previo a favor/insuficiente, no computables excluidos, multi-alicuota, percep/ret que reducen, percep/ret que exceden -> libre disponibilidad, periodo vacio).
+- Verificacion: 10/10 en sandbox aislado (vitest + decimal.js). Falta correr `vitest run` completo en Windows.
+- PENDIENTE Fase 1: caso real de control con un F2002 real (el usuario lo aportara) para cotejar al peso.
+- `calculateVatSettlement` no estaba conectado a ninguna ruta/persistencia, asi que la correccion no rompe consumidores.
+
+### 2026-06-20 - Diseno IVA + IIBB mensual integrado con Ganancias
+
+- Se reviso el plan inicial del usuario y se valido el marco operativo actual de ARCA/ARBA.
+- Decision de arquitectura: no mover destructivamente `SalesInvoice`/`PurchaseInvoice` desde `TaxReturn`; se creara un libro fiscal mensual independiente y Ganancias consumira snapshots de consolidacion inmutables.
+- Alcance inicial aprobado para planificacion: IVA Simple/F.2051, IIBB local ARBA y Convenio Multilateral regimen general con coeficientes CM05 cargados y aprobados. Regimenes especiales CM y Monotributo Unificado quedan expresamente fuera de la primera entrega.
+- Se creo worktree aislado `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual` sobre `main`, rama `feature/iva-iibb-mensual-core`.
+- Regla operativa: Docker `ganancias_jaba_test` es el unico ambiente de desarrollo. Hostinger, Vercel y datos productivos no se modificaron.
+- Especificacion: `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`.
+
+### 2026-06-20 - P32 corte 1: Docker aislado por worktree
+
+- Hallazgo: `docker-compose.yml` usaba un `container_name` fijo y los scripts tenian `127.0.0.1:3317` hardcodeado. Un segundo worktree podia competir por el mismo contenedor y base de pruebas.
+- Correccion: se elimino el nombre fijo de contenedor; Compose usa `JABA_TEST_DB_PORT` con default `3317`; el nuevo helper `scripts/testDbConfig.mjs` construye la URL Docker y rechaza destinos no locales/no seguros; `run-test-db-command.mjs` y `seed-test-db.mjs` consumen esa unica fuente. Se agrego el comando seguro `create-migration` para que Prisma reciba siempre `DATABASE_URL` Docker.
+- Verificacion: test TDD rojo por helper ausente y luego verde (2 tests); Prisma validate OK; base exclusiva `127.0.0.1:3318/ganancias_jaba_test` creada, migracion inicial aplicada y seed OK.
+- El contenedor original `ganancias-jaba-test-db` en puerto `3317` no se modifico. Hostinger y Vercel no se tocaron.
 
 ### 2026-06-13 - P12 saneamiento lint global aplicado
 
@@ -3231,3 +3297,582 @@ Uso posterior:
 
 - Este instructivo queda como entrada directa para P19 - Validacion real contra Excel en Docker.
 - Cuando se ejecute P19, cargar el caso en `npm run dev:testdb`, guardar, reabrir y comparar wizard, papel de trabajo, informe cliente y legajo PDF.
+
+### 2026-06-21 - P32, Checkpoint 2: Libro fiscal mensual base aislado
+
+Solicitud y limite operativo:
+
+- Se continua el modulo IVA + IIBB como complemento de Ganancias.
+- El usuario pidio expresamente no tocar `main`, Produccion Vercel, Hostinger ni la base productiva hasta contar con pruebas completas en una rama independiente.
+- El trabajo permanece en `feature/iva-iibb-mensual-core`, worktree `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual`.
+
+Hallazgos y resguardo de Preview:
+
+- Los previews fallidos vistos en Vercel no provienen de cambios en `main`: `DATABASE_URL` esta alcanzando Preview y apunta a la DB Hostinger productiva.
+- Se reprodujo la guarda `check-deployment-db-safety` de forma local: Preview con esa URL queda bloqueado; Preview sin `DATABASE_URL` queda permitido.
+- La accion externa pendiente es limitar `DATABASE_URL` a `Production` en Vercel, o crear una DB staging distinta. La guarda no debe desactivarse.
+
+Implementacion local:
+
+- Se agrego el libro fiscal paralelo y versionado: perfiles fiscales, actividades, jurisdicciones, periodos mensuales, comprobantes y lineas IVA, creditos, liquidaciones IVA/IIBB, coeficientes CM05 y snapshots anuales hacia Ganancias.
+- Se mantuvieron `TaxReturn`, `SalesInvoice` y `PurchaseInvoice` sin cambios destructivos ni nueva vinculacion mensual.
+- Se genero `20260622002033_add_fiscal_monthly_ledger` y se aplico solo en Docker `3318`.
+- Prisma ahora usa `ganancias_jaba_test_shadow` para generar migraciones. La URL principal y shadow se validan como `127.0.0.1` con credenciales Docker; no pueden derivar a Hostinger por accidente.
+- El seeder local agrega exclusivamente datos ficticios: un perfil ARBA local y un CM regimen general con coeficientes `0,40 + 0,60 = 1,00`.
+- Se corrigio P19 para tomar el puerto seguro configurable del worktree en lugar de asumir `3317`.
+- Se regenero el cliente Prisma versionado para incluir los nuevos modelos.
+
+TDD y verificacion:
+
+- Rojo confirmado: falta de `resolveTestShadowDatabaseUrl`, luego pruebas verdes de configuracion Docker.
+- Rojo confirmado: inexistencia de perfiles fiscales semilla; luego seed Docker y prueba de lectura verdes.
+- Rojo confirmado: P19 esperaba `3317` y recibia `3318`; luego regresion Excel/capturas verde en `3318`.
+- `fiscalLedgerSchemaArchitecture.test.ts`: 5 pruebas verdes.
+- `testDbConfig.test.ts` y `testDbMigrationSafetyConfig.test.ts`: 4 pruebas verdes.
+- `fiscalLedgerSeedDocker.test.ts`: 1 prueba verde contra Docker.
+- `prisma validate`: schema valido.
+- `tsc --noEmit`: verde despues de ajustar el contrato tipado del helper de entorno.
+
+No se realizo:
+
+- No se hizo push ni deploy de este checkpoint.
+- No se modifico `main`, Vercel, Hostinger ni datos productivos.
+- No se implementaron todavia importacion mensual, API, motor IVA/IIBB ni pantallas.
+
+Siguiente paso:
+
+- Task 3 del plan `docs/superpowers/plans/2026-06-20-modulo-iva-iibb-mensual.md`: importador mensual AFIP/ARCA por alicuota, clave deterministica y deduplicacion, conservando intacto el importador anual de Ganancias.
+
+### 2026-06-21 - P32, Checkpoint 3: Importacion mensual AFIP/ARCA por alicuota
+
+Objetivo:
+
+- Reutilizar la lectura segura de CSV Latin-1/XLSX de AFIP sin mover ni alterar la importacion anual vigente.
+- Conservar el detalle IVA por alicuota para la liquidacion mensual y deduplicar reimportaciones sin depender del nombre del archivo.
+
+Implementacion:
+
+- Se expusieron de forma reutilizable el lector de filas AFIP, la conversion decimal argentina y el parser de fechas ya probados por el importador anual.
+- Se agrego `afipFiscalLedgerImporter.ts`, que detecta ventas/compras, genera lineas `TAXED`, `EXEMPT` o `NON_TAXED`, conserva las alicuotas 0%, 2,5%, 5%, 10,5%, 21% y 27%, y marca el credito IVA de compras como computable.
+- Se agrego `documentKey.ts`: la clave usa CUIT del titular, direccion, fecha, tipo, numero y CUIT contraparte; excluye el nombre de archivo para que una copia del mismo CSV no se duplique.
+- Las facturas sin IVA discriminado se conservan como una linea `NON_TAXED` para no perder el importe y poder revisarlas luego.
+
+TDD y verificacion:
+
+- Rojo confirmado: los modulos mensual y de clave no existian.
+- Verde: se conserva una venta con bases/IVA separadas de 10,5% y 21%, y una compra con credito computable 21%.
+- Una regresion inicial de `Mis Retenciones` revelo una referencia interna al nombre previo del parser decimal; se corrigio de forma puntual y las pruebas anuales volvieron a pasar.
+- `afipFiscalLedgerImporter.test.ts`, `documentKey.test.ts` e `importer.test.ts`: 14 pruebas verdes.
+- `tsc --noEmit`: verde.
+
+Siguiente paso:
+
+- Task 4: validacion de perfiles, persistencia idempotente y API de periodos fiscales mensuales contra Docker `3318`.
+
+### 2026-06-21 - P32, Checkpoint 4: API y tablero inicial de periodos IVA/IIBB
+
+Objetivo:
+
+- Llegar a una pantalla local de prueba que permita crear y visualizar los doce periodos mensuales de un cliente, sin impactar Ganancias anual ni Produccion.
+
+Implementacion:
+
+- Se agrego `createFiscalPeriodSchema`, que admite exclusivamente anios operativos y meses calendario.
+- `resolveActiveFiscalProfile` fija el perfil fiscal que estaba vigente al cierre de cada mes. No se permite crear un `FiscalPeriod` sin esa referencia versionada.
+- Se agrego `GET/POST /api/clientes/[id]/fiscal-periods`; el listado devuelve cliente, periodos, perfil, ultimo estado IVA/IIBB y cantidad de comprobantes. El alta audita la operacion y protege el unico `[cliente, anio, mes]`.
+- Se agrego el tablero de doce meses y el acceso desde Clientes. Los periodos inexistentes se pueden crear; los creados exponen los controles reales hoy disponibles y no simulan importacion ni liquidaciones que aun no existen.
+
+TDD y verificacion:
+
+- Rojo confirmado para contratos inexistentes de solicitud, perfil vigente y estado de tablero; verde posterior con 6 pruebas nuevas.
+- Suite completa: 213 pruebas aprobadas, 5 omitidas; `tsc --noEmit` y `prisma validate` verdes.
+- El navegador integrado rechazo navegar a `localhost:3000` por su politica de seguridad. No se intento eludir esa limitacion; la prueba visual manual queda registrada.
+
+No se realizo:
+
+- No se modifico `main`, no se hizo push, deploy ni Preview.
+- No se consulto ni modifico Hostinger/Vercel/Produccion.
+- No se toco `TaxReturn`, `SalesInvoice` ni `PurchaseInvoice`.
+
+Siguiente paso:
+
+- Detail wizard por periodo: importacion AFIP/ARCA, resumen por alicuota, persistencia idempotente y liquidacion IVA inicial sobre Docker 3318.
+
+### 2026-06-23 - P32, piloto IVA AFIP mayo 2026: contrato funcional y resguardo de integracion
+
+Evidencia revisada localmente, no incorporada al repositorio:
+
+- `C:\Users\mauri\Downloads\dudas\comprobantes_compras.csv`: 39 filas, CSV AFIP con `;`, coma decimal y columnas por alicuota.
+- `C:\Users\mauri\Downloads\dudas\comprobantes_ventas.csv`: 48 filas, mismo formato AFIP.
+- `C:\Users\mauri\Downloads\dudas\iva.jpeg`: cotejo de Portal IVA / F2002.
+
+Resultado reproducido a partir de las columnas por alicuota y las notas de credito:
+
+- Debito fiscal: `9.090.888,61`.
+- Credito fiscal: `2.630.946,77`.
+- Saldo tecnico anterior: `6.078.277,49`.
+- Saldo tecnico ARCA: `381.664,35`.
+- Libre disponibilidad anterior: `167.342,88`.
+- Retenciones, percepciones y pagos a cuenta IVA: `34.590,12`.
+- Saldo final de impuesto a favor de ARCA: `179.731,35`.
+
+Decisiones operativas cerradas:
+
+- Se importan ambos CSV a un `FiscalPeriod` del cliente y mes elegidos; cada fila se conserva aun si el usuario la excluye del calculo.
+- Solo las filas `includedInSettlement=true` forman debito, credito y bases para IIBB/Ganancias.
+- Las NC se computan en el lado opuesto, segun F2002: compra NC suma debito; venta NC suma credito.
+- Debito, credito y saldo final oficiales deben estar presentes y coincidir para cerrar IVA. Una diferencia puede guardarse solo como `IN_REVIEW` con motivo; nunca habilita Ganancias.
+- Los arrastres tecnico y de libre disponibilidad se toman solo del ultimo IVA `CLOSED` del mes anterior o de una excepcion auditada.
+- Ganancias no recibe debito/credito IVA como ingreso/gasto: recibe un snapshot de operaciones netas clasificadas, IVA no computable e IIBB cerrado/determinado conforme al plan maestro.
+
+Resguardo:
+
+- Se confirma que el trabajo sigue en worktree enlazado y rama `feature/iva-iibb-mensual-core`.
+- No se modifica `main`, Hostinger, Vercel, datos productivos ni DDJJ anuales durante este piloto.
+- Los CSV reales no se subiran a Git; se creara una regresion anonimizada con los mismos importes/tipos relevantes.
+
+Plan creado:
+
+- `docs/superpowers/plans/2026-06-23-piloto-iva-afip-mayo-2026.md`.
+
+Bloqueo actual antes de prueba funcional:
+
+- Agregar migracion de `FiscalDocument.includedInSettlement`, regenerar Prisma y recuperar `tsc`/build verdes.
+- Corregir cierre parcial, normalizacion argentina de importes y arrastres desde estados no cerrados.
+
+---
+
+## 2026-06-24 — Flujo completo de liquidacion de IVA (subir → revisar → cotejar → guardar → anual)
+
+Se construyo el flujo punta a punta que pidio el contador, sobre el motor de IVA ya validado al peso contra AFIP.
+
+Modelo / schema:
+
+- `FiscalDocument.includedInSettlement Boolean @default(true)`: bandera de seleccion de filas. El comprobante excluido queda en el libro (trazabilidad) pero NO entra al calculo. Requiere migracion Prisma en Windows.
+
+Endpoints (todos bajo `/api/clientes/[id]/fiscal-periods/[periodId]`):
+
+- `GET documents`: lista los comprobantes del periodo (ventas y compras) con su IVA y estado de inclusion, para la grilla de revision.
+- `PATCH documents/selection`: marca/desmarca filas en lote (defiende ids ajenos al periodo).
+- `GET settlement`: recalcula IVA solo con las filas `includedInSettlement=true`, aplicando arrastre tecnico y libre disponibilidad del ultimo IVA `CLOSED` del mes anterior. Pasa `voucherType` para el criterio NC del F2002.
+- `POST settlement/save`: recalcula del lado servidor (no confia en el cliente), coteja contra los valores oficiales de AFIP y persiste. Coincide → `CLOSED` (cotejada, habilita Ganancias). Difiere y `forceSave=false` → 409 con el detalle de diferencias. Difiere y `forceSave=true` → `IN_REVIEW` con observacion. Audita el evento.
+
+Persistencia (`persistence/fiscalSettlementPersistence.ts`):
+
+- `persistVatSettlement`: versiona (no pisa), guarda totales + lineas de desglose por alicuota + valores oficiales del cotejo + `filedAt` al cerrar.
+- `checkVatCotejo`: concilia debito/credito/saldo contra AFIP con tolerancia de 1 centavo.
+- `persistGrossIncomeSettlement`: idem para IIBB.
+
+Compuerta mensual → anual (`fiscalLedger/annualConsolidation.ts`):
+
+- `selectCotejadoPeriodsForAnnual`: regla de negocio dura — SOLO los meses con IVA `CLOSED` alimentan la liquidacion anual de Ganancias. Borrador, en revision o faltante quedan bloqueados con motivo; el año solo consolida con los 12 meses cotejados.
+
+Pantalla (`clientes/[id]/periodos-fiscales/[periodId]/liquidacion-iva/`):
+
+- 3 pasos: (1) subir CSV de compras y ventas, (2) grilla con tilde por fila + "todos" + subtotal de IVA incluido en vivo, (3) totales estilo F2002 + campos de cotejo de AFIP con verificacion en vivo + guardar. La tarjeta del mes en el dashboard ahora enlaza a "Liquidar IVA".
+
+Normalizacion de importes:
+
+- Cotejo acepta formato argentino (`9.090.888,61`) y plano; `toPlain`/`norm` unificados en validacion zod y en el guardado (se corrigio un bug que dejaba puntos de miles antes de Decimal).
+
+Verificacion (sandbox, logica replicada por truncado del espejo):
+
+- 15/15 aserciones del flujo IVA (NC a lado contrario, libre disponibilidad, cotejo, versionado/estado).
+- 10/10 aserciones de la compuerta anual (CLOSED usable; DRAFT/IN_REVIEW/faltante bloquean).
+- Tests vitest agregados: `settlementBuilders.test.ts` (regresion NC + libre disp.), `fiscalSettlementPersistence.test.ts`, `annualConsolidation.test.ts` (compuerta). Pendiente correrlos en Windows con node_modules.
+
+Pendiente para produccion:
+
+- Migracion Prisma de `includedInSettlement` + `prisma generate` + `tsc`/build en Windows.
+- Reader DB de consolidacion anual (toma settlements `CLOSED` + imputacion por comprobante) y heuristica de imputacion inferida.
+- Cargar alicuotas de IIBB por jurisdiccion en el editor de perfil.
+
+### Correcciones tras revision de codigo (2026-06-24)
+
+Revision externa marco 7 hallazgos. Estado y accion:
+
+- #1 No compila sin migracion Prisma de `includedInSettlement`: valido. Bloqueo principal; se resuelve en Windows con `prisma migrate dev` + `generate`.
+- #2 Cotejo parcial podia cerrar (CLOSED) cargando solo 1 importe: CORREGIDO. `checkVatCotejo` ahora expone `complete`/`missing`; `matches` exige los tres importes (debito, credito, saldo) presentes y coincidentes. El save route devuelve 409 distinto para "incompleto" (no permite forzar) vs "con diferencias" (permite `IN_REVIEW`).
+- #3 Miles argentinos (`9.090.888,61`) rompian el guardado: YA estaba corregido antes de la revision (`toPlain`/`norm` sacan puntos de miles). El revisor miro estado previo.
+- #4 Arrastre tomaba la ultima version aunque fuera borrador/observada: CORREGIDO. GET y save filtran `where:{status:'CLOSED'}` en los arrastres tecnico y de libre disponibilidad.
+- #5 IIBB devuelve 0 (alicuotas en cero): valido/aceptado. Es andamiaje; falta el editor de parametros por jurisdiccion. No se presenta como IIBB funcional.
+- #6 La pantalla decia "disponible para Ganancias" aun en DRAFT/IN_REVIEW: CORREGIDO. El mensaje ahora es condicional a `CLOSED`; si no, aclara que todavia NO alimenta Ganancias.
+- #7 Versionado sin transaccion ante doble envio: CORREGIDO. `persistVatSettlement` reintenta (hasta 4) ante violacion de unicidad P2002 recomputando la version.
+
+Verificacion sandbox de los fixes: 11/11 aserciones (cotejo completo vs parcial, status CLOSED/IN_REVIEW, reintento ante P2002). Tests vitest ampliados en `fiscalSettlementPersistence.test.ts`.
+
+### Reader de consolidacion anual a Ganancias (2026-06-24)
+
+Se conecto el eslabon mensual → anual (paso 6 del orden recomendado), a nivel dominio + API.
+
+- `fiscalLedger/gainsImputation.ts`: heuristica de imputacion inferida. VENTAS se clasifican con certeza (gravada vs exenta, sin revision); COMPRAS van a `DEDUCTIBLE_EXPENSE` por default con `needsReview=true` (AFIP no informa mercaderia vs gasto vs bien de uso; lo confirma el contador). Convencion de signos: las NC con neto negativo reducen la categoria.
+- `fiscalLedger/annualConsolidationAssembler.ts`: ensamblador PURO. Aplica la compuerta (solo meses IVA `CLOSED`), respeta imputaciones persistidas confirmadas o infiere, suma el IIBB `CLOSED` del mes como gasto deducible, y consolida con `consolidateAnnualFiscalLedger`. Reporta comprobantes pendientes de revision por mes.
+- `persistence/annualConsolidationRead.ts`: unica capa Prisma; lee 12 periodos (estado IVA, IIBB CLOSED, comprobantes incluidos con sus imputaciones) y delega en el ensamblador. Incluye serializador JSON.
+- `app/api/clientes/[id]/consolidacion-anual/route.ts`: `GET ...?year=AAAA` devuelve compuerta, totales por categoria y pendientes de revision.
+
+Verificacion sandbox: 17/17 aserciones (inferencia ventas/compras, compuerta CLOSED, imputacion persistida respetada, IIBB sumado, NC reduce ventas, consolidacion null sin meses cotejados). Tests vitest: `annualConsolidationAssembler.test.ts`.
+
+Pendiente del tramo anual:
+
+- ~~Persistir el snapshot~~ HECHO (ver abajo). Falta conectar al `TaxReturn`/wizard de Ganancias (inyectar el snapshot en la DDJJ anual).
+- Pantalla de revision de imputacion de compras (confirmar mercaderia/gasto/bien de uso) y de la consolidacion anual.
+
+### Snapshot durable de consolidacion anual (2026-06-24)
+
+- `persistence/annualConsolidationSnapshot.ts`: `persistAnnualConsolidationSnapshot` guarda el snapshot en `AnnualFiscalConsolidationSnapshot/Period` ligado a un `TaxReturn`, con su `sourceHash`. Reglas: solo persiste si hay al menos un mes CLOSED; CONFIRMA (`confirmedAt`) unicamente si el año esta completo y firme; idempotente por `sourceHash` (no duplica). `isSnapshotStale` detecta si la base mensual cambio (recotejo/imputacion) y el snapshot quedo obsoleto antes de usarse en la DDJJ.
+- Verificacion sandbox: 10/10 aserciones (confirma año completo, no confirma con mes faltante, idempotencia, error sin meses CLOSED, deteccion de obsolescencia). Test vitest: `annualConsolidationSnapshot.test.ts`.
+
+### Nota sobre el commit
+
+El worktree tiene `.git` con gitdir en ruta Windows; git no corre desde el sandbox Linux (garantiza que no se toco `main` desde aqui). El commit se hace en Windows siguiendo `docs/COMMIT_FLUJO_IVA_ANUAL.md` (migracion → build/test verdes → commit sin push).
+
+---
+
+## CIERRE DE SESION — 2026-06-24
+
+### Donde quedamos (estado actual, verificado)
+
+- **Commit + push hechos.** Rama `feature/iva-iibb-mensual-core`, commit `7a133bc` (amend incluyo el cliente Prisma regenerado). Pusheado a `origin`. `main` y produccion INTACTOS.
+- **Build verde:** `npm run build` → `✓ Finished TypeScript` sin errores. Las 4 rutas nuevas compilan.
+- **Tests verdes:** 269 passed | 5 skipped (vitest, en Windows).
+- **Motor IVA validado al peso** contra el F2002 real de AFIP (debito 9.090.888,61 / credito 2.630.946,77 / saldo 179.731,35).
+
+### Que se construyo (todo en esta rama, nada en produccion)
+
+1. **Flujo completo de liquidacion de IVA**: subir CSV AFIP (compras+ventas) → grilla con seleccion de filas (`includedInSettlement`) → calcular totales estilo F2002 → cotejar contra AFIP (exige los 3 importes) → guardar (CLOSED si coteja, IN_REVIEW si difiere). Pantalla en `clientes/[id]/periodos-fiscales/[periodId]/liquidacion-iva/`.
+2. **Endpoints**: `documents` (GET lista + POST import), `documents/selection` (PATCH), `settlement` (GET preview), `settlement/save` (POST con cotejo y versionado seguro).
+3. **Persistencia**: `fiscalSettlementPersistence.ts` (versionado con reintento P2002, cotejo completo, lineas por alicuota).
+4. **Correcciones de la revision de codigo** (7 hallazgos): #2 cotejo parcial no cierra, #4 arrastre solo desde CLOSED, #6 mensaje condicional, #7 versionado con reintento. #3 ya estaba. #1 (migracion) y #5 (IIBB params) quedaron como pendientes.
+5. **Cadena mensual → anual**: `gainsImputation.ts` (imputacion inferida), `annualConsolidationAssembler.ts` (compuerta CLOSED + consolidacion), `annualConsolidationRead.ts` (lector DB + API `GET /api/clientes/[id]/consolidacion-anual?year=`), `annualConsolidationSnapshot.ts` (snapshot durable con sourceHash).
+6. **Migracion** `20260624120000_add_included_in_settlement` creada a mano (ADD COLUMN, prod-safe via `migrate deploy`).
+
+### Que falta (pendientes)
+
+**Del lado del usuario (Windows), cuando retome:**
+- Aplicar la columna en la base: `npx prisma migrate deploy` con `.env` apuntando a la base correcta. **NUNCA `migrate dev` contra produccion.** El worktree no tiene `.env` (no se comparte entre worktrees): copiar el `.env` con `DATABASE_URL`.
+- Revisar `src/app/page.tsx` (quedo modificado sin commitear, NO lo toque yo esta sesion): `git --no-pager diff src/app/page.tsx`. Decidir si entra o se descarta.
+- Probar el flujo end-to-end en la app con los CSV reales contra la DB antes de pensar en merge a `main`.
+
+**Del lado del desarrollo (proxima sesion):**
+- **INYECCION AL WIZARD DE GANANCIAS (tramo en curso, NO empezado a codear).** Es el unico tramo que toca codigo compartido con produccion, por eso se encara con cuidado. Exploracion ya hecha:
+  - `TaxReturn` (schema linea 267) YA tiene la relacion `annualFiscalConsolidations AnnualFiscalConsolidationSnapshot[]` y los inputs transaccionales `sales` (SalesInvoice), `purchases` (PurchaseInvoice), `fixedAssets`, `inventory`.
+  - La determinacion anual vive en `src/domain/ganancias/calculations/determinacionImpuesto.ts`.
+  - **Decision de diseño pendiente (clave):** como inyectar el snapshot sin romper la determinacion validada. Dos caminos: (a) el snapshot PRE-LLENA registros transaccionales (SalesInvoice/PurchaseInvoice) que el usuario revisa/edita; (b) la determinacion lee opcionalmente los totales del snapshot como fuente alternativa. Mi recomendacion preliminar: (a) con confirmacion, para no tocar la matematica de la determinacion. **Falta leer `determinacionImpuesto.ts` y el wizard a fondo antes de decidir/codear.**
+- Pendientes menores arrastrados: cargar alicuotas de IIBB por jurisdiccion en el editor de perfil (#5); pantalla de revision de imputacion de compras (confirmar mercaderia/gasto/bien de uso).
+
+### Por donde seguir (orden recomendado)
+
+1. Usuario: `migrate deploy` + resolver `page.tsx` + prueba end-to-end con CSV reales.
+2. Desarrollo: leer `determinacionImpuesto.ts` + wizard, decidir el camino (a)/(b) de inyeccion, e implementar de forma ADITIVA (paso opt-in "importar del modulo mensual" que pre-llena y el usuario confirma). Validar que la determinacion del caso Mariano sigue dando identico despues del cambio.
+3. Recien con todo verde y validado: considerar merge a `main`.
+
+### Recordatorios de seguridad vigentes
+
+- Rotar credenciales expuestas durante el agujero de middleware (AUTH_PASSWORD, AUTH_SECRET, password de DB).
+- No mergear a `main` ni tocar produccion hasta validar el flujo end-to-end.
+- `migrate dev` jamas contra prod; usar `migrate deploy`.
+
+---
+
+## Retenciones y percepciones de IVA (2026-06-24, sesion 2)
+
+Carga del archivo de AFIP de retenciones/percepciones para descontar del saldo de IVA (Art. 24, 2º párr.).
+El MOTOR ya hacia el calculo (validado al peso: aplico ret 34.590,12 + libre disp. anterior 167.342,88
+→ saldo 179.731,35). Lo que se agrego es la INGESTA del archivo + la UI.
+
+### Formato del archivo AFIP (clave para no re-investigar)
+
+Es **un solo CSV** (`<cuit>_IMP_PER_RET_<fecha>.csv`) con retenciones Y percepciones mezcladas:
+- Separador **coma**. Importe **entrecomillado con decimal coma** (`"24297,52"`), puede ser **negativo** (NC).
+- Algunos campos con **apóstrofo de Excel** (`'2026002188`) que se elimina.
+- Columnas: `CUIT Agente`, `Impuesto`, `Regimen`, `Fecha Ret./Perc.`(DD/MM/YYYY), `Numero Certificado`,
+  `Descripcion Operacion`(RETENCION|PERCEPCION), `Importe Ret./Perc.`, `Numero Comprobante`,
+  `Fecha Comprobante`, `Descripcion Comprobante`, `Fecha Ingreso`, `Codigo de Seguridad`.
+- **`Impuesto` = 767 → IVA.** Otros códigos (217 Ganancias, etc.) NO aplican contra IVA.
+- Encoding Latin-1.
+
+**Variante de formato (importante):** si el archivo se abre y se guarda en Excel, cada fila puede
+quedar ENVUELTA entera entre comillas con las comillas internas duplicadas
+(`"30710278071,767,...,""24297,52"",..."`). El parser detecta esto (las filas normales empiezan con
+el CUIT, nunca con comilla), desenvuelve y des-duplica antes de parsear (`unwrapQuotedRow`). Sin esto,
+toda la fila se leía como un solo campo y NO se cargaba nada. Además, se validan fechas inexistentes
+(p. ej. 29/02 en año no bisiesto): dan error claro de "fecha inválida" en vez de imputarse mal.
+
+### Decisiones del usuario (cerradas)
+
+- **Solo IVA (767)** entra a este módulo; otros impuestos se ignoran con aviso.
+- Imputación **por `Fecha Ret./Perc.` validando el mes** del período; las de otro mes quedan fuera (no se cargan).
+- **Grilla con tilde por fila** (igual que comprobantes) + subtotales retenciones/percepciones + cotejo.
+
+### Mecánica (la respeta el motor, ya validado)
+
+- Saldo técnico del período = débito − crédito − saldo técnico a favor anterior. Si da a favor, ARRASTRA como saldo técnico (separado).
+- Contra el impuesto técnico a ingresar se aplican, juntos, la **libre disponibilidad anterior** + las **ret/perc del período**.
+- Si hay saldo a pagar → se descuentan. Si NO hay (o sobran) → el excedente queda como **saldo de libre disponibilidad** que arrastra.
+- Acumulación y uso sin doble cómputo: cada mes guarda su `freeAvailabilityBalance` neto; el mes siguiente lee ese neto (solo de liquidaciones CLOSED).
+
+### Implementado
+
+- **Schema**: `TaxCreditRecord.includedInSettlement` (aditivo). Migración `20260624140000_add_taxcredit_included_in_settlement`.
+- **Parser** `mappers/afipTaxCreditImporter.ts`: CSV coma + decimal coma + apóstrofo + negativos; filtra 767; mapea RETENCION→WITHHOLDING, PERCEPCION→PERCEPTION; valida mes; clave de idempotencia. **Validado contra el archivo REAL**: 6 ret = 335.012,48 / 11 perc = 8.797,98 / neto 343.810,46 (10/10 aserciones) + tests vitest.
+- **Persistencia** `persistence/taxCreditPersistence.ts` (idempotente por creditKey).
+- **Endpoints**: `tax-credits` (GET lista + POST import), `tax-credits/selection` (PATCH).
+- **Settlement**: GET y save filtran `includedInSettlement` en taxCredits; GET expone subtotales (retenciones/percepciones) para cotejo.
+- **UI**: sección "Paso 2b — Retenciones y percepciones" en la pantalla de IVA (subir archivo + grilla con selección + subtotales). El panel de totales ya muestra "percep./retenc. aplicadas", "saldo a pagar" y "libre disponibilidad (arrastra)".
+
+### REQUISITO antes de compilar (campo nuevo en Prisma)
+
+```powershell
+npx prisma generate    # OBLIGATORIO: las rutas usan TaxCreditRecord.includedInSettlement
+npm run build
+npx vitest run         # +5 tests nuevos (afipTaxCreditImporter)
+```
+
+Aplicar en base: `npx prisma migrate deploy` (ahora son varias migraciones nuevas acumuladas).
+
+### Pendiente
+
+- Probar end-to-end: subir el archivo real de ret/perc en la pantalla de IVA y verificar que el saldo a pagar baja y/o queda libre disponibilidad.
+- (Opcional) cotejo dedicado del total de ret/perc contra AFIP en la pantalla.
+
+### Validacion en vivo OK (2026-06-24)
+
+Probado en la app contra base de prueba: mayo 2026, debito 1.151.226,93 / credito 631.384,36 /
+ret-perc aplicadas 343.810,46 / saldo a pagar 176.032,11 — coincidio con AFIP y guardo CLOSED v1.
+Aprendizaje operativo: ante cambios de schema, correr SIEMPRE `prisma generate` (cliente) **y**
+`prisma migrate deploy` (base). Si falta el deploy, la app tira "column X does not exist".
+
+### Reload de liquidacion guardada + Reporte de avance anual (2026-06-24, sesion 2)
+
+Dos pedidos del usuario, ambos resueltos:
+
+1. **Volver a un mes cerrado muestra lo guardado** (antes obligaba a recalcular y recotejar a mano).
+   - `GET .../settlement/saved`: devuelve la ultima VatSettlement persistida del periodo (estado, version, montos, cotejo, lineas).
+   - Pantalla IVA: al montar carga lo guardado; si existe, muestra el panel `SavedSettlementPanel` (estado, debito/credito/saldo/libre disp., cotejo) y oculta los pasos de carga. Boton "Reliquidar / Modificar" reabre el flujo (pre-llena el saldo oficial). Al guardar, refresca el panel.
+
+2. **Reporte de avance anual "a hoy"** que impacta la liquidacion anual.
+   - Aprovecha el API que ya existia (`GET /api/clientes/[id]/consolidacion-anual?year=`), que aplica la COMPUERTA (solo meses IVA CLOSED) y agrega netos por categoria.
+   - Nueva pantalla `clientes/[id]/consolidacion-anual` (`AnnualProgressReport`): muestra que meses estan cotejados (verde) vs pendientes, el acumulado del ejercicio por categoria (ventas grav./exentas, mercaderia, gastos, bienes de uso, IIBB, IVA no computable), un **margen bruto PROVISORIO** (orientativo, NO el impuesto final) y el detalle por mes. Avisa de compras con imputacion pendiente de confirmar.
+   - Acceso desde el dashboard mensual (boton "Reporte anual").
+
+Como impacta el flujo completo: cada mes que el contador cierra (IVA cotejado) suma automaticamente al
+reporte anual; cuando estan los 12, el año esta "listo para liquidar" y se inyecta al wizard con un boton
+(ver tramo "Inyeccion al wizard"). Mes a mes se va viendo como va el cliente sin rehacer nada.
+
+### REQUISITO de este tramo
+
+No hay cambios de schema (solo lectura + UI), asi que **no** hace falta `prisma generate` ni migracion.
+Solo `npm run build` + `npx vitest run` antes de commitear.
+
+---
+
+## IIBB liquidable: alicuotas + Convenio Multilateral (2026-06-24, sesion 2)
+
+El motor de IIBB ya existia (8 tests) pero el settlement le pasaba alicuotas en 0 (devolvia 0). Se cerro:
+ahora el perfil guarda alicuotas por jurisdiccion y, para CM, los coeficientes unificados (CM05).
+
+- **Schema**: `ClientTaxJurisdiction.taxRate` (Decimal 8,6, nullable). Migracion `20260624150000_add_jurisdiction_tax_rate`.
+- **Settlement** (`GET .../settlement`): arma las jurisdicciones con la alicuota real del perfil y, si el
+  regimen es Convenio Multilateral (CM_REGIMEN_GENERAL/ESPECIAL), con el coeficiente unificado de la
+  `ConventionCoefficientVersion` del año. Avisa de jurisdicciones sin alicuota o sin coeficiente.
+  Motor: `assignedBase = base × coef` (CM) o `base` (local), `determinedTax = assignedBase × alicuota`.
+- **Endpoints** `GET/PUT /api/clientes/[id]/iibb-config`: leen/guardan alicuotas por jurisdiccion y
+  coeficientes CM por año. El PUT valida que los coeficientes CM sumen 1 (tolerancia 0.0001) y hace
+  upsert (jurisdicciones + ConventionCoefficientVersion/Line). Alicuota como fraccion (0.05 = 5%).
+- **Pantalla** `clientes/[id]/iibb-config` (`IibbConfigEditor`): grilla de jurisdicciones (codigo,
+  inscripcion, alicuota en %, activa) + columna de coeficiente unificado solo en CM, con suma en vivo
+  que debe dar 1. Acceso desde el dashboard mensual ("Config. IIBB").
+- **Tests**: settlementBuilders gana 2 casos (CM reparte por coeficiente y aplica alicuota; avisa si no
+  suman 1). Verificado el calculo: 902 → 650.000×5%=32.500; total 46.500.
+
+Convencion: alicuota se ingresa en % en la UI y se guarda como fraccion. CM05 se ingresa como decimal
+(0.6500) y debe sumar 1. income/expense coefficient se igualan al unificado (el calculo usa el unificado).
+
+### REQUISITO antes de compilar/usar (campo nuevo en Prisma)
+
+```powershell
+npx prisma generate          # OBLIGATORIO: el settlement y la config usan ClientTaxJurisdiction.taxRate
+npm run build
+npx vitest run               # +2 tests CM en settlementBuilders
+npx prisma migrate deploy    # aplica 20260624150000 a la base
+```
+
+### Pendiente IIBB
+
+- Alicuota por ACTIVIDAD dentro de una jurisdiccion (hoy una alicuota por jurisdiccion).
+- ~~Persistir la liquidacion de IIBB~~ HECHO (ver abajo).
+- ~~Mostrar el resultado de IIBB en la pantalla~~ HECHO (ver abajo).
+
+## Ciclo de IIBB completo: guardar/cerrar + mostrar en pantalla (2026-06-24, sesion 2)
+
+Quedo parejo con IVA. NO hay cambios de schema (GrossIncomeSettlement y officialAmount ya existian).
+
+- **Helper compartido** `fiscalLedger/grossIncomeFromProfile.ts` (`buildPeriodGrossIncome`): centraliza el
+  armado de IIBB desde el perfil (alicuotas + coeficientes CM + creditos) para que el PREVIEW (GET
+  settlement) y el GUARDADO usen exactamente la misma logica. El GET settlement se refactorizo para usarlo.
+- **Persistencia** `persistGrossIncomeSettlement`: ahora acepta cotejo (officialAmount/reference), setea
+  filedAt al cerrar, y tiene reintento de version ante P2002 (igual que IVA).
+- **Endpoints**: `POST .../settlement/iibb/save` (recalcula server-side, coteja el saldo a pagar contra
+  el oficial: coincide → CLOSED; difiere → 409 o IN_REVIEW con forceSave; sin oficial → DRAFT) y
+  `GET .../settlement/iibb/saved` (ultima guardada).
+- **Pantalla**: seccion "Ingresos Brutos" en la liquidacion (aparece al Calcular): grilla por
+  jurisdiccion (base asignada, alicuota, determinado, saldo), totales, cotejo del saldo oficial con
+  match en vivo, y boton "Guardar IIBB". Badge de estado si ya hay una guardada.
+- **Integracion anual**: el reader anual ya tomaba el IIBB CLOSED como gasto deducible; ahora que se
+  puede CERRAR, el circuito IIBB→Ganancias queda activo.
+- **Tests**: `grossIncomeFromProfile.test.ts` (NONE, sin jurisdicciones, local, CM, sin alicuota).
+
+### REQUISITO de este tramo
+
+No hay cambios de schema. Solo `npm run build` + `npx vitest run` antes de commitear (no hace falta
+`prisma generate` ni `migrate deploy`).
+
+## Gates tsc + eslint en verde (2026-06-24, sesion 2)
+
+Una revision externa detecto que `next build` NO chequea los archivos de test, asi que habia gates en
+rojo que el build no mostraba:
+- `tsc --noEmit`: 4 errores en mocks de test (`annualConsolidationSnapshot.test.ts`,
+  `fiscalSettlementPersistence.test.ts`): `const row = { id, ...args.data }` infiere `{ id: string }` y
+  pierde el index signature del spread → acceso a `row.version/status/sourceHash/confirmedAt` fallaba.
+  Fix: tipar `const row: Record<string, unknown> = ...`.
+- `eslint .`: 3 `any` en `annualConsolidation.test.ts` (helpers `alloc`/`monthsFull`/`allocations`).
+  Fix: tipar con `GainsAllocationKind`/`PeriodAllocation`/`PeriodConsolidationInput`.
+
+**POLITICA DE GATES (decision del usuario): de ahora en mas la rama debe pasar los CUATRO gates antes
+de commitear: `npx tsc --noEmit`, `npx eslint .`, `npm run build`, `npx vitest run`.** `next build` solo
+no alcanza (no mira los tests). 2026-06-24: los cuatro confirmados en VERDE por el usuario.
+
+## Alta/edicion de perfil fiscal — prerequisito del E2E (2026-06-24, sesion 2)
+
+Hallazgo al preparar el E2E: la creacion de periodo exige un `ClientTaxProfileVersion` activo, pero NO
+habia forma en la app de crear/editar ese perfil (ni el seed lo crea). Bloqueaba todo el modulo mensual
+para clientes nuevos, y para IIBB hacia falta poder setear el regimen (no-NONE). Tapado:
+
+- **Endpoint** `GET/PUT /api/clientes/[id]/tax-profile`: crea o actualiza el perfil (condicion IVA,
+  regimen IIBB, regimen Convenio). Si no existe, crea una version vigente desde 2020 (cubre los años
+  soportados); si existe, actualiza la ultima.
+- **UI**: seccion "Perfil fiscal" en la pantalla Config. IIBB con selectores de condicion IVA / regimen
+  IIBB / Convenio + "Guardar perfil". Al guardar, habilita crear periodos y configurar jurisdicciones.
+- Sin cambios de schema (usa ClientTaxProfileVersion existente).
+
+Pendiente menor: el seed podria crear un perfil demo para acelerar pruebas (hoy se carga desde la UI).
+
+## Hallazgos del E2E en vivo (2026-06-24, sesion 2)
+
+- **Config IIBB: jurisdiccion "desaparecia" al guardar.** Causa: la fila se descartaba si el codigo
+  quedaba vacio. Fix: se exige el codigo, se avisa si falta, y el mensaje de exito muestra cuantas
+  quedaron. (commit a6dd1f2)
+- **Cotejo: importes con punto decimal del teclado numerico se leian x100.** El teclado mete "176032.11"
+  (punto) pero el parser asumia formato AR (punto=miles). Fix: `presentation/parseMoney.ts`
+  (`parseMoneyToPlain`) acepta AR ("1.151.226,93"), punto decimal ("176032.11") y US ("1,151,226.93").
+  Se usa en el cotejo en vivo (front) y en el guardado (save IVA e IIBB). 13/13 aserciones + test vitest.
+- Confirmado por el usuario: puntos 3 (jurisdicciones) y 8 (IIBB no calculaba) resueltos.
+
+Pendiente a vigilar en el E2E: si el periodo se creo ANTES de configurar jurisdicciones, el settlement
+lee el perfil del snapshot del alta del periodo; como el perfil se edita in-place, deberia reflejarse,
+pero conviene confirmarlo en la prueba.
+
+---
+
+## CIERRE DE SESION — 2026-06-24 (sesion 2)
+
+### Estado al retomar (2026-06-25)
+
+El fix del parser de cotejo (`parseMoneyToPlain`) quedo COMMITEADO y pusheado al cierre de la sesion
+anterior. `git status` confirma la rama limpia (solo esta bitacora pendiente de commit).
+
+### Estado del modulo
+
+Rama `feature/iva-iibb-mensual-core`. Ultimo commit pusheado: `a6dd1f2` (+ el fix de cotejo pendiente).
+`main`/produccion INTACTOS. Los 4 gates (tsc/eslint/build/vitest) en verde; ~290 tests.
+
+Funcional de punta a punta (validado en la app contra base de prueba Docker):
+- IVA mensual: subir comprobantes AFIP → seleccionar filas → ret/perc → calcular (validado al peso) →
+  cotejar (3 importes) → guardar/cerrar → reabrir muestra lo guardado.
+- IIBB + Convenio Multilateral: perfil (condicion IVA + regimen) + jurisdicciones/alicuotas + coef CM
+  (suma 1) → calcula por jurisdiccion → cotejar saldo → guardar/cerrar.
+- Anual: reporte "a hoy" (solo meses CLOSED) + inyeccion al wizard de Ganancias (boton "Importar del
+  modulo mensual", comprobante por comprobante).
+
+### E2E: donde quedamos
+
+Probado y OK: login, perfil fiscal, jurisdicciones (fix del codigo), carga de comprobantes, IVA levanta,
+cotejo de IVA con el parser nuevo. 
+FALTA terminar de probar en vivo: guardar IIBB (paso 9), reabrir mes cerrado (10), cargar un 2do mes (11),
+reporte anual (12), importar al wizard + verificar determinacion (13-14).
+
+### Pendientes (por prioridad)
+
+1. Commitear el fix de cotejo (arriba).
+2. Terminar el E2E (pasos 9-14) y reportar.
+3. Vigilar: si el IIBB no ve una jurisdiccion recien guardada al calcular, es el snapshot de perfil del
+   periodo → haria que el settlement lea el perfil vigente, no el del alta.
+4. Pre-merge a main (operativo/usuario): rotar AUTH_PASSWORD/AUTH_SECRET/password DB, restringir
+   DATABASE_URL a Production, monitor con HEALTH_CHECK_TOKEN, backup + prueba de restauracion,
+   `migrate deploy` en prod (en Docker ya esta).
+5. Fuera de alcance / fase siguiente: alicuota IIBB por actividad, CM especiales, vencimientos/acuses,
+   refactor de archivos grandes (wizard 5k lineas), seed con perfil demo.
+
+### Recordatorio de proceso
+
+Gate obligatorio antes de cada commit: `tsc --noEmit` + `eslint .` + `build` + `vitest` (los 4).
+`next build` solo NO alcanza (no chequea tests).
+
+## Pre-merge a produccion: checklist (2026-06-25)
+
+Se relevo el estado tecnico y se armo `docs/CHECKLIST_PRE_MERGE_PRODUCCION.md`. Verificado:
+- Las 5 migraciones nuevas son ADITIVAS/no destructivas (tablas nuevas + columnas nullable/default).
+- `.env*` en `.gitignore` (sin secretos commiteados).
+- La guarda `check-deployment-db-safety.mjs` ya impone: Production solo desde `main`; exige
+  AUTH_PASSWORD/AUTH_SECRET (no "REEMPLAZAR"); Preview no puede apuntar a la base productiva.
+- Las migraciones NO corren en el build (prebuild solo corre la guarda). Hay que aplicarlas a prod
+  aparte y ANTES de que el codigo nuevo despliegue.
+- Rollback de codigo es seguro: al ser aditivas, el codigo viejo convive con las columnas nuevas.
+
+Orden del checklist: backup (+restore test) → `migrate deploy` en prod → rotar credenciales
+(DB/AUTH_PASSWORD/AUTH_SECRET) en Vercel → merge a main → smoke test → plan de rollback.
+La ejecucion es del usuario (operativo); el plan esta documentado.
+
+---
+
+## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)
+
+Se conecto el libro fiscal mensual (IVA) con la DDJJ anual de Ganancias, comprobante por comprobante
+(decision del usuario: granularidad "por comprobante" para maxima trazabilidad). ADITIVO: NO se toco
+`determinacionImpuesto.ts` ni ningun archivo de calculo.
+
+- **Schema**: `SalesInvoice` y `PurchaseInvoice` suman `importSource` y `sourceFiscalDocumentId`
+  (nullable, aditivo). Migracion `20260624130000_add_taxreturn_monthly_import_link`. Vinculan cada
+  registro anual con su comprobante mensual de origen y permiten reimportar sin pisar cargas manuales.
+- **Mapper puro** `fiscalLedger/taxReturnMonthlyImport.ts`: comprobantes CLOSED → SalesInvoice/
+  PurchaseInvoice con el `expenseType` correcto (Mercaderia→CMV, gasto→deducible, no deducible→
+  gasto no deducible). Bienes de uso NO se crean como compra: se devuelven como candidatos a cargar
+  vida util en amortizaciones. NC con neto negativo reducen ventas/compras. 15/15 aserciones verdes.
+- **Ruta** `POST /api/declaraciones/[id]/importar-mensual`: solo meses con IVA CLOSED; idempotente
+  (borra importSource='MONTHLY_LEDGER' y recrea; cargas manuales intactas); persiste el snapshot
+  (sourceHash) y audita. Reporta candidatos a bien de uso, compras pendientes de revisar imputacion,
+  y total de IIBB cotejado (no se crea automaticamente).
+- **UI**: componente aislado `MonthlyImportButton.tsx` insertado en el Paso 2 del wizard con 2 lineas
+  (import + 1 JSX). Tras importar, recarga la pagina para repoblar desde la base (evita que el autosave
+  del wizard pise lo importado). No se reescribio el wizard.
+
+Como la determinacion no se modifico, el caso Mariano sigue identico por construccion (lo confirma la
+suite existente de tests de determinacion).
+
+### REQUISITO antes de compilar este tramo
+
+Hay campos nuevos en `SalesInvoice`/`PurchaseInvoice`, asi que hay que **regenerar el cliente Prisma**:
+
+```powershell
+npx prisma generate    # OBLIGATORIO: el route usa importSource/sourceFiscalDocumentId
+npm run build          # confirmar tsc verde
+npx vitest run         # +15 tests nuevos (taxReturnMonthlyImport)
+```
+
+Aplicar la columna en la base con `npx prisma migrate deploy` (las DOS migraciones nuevas: includedInSettlement y el link mensual). Nunca `migrate dev` contra prod.
+
+### Pendiente del tramo (proxima sesion)
+
+- Probar la importacion end-to-end en la app (clic en "Importar del modulo mensual" en el wizard) con datos reales.
+- Verificar que el GET `/api/declaraciones/[id]` devuelve los SalesInvoice/PurchaseInvoice importados para que el wizard los muestre tras la recarga (si no, ajustar el read).
+- Opcional: auto-crear el IIBB como gasto deducible (hoy se reporta el total para carga manual); pantalla de revision de imputacion de compras.

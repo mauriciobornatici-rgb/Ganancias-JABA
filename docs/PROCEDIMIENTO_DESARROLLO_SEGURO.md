@@ -74,7 +74,8 @@ Que cubre:
 
 Regla de seguridad:
 
-- el comando falla si `DATABASE_URL` no apunta exactamente a `mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test`.
+- el comando falla si `DATABASE_URL` no apunta a `mysql://jaba_test:jaba_test_pass@127.0.0.1:<JABA_TEST_DB_PORT>/ganancias_jaba_test`.
+- al generar migraciones, `SHADOW_DATABASE_URL` tambien debe apuntar a la base Docker local `ganancias_jaba_test_shadow` del mismo puerto.
 - no se debe adaptar este comando para Hostinger produccion.
 
 ## Comandos que NO deben usarse para pruebas comunes

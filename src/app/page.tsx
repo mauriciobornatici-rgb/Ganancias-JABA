@@ -18,6 +18,7 @@ import {
   Upload,
   Trash2,
   Edit2,
+  BookOpen,
   LogOut
 } from 'lucide-react';
 import Link from 'next/link';
@@ -1060,6 +1061,13 @@ export default function Home() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex gap-2 justify-end">
+                            <Link
+                              href={`/clientes/${client.id}/periodos-fiscales`}
+                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
+                              title="Libro fiscal mensual IVA e IIBB"
+                            >
+                              <BookOpen className="h-4 w-4" />
+                            </Link>
                             <button 
                               onClick={() => { setActiveView('dashboard'); setSearchTerm(client.name); }}
                               className="px-3 py-1 text-xs font-bold text-teal-400 bg-zinc-800 border border-zinc-700 hover:border-teal-500/30 rounded transition-all cursor-pointer"

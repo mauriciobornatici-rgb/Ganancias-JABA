@@ -1,8 +1,10 @@
 import { spawn } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { resolveTestDatabaseUrl, resolveTestShadowDatabaseUrl } from './testDbConfig.mjs';
 
-export const TEST_DATABASE_URL = 'mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test';
+export const TEST_DATABASE_URL = resolveTestDatabaseUrl();
+export const TEST_SHADOW_DATABASE_URL = resolveTestShadowDatabaseUrl();
 
 const commandMap = {
   migrate: ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
@@ -11,6 +13,7 @@ const commandMap = {
   studio: ['node_modules/prisma/build/index.js', 'studio', '--schema', 'prisma/schema.prisma'],
   validate: ['node_modules/prisma/build/index.js', 'validate', '--schema', 'prisma/schema.prisma'],
   'validate-excel': ['node_modules/vitest/vitest.mjs', 'run', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts'],
+  'create-migration': ['node_modules/prisma/build/index.js', 'migrate', 'dev', '--create-only', '--schema', 'prisma/schema.prisma'],
 };
 
 const run = () => {
@@ -24,11 +27,13 @@ const run = () => {
   }
 
   const [scriptPath, ...args] = command;
-  const child = spawn(process.execPath, [scriptPath, ...args], {
+  const extraArgs = commandName === 'create-migration' ? process.argv.slice(3) : [];
+  const child = spawn(process.execPath, [scriptPath, ...args, ...extraArgs], {
     stdio: 'inherit',
     env: {
       ...process.env,
       DATABASE_URL: TEST_DATABASE_URL,
+      SHADOW_DATABASE_URL: TEST_SHADOW_DATABASE_URL,
       APP_ENV: 'test-db',
       RUN_DOCKER_DB_VALIDATION: commandName === 'validate-excel' ? '1' : process.env.RUN_DOCKER_DB_VALIDATION,
     },

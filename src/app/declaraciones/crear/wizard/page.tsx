@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import MonthlyImportButton from './MonthlyImportButton';
 import {
   Sparkles,
   ArrowLeft,
@@ -2277,6 +2278,7 @@ export default function WizardPage() {
           {/* PASO 2: INGRESOS Y VENTAS */}
           {currentStep === 2 && (
             <div className="space-y-6">
+              <MonthlyImportButton taxReturnId={activeReturnId} />
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-white tracking-tight">Paso 2: Ventas e Ingresos Comerciales</h2>

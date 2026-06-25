@@ -1,6 +1,37 @@
 # Backlog Priorizado - Ganancias JABA
 
-Ultima actualizacion: 2026-06-09
+## P32 - Modulo IVA + IIBB mensual integrado con Ganancias
+
+Estado: Activo. Desarrollo exclusivamente en `feature/iva-iibb-mensual-core` y Docker `3318`. El siguiente bloque es el piloto IVA AFIP mayo 2026; no se habilita merge, Preview ni Produccion hasta completar sus gates.
+
+Avance:
+
+- Corte 1 completado: Docker aislado por worktree en puerto configurable; esta rama opera en `3318` y no comparte contenedor ni volumen con el entorno existente de `3317`.
+- Corte 2 completado: schema Prisma, cliente generado y migracion `20260622002033_add_fiscal_monthly_ledger` aplicados solo en Docker `3318`. Se agregaron perfiles semilla ficticios ARBA local y CM regimen general con coeficientes que suman 1. No se modificaron modelos ni tablas anuales existentes.
+- Resguardo adicional: Prisma usa `ganancias_jaba_test_shadow` local para generar migraciones; el runner rechaza destinos que no sean Docker local. P19 ya usa el puerto configurable del worktree.
+- Corte 3 completado: importador mensual separado conserva bases e IVA por alicuota y genera una clave de comprobante estable, sin usar el nombre de archivo. El importador anual de Ganancias mantiene sus pruebas de regresion verdes.
+- Corte 4 en curso: tablero mensual, seleccion de comprobantes, motor IVA, persistencia, cotejo y pantalla existen como avance local sin commit. La base de dominio pasa sus pruebas, pero TypeScript aun falla porque `includedInSettlement` no tiene migracion ni cliente Prisma regenerado.
+- Caso AFIP de referencia validado fuera del repositorio: mayo 2026, 39 compras, 48 ventas; el resultado esperado F2002 es debito `9.090.888,61`, credito `2.630.946,77`, tecnico `381.664,35` y saldo final `179.731,35`.
+- Plan de cierre del piloto: `docs/superpowers/plans/2026-06-23-piloto-iva-afip-mayo-2026.md`.
+
+Objetivo:
+
+- Cargar comprobantes mensuales una sola vez por cliente, preparar IVA Simple e IIBB, y reutilizar la informacion clasificada en Ganancias anual.
+- Cubrir IVA Simple/F.2051, IIBB local ARBA y Convenio Multilateral regimen general sin tocar DDJJ anuales existentes.
+
+Decisiones cerradas:
+
+- El libro fiscal mensual sera independiente; no se moveran destructivamente comprobantes existentes de `TaxReturn`.
+- Ganancias consumira snapshots de consolidacion inmutables.
+- Se usan parametros versionados y aprobados, nunca alicuotas o vencimientos hardcodeados.
+- Los regimenes especiales de CM y Monotributo Unificado quedan fuera del primer corte.
+- Desarrollo y pruebas exclusivamente con Docker; produccion se evalua solo despues de Preview, backup y aprobacion explicita.
+
+Referencia:
+
+- `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`.
+
+Ultima actualizacion: 2026-06-21
 
 Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usuario o por bloqueo tecnico, registrar el motivo en `docs/REGISTRO_PROYECTO.md`.
 

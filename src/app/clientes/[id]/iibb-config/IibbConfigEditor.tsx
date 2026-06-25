@@ -15,12 +15,17 @@ type JurRow = {
 type ConfigData = {
   client: { id: string; name: string; cuit: string };
   year: number;
+  vatCondition: string;
   regime: string;
   conventionRegime: string;
   hasProfile: boolean;
   jurisdictions: Array<{ jurisdictionCode: string; registrationNumber: string | null; taxRate: string | null; isActive: boolean }>;
   coefficients: Array<{ jurisdictionCode: string; unifiedCoefficient: string }>;
 };
+
+const VAT_CONDITIONS = ['RESPONSABLE_INSCRIPTO', 'EXENTO', 'MONOTRIBUTO', 'OTRO'];
+const GI_REGIMES = ['NONE', 'ARBA_LOCAL', 'ARBA_SIMPLIFICADO', 'CM_REGIMEN_GENERAL', 'CM_REGIMEN_ESPECIAL'];
+const CONVENTION_REGIMES = ['NONE', 'GENERAL', 'ESPECIAL'];
 
 const REGIME_LABEL: Record<string, string> = {
   NONE: 'No liquida IIBB',
@@ -39,6 +44,12 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Formulario de perfil fiscal (condición IVA + régimen IIBB + Convenio)
+  const [pVat, setPVat] = useState('RESPONSABLE_INSCRIPTO');
+  const [pRegime, setPRegime] = useState('NONE');
+  const [pConvention, setPConvention] = useState('NONE');
+  const [savingProfile, setSavingProfile] = useState(false);
+
   const isConvenio = config?.regime === 'CM_REGIMEN_GENERAL' || config?.regime === 'CM_REGIMEN_ESPECIAL';
 
   const load = useCallback(async () => {
@@ -50,6 +61,9 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo cargar la configuración.');
       const data: ConfigData = payload.data;
       setConfig(data);
+      setPVat(data.vatCondition);
+      setPRegime(data.regime);
+      setPConvention(data.conventionRegime);
       const coefMap = new Map(data.coefficients.map(c => [c.jurisdictionCode, c.unifiedCoefficient]));
       setRows(
         data.jurisdictions.map(j => ({
@@ -78,6 +92,27 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   const addRow = () => setRows(prev => [...prev, { jurisdictionCode: '', registrationNumber: '', taxRatePct: '', unifiedCoefficient: '', isActive: true }]);
   const removeRow = (i: number) => setRows(prev => prev.filter((_, idx) => idx !== i));
   const update = (i: number, patch: Partial<JurRow>) => setRows(prev => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/tax-profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vatCondition: pVat, grossIncomeRegime: pRegime, conventionRegime: pConvention }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar el perfil.');
+      setNotice('Perfil fiscal guardado. Ya podés crear períodos y configurar las jurisdicciones de IIBB.');
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el perfil.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -141,11 +176,38 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
           <div className="flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-950/20 px-5 py-4 text-sm text-emerald-200"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><p>{notice}</p></div>
         ) : null}
 
-        {config && !config.hasProfile ? (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-5 py-4 text-sm text-amber-200">
-            Este cliente no tiene un perfil fiscal cargado. Cargá el perfil antes de configurar IIBB.
+        {/* Perfil fiscal: condición de IVA + régimen de IIBB + Convenio */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <h2 className="text-sm font-extrabold text-white">Perfil fiscal</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            {config && !config.hasProfile
+              ? 'Este cliente todavía no tiene perfil fiscal. Cargalo para poder crear períodos y liquidar.'
+              : 'Condición de IVA y régimen de Ingresos Brutos. El régimen define si se liquida IIBB y si aplica Convenio Multilateral.'}
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Condición IVA</label>
+              <select value={pVat} onChange={e => setPVat(e.target.value)} className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-200 outline-none focus:border-teal-400">
+                {VAT_CONDITIONS.map(v => <option key={v} value={v}>{v.replaceAll('_', ' ')}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Régimen IIBB</label>
+              <select value={pRegime} onChange={e => setPRegime(e.target.value)} className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-200 outline-none focus:border-teal-400">
+                {GI_REGIMES.map(v => <option key={v} value={v}>{REGIME_LABEL[v] ?? v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Convenio</label>
+              <select value={pConvention} onChange={e => setPConvention(e.target.value)} className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-200 outline-none focus:border-teal-400">
+                {CONVENTION_REGIMES.map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
           </div>
-        ) : null}
+          <button type="button" onClick={() => void saveProfile()} disabled={savingProfile} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50">
+            <Save className="h-4 w-4" /> {savingProfile ? 'Guardando…' : 'Guardar perfil'}
+          </button>
+        </section>
 
         {config?.regime === 'NONE' ? (
           <div className="rounded-xl border border-zinc-800 bg-[#121216] px-5 py-4 text-sm text-zinc-400">

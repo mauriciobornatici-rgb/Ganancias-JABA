@@ -32,7 +32,7 @@ async function latestProfile(clientId: string) {
     where: { clientId },
     orderBy: { validFrom: 'desc' },
     select: {
-      id: true, grossIncomeRegime: true, conventionRegime: true,
+      id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
       jurisdictions: { select: { jurisdictionCode: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: { jurisdictionCode: 'asc' } },
     },
   });
@@ -57,6 +57,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       data: {
         client,
         year,
+        vatCondition: profile?.vatCondition ?? 'RESPONSABLE_INSCRIPTO',
         regime: profile?.grossIncomeRegime ?? 'NONE',
         conventionRegime: profile?.conventionRegime ?? 'NONE',
         hasProfile: Boolean(profile),

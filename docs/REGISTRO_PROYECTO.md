@@ -3740,7 +3740,22 @@ rojo que el build no mostraba:
 
 **POLITICA DE GATES (decision del usuario): de ahora en mas la rama debe pasar los CUATRO gates antes
 de commitear: `npx tsc --noEmit`, `npx eslint .`, `npm run build`, `npx vitest run`.** `next build` solo
-no alcanza (no mira los tests).
+no alcanza (no mira los tests). 2026-06-24: los cuatro confirmados en VERDE por el usuario.
+
+## Alta/edicion de perfil fiscal — prerequisito del E2E (2026-06-24, sesion 2)
+
+Hallazgo al preparar el E2E: la creacion de periodo exige un `ClientTaxProfileVersion` activo, pero NO
+habia forma en la app de crear/editar ese perfil (ni el seed lo crea). Bloqueaba todo el modulo mensual
+para clientes nuevos, y para IIBB hacia falta poder setear el regimen (no-NONE). Tapado:
+
+- **Endpoint** `GET/PUT /api/clientes/[id]/tax-profile`: crea o actualiza el perfil (condicion IVA,
+  regimen IIBB, regimen Convenio). Si no existe, crea una version vigente desde 2020 (cubre los años
+  soportados); si existe, actualiza la ultima.
+- **UI**: seccion "Perfil fiscal" en la pantalla Config. IIBB con selectores de condicion IVA / regimen
+  IIBB / Convenio + "Guardar perfil". Al guardar, habilita crear periodos y configurar jurisdicciones.
+- Sin cambios de schema (usa ClientTaxProfileVersion existente).
+
+Pendiente menor: el seed podria crear un perfil demo para acelerar pruebas (hoy se carga desde la UI).
 
 ---
 

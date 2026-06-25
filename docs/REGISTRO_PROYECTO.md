@@ -3818,6 +3818,21 @@ reporte anual (12), importar al wizard + verificar determinacion (13-14).
 Gate obligatorio antes de cada commit: `tsc --noEmit` + `eslint .` + `build` + `vitest` (los 4).
 `next build` solo NO alcanza (no chequea tests).
 
+## Pre-merge a produccion: checklist (2026-06-25)
+
+Se relevo el estado tecnico y se armo `docs/CHECKLIST_PRE_MERGE_PRODUCCION.md`. Verificado:
+- Las 5 migraciones nuevas son ADITIVAS/no destructivas (tablas nuevas + columnas nullable/default).
+- `.env*` en `.gitignore` (sin secretos commiteados).
+- La guarda `check-deployment-db-safety.mjs` ya impone: Production solo desde `main`; exige
+  AUTH_PASSWORD/AUTH_SECRET (no "REEMPLAZAR"); Preview no puede apuntar a la base productiva.
+- Las migraciones NO corren en el build (prebuild solo corre la guarda). Hay que aplicarlas a prod
+  aparte y ANTES de que el codigo nuevo despliegue.
+- Rollback de codigo es seguro: al ser aditivas, el codigo viejo convive con las columnas nuevas.
+
+Orden del checklist: backup (+restore test) → `migrate deploy` en prod → rotar credenciales
+(DB/AUTH_PASSWORD/AUTH_SECRET) en Vercel → merge a main → smoke test → plan de rollback.
+La ejecucion es del usuario (operativo); el plan esta documentado.
+
 ---
 
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)

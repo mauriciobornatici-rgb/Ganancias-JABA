@@ -1,6 +1,12 @@
 import { Decimal } from 'decimal.js';
 import { describe, expect, it } from 'vitest';
-import { consolidateAnnualFiscalLedger, selectCotejadoPeriodsForAnnual } from '../fiscalLedger/annualConsolidation';
+import {
+  consolidateAnnualFiscalLedger,
+  selectCotejadoPeriodsForAnnual,
+  type GainsAllocationKind,
+  type PeriodAllocation,
+  type PeriodConsolidationInput,
+} from '../fiscalLedger/annualConsolidation';
 
 describe('selectCotejadoPeriodsForAnnual — solo meses cotejados alimentan Ganancias', () => {
   it('con los 12 meses CLOSED, el año puede consolidarse', () => {
@@ -36,14 +42,14 @@ describe('selectCotejadoPeriodsForAnnual — solo meses cotejados alimentan Gana
 });
 
 const D = (v: string | number) => new Decimal(v);
-const alloc = (gainsKind: any, amount: string | number) => ({ gainsKind, allocatedNetAmount: D(amount) });
+const alloc = (gainsKind: GainsAllocationKind, amount: string | number): PeriodAllocation => ({ gainsKind, allocatedNetAmount: D(amount) });
 
-function monthsFull(extra: any[] = []) {
+function monthsFull(extra: PeriodConsolidationInput[] = []): PeriodConsolidationInput[] {
   // 12 meses minimos para no disparar el warning de faltantes
-  const base = Array.from({ length: 12 }, (_, i) => ({
+  const base: PeriodConsolidationInput[] = Array.from({ length: 12 }, (_, i) => ({
     fiscalPeriodId: `p${i + 1}`,
     month: i + 1,
-    allocations: [] as any[],
+    allocations: [],
   }));
   return [...base, ...extra];
 }

@@ -17,7 +17,7 @@ function makeStore() {
         return r ? { id: r.id as string, sourceHash: r.sourceHash as string, confirmedAt: (r.confirmedAt as Date | null) ?? null } : null;
       },
       async create(args: { data: Record<string, unknown> }) {
-        const row = { id: `snap-${rows.length + 1}`, ...args.data };
+        const row: Record<string, unknown> = { id: `snap-${rows.length + 1}`, ...args.data };
         rows.push(row);
         return { id: row.id as string, sourceHash: row.sourceHash as string, confirmedAt: (row.confirmedAt as Date | null) ?? null };
       },

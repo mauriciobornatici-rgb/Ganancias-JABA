@@ -3727,6 +3727,21 @@ Quedo parejo con IVA. NO hay cambios de schema (GrossIncomeSettlement y official
 No hay cambios de schema. Solo `npm run build` + `npx vitest run` antes de commitear (no hace falta
 `prisma generate` ni `migrate deploy`).
 
+## Gates tsc + eslint en verde (2026-06-24, sesion 2)
+
+Una revision externa detecto que `next build` NO chequea los archivos de test, asi que habia gates en
+rojo que el build no mostraba:
+- `tsc --noEmit`: 4 errores en mocks de test (`annualConsolidationSnapshot.test.ts`,
+  `fiscalSettlementPersistence.test.ts`): `const row = { id, ...args.data }` infiere `{ id: string }` y
+  pierde el index signature del spread → acceso a `row.version/status/sourceHash/confirmedAt` fallaba.
+  Fix: tipar `const row: Record<string, unknown> = ...`.
+- `eslint .`: 3 `any` en `annualConsolidation.test.ts` (helpers `alloc`/`monthsFull`/`allocations`).
+  Fix: tipar con `GainsAllocationKind`/`PeriodAllocation`/`PeriodConsolidationInput`.
+
+**POLITICA DE GATES (decision del usuario): de ahora en mas la rama debe pasar los CUATRO gates antes
+de commitear: `npx tsc --noEmit`, `npx eslint .`, `npm run build`, `npx vitest run`.** `next build` solo
+no alcanza (no mira los tests).
+
 ---
 
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)

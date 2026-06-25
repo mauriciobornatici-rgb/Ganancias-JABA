@@ -25,7 +25,7 @@ function makeStore() {
         return matching[0] ? { version: matching[0].version as number } : null;
       },
       async create(args: { data: Record<string, unknown> }) {
-        const row = { id: `vs-${rows.length + 1}`, ...args.data };
+        const row: Record<string, unknown> = { id: `vs-${rows.length + 1}`, ...args.data };
         rows.push(row);
         return { id: row.id as string, version: row.version as number, status: row.status as string };
       },

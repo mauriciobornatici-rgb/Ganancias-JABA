@@ -119,7 +119,23 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
     setError(null);
     setNotice(null);
     try {
+      // Una fila con datos (alícuota/coef/inscripción) pero SIN código se descartaría en silencio:
+      // lo avisamos para que no parezca que "se guardó y desapareció".
+      const rowsConData = rows.filter(r => r.taxRatePct.trim() || r.unifiedCoefficient.trim() || r.registrationNumber.trim());
+      const sinCodigo = rowsConData.filter(r => !r.jurisdictionCode.trim());
+      if (sinCodigo.length > 0) {
+        setError('Cada jurisdicción necesita un código (ej. 902). Completá el código de las filas cargadas antes de guardar.');
+        setSaving(false);
+        return;
+      }
+
       const valid = rows.filter(r => r.jurisdictionCode.trim());
+      if (valid.length === 0) {
+        setError('Agregá al menos una jurisdicción con su código y alícuota antes de guardar.');
+        setSaving(false);
+        return;
+      }
+
       const jurisdictions = valid.map(r => ({
         jurisdictionCode: r.jurisdictionCode.trim(),
         taxRate: r.taxRatePct.trim() === '' ? null : Number(r.taxRatePct.replace(',', '.')) / 100,
@@ -137,7 +153,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar.');
-      setNotice('Configuración de IIBB guardada. El próximo cálculo de IIBB usará estas alícuotas y coeficientes.');
+      setNotice(`Configuración guardada: ${payload.data?.updated ?? jurisdictions.length} jurisdicción(es)${payload.data?.coefficients ? ` y ${payload.data.coefficients} coeficiente(s) CM` : ''}. Quedan cargadas abajo.`);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar.');

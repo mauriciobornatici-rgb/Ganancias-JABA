@@ -3774,6 +3774,52 @@ pero conviene confirmarlo en la prueba.
 
 ---
 
+## CIERRE DE SESION — 2026-06-24 (sesion 2)
+
+### Estado al retomar (2026-06-25)
+
+El fix del parser de cotejo (`parseMoneyToPlain`) quedo COMMITEADO y pusheado al cierre de la sesion
+anterior. `git status` confirma la rama limpia (solo esta bitacora pendiente de commit).
+
+### Estado del modulo
+
+Rama `feature/iva-iibb-mensual-core`. Ultimo commit pusheado: `a6dd1f2` (+ el fix de cotejo pendiente).
+`main`/produccion INTACTOS. Los 4 gates (tsc/eslint/build/vitest) en verde; ~290 tests.
+
+Funcional de punta a punta (validado en la app contra base de prueba Docker):
+- IVA mensual: subir comprobantes AFIP → seleccionar filas → ret/perc → calcular (validado al peso) →
+  cotejar (3 importes) → guardar/cerrar → reabrir muestra lo guardado.
+- IIBB + Convenio Multilateral: perfil (condicion IVA + regimen) + jurisdicciones/alicuotas + coef CM
+  (suma 1) → calcula por jurisdiccion → cotejar saldo → guardar/cerrar.
+- Anual: reporte "a hoy" (solo meses CLOSED) + inyeccion al wizard de Ganancias (boton "Importar del
+  modulo mensual", comprobante por comprobante).
+
+### E2E: donde quedamos
+
+Probado y OK: login, perfil fiscal, jurisdicciones (fix del codigo), carga de comprobantes, IVA levanta,
+cotejo de IVA con el parser nuevo. 
+FALTA terminar de probar en vivo: guardar IIBB (paso 9), reabrir mes cerrado (10), cargar un 2do mes (11),
+reporte anual (12), importar al wizard + verificar determinacion (13-14).
+
+### Pendientes (por prioridad)
+
+1. Commitear el fix de cotejo (arriba).
+2. Terminar el E2E (pasos 9-14) y reportar.
+3. Vigilar: si el IIBB no ve una jurisdiccion recien guardada al calcular, es el snapshot de perfil del
+   periodo → haria que el settlement lea el perfil vigente, no el del alta.
+4. Pre-merge a main (operativo/usuario): rotar AUTH_PASSWORD/AUTH_SECRET/password DB, restringir
+   DATABASE_URL a Production, monitor con HEALTH_CHECK_TOKEN, backup + prueba de restauracion,
+   `migrate deploy` en prod (en Docker ya esta).
+5. Fuera de alcance / fase siguiente: alicuota IIBB por actividad, CM especiales, vencimientos/acuses,
+   refactor de archivos grandes (wizard 5k lineas), seed con perfil demo.
+
+### Recordatorio de proceso
+
+Gate obligatorio antes de cada commit: `tsc --noEmit` + `eslint .` + `build` + `vitest` (los 4).
+`next build` solo NO alcanza (no chequea tests).
+
+---
+
 ## Inyeccion al wizard de Ganancias (2026-06-24, sesion 2)
 
 Se conecto el libro fiscal mensual (IVA) con la DDJJ anual de Ganancias, comprobante por comprobante

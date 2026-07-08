@@ -37,6 +37,11 @@ import {
   shouldWarnBeforeWizardExit,
 } from '@/domain/ganancias/presentation/wizardExitGuard';
 import {
+  WIZARD_LOCAL_DRAFT_RECOVERY_MESSAGE,
+  saveWizardLocalDraft,
+  shouldOfferWizardDraftRecovery,
+} from '@/domain/ganancias/presentation/wizardDraftRecovery';
+import {
   buildWizardAxiDynamicReconciliation,
   buildWizardEffectiveCalculationParams,
   isMissingIpcWarning,
@@ -54,6 +59,7 @@ import {
   coerceWizardPersonalDeductionType,
   DEFAULT_WIZARD_AXI_STATIC_BREAKDOWN,
   resolveWizardRouteReturnId,
+  shouldApplyWizardSnapshotField,
   shouldRequestActiveTaxParameters,
   shouldResetWizardDetailsOnIdentityChange,
   splitWizardImportDuplicates,
@@ -210,6 +216,80 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+// Forma comun de los datos de una declaracion, tal como llegan de la base o del autoguardado local
+type WizardStateSnapshot = {
+  cuit?: string;
+  clientName?: string;
+  status?: string;
+  fiscalYear?: number;
+  taxParameterSetId?: string;
+  currentStep?: number;
+  sales?: WizardSale[];
+  purchases?: WizardPurchase[];
+  fixedAssets?: WizardFixedAsset[];
+  initialStock?: string;
+  finalStock?: string;
+  bankAccounts?: WizardBankAccount[];
+  cashHoldings?: WizardCashHolding[];
+  receivables?: WizardReceivable[];
+  liabilities?: WizardLiability[];
+  withholdings?: WizardWithholding[];
+  generalDeductions?: {
+    autonomos: string;
+    servicioDomestico: string;
+    seguroVida: string;
+    seguroRetiro: string;
+    gastosSepelio: string;
+    interesesHipoteca: string;
+    gastosEducativos: string;
+    alquilerCasaHabitacion: string;
+    deduccionLocadorLocatario: string;
+    donaciones: string;
+    medicosAsistencial: string;
+    honorariosMedicos: string;
+  } | null;
+  personalDeductions?: {
+    tieneConyuge: boolean;
+    cantidadHijos: number;
+    cantidadHijosIncapacitados: number;
+    tipoDeduccionEspecial: WizardPersonalDeductionType;
+    esJubiladoOchoHaberes: boolean;
+  } | null;
+  personalAssets?: WizardPersonalAsset[];
+  personalLiabilities?: WizardPersonalLiability[];
+  otherJustifications?: WizardOtherJustification[];
+  activoTotalInicio?: string;
+  pasivoTotalInicio?: string;
+  bienesNoComputablesInicio?: string;
+  saldoAFavorAnterior?: string;
+  quebrantosAnteriores?: string;
+  axiDynamic?: WizardAxiDynamic[];
+  axiStaticBreakdown?: WizardAxiStaticBreakdown | null;
+};
+
+const DEFAULT_WIZARD_GENERAL_DEDUCTIONS: NonNullable<WizardStateSnapshot['generalDeductions']> = {
+  autonomos: '0',
+  servicioDomestico: '0',
+  seguroVida: '0',
+  seguroRetiro: '0',
+  gastosSepelio: '0',
+  interesesHipoteca: '0',
+  gastosEducativos: '0',
+  alquilerCasaHabitacion: '0',
+  deduccionLocadorLocatario: '0',
+  donaciones: '0',
+  medicosAsistencial: '0',
+  honorariosMedicos: '0',
+};
+
+const DEFAULT_WIZARD_PERSONAL_DEDUCTIONS: NonNullable<WizardStateSnapshot['personalDeductions']> = {
+  tieneConyuge: false,
+  cantidadHijos: 0,
+  cantidadHijosIncapacitados: 0,
+  tipoDeduccionEspecial: 'Ninguna',
+  esJubiladoOchoHaberes: false,
+};
+
 function readInitialWizardStepFromUrl(): number {
   if (typeof window === 'undefined') return 1;
 
@@ -228,6 +308,8 @@ export default function WizardPage() {
   const isLoadedReturnImmutable = isTaxReturnImmutable(loadedReturnStatus);
   const initialCuitRef = React.useRef<string | null>(null);
   const isCreatingRef = React.useRef(false);
+  // Copia local capturada antes de aplicar los datos de la base, para ofrecer recuperacion de carga no guardada
+  const pendingLocalRecoveryRef = React.useRef<{ localDraftRaw: string; serverUpdatedAt: string | null } | null>(null);
   const [currentStep, setCurrentStep] = useState(readInitialWizardStepFromUrl);
   const [maxVisitedStep, setMaxVisitedStep] = useState(readInitialWizardStepFromUrl);
 
@@ -281,6 +363,8 @@ export default function WizardPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [modalActionType, setModalActionType] = useState<'borrador' | 'cerrar' | null>(null);
   const [modalLoading, setModalLoading] = useState(true);
+  const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
+  const [localDraftWarning, setLocalDraftWarning] = useState<string | null>(null);
 
   const [step1Error, setStep1Error] = useState<string | null>(null);
   const [isLiveBarOpen, setIsLiveBarOpen] = useState(true);
@@ -291,6 +375,19 @@ export default function WizardPage() {
 
   const [dbClients, setDbClients] = useState<WizardClient[]>([]);
   const [dbDeclaraciones, setDbDeclaraciones] = useState<WizardTaxReturnSummary[]>([]);
+  const localDraftSavedAtLabel = localDraftSavedAt
+    ? new Date(localDraftSavedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : null;
+
+  const reportLocalDraftSave = React.useCallback((result: ReturnType<typeof saveWizardLocalDraft>) => {
+    if (result.ok) {
+      setLocalDraftSavedAt(result.savedAt);
+      setLocalDraftWarning(null);
+      return;
+    }
+
+    setLocalDraftWarning(result.errorMessage);
+  }, []);
 
   const checkIfStepHasData = (step: number): boolean => {
     if (step === 1) {
@@ -461,7 +558,11 @@ export default function WizardPage() {
         if (saveRequest.target.isCreate && res.data?.id) {
           const newId = res.data.id;
           setPersistedReturnId(newId);
-          localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(payload));
+          reportLocalDraftSave(saveWizardLocalDraft({
+            storage: localStorage,
+            key: `jaba_wizard_state_${newId}`,
+            draft: payload,
+          }));
           window.history.replaceState(null, '', `/declaraciones/${newId}/wizard`);
         }
         setLoadedReturnStatus(targetStatus);
@@ -504,20 +605,7 @@ export default function WizardPage() {
 
   const [withholdings, setWithholdings] = useState<WizardWithholding[]>([]);
 
-  const [generalDeductions, setGeneralDeductions] = useState({
-    autonomos: '0',
-    servicioDomestico: '0',
-    seguroVida: '0',
-    seguroRetiro: '0',
-    gastosSepelio: '0',
-    interesesHipoteca: '0',
-    gastosEducativos: '0',
-    alquilerCasaHabitacion: '0',
-    deduccionLocadorLocatario: '0',
-    donaciones: '0',
-    medicosAsistencial: '0',
-    honorariosMedicos: '0',
-  });
+  const [generalDeductions, setGeneralDeductions] = useState(DEFAULT_WIZARD_GENERAL_DEDUCTIONS);
 
   const [personalDeductions, setPersonalDeductions] = useState<{
     tieneConyuge: boolean;
@@ -525,13 +613,7 @@ export default function WizardPage() {
     cantidadHijosIncapacitados: number;
     tipoDeduccionEspecial: WizardPersonalDeductionType;
     esJubiladoOchoHaberes: boolean;
-  }>({
-    tieneConyuge: false,
-    cantidadHijos: 0,
-    cantidadHijosIncapacitados: 0,
-    tipoDeduccionEspecial: 'Ninguna',
-    esJubiladoOchoHaberes: false,
-  });
+  }>(DEFAULT_WIZARD_PERSONAL_DEDUCTIONS);
 
   const [personalAssets, setPersonalAssets] = useState<WizardPersonalAsset[]>([]);
 
@@ -553,27 +635,8 @@ export default function WizardPage() {
     setReceivables([]);
     setLiabilities([]);
     setWithholdings([]);
-    setGeneralDeductions({
-      autonomos: '0',
-      servicioDomestico: '0',
-      seguroVida: '0',
-      seguroRetiro: '0',
-      gastosSepelio: '0',
-      interesesHipoteca: '0',
-      gastosEducativos: '0',
-      alquilerCasaHabitacion: '0',
-      deduccionLocadorLocatario: '0',
-      donaciones: '0',
-      medicosAsistencial: '0',
-      honorariosMedicos: '0',
-    });
-    setPersonalDeductions({
-      tieneConyuge: false,
-      cantidadHijos: 0,
-      cantidadHijosIncapacitados: 0,
-      tipoDeduccionEspecial: 'Ninguna',
-      esJubiladoOchoHaberes: false,
-    });
+    setGeneralDeductions(DEFAULT_WIZARD_GENERAL_DEDUCTIONS);
+    setPersonalDeductions(DEFAULT_WIZARD_PERSONAL_DEDUCTIONS);
     setPersonalAssets([]);
     setPersonalLiabilities([]);
     setOtherJustifications([]);
@@ -590,6 +653,41 @@ export default function WizardPage() {
     }
   }, [activeReturnId, id, resetWizardDetailState]);
 
+  // Aplica al estado del wizard un snapshot de declaracion (de la base, del autoguardado local o de una recuperacion)
+  const applyWizardSnapshot = React.useCallback((data: WizardStateSnapshot) => {
+    if (shouldApplyWizardSnapshotField(data, 'cuit')) {
+      setCuit(data.cuit ?? '');
+      initialCuitRef.current = data.cuit ?? '';
+    }
+    if (shouldApplyWizardSnapshotField(data, 'clientName')) setClientName(data.clientName ?? '');
+    if (shouldApplyWizardSnapshotField(data, 'status')) setLoadedReturnStatus(data.status ?? 'Borrador');
+    if (shouldApplyWizardSnapshotField(data, 'fiscalYear')) setFiscalYear(data.fiscalYear ?? 2025);
+    if (shouldApplyWizardSnapshotField(data, 'taxParameterSetId')) setTaxParameterSetId(data.taxParameterSetId ?? '');
+    if (shouldApplyWizardSnapshotField(data, 'currentStep')) updateCurrentStep(Math.min(6, data.currentStep ?? 1));
+    if (shouldApplyWizardSnapshotField(data, 'sales')) setSales(data.sales ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'purchases')) setPurchases(data.purchases ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'fixedAssets')) setFixedAssets(data.fixedAssets ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'initialStock')) setInitialStock(data.initialStock ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'finalStock')) setFinalStock(data.finalStock ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'bankAccounts')) setBankAccounts(data.bankAccounts ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'cashHoldings')) setCashHoldings(data.cashHoldings ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'receivables')) setReceivables(data.receivables ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'liabilities')) setLiabilities(data.liabilities ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'withholdings')) setWithholdings(data.withholdings ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'generalDeductions')) setGeneralDeductions(data.generalDeductions ?? DEFAULT_WIZARD_GENERAL_DEDUCTIONS);
+    if (shouldApplyWizardSnapshotField(data, 'personalDeductions')) setPersonalDeductions(data.personalDeductions ?? DEFAULT_WIZARD_PERSONAL_DEDUCTIONS);
+    if (shouldApplyWizardSnapshotField(data, 'personalAssets')) setPersonalAssets(data.personalAssets ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'personalLiabilities')) setPersonalLiabilities(data.personalLiabilities ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'otherJustifications')) setOtherJustifications(data.otherJustifications ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'activoTotalInicio')) setActivoTotalInicio(data.activoTotalInicio ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'pasivoTotalInicio')) setPasivoTotalInicio(data.pasivoTotalInicio ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'bienesNoComputablesInicio')) setBienesNoComputablesInicio(data.bienesNoComputablesInicio ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'saldoAFavorAnterior')) setSaldoAFavorAnterior(data.saldoAFavorAnterior ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'quebrantosAnteriores')) setQuebrantosAnteriores(data.quebrantosAnteriores ?? '0');
+    if (shouldApplyWizardSnapshotField(data, 'axiDynamic')) setAxiDynamic(data.axiDynamic ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'axiStaticBreakdown')) setAxiStaticBreakdown(data.axiStaticBreakdown ?? null);
+  }, [updateCurrentStep]);
+
   const loadFromLocalStorage = React.useCallback(() => {
     if (!routeReturnId) {
       setCuit('');
@@ -605,38 +703,7 @@ export default function WizardPage() {
     const saved = localStorage.getItem(`jaba_wizard_state_${routeReturnId}`);
     if (saved) {
       try {
-        const data = JSON.parse(saved);
-        if (data.cuit) {
-          setCuit(data.cuit);
-          initialCuitRef.current = data.cuit;
-        }
-        if (data.clientName) setClientName(data.clientName);
-        if (data.status) setLoadedReturnStatus(data.status);
-        if (data.fiscalYear) setFiscalYear(data.fiscalYear);
-        if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-        if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
-        if (data.sales) setSales(data.sales);
-        if (data.purchases) setPurchases(data.purchases);
-        if (data.fixedAssets) setFixedAssets(data.fixedAssets);
-        if (data.initialStock) setInitialStock(data.initialStock);
-        if (data.finalStock) setFinalStock(data.finalStock);
-        if (data.bankAccounts) setBankAccounts(data.bankAccounts);
-        if (data.cashHoldings) setCashHoldings(data.cashHoldings);
-        if (data.receivables) setReceivables(data.receivables);
-        if (data.liabilities) setLiabilities(data.liabilities);
-        if (data.withholdings) setWithholdings(data.withholdings);
-        if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
-        if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
-        if (data.personalAssets) setPersonalAssets(data.personalAssets);
-        if (data.personalLiabilities) setPersonalLiabilities(data.personalLiabilities);
-        if (data.otherJustifications) setOtherJustifications(data.otherJustifications);
-        if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
-        if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
-        if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
-        if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
-        if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
-        if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
-        if (data.axiStaticBreakdown) setAxiStaticBreakdown(data.axiStaticBreakdown);
+        applyWizardSnapshot(JSON.parse(saved) as WizardStateSnapshot);
         return;
       } catch (e) {
         console.error("Failed parsing wizard state from localStorage", e);
@@ -702,7 +769,7 @@ export default function WizardPage() {
         }
       }
     }
-  }, [routeReturnId, resetWizardDetailState, updateCurrentStep]);
+  }, [routeReturnId, applyWizardSnapshot, resetWizardDetailState, updateCurrentStep]);
 
   // Hook 1: Cargar estado persistido al iniciar (Mount) e inicializar padrón de contribuyentes
   useEffect(() => {
@@ -722,38 +789,17 @@ export default function WizardPage() {
           .then(res => res.json())
           .then(res => {
             if (res.success && res.data) {
-              const data = res.data;
-              if (data.cuit) {
-                setCuit(data.cuit);
-                initialCuitRef.current = data.cuit;
+              const data = res.data as WizardStateSnapshot & { updatedAt?: string };
+              // Capturar la copia local ANTES de aplicar los datos de la base:
+              // si tiene carga mas reciente sin guardar, se ofrecera recuperarla (ver autoguardado)
+              const localDraftRaw = localStorage.getItem(`jaba_wizard_state_${routeReturnId}`);
+              if (localDraftRaw) {
+                pendingLocalRecoveryRef.current = {
+                  localDraftRaw,
+                  serverUpdatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : null,
+                };
               }
-              if (data.clientName) setClientName(data.clientName);
-              if (data.status) setLoadedReturnStatus(data.status);
-              if (data.fiscalYear) setFiscalYear(data.fiscalYear);
-              if (data.taxParameterSetId) setTaxParameterSetId(data.taxParameterSetId);
-              if (data.currentStep) updateCurrentStep(Math.min(6, data.currentStep));
-              if (data.sales) setSales(data.sales);
-              if (data.purchases) setPurchases(data.purchases);
-              if (data.fixedAssets) setFixedAssets(data.fixedAssets);
-              if (data.initialStock) setInitialStock(data.initialStock);
-              if (data.finalStock) setFinalStock(data.finalStock);
-              if (data.bankAccounts) setBankAccounts(data.bankAccounts);
-              if (data.cashHoldings) setCashHoldings(data.cashHoldings);
-              if (data.receivables) setReceivables(data.receivables);
-              if (data.liabilities) setLiabilities(data.liabilities);
-              if (data.withholdings) setWithholdings(data.withholdings);
-              if (data.generalDeductions) setGeneralDeductions(data.generalDeductions);
-              if (data.personalDeductions) setPersonalDeductions(data.personalDeductions);
-              if (data.personalAssets) setPersonalAssets(data.personalAssets);
-              if (data.personalLiabilities) setPersonalLiabilities(data.personalLiabilities);
-              if (data.otherJustifications) setOtherJustifications(data.otherJustifications);
-              if (data.activoTotalInicio) setActivoTotalInicio(data.activoTotalInicio);
-              if (data.pasivoTotalInicio) setPasivoTotalInicio(data.pasivoTotalInicio);
-              if (data.bienesNoComputablesInicio) setBienesNoComputablesInicio(data.bienesNoComputablesInicio);
-              if (data.saldoAFavorAnterior) setSaldoAFavorAnterior(data.saldoAFavorAnterior);
-              if (data.quebrantosAnteriores) setQuebrantosAnteriores(data.quebrantosAnteriores);
-              if (data.axiDynamic) setAxiDynamic(data.axiDynamic);
-              if (data.axiStaticBreakdown) setAxiStaticBreakdown(data.axiStaticBreakdown);
+              applyWizardSnapshot(data);
             } else {
               loadFromLocalStorage();
             }
@@ -767,7 +813,7 @@ export default function WizardPage() {
           });
       }
     }
-  }, [loadFromLocalStorage, routeReturnId, updateCurrentStep]);
+  }, [loadFromLocalStorage, routeReturnId, applyWizardSnapshot]);
 
   // Hook 2: Auto-Guardar progreso del Wizard en tiempo real (reaccionando a cualquier cambio de estado)
   useEffect(() => {
@@ -802,7 +848,32 @@ export default function WizardPage() {
       };
 
       const saveKey = activeReturnId || `new_${cuit}`;
-      localStorage.setItem(`jaba_wizard_state_${saveKey}`, JSON.stringify(wizardState));
+      const serializedWizardState = JSON.stringify(wizardState);
+      reportLocalDraftSave(saveWizardLocalDraft({
+        storage: localStorage,
+        key: `jaba_wizard_state_${saveKey}`,
+        draft: wizardState,
+      }));
+
+      // Si al montar se cargo la declaracion desde la base, verificar si la copia local previa
+      // tenia carga mas reciente sin guardar (ej: salida sin Guardar como Borrador) y ofrecer recuperarla
+      const pendingRecovery = pendingLocalRecoveryRef.current;
+      if (pendingRecovery) {
+        pendingLocalRecoveryRef.current = null;
+        const offerRecovery = shouldOfferWizardDraftRecovery({
+          localDraftRaw: pendingRecovery.localDraftRaw,
+          serverStateRaw: serializedWizardState,
+          serverUpdatedAt: pendingRecovery.serverUpdatedAt,
+        });
+        if (offerRecovery && window.confirm(WIZARD_LOCAL_DRAFT_RECOVERY_MESSAGE)) {
+          try {
+            applyWizardSnapshot(JSON.parse(pendingRecovery.localDraftRaw) as WizardStateSnapshot);
+            return;
+          } catch (err) {
+            console.error('No se pudo recuperar la copia local del wizard:', err);
+          }
+        }
+      }
 
       if (!activeReturnId && currentStep > 1 && clientName && cuit) {
         if (isCreatingRef.current) return;
@@ -820,7 +891,11 @@ export default function WizardPage() {
             const newId = res.data.id;
             setPersistedReturnId(newId);
             setLoadedReturnStatus('Borrador');
-            localStorage.setItem(`jaba_wizard_state_${newId}`, JSON.stringify(createPayload));
+            reportLocalDraftSave(saveWizardLocalDraft({
+              storage: localStorage,
+              key: `jaba_wizard_state_${newId}`,
+              draft: createPayload,
+            }));
             window.location.href = `/declaraciones/${newId}/wizard`;
           } else {
             const duplicateRedirectPath = buildDuplicateTaxReturnRedirectPath(res);
@@ -844,7 +919,7 @@ export default function WizardPage() {
     bankAccounts, cashHoldings, receivables, liabilities, withholdings, generalDeductions, personalDeductions,
     personalAssets, personalLiabilities, otherJustifications, activoTotalInicio, pasivoTotalInicio,
     bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic,
-    axiStaticBreakdown
+    axiStaticBreakdown, applyWizardSnapshot, reportLocalDraftSave
   ]);
 
   // Hook 4: Buscar resoluciones para el año seleccionado
@@ -1511,7 +1586,7 @@ export default function WizardPage() {
   }, [shouldConfirmWizardExit]);
 
   const handleWizardLogout = async () => {
-    if (shouldConfirmWizardExit && !window.confirm(`${WIZARD_UNSAVED_EXIT_MESSAGE}\n\nSi sale ahora, la base conservara el ultimo borrador guardado. ¿Desea cerrar sesion igualmente?`)) {
+    if (shouldConfirmWizardExit && !window.confirm(`${WIZARD_UNSAVED_EXIT_MESSAGE}\n\nSi sale ahora, la base conservara el ultimo borrador guardado. Desea cerrar sesion igualmente?`)) {
       return;
     }
 
@@ -1796,7 +1871,15 @@ export default function WizardPage() {
       <header className="border-b border-[#1e1e24] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50 print:hidden">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 print:hidden">
-            <Link href="/" className="hover:text-teal-400 transition-colors flex items-center gap-1.5 text-xs text-zinc-400 font-bold uppercase tracking-wider">
+            <Link
+              href="/"
+              onClick={(event) => {
+                if (shouldConfirmWizardExit && !window.confirm(`${WIZARD_UNSAVED_EXIT_MESSAGE}\n\nDesea volver al dashboard igualmente?`)) {
+                  event.preventDefault();
+                }
+              }}
+              className="hover:text-teal-400 transition-colors flex items-center gap-1.5 text-xs text-zinc-400 font-bold uppercase tracking-wider"
+            >
               <ArrowLeft className="h-4 w-4" />
               Volver al Dashboard
             </Link>
@@ -1827,8 +1910,13 @@ export default function WizardPage() {
             </button>
           </div>
 
-          <div className="text-xs text-zinc-500 font-semibold">
-            Paso {currentStep} de 6
+          <div className="text-right text-xs font-semibold text-zinc-500">
+            <div>Paso {currentStep} de 6</div>
+            {!localDraftWarning && localDraftSavedAtLabel && (
+              <div className="mt-0.5 text-[10px] font-medium text-zinc-600">
+                Copia local {localDraftSavedAtLabel}
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -1895,6 +1983,18 @@ export default function WizardPage() {
 
       {/* CONTENIDO DEL WIZARD */}
       <main className="max-w-5xl mx-auto px-6 py-10 print:hidden">
+        {localDraftWarning && (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 shrink-0 text-amber-300" />
+              <div>
+                <p className="font-bold uppercase tracking-wider text-amber-200">Copia local no disponible</p>
+                <p className="mt-1 text-xs leading-normal text-zinc-300">{localDraftWarning}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoadedReturnImmutable && (
           <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
             <div className="flex items-start gap-3">

@@ -12,6 +12,7 @@ import {
   coerceWizardOtherJustificationColumn,
   isWizardPersonalDeductionType,
   resolveWizardRouteReturnId,
+  shouldApplyWizardSnapshotField,
   shouldRequestActiveTaxParameters,
   shouldResetWizardDetailsOnIdentityChange,
   WIZARD_OTHER_JUSTIFICATION_PRESETS,
@@ -164,6 +165,23 @@ describe('wizardStateTypes', () => {
     expect(shouldResetWizardDetailsOnIdentityChange({ activeReturnId: '', hasSavedState: true })).toBe(false);
     expect(shouldRequestActiveTaxParameters('')).toBe(false);
     expect(shouldRequestActiveTaxParameters('param-123')).toBe(true);
+  });
+
+  it('trata valores vacios o null del snapshot como datos aplicables', () => {
+    const snapshot = {
+      taxParameterSetId: '',
+      initialStock: '0',
+      sales: [],
+      personalDeductions: null,
+      axiStaticBreakdown: null,
+    };
+
+    expect(shouldApplyWizardSnapshotField(snapshot, 'taxParameterSetId')).toBe(true);
+    expect(shouldApplyWizardSnapshotField(snapshot, 'initialStock')).toBe(true);
+    expect(shouldApplyWizardSnapshotField(snapshot, 'sales')).toBe(true);
+    expect(shouldApplyWizardSnapshotField(snapshot, 'personalDeductions')).toBe(true);
+    expect(shouldApplyWizardSnapshotField(snapshot, 'axiStaticBreakdown')).toBe(true);
+    expect(shouldApplyWizardSnapshotField(snapshot, 'missingField')).toBe(false);
   });
 
   it('omite duplicados importados de ventas por comprobante, CUIT, fecha e importe', () => {

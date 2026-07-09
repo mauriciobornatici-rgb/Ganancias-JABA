@@ -134,6 +134,10 @@ export function shouldResetWizardDetailsOnIdentityChange({
   return !activeReturnId && !hasSavedState;
 }
 
+export function shouldApplyWizardSnapshotField(snapshot: Record<string, unknown>, field: string): boolean {
+  return Object.prototype.hasOwnProperty.call(snapshot, field);
+}
+
 export function shouldRequestActiveTaxParameters(taxParameterSetId: string): boolean {
   return taxParameterSetId.trim() !== '';
 }

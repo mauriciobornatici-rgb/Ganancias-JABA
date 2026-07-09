@@ -4,6 +4,8 @@ import { calculateAxiDynamic } from '../calculations/ajustePorInflacion';
 import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMapper';
 import { buildUsefulCoefficientsFromIndexes } from '../mappers/taxParameterUsefulCoefficients';
+import { normalizeArgentineAmountInput } from '../presentation/moneyFormat';
+import { TaxReturnInvalidPayloadError } from './taxReturnPersistencePolicy';
 import type { AxiDynamicInput } from '../types';
 
 type NumericValue = string | number;
@@ -208,13 +210,35 @@ type DbIpcIndex = {
   ipcValue: Decimal | number | string | { toString(): string };
 };
 
-function numberInput(value: NumericValue | undefined, fallback = 0): number {
-  const parsed = Number(value ?? fallback);
-  return Number.isFinite(parsed) ? parsed : fallback;
+function parseNumericInput(value: NumericValue | undefined, fallback: number, fieldPath: string): number {
+  if (value === undefined || value === null || value === '') return fallback;
+
+  const normalizedValue = typeof value === 'string' && value.includes(',')
+    ? normalizeArgentineAmountInput(value)
+    : value;
+  const parsed = Number(normalizedValue);
+  if (!Number.isFinite(parsed)) {
+    throw new TaxReturnInvalidPayloadError(fieldPath, value);
+  }
+
+  return parsed;
 }
 
-function integerInput(value: NumericValue | undefined, fallback = 0): number {
-  return Math.trunc(numberInput(value, fallback));
+function assertValidNumberInput(value: NumericValue | undefined, fieldPath: string, required = false): void {
+  if (value === undefined || value === null || value === '') {
+    if (required) throw new TaxReturnInvalidPayloadError(fieldPath, value);
+    return;
+  }
+
+  parseNumericInput(value, 0, fieldPath);
+}
+
+function numberInput(value: NumericValue | undefined, fallback = 0, fieldPath = 'importe'): number {
+  return parseNumericInput(value, fallback, fieldPath);
+}
+
+function integerInput(value: NumericValue | undefined, fallback = 0, fieldPath = 'importe'): number {
+  return Math.trunc(numberInput(value, fallback, fieldPath));
 }
 
 function stringInput(value: string | undefined, fallback = ''): string {
@@ -231,9 +255,20 @@ function asRecord(value: unknown): RawRecord {
   return value !== null && typeof value === 'object' ? value as RawRecord : {};
 }
 
-function dateInput(value: DateValue | undefined): Date {
-  const date = value instanceof Date ? value : new Date(value ?? Date.now());
-  return Number.isNaN(date.getTime()) ? new Date() : date;
+function assertValidDateInput(value: DateValue | undefined, fieldPath: string): void {
+  if (value === undefined || value === null || value === '') {
+    throw new TaxReturnInvalidPayloadError(fieldPath, value);
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw new TaxReturnInvalidPayloadError(fieldPath, value);
+  }
+}
+
+function dateInput(value: DateValue | undefined, fieldPath = 'fecha'): Date {
+  assertValidDateInput(value, fieldPath);
+  return value instanceof Date ? value : new Date(value as string | number);
 }
 
 function fixedAssetType(value: string | undefined): FixedAssetType {
@@ -254,6 +289,121 @@ function axiDynamicType(value: string | undefined): AxiDynamicInput['type'] {
 
 function patrimonialColumn(value: NumericValue | undefined): number {
   return integerInput(value, 2) === 1 ? 1 : 2;
+}
+
+function validateAxiStaticBreakdown(axiStaticBreakdown: RawRecord | undefined): void {
+  if (!axiStaticBreakdown) return;
+
+  for (const [sectionKey, section] of Object.entries(axiStaticBreakdown)) {
+    const categories = asRecord(section);
+    for (const [categoryKey, rawCategory] of Object.entries(categories)) {
+      const category = asRecord(rawCategory);
+      assertValidNumberInput(category.total as NumericValue | undefined, `axiStaticBreakdown.${sectionKey}.${categoryKey}.total`);
+      assertValidNumberInput(category.computable as NumericValue | undefined, `axiStaticBreakdown.${sectionKey}.${categoryKey}.computable`);
+    }
+  }
+}
+
+function validateTaxReturnPersistencePayload(payload: TaxReturnPersistencePayload): void {
+  assertValidNumberInput(payload.fiscalYear, 'fiscalYear');
+  assertValidNumberInput(payload.initialStock, 'initialStock');
+  assertValidNumberInput(payload.finalStock, 'finalStock');
+  assertValidNumberInput(payload.activoTotalInicio, 'activoTotalInicio');
+  assertValidNumberInput(payload.pasivoTotalInicio, 'pasivoTotalInicio');
+  assertValidNumberInput(payload.bienesNoComputablesInicio, 'bienesNoComputablesInicio');
+  assertValidNumberInput(payload.saldoAFavorAnterior, 'saldoAFavorAnterior');
+  assertValidNumberInput(payload.quebrantosAnteriores, 'quebrantosAnteriores');
+
+  payload.sales?.forEach((sale, index) => {
+    assertValidDateInput(sale.date, `ventas[${index}].date`);
+    assertValidNumberInput(sale.netAmount, `ventas[${index}].netAmount`, true);
+    assertValidNumberInput(sale.ivaAmount, `ventas[${index}].ivaAmount`);
+    assertValidNumberInput(sale.totalAmount, `ventas[${index}].totalAmount`);
+  });
+
+  payload.purchases?.forEach((purchase, index) => {
+    assertValidDateInput(purchase.date, `compras[${index}].date`);
+    assertValidNumberInput(purchase.netAmount, `compras[${index}].netAmount`, true);
+    assertValidNumberInput(purchase.ivaAmount, `compras[${index}].ivaAmount`);
+    assertValidNumberInput(purchase.totalAmount, `compras[${index}].totalAmount`);
+  });
+
+  payload.fixedAssets?.forEach((asset, index) => {
+    assertValidDateInput(asset.purchaseDate, `bienesUso[${index}].purchaseDate`);
+    assertValidNumberInput(asset.originalCost, `bienesUso[${index}].originalCost`, true);
+    assertValidNumberInput(asset.usefulLife, `bienesUso[${index}].usefulLife`);
+    assertValidNumberInput(asset.yearsElapsed, `bienesUso[${index}].yearsElapsed`);
+    assertValidNumberInput(asset.customReexpIndex, `bienesUso[${index}].customReexpIndex`);
+  });
+
+  payload.bankAccounts?.forEach((bank, index) => {
+    assertValidNumberInput(bank.nominalInitial, `bancos[${index}].nominalInitial`);
+    assertValidNumberInput(bank.nominalFinal, `bancos[${index}].nominalFinal`);
+    assertValidNumberInput(bank.tcInitial, `bancos[${index}].tcInitial`);
+    assertValidNumberInput(bank.tcFinal, `bancos[${index}].tcFinal`);
+    assertValidNumberInput(bank.interests, `bancos[${index}].interests`);
+  });
+
+  payload.cashHoldings?.forEach((cash, index) => {
+    assertValidNumberInput(cash.nominalInitial, `efectivo[${index}].nominalInitial`);
+    assertValidNumberInput(cash.nominalFinal, `efectivo[${index}].nominalFinal`);
+    assertValidNumberInput(cash.tcFinal, `efectivo[${index}].tcFinal`);
+  });
+
+  payload.receivables?.forEach((receivable, index) => {
+    assertValidNumberInput(receivable.balanceInitial, `creditos[${index}].balanceInitial`);
+    assertValidNumberInput(receivable.balanceFinal, `creditos[${index}].balanceFinal`);
+  });
+
+  payload.liabilities?.forEach((liability, index) => {
+    assertValidNumberInput(liability.balanceInitial, `pasivos[${index}].balanceInitial`);
+    assertValidNumberInput(liability.balanceFinal, `pasivos[${index}].balanceFinal`);
+  });
+
+  payload.withholdings?.forEach((withholding, index) => {
+    assertValidDateInput(withholding.date, `retenciones[${index}].date`);
+    assertValidNumberInput(withholding.amount, `retenciones[${index}].amount`, true);
+  });
+
+  if (payload.personalDeductions) {
+    [
+      'cantidadHijos',
+      'cantidadHijosIncapacitados',
+    ].forEach(key => {
+      assertValidNumberInput(
+        payload.personalDeductions?.[key] as NumericValue | undefined,
+        `deduccionesPersonales.${key}`
+      );
+    });
+  }
+
+  payload.personalAssets?.forEach((asset, index) => {
+    assertValidNumberInput(asset.valueInitial, `bienesPersonales[${index}].valueInitial`);
+    assertValidNumberInput(asset.valueFinal, `bienesPersonales[${index}].valueFinal`);
+  });
+
+  payload.personalLiabilities?.forEach((liability, index) => {
+    assertValidNumberInput(liability.valueInitial, `deudasPersonales[${index}].valueInitial`);
+    assertValidNumberInput(liability.valueFinal, `deudasPersonales[${index}].valueFinal`);
+  });
+
+  payload.otherJustifications?.forEach((justification, index) => {
+    assertValidNumberInput(justification.column, `otrasJustificaciones[${index}].column`);
+    assertValidNumberInput(justification.amount, `otrasJustificaciones[${index}].amount`, true);
+  });
+
+  payload.axiDynamic?.forEach((item, index) => {
+    assertValidDateInput(item.date, `axiDinamico[${index}].date`);
+    assertValidNumberInput(item.amount, `axiDinamico[${index}].amount`, true);
+  });
+
+  if (payload.generalDeductions) {
+    for (const key of GENERAL_DEDUCTION_KEYS) {
+      assertValidNumberInput(payload.generalDeductions[key] as NumericValue | undefined, `deduccionesGenerales.${key}`);
+    }
+  }
+
+  validateAxiStaticBreakdown(payload.axiStaticBreakdown);
 }
 
 const GENERAL_DEDUCTION_KEYS = [
@@ -373,6 +523,8 @@ export async function persistTaxReturnDetails({
   existingReturn: ExistingTaxReturn;
   payload: TaxReturnPersistencePayload;
 }): Promise<void> {
+  validateTaxReturnPersistencePayload(payload);
+
   const {
     cuit,
     clientName,
@@ -499,20 +651,19 @@ export async function persistTaxReturnDetails({
   await db.patrimonialJustification?.deleteMany({ where: { taxReturnId } });
   await db.axiStaticItem?.deleteMany({ where: { taxReturnId } });
   await db.axiDynamicItem.deleteMany({ where: { taxReturnId } });
-  await db.calculationRun.deleteMany({ where: { taxReturnId } });
 
   if (sales.length > 0) {
     await db.salesInvoice.createMany({
       data: sales.map(s => ({
         taxReturnId,
-        date: dateInput(s.date),
+        date: dateInput(s.date, 'ventas.date'),
         invoiceType: stringInput(s.invoiceType, 'Factura'),
         invoiceNumber: stringInput(s.invoiceNumber, '00000000'),
         customerName: stringInput(s.customerName, 'Cliente General'),
         counterpartyCuit: stringInput(s.counterpartyCuit) || undefined,
-        netAmount: numberInput(s.netAmount),
-        ivaAmount: numberInput(s.ivaAmount),
-        totalAmount: numberInput(s.totalAmount, numberInput(s.netAmount)),
+        netAmount: numberInput(s.netAmount, 0, 'ventas.netAmount'),
+        ivaAmount: numberInput(s.ivaAmount, 0, 'ventas.ivaAmount'),
+        totalAmount: numberInput(s.totalAmount, numberInput(s.netAmount, 0, 'ventas.netAmount'), 'ventas.totalAmount'),
         isExempt: s.isExempt || false,
       })),
     });
@@ -522,14 +673,14 @@ export async function persistTaxReturnDetails({
     await db.purchaseInvoice.createMany({
       data: purchases.map(p => ({
         taxReturnId,
-        date: dateInput(p.date),
+        date: dateInput(p.date, 'compras.date'),
         invoiceType: stringInput(p.invoiceType, 'Factura'),
         invoiceNumber: stringInput(p.invoiceNumber, '00000000'),
         vendorName: stringInput(p.vendorName, 'Proveedor General'),
         counterpartyCuit: stringInput(p.counterpartyCuit) || undefined,
-        netAmount: numberInput(p.netAmount),
-        ivaAmount: numberInput(p.ivaAmount),
-        totalAmount: numberInput(p.totalAmount, numberInput(p.netAmount)),
+        netAmount: numberInput(p.netAmount, 0, 'compras.netAmount'),
+        ivaAmount: numberInput(p.ivaAmount, 0, 'compras.ivaAmount'),
+        totalAmount: numberInput(p.totalAmount, numberInput(p.netAmount, 0, 'compras.netAmount'), 'compras.totalAmount'),
         isDeductible: p.isDeductible !== false,
         isExempt: p.isExempt || false,
         expenseType: p.expenseType || 'GastosGenerales',
@@ -541,11 +692,11 @@ export async function persistTaxReturnDetails({
     const assetId = stringInput(asset.id);
     const assetName = stringInput(asset.name);
     const assetType = fixedAssetType(asset.type);
-    const purchaseDate = dateInput(asset.purchaseDate);
-    const originalCost = numberInput(asset.originalCost);
-    const usefulLife = integerInput(asset.usefulLife, 10);
-    const yearsElapsed = integerInput(asset.yearsElapsed);
-    const customReexpIndex = numberInput(asset.customReexpIndex, 1);
+    const purchaseDate = dateInput(asset.purchaseDate, 'bienesUso.purchaseDate');
+    const originalCost = numberInput(asset.originalCost, 0, 'bienesUso.originalCost');
+    const usefulLife = integerInput(asset.usefulLife, 10, 'bienesUso.usefulLife');
+    const yearsElapsed = integerInput(asset.yearsElapsed, 0, 'bienesUso.yearsElapsed');
+    const customReexpIndex = numberInput(asset.customReexpIndex, 1, 'bienesUso.customReexpIndex');
     const isRetired = booleanInput(asset.isRetired);
 
     const depResult = calculateFixedAssetDepreciation({
@@ -586,18 +737,18 @@ export async function persistTaxReturnDetails({
     data: {
       taxReturnId,
       concept: 'Bienes de Cambio',
-      initialStock: numberInput(initialStock),
-      finalStock: numberInput(finalStock),
+      initialStock: numberInput(initialStock, 0, 'initialStock'),
+      finalStock: numberInput(finalStock, 0, 'finalStock'),
     },
   });
 
   if (bankAccounts.length > 0) {
     await db.bankAccountBalance.createMany({
       data: bankAccounts.map(bank => {
-        const nominalInitial = numberInput(bank.nominalInitial);
-        const nominalFinal = numberInput(bank.nominalFinal);
-        const tcInitial = numberInput(bank.tcInitial, 1);
-        const tcFinal = numberInput(bank.tcFinal, 1);
+        const nominalInitial = numberInput(bank.nominalInitial, 0, 'bancos.nominalInitial');
+        const nominalFinal = numberInput(bank.nominalFinal, 0, 'bancos.nominalFinal');
+        const tcInitial = numberInput(bank.tcInitial, 1, 'bancos.tcInitial');
+        const tcFinal = numberInput(bank.tcFinal, 1, 'bancos.tcFinal');
 
         return {
           taxReturnId,
@@ -611,7 +762,7 @@ export async function persistTaxReturnDetails({
           tcFinal,
           balanceInitialArs: nominalInitial * tcInitial,
           balanceFinalArs: nominalFinal * tcFinal,
-          interests: numberInput(bank.interests),
+          interests: numberInput(bank.interests, 0, 'bancos.interests'),
         };
       }),
     });
@@ -620,9 +771,9 @@ export async function persistTaxReturnDetails({
   if (db.cashHolding && cashHoldings.length > 0) {
     await db.cashHolding.createMany({
       data: cashHoldings.map(cash => {
-        const nominalInitial = numberInput(cash.nominalInitial);
-        const nominalFinal = numberInput(cash.nominalFinal);
-        const tcFinal = numberInput(cash.tcFinal, 1);
+        const nominalInitial = numberInput(cash.nominalInitial, 0, 'efectivo.nominalInitial');
+        const nominalFinal = numberInput(cash.nominalFinal, 0, 'efectivo.nominalFinal');
+        const tcFinal = numberInput(cash.tcFinal, 1, 'efectivo.tcFinal');
 
         return {
           taxReturnId,
@@ -643,8 +794,8 @@ export async function persistTaxReturnDetails({
         taxReturnId,
         type: stringInput(receivable.type, 'Comercial'),
         description: stringInput(receivable.description),
-        balanceInitial: numberInput(receivable.balanceInitial),
-        balanceFinal: numberInput(receivable.balanceFinal),
+        balanceInitial: numberInput(receivable.balanceInitial, 0, 'creditos.balanceInitial'),
+        balanceFinal: numberInput(receivable.balanceFinal, 0, 'creditos.balanceFinal'),
       })),
     });
   }
@@ -655,8 +806,8 @@ export async function persistTaxReturnDetails({
         taxReturnId,
         type: stringInput(liability.type, 'Otros'),
         description: stringInput(liability.description),
-        balanceInitial: numberInput(liability.balanceInitial),
-        balanceFinal: numberInput(liability.balanceFinal),
+        balanceInitial: numberInput(liability.balanceInitial, 0, 'pasivos.balanceInitial'),
+        balanceFinal: numberInput(liability.balanceFinal, 0, 'pasivos.balanceFinal'),
       })),
     });
   }
@@ -671,10 +822,10 @@ export async function persistTaxReturnDetails({
         taxDescription: stringInput(withholding.taxDescription, withholding.taxCode === 'Otros' ? 'Otros Impuestos' : 'Impuesto a las Ganancias'),
         regimeCode: stringInput(withholding.regimeCode) || undefined,
         regimeDescription: stringInput(withholding.regimeDescription) || undefined,
-        date: dateInput(withholding.date),
+        date: dateInput(withholding.date, 'retenciones.date'),
         certificateNumber: stringInput(withholding.certificateNumber, '00000000'),
         operationDescription: stringInput(withholding.operationDescription) || undefined,
-        amount: numberInput(withholding.amount),
+        amount: numberInput(withholding.amount, 0, 'retenciones.amount'),
       })),
     });
   }
@@ -685,8 +836,8 @@ export async function persistTaxReturnDetails({
         taxReturnId,
         description: stringInput(asset.description),
         type: stringInput(asset.type, 'Otros'),
-        valueInitial: numberInput(asset.valueInitial),
-        valueFinal: numberInput(asset.valueFinal),
+        valueInitial: numberInput(asset.valueInitial, 0, 'bienesPersonales.valueInitial'),
+        valueFinal: numberInput(asset.valueFinal, 0, 'bienesPersonales.valueFinal'),
       })),
     });
   }
@@ -696,8 +847,8 @@ export async function persistTaxReturnDetails({
       data: personalLiabilities.map(liability => ({
         taxReturnId,
         description: stringInput(liability.description),
-        valueInitial: numberInput(liability.valueInitial),
-        valueFinal: numberInput(liability.valueFinal),
+        valueInitial: numberInput(liability.valueInitial, 0, 'deudasPersonales.valueInitial'),
+        valueFinal: numberInput(liability.valueFinal, 0, 'deudasPersonales.valueFinal'),
       })),
     });
   }
@@ -708,7 +859,7 @@ export async function persistTaxReturnDetails({
         taxReturnId,
         concept: stringInput(justification.concept),
         column: patrimonialColumn(justification.column),
-        amount: numberInput(justification.amount),
+        amount: numberInput(justification.amount, 0, 'otrasJustificaciones.amount'),
       })),
     });
   }
@@ -739,8 +890,8 @@ export async function persistTaxReturnDetails({
   const normalizedAxiDynamic: AxiDynamicInput[] = axiDynamic.map(item => ({
     concept: stringInput(item.concept),
     type: axiDynamicType(item.type),
-    date: dateInput(item.date),
-    amount: new Decimal(numberInput(item.amount)),
+    date: dateInput(item.date, 'axiDinamico.date'),
+    amount: new Decimal(numberInput(item.amount, 0, 'axiDinamico.amount')),
   }));
   const persistedAxiDynamic = calculateAxiDynamic(
     normalizedAxiDynamic,

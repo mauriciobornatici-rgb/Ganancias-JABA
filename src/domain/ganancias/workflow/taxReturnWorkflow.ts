@@ -47,6 +47,16 @@ type AnnulmentDecision =
       error: string;
     };
 
+type StaleWriteDecision =
+  | { allowed: true }
+  | {
+      allowed: false;
+      httpStatus: 409;
+      code: 'STALE_TAX_RETURN';
+      currentUpdatedAt: string;
+      error: string;
+    };
+
 const IMMUTABLE_STATUSES = new Set<TaxReturnStatus>([
   TAX_RETURN_STATUS.CERRADA,
   TAX_RETURN_STATUS.PRESENTADA,
@@ -213,5 +223,35 @@ export function buildTaxReturnAnnulmentDecision({
     nextStatus: TAX_RETURN_STATUS.ANULADA,
     auditAction: 'ANNUL',
     reason: clean,
+  };
+}
+
+export function buildTaxReturnStaleWriteDecision({
+  lastKnownUpdatedAt,
+  currentUpdatedAt,
+}: {
+  lastKnownUpdatedAt?: string | null;
+  currentUpdatedAt: string | Date;
+}): StaleWriteDecision {
+  if (!lastKnownUpdatedAt) return { allowed: true };
+
+  const currentIso = currentUpdatedAt instanceof Date
+    ? currentUpdatedAt.toISOString()
+    : currentUpdatedAt;
+  const lastKnownTime = Date.parse(lastKnownUpdatedAt);
+  const currentTime = Date.parse(currentIso);
+
+  if (!Number.isFinite(lastKnownTime) || !Number.isFinite(currentTime)) {
+    return { allowed: true };
+  }
+
+  if (lastKnownTime === currentTime) return { allowed: true };
+
+  return {
+    allowed: false,
+    httpStatus: 409,
+    code: 'STALE_TAX_RETURN',
+    currentUpdatedAt: currentIso,
+    error: 'La DDJJ fue modificada en otra ventana o equipo. Recargue antes de sobrescribir datos.',
   };
 }

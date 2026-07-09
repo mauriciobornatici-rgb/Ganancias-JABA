@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  WIZARD_DRAFT_RECOVERY_CLOCK_SKEW_MS,
   WIZARD_LOCAL_DRAFT_STORAGE_ERROR_MESSAGE,
+  WIZARD_NEW_LOCAL_DRAFT_RECOVERY_MESSAGE,
   WIZARD_LOCAL_DRAFT_RECOVERY_MESSAGE,
+  buildWizardLocalDraftKey,
+  buildWizardNewLocalDraftKey,
+  findLatestWizardNewLocalDraft,
+  parseWizardLocalDraftContent,
   saveWizardLocalDraft,
+  safeRemoveWizardLocalDraft,
   shouldOfferWizardDraftRecovery,
 } from '../presentation/wizardDraftRecovery';
 
@@ -43,6 +50,19 @@ describe('wizardDraftRecovery', () => {
       serverStateRaw,
       serverUpdatedAt: SERVER_UPDATED_AT,
     })).toBe(false);
+  });
+
+  it('tolera un reloj local levemente atrasado si el contenido local difiere', () => {
+    expect(WIZARD_DRAFT_RECOVERY_CLOCK_SKEW_MS).toBeGreaterThanOrEqual(10 * 60 * 1000);
+
+    expect(shouldOfferWizardDraftRecovery({
+      localDraftRaw: buildLocalDraft(
+        { sales: [{ netAmount: '100' }, { netAmount: '250' }] },
+        '2026-07-08T09:55:30.000Z'
+      ),
+      serverStateRaw,
+      serverUpdatedAt: SERVER_UPDATED_AT,
+    })).toBe(true);
   });
 
   it('ofrece recuperar si la base no informa updatedAt pero la copia local difiere', () => {
@@ -116,5 +136,66 @@ describe('wizardDraftRecovery', () => {
       savedAt: '2026-07-08T12:31:00.000Z',
       errorMessage: WIZARD_LOCAL_DRAFT_STORAGE_ERROR_MESSAGE,
     });
+  });
+
+  it('detecta el ultimo borrador local de una DDJJ nueva y descarta copias corruptas o antiguas', () => {
+    const values: Record<string, string> = {
+      [buildWizardNewLocalDraftKey('20-11111111-2')]: buildLocalDraft(
+        { clientName: 'Borrador anterior' },
+        '2026-07-08T10:00:00.000Z'
+      ),
+      [buildWizardNewLocalDraftKey('20-22222222-3')]: buildLocalDraft(
+        { clientName: 'Borrador mas nuevo' },
+        '2026-07-08T12:00:00.000Z'
+      ),
+      [buildWizardNewLocalDraftKey('20-33333333-4')]: '{corrupto',
+      [buildWizardLocalDraftKey('return-1')]: buildLocalDraft(
+        { clientName: 'Persistido' },
+        '2026-07-08T13:00:00.000Z'
+      ),
+    };
+
+    const candidate = findLatestWizardNewLocalDraft({
+      length: Object.keys(values).length,
+      key: index => Object.keys(values)[index] ?? null,
+      getItem: key => values[key] ?? null,
+    });
+
+    expect(candidate).toEqual({
+      key: buildWizardNewLocalDraftKey('20-22222222-3'),
+      raw: values[buildWizardNewLocalDraftKey('20-22222222-3')],
+      savedAt: '2026-07-08T12:00:00.000Z',
+    });
+  });
+
+  it('parsea una copia local sin contaminar el payload con savedAt', () => {
+    expect(parseWizardLocalDraftContent(buildLocalDraft({
+      sales: [{ netAmount: '100' }, { netAmount: '250' }],
+    }))).toEqual({
+      ...serverState,
+      sales: [{ netAmount: '100' }, { netAmount: '250' }],
+    });
+
+    expect(parseWizardLocalDraftContent('{corrupto')).toBeNull();
+  });
+
+  it('expone helpers de clave y limpieza tolerantes a errores del navegador', () => {
+    expect(buildWizardLocalDraftKey('return-123')).toBe('jaba_wizard_state_return-123');
+    expect(buildWizardNewLocalDraftKey('20-11111111-2')).toBe('jaba_wizard_state_new_20111111112');
+    expect(WIZARD_NEW_LOCAL_DRAFT_RECOVERY_MESSAGE).toContain('borrador local');
+
+    const removed: string[] = [];
+    expect(safeRemoveWizardLocalDraft({
+      removeItem: key => {
+        removed.push(key);
+      },
+    }, buildWizardLocalDraftKey('return-123'))).toBe(true);
+    expect(removed).toEqual(['jaba_wizard_state_return-123']);
+
+    expect(safeRemoveWizardLocalDraft({
+      removeItem: () => {
+        throw new Error('blocked');
+      },
+    }, buildWizardLocalDraftKey('return-123'))).toBe(false);
   });
 });

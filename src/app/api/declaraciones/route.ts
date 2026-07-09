@@ -5,6 +5,10 @@ import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persistence/taxReturnDuplicate';
+import {
+  TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS,
+  TaxReturnInvalidPayloadError,
+} from '@/domain/ganancias/persistence/taxReturnPersistencePolicy';
 import { buildInitialTaxReturnSnapshot } from '@/domain/ganancias/persistence/taxReturnSnapshot';
 import { hasDetailedTaxReturnPayload } from '@/domain/ganancias/persistence/taxReturnPayload';
 import { TAX_RETURN_STATUS } from '@/domain/ganancias/workflow/taxReturnWorkflow';
@@ -198,8 +202,18 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      return { duplicateReturn: null, taxReturn, fYear };
-    });
+      const savedTaxReturn = await tx.taxReturn.findUnique({
+        where: { id: taxReturn.id },
+        select: {
+          id: true,
+          status: true,
+          version: true,
+          updatedAt: true,
+        },
+      });
+
+      return { duplicateReturn: null, taxReturn: savedTaxReturn || taxReturn, fYear };
+    }, TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS);
 
     if (result.duplicateReturn) {
       return NextResponse.json(
@@ -224,11 +238,19 @@ export async function POST(req: NextRequest) {
           year: result.fYear.year,
           status: status || result.taxReturn!.status,
           version: result.taxReturn!.version,
+          updatedAt: result.taxReturn!.updatedAt.toISOString(),
         },
       },
       { status: 201 }
     );
   } catch (err: unknown) {
+    if (err instanceof TaxReturnInvalidPayloadError) {
+      return NextResponse.json(
+        { success: false, error: err.message, code: 'INVALID_TAX_RETURN_PAYLOAD', fieldPath: err.fieldPath },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: `Error al crear declaración: ${errorMessage(err)}` },
       { status: 500 }

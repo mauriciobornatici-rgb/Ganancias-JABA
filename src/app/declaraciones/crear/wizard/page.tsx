@@ -38,10 +38,22 @@ import {
   shouldWarnBeforeWizardExit,
 } from '@/domain/ganancias/presentation/wizardExitGuard';
 import {
+  WIZARD_NEW_LOCAL_DRAFT_RECOVERY_MESSAGE,
   WIZARD_LOCAL_DRAFT_RECOVERY_MESSAGE,
+  buildWizardLocalDraftKey,
+  buildWizardNewLocalDraftKey,
+  findLatestWizardNewLocalDraft,
+  parseWizardLocalDraftContent,
   saveWizardLocalDraft,
+  safeRemoveWizardLocalDraft,
   shouldOfferWizardDraftRecovery,
 } from '@/domain/ganancias/presentation/wizardDraftRecovery';
+import {
+  WIZARD_SERVER_DRAFT_RETRY_LABEL,
+  WIZARD_SERVER_DRAFT_STALE_MESSAGE,
+  buildWizardServerDraftSyncErrorMessage,
+  isWizardStaleServerDraftError,
+} from '@/domain/ganancias/presentation/wizardServerSync';
 import {
   buildWizardAxiDynamicReconciliation,
   buildWizardEffectiveCalculationParams,
@@ -366,8 +378,12 @@ export default function WizardPage() {
   const [modalLoading, setModalLoading] = useState(true);
   const [localDraftSavedAt, setLocalDraftSavedAt] = useState<string | null>(null);
   const [localDraftWarning, setLocalDraftWarning] = useState<string | null>(null);
+  const [loadedServerUpdatedAt, setLoadedServerUpdatedAt] = useState<string | null>(null);
+  const [serverDraftSavedAt, setServerDraftSavedAt] = useState<string | null>(null);
+  const [serverDraftWarning, setServerDraftWarning] = useState<string | null>(null);
 
   const [step1Error, setStep1Error] = useState<string | null>(null);
+  const [clientRegistryLoadError, setClientRegistryLoadError] = useState<string | null>(null);
   const [isLiveBarOpen, setIsLiveBarOpen] = useState(true);
   const [showAllDeductions, setShowAllDeductions] = useState(false);
 
@@ -378,6 +394,9 @@ export default function WizardPage() {
   const [dbDeclaraciones, setDbDeclaraciones] = useState<WizardTaxReturnSummary[]>([]);
   const localDraftSavedAtLabel = localDraftSavedAt
     ? new Date(localDraftSavedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+    : null;
+  const serverDraftSavedAtLabel = serverDraftSavedAt
+    ? new Date(serverDraftSavedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
     : null;
 
   const reportLocalDraftSave = React.useCallback((result: ReturnType<typeof saveWizardLocalDraft>) => {
@@ -456,6 +475,7 @@ export default function WizardPage() {
       quebrantosAnteriores,
       axiDynamic,
       axiStaticBreakdown,
+      lastKnownUpdatedAt: loadedServerUpdatedAt,
       status: 'Borrador'
     };
 
@@ -464,14 +484,34 @@ export default function WizardPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-    .then(res => res.json())
-    .then(res => {
+    .then(async response => ({
+      httpStatus: response.status,
+      body: await response.json(),
+    }))
+    .then(({ httpStatus, body: res }) => {
       if (!res.success) {
         console.error("Error al auto-guardar DDJJ en el servidor:", res.error);
+        const isStale = isWizardStaleServerDraftError({
+          status: httpStatus,
+          code: res.code,
+          error: res.error,
+        });
+        setServerDraftWarning(isStale
+          ? WIZARD_SERVER_DRAFT_STALE_MESSAGE
+          : buildWizardServerDraftSyncErrorMessage(res.error));
+        return;
       }
+
+      const savedAt = typeof res.data?.updatedAt === 'string'
+        ? res.data.updatedAt
+        : new Date().toISOString();
+      setLoadedServerUpdatedAt(savedAt);
+      setServerDraftSavedAt(savedAt);
+      setServerDraftWarning(null);
     })
     .catch(err => {
       console.error("Error de red al auto-guardar en el servidor:", err);
+      setServerDraftWarning(buildWizardServerDraftSyncErrorMessage(errorMessage(err)));
     });
   };
 
@@ -483,6 +523,12 @@ export default function WizardPage() {
         updateCurrentStep(1);
         return;
       }
+      if (clientRegistryLoadError) {
+        setStep1Error(clientRegistryLoadError);
+        updateCurrentStep(1);
+        return;
+      }
+
       const isRegisteredClient = dbClients.some(c => c.cuit === cuit);
       if (!isRegisteredClient) {
         setStep1Error('El contribuyente ingresado no se encuentra registrado en el padrón de Clientes. Para proceder, debe seleccionar un contribuyente existente o registrarlo previamente en la sección de Clientes.');
@@ -547,6 +593,7 @@ export default function WizardPage() {
       quebrantosAnteriores,
       axiDynamic,
       axiStaticBreakdown,
+      lastKnownUpdatedAt: loadedServerUpdatedAt,
       status: targetStatus
     };
 
@@ -556,15 +603,31 @@ export default function WizardPage() {
     .then(res => res.json())
     .then(res => {
       if (res.success) {
+        const serverUpdatedAt = typeof res.data?.updatedAt === 'string'
+          ? res.data.updatedAt
+          : new Date().toISOString();
+        setLoadedServerUpdatedAt(serverUpdatedAt);
+        setServerDraftSavedAt(serverUpdatedAt);
+        setServerDraftWarning(null);
+
         if (saveRequest.target.isCreate && res.data?.id) {
           const newId = res.data.id;
+          const newDraftKey = buildWizardNewLocalDraftKey(cuit);
+          const newestLocalDraft = parseWizardLocalDraftContent(localStorage.getItem(newDraftKey));
+          const draftToSave = {
+            ...(newestLocalDraft || payload),
+            status: targetStatus,
+          };
           setPersistedReturnId(newId);
           reportLocalDraftSave(saveWizardLocalDraft({
             storage: localStorage,
-            key: `jaba_wizard_state_${newId}`,
-            draft: payload,
+            key: buildWizardLocalDraftKey(newId),
+            draft: draftToSave,
           }));
+          safeRemoveWizardLocalDraft(localStorage, newDraftKey);
           window.history.replaceState(null, '', `/declaraciones/${newId}/wizard`);
+        } else if (targetStatus === 'Cerrada') {
+          safeRemoveWizardLocalDraft(localStorage, buildWizardLocalDraftKey(activeReturnId || id));
         }
         setLoadedReturnStatus(targetStatus);
         setModalLoading(false);
@@ -576,6 +639,12 @@ export default function WizardPage() {
           return;
         }
 
+        const syncMessage = isWizardStaleServerDraftError({
+          status: 409,
+          code: res.code,
+          error: res.error,
+        }) ? WIZARD_SERVER_DRAFT_STALE_MESSAGE : buildWizardServerDraftSyncErrorMessage(res.error);
+        setServerDraftWarning(syncMessage);
         alert(`Error al guardar en base de datos: ${res.error}`);
         setShowSaveModal(false);
       }
@@ -648,11 +717,13 @@ export default function WizardPage() {
   const resetWizardDetailsAfterIdentityChange = React.useCallback(() => {
     if (typeof window === 'undefined') return;
 
-    const hasSavedState = Boolean(localStorage.getItem(`jaba_wizard_state_${activeReturnId || id}`));
+    const hasSavedState = activeReturnId
+      ? Boolean(localStorage.getItem(buildWizardLocalDraftKey(activeReturnId)))
+      : Boolean(localStorage.getItem(buildWizardNewLocalDraftKey(cuit)));
     if (shouldResetWizardDetailsOnIdentityChange({ activeReturnId, hasSavedState })) {
       resetWizardDetailState();
     }
-  }, [activeReturnId, id, resetWizardDetailState]);
+  }, [activeReturnId, cuit, resetWizardDetailState]);
 
   // Aplica al estado del wizard un snapshot de declaracion (de la base, del autoguardado local o de una recuperacion)
   const applyWizardSnapshot = React.useCallback((data: WizardStateSnapshot) => {
@@ -691,17 +762,34 @@ export default function WizardPage() {
 
   const loadFromLocalStorage = React.useCallback(() => {
     if (!routeReturnId) {
+      try {
+        const latestNewDraft = findLatestWizardNewLocalDraft(localStorage);
+        if (latestNewDraft && window.confirm(WIZARD_NEW_LOCAL_DRAFT_RECOVERY_MESSAGE)) {
+          const draft = parseWizardLocalDraftContent(latestNewDraft.raw);
+          if (draft) {
+            applyWizardSnapshot(draft as WizardStateSnapshot);
+            setLocalDraftSavedAt(latestNewDraft.savedAt);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('No se pudo verificar si habia borradores locales nuevos:', err);
+      }
+
       setCuit('');
       setClientName('');
       setFiscalYear(2025);
       setTaxParameterSetId('');
       setLoadedReturnStatus('Borrador');
+      setLoadedServerUpdatedAt(null);
+      setServerDraftSavedAt(null);
+      setServerDraftWarning(null);
       resetWizardDetailState();
       updateCurrentStep(1);
       return;
     }
 
-    const saved = localStorage.getItem(`jaba_wizard_state_${routeReturnId}`);
+    const saved = localStorage.getItem(buildWizardLocalDraftKey(routeReturnId));
     if (saved) {
       try {
         applyWizardSnapshot(JSON.parse(saved) as WizardStateSnapshot);
@@ -711,8 +799,8 @@ export default function WizardPage() {
       }
     }
 
-    // Fallback a carga estatica por defecto si es return-2 (Maria Luz Gomez) sin cache anterior
-    if (routeReturnId === 'return-2') {
+    // Fallback de desarrollo para casos demo locales sin base.
+    if (process.env.NODE_ENV !== 'production' && routeReturnId === 'return-2') {
       setCuit('27-95430211-3');
       initialCuitRef.current = '27-95430211-3';
       setClientName('Maria Luz Gomez');
@@ -757,7 +845,7 @@ export default function WizardPage() {
         { description: 'Inmueble Particular', type: 'Inmueble', valueInitial: '8000000', valueFinal: '8000000' }
       ]);
       updateCurrentStep(1);
-    } else {
+    } else if (process.env.NODE_ENV !== 'production') {
       const targetReturn = mockTaxReturns.find(r => r.id === routeReturnId);
       if (targetReturn) {
         setCuit(targetReturn.cuit);
@@ -780,10 +868,18 @@ export default function WizardPage() {
         fetch('/api/declaraciones').then(res => res.json())
       ])
       .then(([clientsRes, returnsRes]) => {
-        if (clientsRes.success) setDbClients(clientsRes.data as WizardClient[]);
+        if (clientsRes.success) {
+          setDbClients(clientsRes.data as WizardClient[]);
+          setClientRegistryLoadError(null);
+        } else {
+          setClientRegistryLoadError(clientsRes.error || 'No se pudo cargar el padron de Clientes. Reintente antes de avanzar.');
+        }
         if (returnsRes.success) setDbDeclaraciones(returnsRes.data as WizardTaxReturnSummary[]);
       })
-      .catch(err => console.error("Error al cargar padrón de base de datos:", err));
+      .catch(err => {
+        console.error("Error al cargar padrón de base de datos:", err);
+        setClientRegistryLoadError('No se pudo cargar el padron de Clientes. Verifique la conexion y reintente antes de avanzar.');
+      });
 
       if (routeReturnId) {
         fetch(`/api/declaraciones/${routeReturnId}`)
@@ -791,9 +887,12 @@ export default function WizardPage() {
           .then(res => {
             if (res.success && res.data) {
               const data = res.data as WizardStateSnapshot & { updatedAt?: string };
+              setLoadedServerUpdatedAt(typeof data.updatedAt === 'string' ? data.updatedAt : null);
+              setServerDraftSavedAt(typeof data.updatedAt === 'string' ? data.updatedAt : null);
+              setServerDraftWarning(null);
               // Capturar la copia local ANTES de aplicar los datos de la base:
               // si tiene carga mas reciente sin guardar, se ofrecera recuperarla (ver autoguardado)
-              const localDraftRaw = localStorage.getItem(`jaba_wizard_state_${routeReturnId}`);
+              const localDraftRaw = localStorage.getItem(buildWizardLocalDraftKey(routeReturnId));
               if (localDraftRaw) {
                 pendingLocalRecoveryRef.current = {
                   localDraftRaw,
@@ -845,16 +944,18 @@ export default function WizardPage() {
         bienesNoComputablesInicio,
         saldoAFavorAnterior,
         quebrantosAnteriores,
-        axiDynamic
+        axiDynamic,
+        axiStaticBreakdown
       };
 
-      const saveKey = activeReturnId || `new_${cuit}`;
+      const saveKey = activeReturnId ? buildWizardLocalDraftKey(activeReturnId) : buildWizardNewLocalDraftKey(cuit);
       const serializedWizardState = JSON.stringify(wizardState);
-      reportLocalDraftSave(saveWizardLocalDraft({
+      const localDraftResult = saveWizardLocalDraft({
         storage: localStorage,
-        key: `jaba_wizard_state_${saveKey}`,
+        key: saveKey,
         draft: wizardState,
-      }));
+      });
+      queueMicrotask(() => reportLocalDraftSave(localDraftResult));
 
       // Si al montar se cargo la declaracion desde la base, verificar si la copia local previa
       // tenia carga mas reciente sin guardar (ej: salida sin Guardar como Borrador) y ofrecer recuperarla
@@ -868,7 +969,11 @@ export default function WizardPage() {
         });
         if (offerRecovery && window.confirm(WIZARD_LOCAL_DRAFT_RECOVERY_MESSAGE)) {
           try {
-            applyWizardSnapshot(JSON.parse(pendingRecovery.localDraftRaw) as WizardStateSnapshot);
+            const recoveredDraft = parseWizardLocalDraftContent(pendingRecovery.localDraftRaw);
+            if (recoveredDraft) {
+              applyWizardSnapshot(recoveredDraft as WizardStateSnapshot);
+              setLocalDraftSavedAt(new Date().toISOString());
+            }
             return;
           } catch (err) {
             console.error('No se pudo recuperar la copia local del wizard:', err);
@@ -890,13 +995,22 @@ export default function WizardPage() {
         .then(res => {
           if (res.success && res.data?.id) {
             const newId = res.data.id;
+            const newDraftKey = buildWizardNewLocalDraftKey(cuit);
+            const newestLocalDraft = parseWizardLocalDraftContent(localStorage.getItem(newDraftKey));
+            const draftToSave = newestLocalDraft || createPayload;
             setPersistedReturnId(newId);
             setLoadedReturnStatus('Borrador');
+            if (typeof res.data.updatedAt === 'string') {
+              setLoadedServerUpdatedAt(res.data.updatedAt);
+              setServerDraftSavedAt(res.data.updatedAt);
+              setServerDraftWarning(null);
+            }
             reportLocalDraftSave(saveWizardLocalDraft({
               storage: localStorage,
-              key: `jaba_wizard_state_${newId}`,
-              draft: createPayload,
+              key: buildWizardLocalDraftKey(newId),
+              draft: draftToSave,
             }));
+            safeRemoveWizardLocalDraft(localStorage, newDraftKey);
             window.location.href = `/declaraciones/${newId}/wizard`;
           } else {
             const duplicateRedirectPath = buildDuplicateTaxReturnRedirectPath(res);
@@ -906,11 +1020,13 @@ export default function WizardPage() {
             }
 
             isCreatingRef.current = false;
+            setServerDraftWarning(buildWizardServerDraftSyncErrorMessage(res.error));
           }
         })
         .catch(err => {
           console.error("Error al crear declaración en servidor:", err);
           isCreatingRef.current = false;
+          setServerDraftWarning(buildWizardServerDraftSyncErrorMessage(errorMessage(err)));
         });
       }
     }
@@ -1918,6 +2034,15 @@ export default function WizardPage() {
                 Copia local {localDraftSavedAtLabel}
               </div>
             )}
+            {serverDraftWarning ? (
+              <div className="mt-0.5 text-[10px] font-bold text-amber-400">
+                Base pendiente
+              </div>
+            ) : serverDraftSavedAtLabel ? (
+              <div className="mt-0.5 text-[10px] font-medium text-zinc-600">
+                Base {serverDraftSavedAtLabel}
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
@@ -1992,6 +2117,29 @@ export default function WizardPage() {
                 <p className="font-bold uppercase tracking-wider text-amber-200">Copia local no disponible</p>
                 <p className="mt-1 text-xs leading-normal text-zinc-300">{localDraftWarning}</p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {serverDraftWarning && (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 shrink-0 text-amber-300" />
+                <div>
+                  <p className="font-bold uppercase tracking-wider text-amber-200">Sincronizacion con base pendiente</p>
+                  <p className="mt-1 text-xs leading-normal text-zinc-300">{serverDraftWarning}</p>
+                </div>
+              </div>
+              {!isLoadedReturnImmutable && (
+                <button
+                  type="button"
+                  onClick={() => saveToServer(currentStep)}
+                  className="h-9 shrink-0 rounded-lg border border-amber-400/30 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/10"
+                >
+                  {WIZARD_SERVER_DRAFT_RETRY_LABEL}
+                </button>
+              )}
             </div>
           </div>
         )}

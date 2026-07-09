@@ -3,6 +3,10 @@ import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import {
+  TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS,
+  TaxReturnInvalidPayloadError,
+} from '@/domain/ganancias/persistence/taxReturnPersistencePolicy';
+import {
   formatDateForWizardInput,
   mapAxiStaticItemsForWizard,
   mapAxiDynamicItemForWizard,
@@ -11,6 +15,7 @@ import {
 } from '@/domain/ganancias/persistence/taxReturnReadMapper';
 import {
   buildTaxReturnAnnulmentDecision,
+  buildTaxReturnStaleWriteDecision,
   buildTaxReturnUpdateDecision,
 } from '@/domain/ganancias/workflow/taxReturnWorkflow';
 import { MAX_DECLARATION_PAYLOAD_BYTES, exceedsContentLength } from '@/domain/ganancias/presentation/apiValidation';
@@ -270,7 +275,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { clientName, status, workflowAction, workflowReason } = body;
+    const { clientName, status, workflowAction, workflowReason, lastKnownUpdatedAt } = body;
 
     const existingReturn = await prisma.taxReturn.findUnique({
       where: { id },
@@ -299,7 +304,7 @@ export async function PUT(
     }
 
     if (!workflowDecision.persistDetails) {
-      await prisma.taxReturn.update({
+      const reopenedReturn = await prisma.taxReturn.update({
         where: { id },
         data: {
           status: workflowDecision.nextStatus,
@@ -321,10 +326,29 @@ export async function PUT(
       return NextResponse.json({
         success: true,
         message: 'Declaracion reabierta como Borrador. Ya puede editarse con control de auditoria.',
+        data: {
+          updatedAt: reopenedReturn.updatedAt.toISOString(),
+          status: reopenedReturn.status,
+        },
       });
     }
 
-    await prisma.$transaction(async tx => {
+    const staleDecision = buildTaxReturnStaleWriteDecision({
+      lastKnownUpdatedAt: typeof lastKnownUpdatedAt === 'string' ? lastKnownUpdatedAt : null,
+      currentUpdatedAt: existingReturn.updatedAt,
+    });
+    if (!staleDecision.allowed) {
+      return NextResponse.json({
+        success: false,
+        error: staleDecision.error,
+        code: staleDecision.code,
+        data: {
+          updatedAt: staleDecision.currentUpdatedAt,
+        },
+      }, { status: staleDecision.httpStatus });
+    }
+
+    const savedReturn = await prisma.$transaction(async tx => {
       await persistTaxReturnDetails({
         db: tx,
         taxReturnId: id,
@@ -334,7 +358,16 @@ export async function PUT(
           status: workflowDecision.nextStatus,
         },
       });
-    });
+
+      return tx.taxReturn.findUnique({
+        where: { id },
+        select: {
+          status: true,
+          version: true,
+          updatedAt: true,
+        },
+      });
+    }, TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS);
 
     logAuditEvent({
       action: workflowDecision.auditAction,
@@ -346,8 +379,23 @@ export async function PUT(
       details: `Actualizacion de DDJJ ${id} - Estado: ${workflowDecision.nextStatus}`,
     });
 
-    return NextResponse.json({ success: true, message: 'Declaracion actualizada con exito en la base de datos.' });
+    return NextResponse.json({
+      success: true,
+      message: 'Declaracion actualizada con exito en la base de datos.',
+      data: savedReturn ? {
+        updatedAt: savedReturn.updatedAt.toISOString(),
+        status: savedReturn.status,
+        version: savedReturn.version,
+      } : undefined,
+    });
   } catch (err: unknown) {
+    if (err instanceof TaxReturnInvalidPayloadError) {
+      return NextResponse.json(
+        { success: false, error: err.message, code: 'INVALID_TAX_RETURN_PAYLOAD', fieldPath: err.fieldPath },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: `Error al actualizar declaracion: ${errorMessage(err)}` },
       { status: 500 }

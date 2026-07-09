@@ -50,6 +50,49 @@ type CalculationCreateCapture = {
   };
 };
 
+function buildTrackedPersistenceDb(captures: { deleteManyCalls: string[]; calculationCreate?: CalculationCreateCapture }) {
+  const trackedModel = (name: string, overrides: Record<string, unknown> = {}) => model({
+    deleteMany: async () => {
+      captures.deleteManyCalls.push(name);
+    },
+    ...overrides,
+  });
+
+  return {
+    taxParameterSet: model({ findUnique: async () => parameterSet }),
+    taxArt94Bracket: model({ findMany: async () => [bracket] }),
+    updateIndex: model(),
+    salesInvoice: trackedModel('salesInvoice'),
+    purchaseInvoice: trackedModel('purchaseInvoice'),
+    fixedAsset: trackedModel('fixedAsset'),
+    inventoryValue: trackedModel('inventoryValue'),
+    bankAccountBalance: trackedModel('bankAccountBalance'),
+    cashHolding: trackedModel('cashHolding'),
+    receivableDebt: trackedModel('receivableDebt'),
+    payableDebt: trackedModel('payableDebt'),
+    taxWithholding: trackedModel('taxWithholding'),
+    personalAsset: trackedModel('personalAsset'),
+    personalLiability: trackedModel('personalLiability'),
+    patrimonialJustification: trackedModel('patrimonialJustification'),
+    axiStaticItem: trackedModel('axiStaticItem'),
+    axiDynamicItem: trackedModel('axiDynamicItem'),
+    calculationRun: trackedModel('calculationRun', {
+      create: async (args: unknown) => {
+        captures.calculationCreate = args as CalculationCreateCapture;
+      },
+    }),
+    taxReturn: model(),
+  };
+}
+
+const existingReturnForValidation = {
+  taxParameterSetId: 'params-2025',
+  fiscalYearId: 'fy-2025',
+  status: 'Borrador',
+  client: { name: 'Cliente Validacion', cuit: '20-99999999-9' },
+  fiscalYear: { year: 2025 },
+};
+
 describe('persistTaxReturnDetails', () => {
   it('preserva comprobante y contraparte importados en ventas y compras', async () => {
     const captures: {
@@ -746,5 +789,66 @@ describe('persistTaxReturnDetails', () => {
       column: 2,
       amount: '750000',
     });
+  });
+
+  it('rechaza importes invalidos antes de borrar detalle existente', async () => {
+    const captures: { deleteManyCalls: string[] } = { deleteManyCalls: [] };
+
+    await expect(persistTaxReturnDetails({
+      db: buildTrackedPersistenceDb(captures),
+      taxReturnId: 'return-invalid-number',
+      existingReturn: existingReturnForValidation,
+      payload: {
+        fiscalYear: 2025,
+        sales: [{
+          date: '2025-01-01',
+          netAmount: 'abc',
+          isExempt: false,
+        }],
+      },
+    })).rejects.toThrow('ventas[0].netAmount');
+
+    expect(captures.deleteManyCalls).toEqual([]);
+  });
+
+  it('rechaza fechas faltantes o invalidas antes de borrar detalle existente', async () => {
+    const captures: { deleteManyCalls: string[] } = { deleteManyCalls: [] };
+
+    await expect(persistTaxReturnDetails({
+      db: buildTrackedPersistenceDb(captures),
+      taxReturnId: 'return-invalid-date',
+      existingReturn: existingReturnForValidation,
+      payload: {
+        fiscalYear: 2025,
+        sales: [{
+          date: '',
+          netAmount: '100',
+          isExempt: false,
+        }],
+      },
+    })).rejects.toThrow('ventas[0].date');
+
+    expect(captures.deleteManyCalls).toEqual([]);
+  });
+
+  it('conserva el historial de calculos y solo agrega una nueva corrida', async () => {
+    const captures: { deleteManyCalls: string[]; calculationCreate?: CalculationCreateCapture } = { deleteManyCalls: [] };
+
+    await persistTaxReturnDetails({
+      db: buildTrackedPersistenceDb(captures),
+      taxReturnId: 'return-history',
+      existingReturn: existingReturnForValidation,
+      payload: {
+        fiscalYear: 2025,
+        sales: [{
+          date: '2025-01-01',
+          netAmount: '100',
+          isExempt: false,
+        }],
+      },
+    });
+
+    expect(captures.deleteManyCalls).not.toContain('calculationRun');
+    expect(captures.calculationCreate).toBeDefined();
   });
 });

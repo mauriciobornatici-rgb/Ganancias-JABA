@@ -2,6 +2,10 @@
 
 import { useState } from 'react';
 import { Download, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import {
+  buildWizardLocalDraftKey,
+  safeRemoveWizardLocalDraft,
+} from '@/domain/ganancias/presentation/wizardDraftRecovery';
 
 type ImportSummary = {
   summary: { salesCount: number; purchasesCount: number; fixedAssetCount: number; pendingReview: number };
@@ -47,7 +51,7 @@ export default function MonthlyImportButton({ taxReturnId }: { taxReturnId: stri
       // (evita que un estado viejo en localStorage tape lo recién importado). Clave usada por el wizard:
       // `jaba_wizard_state_<id>`.
       try {
-        localStorage.removeItem(`jaba_wizard_state_${taxReturnId}`);
+        safeRemoveWizardLocalDraft(localStorage, buildWizardLocalDraftKey(taxReturnId));
       } catch {
         // si localStorage no está disponible, la recarga igual trae los datos del servidor
       }

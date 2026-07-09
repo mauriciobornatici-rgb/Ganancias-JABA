@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   TAX_RETURN_STATUS,
   buildTaxReturnAnnulmentDecision,
+  buildTaxReturnStaleWriteDecision,
   buildTaxReturnUpdateDecision,
   isTaxReturnEditable,
   isTaxReturnImmutable,
@@ -120,6 +121,31 @@ describe('taxReturnWorkflow', () => {
     })).toMatchObject({
       allowed: false,
       httpStatus: 409,
+    });
+  });
+
+  it('bloquea una escritura si la DDJJ fue modificada luego de que el wizard la cargo', () => {
+    expect(buildTaxReturnStaleWriteDecision({
+      lastKnownUpdatedAt: '2026-07-09T10:00:00.000Z',
+      currentUpdatedAt: '2026-07-09T10:00:00.000Z',
+    })).toEqual({ allowed: true });
+
+    expect(buildTaxReturnStaleWriteDecision({
+      lastKnownUpdatedAt: null,
+      currentUpdatedAt: '2026-07-09T10:05:00.000Z',
+    })).toEqual({ allowed: true });
+
+    const stale = buildTaxReturnStaleWriteDecision({
+      lastKnownUpdatedAt: '2026-07-09T10:00:00.000Z',
+      currentUpdatedAt: '2026-07-09T10:05:00.000Z',
+    });
+
+    expect(stale).toEqual({
+      allowed: false,
+      httpStatus: 409,
+      code: 'STALE_TAX_RETURN',
+      currentUpdatedAt: '2026-07-09T10:05:00.000Z',
+      error: 'La DDJJ fue modificada en otra ventana o equipo. Recargue antes de sobrescribir datos.',
     });
   });
 });

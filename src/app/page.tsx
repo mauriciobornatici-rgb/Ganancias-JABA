@@ -22,6 +22,10 @@ import {
   LogOut
 } from 'lucide-react';
 import Link from 'next/link';
+import {
+  buildWizardLocalDraftKey,
+  safeRemoveWizardLocalDraft,
+} from '@/domain/ganancias/presentation/wizardDraftRecovery';
 
 type Numberish = string | number | null | undefined | { toNumber: () => number };
 
@@ -43,6 +47,7 @@ type ClientRow = {
 
 type TaxReturnRow = {
   id: string;
+  clientId?: string;
   clientName: string;
   cuit: string;
   year: number | null;
@@ -459,6 +464,11 @@ export default function Home() {
     status === 'Rectificada'
   );
 
+  const removeLocalWizardDraft = (returnId: string) => {
+    if (typeof window === 'undefined') return;
+    safeRemoveWizardLocalDraft(localStorage, buildWizardLocalDraftKey(returnId));
+  };
+
   const handleCreateClient = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName || !newClientCuit) {
@@ -550,7 +560,11 @@ export default function Home() {
     .then(res => res.json())
     .then(res => {
       if (res.success) {
+        taxReturns
+          .filter(r => r.clientId === clientId)
+          .forEach(r => removeLocalWizardDraft(r.id));
         setClients(prev => prev.filter(c => c.id !== clientId));
+        setTaxReturns(prev => prev.filter(r => r.clientId !== clientId));
         setNotification({ message: `Contribuyente "${clientName}" eliminado con éxito.`, type: 'success' });
       } else {
         setNotification({ message: `${res.error}`, type: 'error' });
@@ -582,6 +596,7 @@ export default function Home() {
             message: `Declaración jurada de ${clientName} (${year}) anulada con éxito. No fue borrada de la base.`,
             type: 'success'
           });
+          removeLocalWizardDraft(returnId);
           setTaxReturns(prev => prev.filter(r => r.id !== returnId));
         } else {
           setNotification({

@@ -24,4 +24,15 @@ describe('Docker migration shadow database configuration', () => {
     expect(initSql).toContain('CREATE DATABASE IF NOT EXISTS ganancias_jaba_test_shadow');
     expect(initSql).toContain("GRANT ALL PRIVILEGES ON ganancias_jaba_test_shadow.* TO 'jaba_test'@'%'");
   });
+
+  it('loads the isolated seed after migrations and before integration tests in CI', () => {
+    const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
+    const migrateStep = workflow.indexOf('run: npm run db:test:migrate');
+    const seedStep = workflow.indexOf('run: npm run db:test:seed');
+    const integrationStep = workflow.indexOf('run: npm run test:integration');
+
+    expect(migrateStep).toBeGreaterThanOrEqual(0);
+    expect(seedStep).toBeGreaterThan(migrateStep);
+    expect(integrationStep).toBeGreaterThan(seedStep);
+  });
 });

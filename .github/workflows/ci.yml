@@ -58,6 +58,9 @@ jobs:
       - name: Apply migrations to isolated database
         run: npm run db:test:migrate
 
+      - name: Seed isolated database
+        run: npm run db:test:seed
+
       - name: Run database integration tests
         run: npm run test:integration
 

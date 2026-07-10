@@ -97,6 +97,11 @@ export type UpdateIndex = Prisma.UpdateIndexModel
  */
 export type TaxReturn = Prisma.TaxReturnModel
 /**
+ * Model FixedAssetImportCandidate
+ * 
+ */
+export type FixedAssetImportCandidate = Prisma.FixedAssetImportCandidateModel
+/**
  * Model RectificationLink
  * 
  */

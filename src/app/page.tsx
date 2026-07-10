@@ -117,6 +117,17 @@ type EditParametersForm = {
   brackets: TaxBracketView[];
 };
 
+type AuditLogRow = {
+  id: string;
+  createdAt: string;
+  action: string;
+  entityType: string;
+  details?: string | null;
+  clientName?: string | null;
+  clientCuit?: string | null;
+  userId?: string | null;
+};
+
 function isDecimalLike(value: Numberish): value is { toNumber: () => number } {
   return typeof value === 'object' && value !== null && typeof value.toNumber === 'function';
 }
@@ -144,6 +155,9 @@ export default function Home() {
   const [editForm, setEditForm] = useState<EditParametersForm | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [auditError, setAuditError] = useState<string | null>(null);
 
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -160,6 +174,25 @@ export default function Home() {
   const [editClientType, setEditClientType] = useState('Persona Humana');
   const [editClientFiscal, setEditClientFiscal] = useState('Responsable Inscripto');
   const [editClientActivity, setEditClientActivity] = useState('');
+
+  useEffect(() => {
+    if (activeView !== 'auditoria') return;
+    const controller = new AbortController();
+    fetch('/api/auditoria?limit=100', { signal: controller.signal })
+      .then(async response => {
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'No se pudo cargar la auditoría.');
+        setAuditLogs(Array.isArray(payload.data) ? payload.data : []);
+        setAuditError(null);
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setAuditError(error instanceof Error ? error.message : 'No se pudo cargar la auditoría.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAuditLoading(false);
+      });
+    return () => controller.abort();
+  }, [activeView]);
 
 
   // P31.1: la carga del dashboard ya no traga errores. Si una API falla o devuelve
@@ -551,7 +584,7 @@ export default function Home() {
   };
 
   const handleDeleteClient = (clientId: string, clientName: string) => {
-    const confirmDelete = window.confirm(`¿Está seguro que desea eliminar al contribuyente "${clientName}"? Esta acción eliminará permanentemente al contribuyente y todos sus borradores asociados.`);
+    const confirmDelete = window.confirm(`¿Desea dar de baja al contribuyente "${clientName}"? Quedará inactivo, pero se conservará todo su historial fiscal y sus declaraciones juradas.`);
     if (!confirmDelete) return;
 
     fetch(`/api/clientes/${clientId}`, {
@@ -560,19 +593,15 @@ export default function Home() {
     .then(res => res.json())
     .then(res => {
       if (res.success) {
-        taxReturns
-          .filter(r => r.clientId === clientId)
-          .forEach(r => removeLocalWizardDraft(r.id));
         setClients(prev => prev.filter(c => c.id !== clientId));
-        setTaxReturns(prev => prev.filter(r => r.clientId !== clientId));
-        setNotification({ message: `Contribuyente "${clientName}" eliminado con éxito.`, type: 'success' });
+        setNotification({ message: `Contribuyente "${clientName}" dado de baja. Su historial fue conservado.`, type: 'success' });
       } else {
         setNotification({ message: `${res.error}`, type: 'error' });
       }
     })
     .catch(err => {
-      console.error("Error deleting client:", err);
-      setNotification({ message: `Error de red al eliminar: ${err.message}`, type: 'error' });
+      console.error("Error deactivating client:", err);
+      setNotification({ message: `Error de red al dar de baja: ${err.message}`, type: 'error' });
     });
   };
 
@@ -633,6 +662,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200 font-sans">
+      <a href="#contenido-principal" className="skip-link">Saltar al contenido principal</a>
       
       {/* HEADER DE LA PLATAFORMA (STITCH AESTHETIC) */}
       <header className="border-b border-[#1e1e24] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50">
@@ -694,10 +724,28 @@ export default function Home() {
             </button>
           </div>
         </div>
+        <nav aria-label="Navegación principal móvil" className="md:hidden flex overflow-x-auto border-t border-zinc-900 px-4 py-2 gap-2">
+          {([
+            ['dashboard', 'Dashboard'],
+            ['clientes', 'Clientes'],
+            ['parametros', 'Parámetros'],
+            ['auditoria', 'Auditoría'],
+          ] as const).map(([view, label]) => (
+            <button
+              key={view}
+              type="button"
+              aria-current={activeView === view ? 'page' : undefined}
+              onClick={() => setActiveView(view)}
+              className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${activeView === view ? 'bg-teal-500/15 text-teal-300' : 'text-zinc-400'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </header>
 
       {/* DASHBOARD PRINCIPAL */}
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main id="contenido-principal" tabIndex={-1} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         
         {activeView === 'dashboard' && (
           <>
@@ -1435,44 +1483,26 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50 text-xs font-mono text-zinc-300">
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-28 01:10</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Importador AFIP Optimizado</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Importación de AFIP compras y ventas ajustada con éxito para cabeceras truncadas de ARCA.</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">SISTEMA (JABA)</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Éxito</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-27 22:12</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Parámetro &quot;Disponibilidades&quot;</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Modificación y adición interactiva de saldos en cuentas corrientes y de ahorro.</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Contador JABA</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Éxito</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-27 19:45</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Variación Patrimonial JVP</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">
-                        <span className="text-amber-400">Alerta:</span> Consumo alto proyectado en declaración 2025 de Lobato Francisco ($28.017.191).
-                      </td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">SISTEMA (JABA)</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase">Advertencia</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-26 15:30</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Actualización de Coeficientes IPC</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Tablas de inflación impositiva mensual cargadas y vinculadas al AXI dinámico y estático.</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Contador JABA</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Éxito</span>
-                      </td>
-                    </tr>
+                    {auditLoading && (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-400">Cargando eventos reales de auditoría…</td></tr>
+                    )}
+                    {auditError && (
+                      <tr><td colSpan={5} role="alert" className="px-6 py-8 text-center text-red-300">{auditError}</td></tr>
+                    )}
+                    {!auditLoading && !auditError && auditLogs.length === 0 && (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">Todavía no hay eventos registrados.</td></tr>
+                    )}
+                    {!auditLoading && !auditError && auditLogs.map(log => (
+                      <tr key={log.id} className="hover:bg-zinc-800/10 transition-colors">
+                        <td className="px-6 py-4 text-zinc-500">{new Date(log.createdAt).toLocaleString('es-AR')}</td>
+                        <td className="px-6 py-4 font-sans font-semibold text-white">{log.action} · {log.entityType}</td>
+                        <td className="px-6 py-4 font-sans text-zinc-400 whitespace-pre-wrap break-words max-w-xl">{log.details || 'Sin detalle adicional'}</td>
+                        <td className="px-6 py-4 font-sans text-zinc-400">{log.userId || log.clientName || log.clientCuit || 'SISTEMA (JABA)'}</td>
+                        <td className="px-6 py-4 text-center font-sans">
+                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Registrado</span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as xlsx from 'xlsx';
@@ -35,7 +35,7 @@ describe('JABA Tax Parameter Workbook Importer', () => {
   });
 
   runIfWorkbookExists('normaliza fechas seriales de Excel a meses 1..12 para indices IPC 2025', () => {
-    const workbook = xlsx.readFile(indicesWorkbookPath!, { cellDates: false });
+    const workbook = xlsx.read(readFileSync(indicesWorkbookPath!), { type: 'buffer', cellDates: false });
 
     const parsed = parseTaxParameterWorkbook(workbook, 2025);
 

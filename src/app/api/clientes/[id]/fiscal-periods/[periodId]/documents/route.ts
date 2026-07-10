@@ -1,12 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { parseAfipFiscalLedgerDocuments } from '@/domain/ganancias/mappers/afipFiscalLedgerImporter';
 import { persistFiscalDocuments } from '@/domain/ganancias/persistence/fiscalLedgerPersistence';
 import { MAX_IMPORT_TOTAL_BYTES } from '@/domain/ganancias/presentation/apiValidation';
 import { prisma } from '@/domain/ganancias/prisma';
 import type { FiscalDocumentDraft } from '@/domain/ganancias/fiscalLedger/types';
+import { buildFiscalPeriodSourceMutationDecision } from '@/domain/ganancias/workflow/fiscalPeriodWorkflow';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -77,6 +78,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
  * (los 12 meses se cargan por período; dentro de un mes pueden venir ventas y compras juntas).
  */
 export async function POST(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: clientId, periodId } = await context.params;
 
   try {
@@ -88,6 +91,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         year: true,
         month: true,
         client: { select: { cuit: true, name: true } },
+        vatSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+        grossIncomeSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
       },
     });
 
@@ -96,6 +101,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
         { success: false, error: 'El período mensual no existe o no pertenece a este contribuyente.' },
         { status: 404 },
       );
+    }
+
+    const mutationDecision = buildFiscalPeriodSourceMutationDecision({
+      vatStatus: period.vatSettlements[0]?.status,
+      grossIncomeStatus: period.grossIncomeSettlements[0]?.status,
+    });
+    if (!mutationDecision.allowed) {
+      return NextResponse.json({ success: false, error: mutationDecision.error }, { status: mutationDecision.httpStatus });
     }
 
     const formData = await request.formData();
@@ -145,16 +158,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { inserted, duplicates } = await persistFiscalDocuments(prisma, periodId, documents);
-
-    void logAuditEvent({
-      action: 'IMPORT',
-      entityType: 'FiscalPeriod',
-      entityId: periodId,
-      clientCuit: period.client?.cuit,
-      clientName: period.client?.name,
-      fiscalYear: period.year,
-      details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${inserted} nuevos, ${duplicates} duplicados omitidos, ${files.length} archivo(s).`,
+    const { inserted, duplicates } = await prisma.$transaction(async tx => {
+      const persisted = await persistFiscalDocuments(tx, periodId, documents);
+      await tx.auditLog.create({ data: {
+        action: 'IMPORT',
+        entityType: 'FiscalPeriod',
+        entityId: periodId,
+        clientCuit: period.client?.cuit,
+        clientName: period.client?.name,
+        fiscalYear: period.year,
+        details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevos, ${persisted.duplicates} duplicados omitidos, ${files.length} archivo(s).`,
+      } });
+      return persisted;
     });
 
     return NextResponse.json({

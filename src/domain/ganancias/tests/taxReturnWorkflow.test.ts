@@ -83,7 +83,6 @@ describe('taxReturnWorkflow', () => {
     expect(buildTaxReturnAnnulmentDecision({
       currentStatus: 'Borrador',
       reason: ' ',
-      isTechnicalRollback: false,
     })).toMatchObject({
       allowed: false,
       httpStatus: 400,
@@ -92,35 +91,12 @@ describe('taxReturnWorkflow', () => {
     expect(buildTaxReturnAnnulmentDecision({
       currentStatus: 'Cerrada',
       reason: 'DDJJ duplicada por error de carga',
-      isTechnicalRollback: false,
     })).toEqual({
       allowed: true,
       mode: 'annul',
       nextStatus: TAX_RETURN_STATUS.ANULADA,
       auditAction: 'ANNUL',
       reason: 'DDJJ duplicada por error de carga',
-    });
-  });
-
-  it('reserva el borrado fisico solo para rollback tecnico de borradores', () => {
-    expect(buildTaxReturnAnnulmentDecision({
-      currentStatus: 'Borrador',
-      reason: '',
-      isTechnicalRollback: true,
-    })).toEqual({
-      allowed: true,
-      mode: 'physical-delete',
-      auditAction: 'DELETE',
-      reason: 'Rollback tecnico de cabecera creada automaticamente.',
-    });
-
-    expect(buildTaxReturnAnnulmentDecision({
-      currentStatus: 'Cerrada',
-      reason: '',
-      isTechnicalRollback: true,
-    })).toMatchObject({
-      allowed: false,
-      httpStatus: 409,
     });
   });
 

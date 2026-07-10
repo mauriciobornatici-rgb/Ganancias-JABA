@@ -71,6 +71,8 @@ type SalesPayload = {
   counterpartyCuit?: string;
   ivaAmount?: NumericValue;
   totalAmount?: NumericValue;
+  importSource?: string;
+  sourceFiscalDocumentId?: string;
 };
 
 type PurchasePayload = SalesPayload & {
@@ -204,7 +206,7 @@ type TaxReturnPersistencePayload = {
   axiStaticBreakdown?: RawRecord;
 };
 
-type DbParameterSet = RawRecord & { id: string };
+type DbParameterSet = RawRecord & { id: string; status?: string };
 type DbIpcIndex = {
   monthIndex: number;
   ipcValue: Decimal | number | string | { toString(): string };
@@ -567,13 +569,20 @@ export async function persistTaxReturnDetails({
 
   if (!dbParamSet) {
     dbParamSet = await db.taxParameterSet.findFirst({
-      where: { fiscalYear: { year: fiscalYearNumber } },
+      where: { fiscalYear: { year: fiscalYearNumber }, status: 'validado' },
       orderBy: { version: 'desc' },
     }) as DbParameterSet | null;
   }
 
   if (!dbParamSet) {
     throw new Error(`No se encontraron parametros impositivos registrados en la base de datos para el anio ${fiscalYearNumber}. Cargue una resolucion primero en Parametros.`);
+  }
+
+  if (status === 'Cerrada' && dbParamSet.status !== 'validado') {
+    throw new TaxReturnInvalidPayloadError(
+      'taxParameterSetId',
+      'No se puede cerrar la DDJJ con un conjunto normativo en borrador o reemplazado. Valide una resolución antes del cierre.',
+    );
   }
 
   const dbBrackets = await db.taxArt94Bracket.findMany({
@@ -665,6 +674,8 @@ export async function persistTaxReturnDetails({
         ivaAmount: numberInput(s.ivaAmount, 0, 'ventas.ivaAmount'),
         totalAmount: numberInput(s.totalAmount, numberInput(s.netAmount, 0, 'ventas.netAmount'), 'ventas.totalAmount'),
         isExempt: s.isExempt || false,
+        importSource: stringInput(s.importSource) || undefined,
+        sourceFiscalDocumentId: stringInput(s.sourceFiscalDocumentId) || undefined,
       })),
     });
   }
@@ -684,6 +695,8 @@ export async function persistTaxReturnDetails({
         isDeductible: p.isDeductible !== false,
         isExempt: p.isExempt || false,
         expenseType: p.expenseType || 'GastosGenerales',
+        importSource: stringInput(p.importSource) || undefined,
+        sourceFiscalDocumentId: stringInput(p.sourceFiscalDocumentId) || undefined,
       })),
     });
   }

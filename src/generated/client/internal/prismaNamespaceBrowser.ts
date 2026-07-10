@@ -62,6 +62,7 @@ export const ModelName = {
   TaxArt94Bracket: 'TaxArt94Bracket',
   UpdateIndex: 'UpdateIndex',
   TaxReturn: 'TaxReturn',
+  FixedAssetImportCandidate: 'FixedAssetImportCandidate',
   RectificationLink: 'RectificationLink',
   ClientTaxProfileVersion: 'ClientTaxProfileVersion',
   ClientTaxActivity: 'ClientTaxActivity',
@@ -266,6 +267,23 @@ export const TaxReturnScalarFieldEnum = {
 export type TaxReturnScalarFieldEnum = (typeof TaxReturnScalarFieldEnum)[keyof typeof TaxReturnScalarFieldEnum]
 
 
+export const FixedAssetImportCandidateScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId',
+  sourceMonth: 'sourceMonth',
+  description: 'description',
+  counterpartyName: 'counterpartyName',
+  purchaseDate: 'purchaseDate',
+  originalCost: 'originalCost',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FixedAssetImportCandidateScalarFieldEnum = (typeof FixedAssetImportCandidateScalarFieldEnum)[keyof typeof FixedAssetImportCandidateScalarFieldEnum]
+
+
 export const RectificationLinkScalarFieldEnum = {
   id: 'id',
   originalId: 'originalId',
@@ -464,6 +482,7 @@ export const GrossIncomeSettlementScalarFieldEnum = {
   totalDeterminedTax: 'totalDeterminedTax',
   totalCredits: 'totalCredits',
   totalBalance: 'totalBalance',
+  totalFavorCarryForward: 'totalFavorCarryForward',
   officialAmount: 'officialAmount',
   officialReference: 'officialReference',
   filedAt: 'filedAt',
@@ -486,6 +505,7 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
   determinedTax: 'determinedTax',
   creditsApplied: 'creditsApplied',
   balance: 'balance',
+  favorCarryForward: 'favorCarryForward',
   createdAt: 'createdAt'
 } as const
 
@@ -496,6 +516,7 @@ export const ConventionCoefficientVersionScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
   year: 'year',
+  version: 'version',
   sourceReference: 'sourceReference',
   approvedBy: 'approvedBy',
   approvedAt: 'approvedAt',
@@ -1053,6 +1074,18 @@ export const TaxReturnOrderByRelevanceFieldEnum = {
 } as const
 
 export type TaxReturnOrderByRelevanceFieldEnum = (typeof TaxReturnOrderByRelevanceFieldEnum)[keyof typeof TaxReturnOrderByRelevanceFieldEnum]
+
+
+export const FixedAssetImportCandidateOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId',
+  description: 'description',
+  counterpartyName: 'counterpartyName',
+  status: 'status'
+} as const
+
+export type FixedAssetImportCandidateOrderByRelevanceFieldEnum = (typeof FixedAssetImportCandidateOrderByRelevanceFieldEnum)[keyof typeof FixedAssetImportCandidateOrderByRelevanceFieldEnum]
 
 
 export const RectificationLinkOrderByRelevanceFieldEnum = {

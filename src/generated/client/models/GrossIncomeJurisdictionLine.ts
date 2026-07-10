@@ -33,6 +33,7 @@ export type GrossIncomeJurisdictionLineAvgAggregateOutputType = {
   determinedTax: runtime.Decimal | null
   creditsApplied: runtime.Decimal | null
   balance: runtime.Decimal | null
+  favorCarryForward: runtime.Decimal | null
 }
 
 export type GrossIncomeJurisdictionLineSumAggregateOutputType = {
@@ -42,6 +43,7 @@ export type GrossIncomeJurisdictionLineSumAggregateOutputType = {
   determinedTax: runtime.Decimal | null
   creditsApplied: runtime.Decimal | null
   balance: runtime.Decimal | null
+  favorCarryForward: runtime.Decimal | null
 }
 
 export type GrossIncomeJurisdictionLineMinAggregateOutputType = {
@@ -55,6 +57,7 @@ export type GrossIncomeJurisdictionLineMinAggregateOutputType = {
   determinedTax: runtime.Decimal | null
   creditsApplied: runtime.Decimal | null
   balance: runtime.Decimal | null
+  favorCarryForward: runtime.Decimal | null
   createdAt: Date | null
 }
 
@@ -69,6 +72,7 @@ export type GrossIncomeJurisdictionLineMaxAggregateOutputType = {
   determinedTax: runtime.Decimal | null
   creditsApplied: runtime.Decimal | null
   balance: runtime.Decimal | null
+  favorCarryForward: runtime.Decimal | null
   createdAt: Date | null
 }
 
@@ -83,6 +87,7 @@ export type GrossIncomeJurisdictionLineCountAggregateOutputType = {
   determinedTax: number
   creditsApplied: number
   balance: number
+  favorCarryForward: number
   createdAt: number
   _all: number
 }
@@ -95,6 +100,7 @@ export type GrossIncomeJurisdictionLineAvgAggregateInputType = {
   determinedTax?: true
   creditsApplied?: true
   balance?: true
+  favorCarryForward?: true
 }
 
 export type GrossIncomeJurisdictionLineSumAggregateInputType = {
@@ -104,6 +110,7 @@ export type GrossIncomeJurisdictionLineSumAggregateInputType = {
   determinedTax?: true
   creditsApplied?: true
   balance?: true
+  favorCarryForward?: true
 }
 
 export type GrossIncomeJurisdictionLineMinAggregateInputType = {
@@ -117,6 +124,7 @@ export type GrossIncomeJurisdictionLineMinAggregateInputType = {
   determinedTax?: true
   creditsApplied?: true
   balance?: true
+  favorCarryForward?: true
   createdAt?: true
 }
 
@@ -131,6 +139,7 @@ export type GrossIncomeJurisdictionLineMaxAggregateInputType = {
   determinedTax?: true
   creditsApplied?: true
   balance?: true
+  favorCarryForward?: true
   createdAt?: true
 }
 
@@ -145,6 +154,7 @@ export type GrossIncomeJurisdictionLineCountAggregateInputType = {
   determinedTax?: true
   creditsApplied?: true
   balance?: true
+  favorCarryForward?: true
   createdAt?: true
   _all?: true
 }
@@ -246,6 +256,7 @@ export type GrossIncomeJurisdictionLineGroupByOutputType = {
   determinedTax: runtime.Decimal
   creditsApplied: runtime.Decimal
   balance: runtime.Decimal
+  favorCarryForward: runtime.Decimal
   createdAt: Date
   _count: GrossIncomeJurisdictionLineCountAggregateOutputType | null
   _avg: GrossIncomeJurisdictionLineAvgAggregateOutputType | null
@@ -283,6 +294,7 @@ export type GrossIncomeJurisdictionLineWhereInput = {
   determinedTax?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"GrossIncomeJurisdictionLine"> | Date | string
   grossIncomeSettlement?: Prisma.XOR<Prisma.GrossIncomeSettlementScalarRelationFilter, Prisma.GrossIncomeSettlementWhereInput>
 }
@@ -298,6 +310,7 @@ export type GrossIncomeJurisdictionLineOrderByWithRelationInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   grossIncomeSettlement?: Prisma.GrossIncomeSettlementOrderByWithRelationInput
   _relevance?: Prisma.GrossIncomeJurisdictionLineOrderByRelevanceInput
@@ -317,6 +330,7 @@ export type GrossIncomeJurisdictionLineWhereUniqueInput = Prisma.AtLeast<{
   determinedTax?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"GrossIncomeJurisdictionLine"> | Date | string
   grossIncomeSettlement?: Prisma.XOR<Prisma.GrossIncomeSettlementScalarRelationFilter, Prisma.GrossIncomeSettlementWhereInput>
 }, "id">
@@ -332,6 +346,7 @@ export type GrossIncomeJurisdictionLineOrderByWithAggregationInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.GrossIncomeJurisdictionLineCountOrderByAggregateInput
   _avg?: Prisma.GrossIncomeJurisdictionLineAvgOrderByAggregateInput
@@ -354,6 +369,7 @@ export type GrossIncomeJurisdictionLineScalarWhereWithAggregatesInput = {
   determinedTax?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"GrossIncomeJurisdictionLine"> | Date | string
 }
 
@@ -367,6 +383,7 @@ export type GrossIncomeJurisdictionLineCreateInput = {
   determinedTax: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balance: runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
   grossIncomeSettlement: Prisma.GrossIncomeSettlementCreateNestedOneWithoutJurisdictionLinesInput
 }
@@ -382,6 +399,7 @@ export type GrossIncomeJurisdictionLineUncheckedCreateInput = {
   determinedTax: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balance: runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
 }
 
@@ -395,6 +413,7 @@ export type GrossIncomeJurisdictionLineUpdateInput = {
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   grossIncomeSettlement?: Prisma.GrossIncomeSettlementUpdateOneRequiredWithoutJurisdictionLinesNestedInput
 }
@@ -410,6 +429,7 @@ export type GrossIncomeJurisdictionLineUncheckedUpdateInput = {
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -424,6 +444,7 @@ export type GrossIncomeJurisdictionLineCreateManyInput = {
   determinedTax: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balance: runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
 }
 
@@ -437,6 +458,7 @@ export type GrossIncomeJurisdictionLineUpdateManyMutationInput = {
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -451,6 +473,7 @@ export type GrossIncomeJurisdictionLineUncheckedUpdateManyInput = {
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -481,6 +504,7 @@ export type GrossIncomeJurisdictionLineCountOrderByAggregateInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -491,6 +515,7 @@ export type GrossIncomeJurisdictionLineAvgOrderByAggregateInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
 }
 
 export type GrossIncomeJurisdictionLineMaxOrderByAggregateInput = {
@@ -504,6 +529,7 @@ export type GrossIncomeJurisdictionLineMaxOrderByAggregateInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -518,6 +544,7 @@ export type GrossIncomeJurisdictionLineMinOrderByAggregateInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -528,6 +555,7 @@ export type GrossIncomeJurisdictionLineSumOrderByAggregateInput = {
   determinedTax?: Prisma.SortOrder
   creditsApplied?: Prisma.SortOrder
   balance?: Prisma.SortOrder
+  favorCarryForward?: Prisma.SortOrder
 }
 
 export type GrossIncomeJurisdictionLineCreateNestedManyWithoutGrossIncomeSettlementInput = {
@@ -582,6 +610,7 @@ export type GrossIncomeJurisdictionLineCreateWithoutGrossIncomeSettlementInput =
   determinedTax: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balance: runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
 }
 
@@ -595,6 +624,7 @@ export type GrossIncomeJurisdictionLineUncheckedCreateWithoutGrossIncomeSettleme
   determinedTax: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balance: runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
 }
 
@@ -638,6 +668,7 @@ export type GrossIncomeJurisdictionLineScalarWhereInput = {
   determinedTax?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFilter<"GrossIncomeJurisdictionLine"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFilter<"GrossIncomeJurisdictionLine"> | Date | string
 }
 
@@ -651,6 +682,7 @@ export type GrossIncomeJurisdictionLineCreateManyGrossIncomeSettlementInput = {
   determinedTax: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: runtime.Decimal | runtime.DecimalJsLike | number | string
   balance: runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Date | string
 }
 
@@ -664,6 +696,7 @@ export type GrossIncomeJurisdictionLineUpdateWithoutGrossIncomeSettlementInput =
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -677,6 +710,7 @@ export type GrossIncomeJurisdictionLineUncheckedUpdateWithoutGrossIncomeSettleme
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -690,6 +724,7 @@ export type GrossIncomeJurisdictionLineUncheckedUpdateManyWithoutGrossIncomeSett
   determinedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditsApplied?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   balance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  favorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -706,6 +741,7 @@ export type GrossIncomeJurisdictionLineSelect<ExtArgs extends runtime.Types.Exte
   determinedTax?: boolean
   creditsApplied?: boolean
   balance?: boolean
+  favorCarryForward?: boolean
   createdAt?: boolean
   grossIncomeSettlement?: boolean | Prisma.GrossIncomeSettlementDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["grossIncomeJurisdictionLine"]>
@@ -723,10 +759,11 @@ export type GrossIncomeJurisdictionLineSelectScalar = {
   determinedTax?: boolean
   creditsApplied?: boolean
   balance?: boolean
+  favorCarryForward?: boolean
   createdAt?: boolean
 }
 
-export type GrossIncomeJurisdictionLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "grossIncomeSettlementId" | "jurisdictionCode" | "activityCode" | "coefficient" | "assignedBase" | "taxRate" | "determinedTax" | "creditsApplied" | "balance" | "createdAt", ExtArgs["result"]["grossIncomeJurisdictionLine"]>
+export type GrossIncomeJurisdictionLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "grossIncomeSettlementId" | "jurisdictionCode" | "activityCode" | "coefficient" | "assignedBase" | "taxRate" | "determinedTax" | "creditsApplied" | "balance" | "favorCarryForward" | "createdAt", ExtArgs["result"]["grossIncomeJurisdictionLine"]>
 export type GrossIncomeJurisdictionLineInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   grossIncomeSettlement?: boolean | Prisma.GrossIncomeSettlementDefaultArgs<ExtArgs>
 }
@@ -747,6 +784,7 @@ export type $GrossIncomeJurisdictionLinePayload<ExtArgs extends runtime.Types.Ex
     determinedTax: runtime.Decimal
     creditsApplied: runtime.Decimal
     balance: runtime.Decimal
+    favorCarryForward: runtime.Decimal
     createdAt: Date
   }, ExtArgs["result"]["grossIncomeJurisdictionLine"]>
   composites: {}
@@ -1128,6 +1166,7 @@ export interface GrossIncomeJurisdictionLineFieldRefs {
   readonly determinedTax: Prisma.FieldRef<"GrossIncomeJurisdictionLine", 'Decimal'>
   readonly creditsApplied: Prisma.FieldRef<"GrossIncomeJurisdictionLine", 'Decimal'>
   readonly balance: Prisma.FieldRef<"GrossIncomeJurisdictionLine", 'Decimal'>
+  readonly favorCarryForward: Prisma.FieldRef<"GrossIncomeJurisdictionLine", 'Decimal'>
   readonly createdAt: Prisma.FieldRef<"GrossIncomeJurisdictionLine", 'DateTime'>
 }
     

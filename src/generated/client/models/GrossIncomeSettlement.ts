@@ -31,6 +31,7 @@ export type GrossIncomeSettlementAvgAggregateOutputType = {
   totalDeterminedTax: runtime.Decimal | null
   totalCredits: runtime.Decimal | null
   totalBalance: runtime.Decimal | null
+  totalFavorCarryForward: runtime.Decimal | null
   officialAmount: runtime.Decimal | null
 }
 
@@ -39,6 +40,7 @@ export type GrossIncomeSettlementSumAggregateOutputType = {
   totalDeterminedTax: runtime.Decimal | null
   totalCredits: runtime.Decimal | null
   totalBalance: runtime.Decimal | null
+  totalFavorCarryForward: runtime.Decimal | null
   officialAmount: runtime.Decimal | null
 }
 
@@ -52,6 +54,7 @@ export type GrossIncomeSettlementMinAggregateOutputType = {
   totalDeterminedTax: runtime.Decimal | null
   totalCredits: runtime.Decimal | null
   totalBalance: runtime.Decimal | null
+  totalFavorCarryForward: runtime.Decimal | null
   officialAmount: runtime.Decimal | null
   officialReference: string | null
   filedAt: Date | null
@@ -70,6 +73,7 @@ export type GrossIncomeSettlementMaxAggregateOutputType = {
   totalDeterminedTax: runtime.Decimal | null
   totalCredits: runtime.Decimal | null
   totalBalance: runtime.Decimal | null
+  totalFavorCarryForward: runtime.Decimal | null
   officialAmount: runtime.Decimal | null
   officialReference: string | null
   filedAt: Date | null
@@ -88,6 +92,7 @@ export type GrossIncomeSettlementCountAggregateOutputType = {
   totalDeterminedTax: number
   totalCredits: number
   totalBalance: number
+  totalFavorCarryForward: number
   officialAmount: number
   officialReference: number
   filedAt: number
@@ -103,6 +108,7 @@ export type GrossIncomeSettlementAvgAggregateInputType = {
   totalDeterminedTax?: true
   totalCredits?: true
   totalBalance?: true
+  totalFavorCarryForward?: true
   officialAmount?: true
 }
 
@@ -111,6 +117,7 @@ export type GrossIncomeSettlementSumAggregateInputType = {
   totalDeterminedTax?: true
   totalCredits?: true
   totalBalance?: true
+  totalFavorCarryForward?: true
   officialAmount?: true
 }
 
@@ -124,6 +131,7 @@ export type GrossIncomeSettlementMinAggregateInputType = {
   totalDeterminedTax?: true
   totalCredits?: true
   totalBalance?: true
+  totalFavorCarryForward?: true
   officialAmount?: true
   officialReference?: true
   filedAt?: true
@@ -142,6 +150,7 @@ export type GrossIncomeSettlementMaxAggregateInputType = {
   totalDeterminedTax?: true
   totalCredits?: true
   totalBalance?: true
+  totalFavorCarryForward?: true
   officialAmount?: true
   officialReference?: true
   filedAt?: true
@@ -160,6 +169,7 @@ export type GrossIncomeSettlementCountAggregateInputType = {
   totalDeterminedTax?: true
   totalCredits?: true
   totalBalance?: true
+  totalFavorCarryForward?: true
   officialAmount?: true
   officialReference?: true
   filedAt?: true
@@ -265,6 +275,7 @@ export type GrossIncomeSettlementGroupByOutputType = {
   totalDeterminedTax: runtime.Decimal
   totalCredits: runtime.Decimal
   totalBalance: runtime.Decimal
+  totalFavorCarryForward: runtime.Decimal
   officialAmount: runtime.Decimal | null
   officialReference: string | null
   filedAt: Date | null
@@ -306,6 +317,7 @@ export type GrossIncomeSettlementWhereInput = {
   totalDeterminedTax?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.DecimalNullableFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.StringNullableFilter<"GrossIncomeSettlement"> | string | null
   filedAt?: Prisma.DateTimeNullableFilter<"GrossIncomeSettlement"> | Date | string | null
@@ -328,6 +340,7 @@ export type GrossIncomeSettlementOrderByWithRelationInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   officialReference?: Prisma.SortOrderInput | Prisma.SortOrder
   filedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -355,6 +368,7 @@ export type GrossIncomeSettlementWhereUniqueInput = Prisma.AtLeast<{
   totalDeterminedTax?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.DecimalNullableFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.StringNullableFilter<"GrossIncomeSettlement"> | string | null
   filedAt?: Prisma.DateTimeNullableFilter<"GrossIncomeSettlement"> | Date | string | null
@@ -377,6 +391,7 @@ export type GrossIncomeSettlementOrderByWithAggregationInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrderInput | Prisma.SortOrder
   officialReference?: Prisma.SortOrderInput | Prisma.SortOrder
   filedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -403,6 +418,7 @@ export type GrossIncomeSettlementScalarWhereWithAggregatesInput = {
   totalDeterminedTax?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalWithAggregatesFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.DecimalNullableWithAggregatesFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.StringNullableWithAggregatesFilter<"GrossIncomeSettlement"> | string | null
   filedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"GrossIncomeSettlement"> | Date | string | null
@@ -419,6 +435,7 @@ export type GrossIncomeSettlementCreateInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -441,6 +458,7 @@ export type GrossIncomeSettlementUncheckedCreateInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -459,6 +477,7 @@ export type GrossIncomeSettlementUpdateInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -481,6 +500,7 @@ export type GrossIncomeSettlementUncheckedUpdateInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -501,6 +521,7 @@ export type GrossIncomeSettlementCreateManyInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -517,6 +538,7 @@ export type GrossIncomeSettlementUpdateManyMutationInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -535,6 +557,7 @@ export type GrossIncomeSettlementUncheckedUpdateManyInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -579,6 +602,7 @@ export type GrossIncomeSettlementCountOrderByAggregateInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrder
   officialReference?: Prisma.SortOrder
   filedAt?: Prisma.SortOrder
@@ -592,6 +616,7 @@ export type GrossIncomeSettlementAvgOrderByAggregateInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrder
 }
 
@@ -605,6 +630,7 @@ export type GrossIncomeSettlementMaxOrderByAggregateInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrder
   officialReference?: Prisma.SortOrder
   filedAt?: Prisma.SortOrder
@@ -623,6 +649,7 @@ export type GrossIncomeSettlementMinOrderByAggregateInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrder
   officialReference?: Prisma.SortOrder
   filedAt?: Prisma.SortOrder
@@ -636,6 +663,7 @@ export type GrossIncomeSettlementSumOrderByAggregateInput = {
   totalDeterminedTax?: Prisma.SortOrder
   totalCredits?: Prisma.SortOrder
   totalBalance?: Prisma.SortOrder
+  totalFavorCarryForward?: Prisma.SortOrder
   officialAmount?: Prisma.SortOrder
 }
 
@@ -770,6 +798,7 @@ export type GrossIncomeSettlementCreateWithoutFiscalPeriodInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -790,6 +819,7 @@ export type GrossIncomeSettlementUncheckedCreateWithoutFiscalPeriodInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -839,6 +869,7 @@ export type GrossIncomeSettlementScalarWhereInput = {
   totalDeterminedTax?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.DecimalNullableFilter<"GrossIncomeSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.StringNullableFilter<"GrossIncomeSettlement"> | string | null
   filedAt?: Prisma.DateTimeNullableFilter<"GrossIncomeSettlement"> | Date | string | null
@@ -855,6 +886,7 @@ export type GrossIncomeSettlementCreateWithoutRectificationsInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -876,6 +908,7 @@ export type GrossIncomeSettlementUncheckedCreateWithoutRectificationsInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -898,6 +931,7 @@ export type GrossIncomeSettlementCreateWithoutOriginalSettlementInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -918,6 +952,7 @@ export type GrossIncomeSettlementUncheckedCreateWithoutOriginalSettlementInput =
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -957,6 +992,7 @@ export type GrossIncomeSettlementUpdateWithoutRectificationsInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -978,6 +1014,7 @@ export type GrossIncomeSettlementUncheckedUpdateWithoutRectificationsInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1011,6 +1048,7 @@ export type GrossIncomeSettlementCreateWithoutJurisdictionLinesInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -1032,6 +1070,7 @@ export type GrossIncomeSettlementUncheckedCreateWithoutJurisdictionLinesInput = 
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -1065,6 +1104,7 @@ export type GrossIncomeSettlementUpdateWithoutJurisdictionLinesInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1086,6 +1126,7 @@ export type GrossIncomeSettlementUncheckedUpdateWithoutJurisdictionLinesInput = 
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1104,6 +1145,7 @@ export type GrossIncomeSettlementCreateManyFiscalPeriodInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -1120,6 +1162,7 @@ export type GrossIncomeSettlementUpdateWithoutFiscalPeriodInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1140,6 +1183,7 @@ export type GrossIncomeSettlementUncheckedUpdateWithoutFiscalPeriodInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1159,6 +1203,7 @@ export type GrossIncomeSettlementUncheckedUpdateManyWithoutFiscalPeriodInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1176,6 +1221,7 @@ export type GrossIncomeSettlementCreateManyOriginalSettlementInput = {
   totalDeterminedTax?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: string | null
   filedAt?: Date | string | null
@@ -1192,6 +1238,7 @@ export type GrossIncomeSettlementUpdateWithoutOriginalSettlementInput = {
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1212,6 +1259,7 @@ export type GrossIncomeSettlementUncheckedUpdateWithoutOriginalSettlementInput =
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1231,6 +1279,7 @@ export type GrossIncomeSettlementUncheckedUpdateManyWithoutOriginalSettlementInp
   totalDeterminedTax?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalCredits?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  totalFavorCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   officialAmount?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   officialReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   filedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1289,6 +1338,7 @@ export type GrossIncomeSettlementSelect<ExtArgs extends runtime.Types.Extensions
   totalDeterminedTax?: boolean
   totalCredits?: boolean
   totalBalance?: boolean
+  totalFavorCarryForward?: boolean
   officialAmount?: boolean
   officialReference?: boolean
   filedAt?: boolean
@@ -1314,6 +1364,7 @@ export type GrossIncomeSettlementSelectScalar = {
   totalDeterminedTax?: boolean
   totalCredits?: boolean
   totalBalance?: boolean
+  totalFavorCarryForward?: boolean
   officialAmount?: boolean
   officialReference?: boolean
   filedAt?: boolean
@@ -1322,7 +1373,7 @@ export type GrossIncomeSettlementSelectScalar = {
   updatedAt?: boolean
 }
 
-export type GrossIncomeSettlementOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "originalSettlementId" | "version" | "regime" | "status" | "totalDeterminedTax" | "totalCredits" | "totalBalance" | "officialAmount" | "officialReference" | "filedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["grossIncomeSettlement"]>
+export type GrossIncomeSettlementOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "originalSettlementId" | "version" | "regime" | "status" | "totalDeterminedTax" | "totalCredits" | "totalBalance" | "totalFavorCarryForward" | "officialAmount" | "officialReference" | "filedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["grossIncomeSettlement"]>
 export type GrossIncomeSettlementInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fiscalPeriod?: boolean | Prisma.FiscalPeriodDefaultArgs<ExtArgs>
   originalSettlement?: boolean | Prisma.GrossIncomeSettlement$originalSettlementArgs<ExtArgs>
@@ -1349,6 +1400,7 @@ export type $GrossIncomeSettlementPayload<ExtArgs extends runtime.Types.Extensio
     totalDeterminedTax: runtime.Decimal
     totalCredits: runtime.Decimal
     totalBalance: runtime.Decimal
+    totalFavorCarryForward: runtime.Decimal
     officialAmount: runtime.Decimal | null
     officialReference: string | null
     filedAt: Date | null
@@ -1737,6 +1789,7 @@ export interface GrossIncomeSettlementFieldRefs {
   readonly totalDeterminedTax: Prisma.FieldRef<"GrossIncomeSettlement", 'Decimal'>
   readonly totalCredits: Prisma.FieldRef<"GrossIncomeSettlement", 'Decimal'>
   readonly totalBalance: Prisma.FieldRef<"GrossIncomeSettlement", 'Decimal'>
+  readonly totalFavorCarryForward: Prisma.FieldRef<"GrossIncomeSettlement", 'Decimal'>
   readonly officialAmount: Prisma.FieldRef<"GrossIncomeSettlement", 'Decimal'>
   readonly officialReference: Prisma.FieldRef<"GrossIncomeSettlement", 'String'>
   readonly filedAt: Prisma.FieldRef<"GrossIncomeSettlement", 'DateTime'>

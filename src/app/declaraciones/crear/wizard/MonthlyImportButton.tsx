@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Download, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import {
   buildWizardLocalDraftKey,
@@ -12,7 +12,17 @@ type ImportSummary = {
   monthsUsed: number[];
   iibbTotal: string;
   notices: string[];
-  fixedAssetCandidates: unknown[];
+  fixedAssetCandidates: FixedAssetCandidate[];
+};
+
+type FixedAssetCandidate = {
+  id?: string;
+  sourceFiscalDocumentId: string;
+  month: number;
+  description: string;
+  counterpartyName: string | null;
+  cost: string;
+  date: string;
 };
 
 /**
@@ -27,6 +37,21 @@ export default function MonthlyImportButton({ taxReturnId }: { taxReturnId: stri
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportSummary | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [pendingAssets, setPendingAssets] = useState<FixedAssetCandidate[]>([]);
+
+  useEffect(() => {
+    if (!taxReturnId) return;
+    const controller = new AbortController();
+    fetch(`/api/declaraciones/${taxReturnId}`, { signal: controller.signal })
+      .then(response => response.json())
+      .then(payload => {
+        if (payload.success && Array.isArray(payload.data?.fixedAssetImportCandidates)) {
+          setPendingAssets(payload.data.fixedAssetImportCandidates);
+        }
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [taxReturnId]);
 
   if (!taxReturnId) {
     return (
@@ -46,6 +71,7 @@ export default function MonthlyImportButton({ taxReturnId }: { taxReturnId: stri
         throw new Error(payload.error || 'No se pudo importar el libro mensual.');
       }
       setResult(payload.data);
+      setPendingAssets(payload.data.fixedAssetCandidates || []);
       setConfirming(false);
       // Limpia el snapshot local del wizard para que al recargar lea los registros frescos de la base
       // (evita que un estado viejo en localStorage tape lo recién importado). Clave usada por el wizard:
@@ -113,6 +139,23 @@ export default function MonthlyImportButton({ taxReturnId }: { taxReturnId: stri
           {result.notices.map((n, i) => <p key={i} className="mt-1 text-amber-200">• {n}</p>)}
           <p className="mt-1 text-emerald-300">Recargando para mostrar los registros…</p>
         </div>
+      ) : null}
+
+      {pendingAssets.length > 0 ? (
+        <section className="mt-3 rounded-lg border border-amber-500/30 bg-amber-950/15 p-3" aria-labelledby="bienes-uso-pendientes">
+          <h3 id="bienes-uso-pendientes" className="text-xs font-bold text-amber-200">
+            Bienes de uso pendientes de completar ({pendingAssets.length})
+          </h3>
+          <p className="mt-1 text-[11px] text-zinc-400">Estos comprobantes quedaron guardados en la bandeja. Completá tipo y vida útil en Amortizaciones.</p>
+          <ul className="mt-2 space-y-1.5">
+            {pendingAssets.map(candidate => (
+              <li key={candidate.sourceFiscalDocumentId} className="flex flex-wrap justify-between gap-2 rounded border border-zinc-800 bg-zinc-950/40 px-2.5 py-2 text-[11px]">
+                <span className="text-zinc-200">{candidate.description} · {candidate.counterpartyName || 'Proveedor sin nombre'} · mes {candidate.month}</span>
+                <span className="font-mono font-bold text-amber-300">${Number(candidate.cost).toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
     </div>
   );

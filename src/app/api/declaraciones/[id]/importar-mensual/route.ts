@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { Decimal } from 'decimal.js';
 import { prisma } from '@/domain/ganancias/prisma';
-import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import {
   mapMonthlyDocumentsToTaxReturnInputs,
   MONTHLY_IMPORT_SOURCE,
@@ -12,6 +11,8 @@ import {
 import { readAnnualConsolidation } from '@/domain/ganancias/persistence/annualConsolidationRead';
 import { persistAnnualConsolidationSnapshot } from '@/domain/ganancias/persistence/annualConsolidationSnapshot';
 import type { GainsAllocationKind } from '@/domain/ganancias/fiscalLedger/annualConsolidation';
+import { isTaxReturnEditable } from '@/domain/ganancias/workflow/taxReturnWorkflow';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -25,7 +26,9 @@ type RouteContext = { params: Promise<{ id: string }> };
  * Idempotente: borra solo los registros previamente importados (importSource='MONTHLY_LEDGER') y los
  * recrea; las cargas manuales del usuario quedan intactas. No toca la matemática de la determinación.
  */
-export async function POST(_request: NextRequest, context: RouteContext) {
+export async function POST(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: taxReturnId } = await context.params;
 
   try {
@@ -41,6 +44,13 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     });
     if (!taxReturn) {
       return NextResponse.json({ success: false, error: 'La declaración no existe.' }, { status: 404 });
+    }
+
+    if (!isTaxReturnEditable(taxReturn.status)) {
+      return NextResponse.json(
+        { success: false, error: `La declaraciÃ³n estÃ¡ en estado ${taxReturn.status} y es inmutable. Reabrila con motivo antes de volver a importar.` },
+        { status: 409 },
+      );
     }
 
     const year = taxReturn.fiscalYear.year;
@@ -112,8 +122,32 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     await prisma.$transaction([
       prisma.salesInvoice.deleteMany({ where: { taxReturnId, importSource: MONTHLY_IMPORT_SOURCE } }),
       prisma.purchaseInvoice.deleteMany({ where: { taxReturnId, importSource: MONTHLY_IMPORT_SOURCE } }),
+      prisma.fixedAssetImportCandidate.deleteMany({ where: { taxReturnId, status: 'PENDING' } }),
       prisma.salesInvoice.createMany({ data: mapped.sales.map(s => ({ ...s, taxReturnId })) }),
       prisma.purchaseInvoice.createMany({ data: mapped.purchases.map(p => ({ ...p, taxReturnId })) }),
+      prisma.fixedAssetImportCandidate.createMany({ data: mapped.fixedAssetCandidates.map(candidate => ({
+        taxReturnId,
+        sourceFiscalDocumentId: candidate.sourceFiscalDocumentId,
+        sourceMonth: candidate.month,
+        description: candidate.description,
+        counterpartyName: candidate.counterpartyName,
+        purchaseDate: candidate.date,
+        originalCost: candidate.cost,
+      })) }),
+      prisma.auditLog.create({ data: {
+        action: 'IMPORT',
+        entityType: 'TaxReturn',
+        entityId: taxReturnId,
+        clientCuit: taxReturn.client?.cuit,
+        clientName: taxReturn.client?.name,
+        fiscalYear: year,
+        details: JSON.stringify({
+          from: 'libro fiscal mensual (IVA)',
+          monthsUsed,
+          ...mapped.summary,
+          iibbTotal: iibbTotal.toFixed(2),
+        }),
+      } }),
     ]);
 
     // Snapshot durable (sourceHash) para detectar si la base mensual cambió luego.
@@ -125,21 +159,6 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     } catch {
       // el snapshot es complementario; si falla no invalida la importación de registros
     }
-
-    await logAuditEvent({
-      action: 'IMPORT',
-      entityType: 'TaxReturn',
-      entityId: taxReturnId,
-      clientCuit: taxReturn.client?.cuit,
-      clientName: taxReturn.client?.name,
-      fiscalYear: year,
-      details: JSON.stringify({
-        from: 'libro fiscal mensual (IVA)',
-        monthsUsed,
-        ...mapped.summary,
-        iibbTotal: iibbTotal.toFixed(2),
-      }),
-    });
 
     return NextResponse.json({
       success: true,

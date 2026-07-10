@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 // GET /api/clientes/[id] — Obtener un contribuyente por ID
 export async function GET(
@@ -107,24 +108,18 @@ export async function PUT(
   }
 }
 
-// DELETE /api/clientes/[id] — Eliminar un contribuyente
+// DELETE /api/clientes/[id] — Baja lógica del contribuyente
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireRouteAuth(req);
+  if (authError) return authError;
   try {
     const { id } = await params;
 
-    // Verificar que el contribuyente existe
     const existing = await prisma.client.findUnique({
       where: { id },
-      include: {
-        taxReturns: {
-          where: {
-            status: { in: ['Presentada', 'Cerrada'] },
-          },
-        },
-      },
     });
 
     if (!existing) {
@@ -134,37 +129,36 @@ export async function DELETE(
       );
     }
 
-    // Impedir eliminación si hay declaraciones presentadas o cerradas
-    if (existing.taxReturns.length > 0) {
+    if (existing.status === 'Inactivo') {
       return NextResponse.json(
         {
           success: false,
-          error: `No se puede eliminar el contribuyente ${existing.name} (${existing.cuit}) porque tiene ${existing.taxReturns.length} declaración(es) en estado Presentada o Cerrada. Primero debe anular o rectificar dichas declaraciones.`,
+          error: `El contribuyente ${existing.name} (${existing.cuit}) ya se encuentra inactivo.`,
         },
         { status: 409 }
       );
     }
 
-    // Eliminar (cascade borrará borradores asociados por FK)
-    await prisma.client.delete({ where: { id } });
-
-    // Registrar en auditoría
-    logAuditEvent({
-      action: 'DELETE',
-      entityType: 'Client',
-      entityId: id,
-      clientCuit: existing.cuit,
-      clientName: existing.name,
-      details: `Baja de contribuyente: ${existing.name} (${existing.cuit})`,
-    });
+    // Conserva DDJJ, períodos, liquidaciones y documentos para auditoría.
+    await prisma.$transaction([
+      prisma.client.update({ where: { id }, data: { status: 'Inactivo' } }),
+      prisma.auditLog.create({ data: {
+        action: 'UPDATE',
+        entityType: 'Client',
+        entityId: id,
+        clientCuit: existing.cuit,
+        clientName: existing.name,
+        details: `Baja lógica de contribuyente: ${existing.name} (${existing.cuit}). Se conserva el historial fiscal completo.`,
+      } }),
+    ]);
 
     return NextResponse.json({
       success: true,
-      data: { id, message: `Contribuyente ${existing.name} eliminado exitosamente.` },
+      data: { id, message: `Contribuyente ${existing.name} marcado como inactivo. Su historial fue conservado.` },
     });
   } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: `Error al eliminar contribuyente: ${errorMessage(err)}` },
+      { success: false, error: `Error al dar de baja al contribuyente: ${errorMessage(err)}` },
       { status: 500 }
     );
   }

@@ -36,12 +36,6 @@ type AnnulmentDecision =
       reason: string;
     }
   | {
-      allowed: true;
-      mode: 'physical-delete';
-      auditAction: 'DELETE';
-      reason: string;
-    }
-  | {
       allowed: false;
       httpStatus: 400 | 409;
       error: string;
@@ -175,31 +169,12 @@ export function buildTaxReturnUpdateDecision({
 export function buildTaxReturnAnnulmentDecision({
   currentStatus,
   reason,
-  isTechnicalRollback,
 }: {
   currentStatus?: string | null;
   reason?: string | null;
-  isTechnicalRollback: boolean;
 }): AnnulmentDecision {
   const current = normalizeTaxReturnStatus(currentStatus);
   const clean = cleanReason(reason);
-
-  if (isTechnicalRollback) {
-    if (current !== TAX_RETURN_STATUS.BORRADOR) {
-      return {
-        allowed: false,
-        httpStatus: 409,
-        error: 'El rollback tecnico solo puede borrar fisicamente DDJJ en estado Borrador.',
-      };
-    }
-
-    return {
-      allowed: true,
-      mode: 'physical-delete',
-      auditAction: 'DELETE',
-      reason: 'Rollback tecnico de cabecera creada automaticamente.',
-    };
-  }
 
   if (current === TAX_RETURN_STATUS.ANULADA) {
     return {

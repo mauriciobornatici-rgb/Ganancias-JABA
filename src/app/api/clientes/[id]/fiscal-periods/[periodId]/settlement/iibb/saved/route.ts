@@ -19,9 +19,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       orderBy: { version: 'desc' },
       select: {
         id: true, version: true, status: true, regime: true,
-        totalDeterminedTax: true, totalCredits: true, totalBalance: true,
+        totalDeterminedTax: true, totalCredits: true, totalBalance: true, totalFavorCarryForward: true,
         officialAmount: true, officialReference: true, filedAt: true, updatedAt: true,
-        jurisdictionLines: { select: { jurisdictionCode: true, coefficient: true, assignedBase: true, taxRate: true, determinedTax: true, creditsApplied: true, balance: true } },
+        jurisdictionLines: { select: { jurisdictionCode: true, coefficient: true, assignedBase: true, taxRate: true, determinedTax: true, creditsApplied: true, balance: true, favorCarryForward: true } },
       },
     });
 
@@ -38,6 +38,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           totalDeterminedTax: s.totalDeterminedTax.toFixed(2),
           totalCredits: s.totalCredits.toFixed(2),
           totalBalance: s.totalBalance.toFixed(2),
+          totalFavorCarryForward: s.totalFavorCarryForward.toFixed(2),
           officialAmount: s.officialAmount != null ? s.officialAmount.toFixed(2) : null,
           officialReference: s.officialReference,
           filedAt: s.filedAt ? s.filedAt.toISOString() : null,
@@ -50,6 +51,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             determinedTax: l.determinedTax.toFixed(2),
             creditsApplied: l.creditsApplied.toFixed(2),
             balance: l.balance.toFixed(2),
+            favorCarryForward: l.favorCarryForward.toFixed(2),
           })),
         },
       },

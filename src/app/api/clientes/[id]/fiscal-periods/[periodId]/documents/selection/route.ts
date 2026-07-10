@@ -3,6 +3,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
+import { buildFiscalPeriodSourceMutationDecision } from '@/domain/ganancias/workflow/fiscalPeriodWorkflow';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -24,6 +26,8 @@ const selectionSchema = z.object({
  * Los desmarcados quedan en el libro pero NO entran en el cálculo de IVA/IIBB.
  */
 export async function PATCH(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: clientId, periodId } = await context.params;
 
   try {
@@ -34,13 +38,26 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     const period = await prisma.fiscalPeriod.findUnique({
       where: { id: periodId },
-      select: { id: true, clientId: true },
+      select: {
+        id: true,
+        clientId: true,
+        vatSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+        grossIncomeSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+      },
     });
     if (!period || period.clientId !== clientId) {
       return NextResponse.json(
         { success: false, error: 'El período no existe o no pertenece a este contribuyente.' },
         { status: 404 },
       );
+    }
+
+    const mutationDecision = buildFiscalPeriodSourceMutationDecision({
+      vatStatus: period.vatSettlements[0]?.status,
+      grossIncomeStatus: period.grossIncomeSettlements[0]?.status,
+    });
+    if (!mutationDecision.allowed) {
+      return NextResponse.json({ success: false, error: mutationDecision.error }, { status: mutationDecision.httpStatus });
     }
 
     // Solo se actualizan comprobantes que pertenezcan a este período (defensa contra ids ajenos).

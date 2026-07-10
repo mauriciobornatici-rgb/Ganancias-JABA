@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persistence/taxReturnDuplicate';
 import {
   TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS,
@@ -83,6 +84,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const authError = await requireRouteAuth(req);
+  if (authError) return authError;
   try {
     const body = await req.json();
 
@@ -141,13 +144,17 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      let newVersion = 0;
       if (duplicateReturn) {
-        // Una DDJJ ANULADA no debe bloquear la creacion de una nueva en el mismo periodo:
-        // el listado del dashboard la oculta, asi que el alta tambien debe ignorarla. Decision
-        // del usuario (2026-06-10): borrar fisicamente la anulada (era borrador descartado) y
-        // continuar con el alta. Solo las DDJJ activas (no anuladas) se tratan como duplicado real.
+        // Una DDJJ anulada se conserva para auditoría. La nueva cabecera recibe una versión
+        // incremental para respetar la unicidad sin destruir el historial fiscal.
         if (duplicateReturn.status === TAX_RETURN_STATUS.ANULADA) {
-          await tx.taxReturn.delete({ where: { id: duplicateReturn.id } });
+          const latest = await tx.taxReturn.findFirst({
+            where: { clientId: client.id, fiscalYearId: fYear.id },
+            orderBy: { version: 'desc' },
+            select: { version: true },
+          });
+          newVersion = (latest?.version ?? 0) + 1;
         } else {
           return { duplicateReturn, fYear, taxReturn: null };
         }
@@ -158,7 +165,7 @@ export async function POST(req: NextRequest) {
           clientId: client.id,
           fiscalYearId: fYear.id,
           status: status || 'Borrador',
-          version: 0,
+          version: newVersion,
           taxParameterSetId: taxParameterSetId || null,
         },
       });
@@ -211,6 +218,16 @@ export async function POST(req: NextRequest) {
           updatedAt: true,
         },
       });
+
+      await tx.auditLog.create({ data: {
+        action: 'CREATE',
+        entityType: 'TaxReturn',
+        entityId: taxReturn.id,
+        clientCuit: client.cuit,
+        clientName: client.name,
+        fiscalYear: fYear.year,
+        details: `Alta de DDJJ versión ${newVersion} en estado ${status || 'Borrador'}.`,
+      } });
 
       return { duplicateReturn: null, taxReturn: savedTaxReturn || taxReturn, fYear };
     }, TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS);

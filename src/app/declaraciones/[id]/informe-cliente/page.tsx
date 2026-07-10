@@ -37,40 +37,63 @@ export default function InformeClientePage() {
   const [data, setData] = useState<ReportDeclarationData | null>(null);
   const [taxParams, setTaxParams] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (id) {
-      fetch(`/api/declaraciones/${id}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.success && res.data) {
-            setData(res.data);
-            if (res.data.taxParameterSetId) {
-              fetch(`/api/parametros?year=${res.data.fiscalYear}&resolutionId=${res.data.taxParameterSetId}`)
-                .then(r => r.json())
-                .then(pRes => {
-                  if (pRes.success && pRes.data) {
-                    setTaxParams(pRes.data);
-                  }
-                });
-            }
-          }
-        })
-        .catch(err => console.error("Error al obtener datos de liquidación para el cliente:", err))
-        .finally(() => setIsLoading(false));
-    }
+    if (!id) return;
+    const controller = new AbortController();
+
+    const loadReport = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const declarationResponse = await fetch(`/api/declaraciones/${id}`, { signal: controller.signal });
+        const declarationPayload = await declarationResponse.json();
+        if (!declarationResponse.ok || !declarationPayload.success || !declarationPayload.data) {
+          throw new Error(declarationPayload.error || 'No se pudo cargar la declaración.');
+        }
+
+        const declaration = declarationPayload.data as ReportDeclarationData;
+        if (!declaration.taxParameterSetId) {
+          throw new Error('La DDJJ no tiene una versión normativa asociada. No es seguro emitir el informe.');
+        }
+
+        const parameterResponse = await fetch(
+          `/api/parametros?year=${declaration.fiscalYear}&resolutionId=${declaration.taxParameterSetId}`,
+          { signal: controller.signal },
+        );
+        const parameterPayload = await parameterResponse.json();
+        if (!parameterResponse.ok || !parameterPayload.success || !parameterPayload.data?.parameterSet) {
+          throw new Error(parameterPayload.error || 'No se pudo cargar la normativa usada por la DDJJ.');
+        }
+
+        setData(declaration);
+        setTaxParams(parameterPayload.data);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setLoadError(error instanceof Error ? error.message : 'No se pudo preparar el informe.');
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    };
+
+    void loadReport();
+    return () => controller.abort();
   }, [id]);
 
-  const calculationResult = React.useMemo(() => {
-    if (!data || !taxParams) return null;
+  const calculationState = React.useMemo(() => {
+    if (!data || !taxParams) return { result: null, error: null };
     try {
       const calculationInput = buildTaxReturnCalculationInput(data, taxParams);
-      return calculateTaxReturn(calculationInput);
-    } catch (e) {
-      console.error("Error executing dynamic calculation for client report:", e);
-      return null;
+      return { result: calculateTaxReturn(calculationInput), error: null };
+    } catch (error) {
+      return {
+        result: null,
+        error: error instanceof Error ? error.message : 'El cálculo de la DDJJ no pudo completarse.',
+      };
     }
   }, [data, taxParams]);
+  const calculationResult = calculationState.result;
 
   // Variables calculadas de cabecera
   const clientName = data ? data.clientName : '';
@@ -127,6 +150,22 @@ export default function InformeClientePage() {
           <p className="text-zinc-400 text-xs">Consolidando métricas comerciales y gráficos financieros...</p>
         </div>
       </div>
+    );
+  }
+
+  const blockingError = loadError || calculationState.error || (!data ? 'No hay datos disponibles para emitir el informe.' : null);
+  if (blockingError) {
+    return (
+      <main className="min-h-screen bg-[#09090b] text-white flex items-center justify-center p-6">
+        <section role="alert" className="max-w-lg rounded-xl border border-red-500/40 bg-red-950/20 p-6 space-y-4">
+          <h1 className="text-lg font-bold">El informe no puede emitirse</h1>
+          <p className="text-sm text-red-100">{blockingError}</p>
+          <p className="text-xs text-zinc-400">No se muestran importes sustitutos ni valores en cero. Corregí la DDJJ o su normativa y volvé a intentarlo.</p>
+          <Link href={`/declaraciones/${id}/papel-de-trabajo`} className="inline-flex items-center gap-2 text-sm font-semibold text-teal-300 hover:text-teal-200">
+            <ArrowLeft className="h-4 w-4" /> Volver al papel de trabajo
+          </Link>
+        </section>
+      </main>
     );
   }
 

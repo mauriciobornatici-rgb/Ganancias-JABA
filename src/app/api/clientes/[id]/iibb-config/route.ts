@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
-import { logAuditEvent } from '@/domain/ganancias/auditHelper';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -49,6 +49,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const profile = await latestProfile(clientId);
     const coefVersion = await prisma.conventionCoefficientVersion.findFirst({
       where: { clientId, year },
+      orderBy: { version: 'desc' },
       select: { coefficientLines: { select: { jurisdictionCode: true, unifiedCoefficient: true } } },
     });
 
@@ -80,6 +81,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
 /** Guarda alícuotas por jurisdicción y, para Convenio Multilateral, los coeficientes unificados del año. */
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: clientId } = await context.params;
   try {
     const parsed = putSchema.safeParse(await request.json());
@@ -88,7 +91,22 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
     const { year, jurisdictions, coefficients } = parsed.data;
 
-    const profile = await prisma.clientTaxProfileVersion.findFirst({ where: { clientId }, orderBy: { validFrom: 'desc' }, select: { id: true } });
+    const profile = await prisma.clientTaxProfileVersion.findFirst({
+      where: { clientId },
+      orderBy: { validFrom: 'desc' },
+      select: {
+        id: true,
+        vatCondition: true,
+        grossIncomeRegime: true,
+        conventionRegime: true,
+        arbaRegistrationNumber: true,
+        cmRegistrationNumber: true,
+        sourceReference: true,
+        approvedBy: true,
+        approvedAt: true,
+        notes: true,
+      },
+    });
     if (!profile) {
       return NextResponse.json({ success: false, error: 'El cliente no tiene un perfil fiscal cargado. Creá el perfil antes de configurar IIBB.' }, { status: 409 });
     }
@@ -104,52 +122,67 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       }
     }
 
-    await prisma.$transaction(async tx => {
-      for (const j of jurisdictions) {
-        await tx.clientTaxJurisdiction.upsert({
-          where: { taxProfileId_jurisdictionCode: { taxProfileId: profile.id, jurisdictionCode: j.jurisdictionCode } },
-          update: {
-            taxRate: j.taxRate ?? null,
-            ...(j.registrationNumber !== undefined ? { registrationNumber: j.registrationNumber } : {}),
-            ...(j.isActive !== undefined ? { isActive: j.isActive } : {}),
-          },
-          create: {
-            taxProfileId: profile.id,
+    const result = await prisma.$transaction(async tx => {
+      const validFrom = new Date();
+      await tx.clientTaxProfileVersion.update({
+        where: { id: profile.id },
+        data: { validTo: new Date(validFrom.getTime() - 1) },
+      });
+      const versionedProfile = await tx.clientTaxProfileVersion.create({
+        data: {
+          clientId,
+          validFrom,
+          vatCondition: profile.vatCondition,
+          grossIncomeRegime: profile.grossIncomeRegime,
+          conventionRegime: profile.conventionRegime,
+          arbaRegistrationNumber: profile.arbaRegistrationNumber,
+          cmRegistrationNumber: profile.cmRegistrationNumber,
+          sourceReference: profile.sourceReference,
+          approvedBy: profile.approvedBy,
+          approvedAt: profile.approvedAt,
+          notes: profile.notes,
+          jurisdictions: { create: jurisdictions.map(j => ({
             jurisdictionCode: j.jurisdictionCode,
             taxRate: j.taxRate ?? null,
             registrationNumber: j.registrationNumber ?? null,
             isActive: j.isActive ?? true,
+          })) },
+        },
+        select: { id: true },
+      });
+
+      if (coefficients && coefficients.length > 0) {
+        const latestCoefficientVersion = await tx.conventionCoefficientVersion.findFirst({
+          where: { clientId, year },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+        await tx.conventionCoefficientVersion.create({
+          data: {
+            clientId,
+            year,
+            version: (latestCoefficientVersion?.version ?? 0) + 1,
+            coefficientLines: { create: coefficients.map(c => ({
+              jurisdictionCode: c.jurisdictionCode,
+              unifiedCoefficient: c.unifiedCoefficient,
+              incomeCoefficient: c.unifiedCoefficient,
+              expenseCoefficient: c.unifiedCoefficient,
+            })) },
           },
         });
       }
 
-      if (coefficients && coefficients.length > 0) {
-        const version = await tx.conventionCoefficientVersion.upsert({
-          where: { clientId_year: { clientId, year } },
-          update: {},
-          create: { clientId, year },
-          select: { id: true },
-        });
-        for (const c of coefficients) {
-          await tx.conventionCoefficientLine.upsert({
-            where: { coefficientVersionId_jurisdictionCode: { coefficientVersionId: version.id, jurisdictionCode: c.jurisdictionCode } },
-            // income/expense se igualan al unificado como referencia; el cálculo usa el unificado (CM05).
-            update: { unifiedCoefficient: c.unifiedCoefficient, incomeCoefficient: c.unifiedCoefficient, expenseCoefficient: c.unifiedCoefficient },
-            create: { coefficientVersionId: version.id, jurisdictionCode: c.jurisdictionCode, unifiedCoefficient: c.unifiedCoefficient, incomeCoefficient: c.unifiedCoefficient, expenseCoefficient: c.unifiedCoefficient },
-          });
-        }
-      }
+      await tx.auditLog.create({ data: {
+        action: 'UPDATE',
+        entityType: 'ClientTaxProfileVersion',
+        entityId: versionedProfile.id,
+        fiscalYear: year,
+        details: `Nueva versión de configuración IIBB: ${jurisdictions.length} jurisdicción(es)${coefficients?.length ? `, ${coefficients.length} coeficiente(s) CM ${year}` : ''}.`,
+      } });
+      return versionedProfile;
     });
 
-    void logAuditEvent({
-      action: 'UPDATE',
-      entityType: 'ClientTaxProfileVersion',
-      entityId: profile.id,
-      fiscalYear: year,
-      details: `Configuración IIBB: ${jurisdictions.length} jurisdicción(es)${coefficients?.length ? `, ${coefficients.length} coeficiente(s) CM ${year}` : ''}.`,
-    });
-
-    return NextResponse.json({ success: true, data: { updated: jurisdictions.length, coefficients: coefficients?.length ?? 0 } });
+    return NextResponse.json({ success: true, data: { profileId: result.id, updated: jurisdictions.length, coefficients: coefficients?.length ?? 0 } });
   } catch (error) {
     return NextResponse.json({ success: false, error: `No se pudo guardar la configuración de IIBB: ${messageOf(error)}` }, { status: 500 });
   }

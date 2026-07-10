@@ -140,6 +140,8 @@ describe('persistTaxReturnDetails', () => {
           counterpartyCuit: '24300000000',
           ivaAmount: '1943.80',
           totalAmount: '11200.00',
+          importSource: 'MONTHLY_LEDGER',
+          sourceFiscalDocumentId: 'monthly-sale-1',
         }],
         purchases: [{
           date: '2025-02-01',
@@ -153,6 +155,8 @@ describe('persistTaxReturnDetails', () => {
           counterpartyCuit: '307141419',
           ivaAmount: '3118.75',
           totalAmount: '25833.75',
+          importSource: 'MONTHLY_LEDGER',
+          sourceFiscalDocumentId: 'monthly-purchase-1',
         }],
       },
     });
@@ -164,6 +168,8 @@ describe('persistTaxReturnDetails', () => {
       counterpartyCuit: '24300000000',
       ivaAmount: 1943.8,
       totalAmount: 11200,
+      importSource: 'MONTHLY_LEDGER',
+      sourceFiscalDocumentId: 'monthly-sale-1',
     });
     expect(captures.purchasesCreateMany?.data[0]).toMatchObject({
       invoiceType: '1',
@@ -172,6 +178,8 @@ describe('persistTaxReturnDetails', () => {
       counterpartyCuit: '307141419',
       ivaAmount: 3118.75,
       totalAmount: 25833.75,
+      importSource: 'MONTHLY_LEDGER',
+      sourceFiscalDocumentId: 'monthly-purchase-1',
     });
 
     expect(captures.calculationCreate).toBeDefined();

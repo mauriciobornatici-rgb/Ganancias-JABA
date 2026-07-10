@@ -10,6 +10,7 @@ import { persistGrossIncomeSettlement } from '@/domain/ganancias/persistence/fis
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 import type { SettlementDocument } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -28,6 +29,8 @@ const norm = (v: string | number | null | undefined): string | null => parseMone
  * (habilita su uso como gasto deducible en Ganancias); si difiere → 409 o IN_REVIEW con forceSave.
  */
 export async function POST(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: clientId, periodId } = await context.params;
   try {
     const parsed = saveSchema.safeParse(await request.json());
@@ -63,6 +66,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (regime === 'CM_REGIMEN_GENERAL' || regime === 'CM_REGIMEN_ESPECIAL') {
       const version = await prisma.conventionCoefficientVersion.findFirst({
         where: { clientId, year: period.year },
+        orderBy: { version: 'desc' },
         select: { coefficientLines: { select: { jurisdictionCode: true, unifiedCoefficient: true } } },
       });
       for (const line of version?.coefficientLines ?? []) coefficientMap.set(line.jurisdictionCode, new Decimal(line.unifiedCoefficient.toString()));
@@ -72,17 +76,43 @@ export async function POST(request: NextRequest, context: RouteContext) {
       .filter(c => String(c.tax) === 'GROSS_INCOME')
       .map(c => ({ jurisdictionCode: c.jurisdictionCode, amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) }));
 
-    const { view } = buildPeriodGrossIncome({
+    const previousPeriod = await prisma.fiscalPeriod.findFirst({
+      where: period.month === 1
+        ? { clientId, year: period.year - 1, month: 12 }
+        : { clientId, year: period.year, month: period.month - 1 },
+      select: {
+        grossIncomeSettlements: {
+          where: { status: 'CLOSED' },
+          orderBy: { version: 'desc' },
+          take: 1,
+          select: { jurisdictionLines: { select: { jurisdictionCode: true, favorCarryForward: true } } },
+        },
+      },
+    });
+    const previousFavorBalances = new Map(
+      (previousPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [])
+        .map(line => [line.jurisdictionCode, new Decimal(line.favorCarryForward.toString())] as const),
+    );
+
+    const { view, notice } = buildPeriodGrossIncome({
       regime,
       jurisdictions: activeJurisdictions.map(j => ({ jurisdictionCode: j.jurisdictionCode, taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : null })),
       documents,
       coefficientMap,
       credits: giCredits,
+      previousFavorBalances,
       year: period.year,
     });
 
     if (!view) {
       return NextResponse.json({ success: false, error: 'No hay IIBB para liquidar (régimen NONE o sin jurisdicciones configuradas).' }, { status: 400 });
+    }
+
+    if (notice && parsed.data.official?.amount != null) {
+      return NextResponse.json(
+        { success: false, error: `No se puede cerrar IIBB con configuración incompleta. ${notice}` },
+        { status: 409 },
+      );
     }
 
     const officialAmount = norm(parsed.data.official?.amount);
@@ -114,10 +144,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clientCuit: period.client?.cuit,
       clientName: period.client?.name,
       fiscalYear: period.year,
-      details: JSON.stringify({ period: `${period.year}-${String(period.month).padStart(2, '0')}`, version: saved.version, status, determined: view.settlement.totalDeterminedTax.toFixed(2), balanceDue: balanceDue.toFixed(2) }),
+      details: JSON.stringify({ period: `${period.year}-${String(period.month).padStart(2, '0')}`, version: saved.version, status, determined: view.settlement.totalDeterminedTax.toFixed(2), balanceDue: balanceDue.toFixed(2), favorCarryForward: view.settlement.totalFavorCarryForward.toFixed(2) }),
     });
 
-    return NextResponse.json({ success: true, data: { id: saved.id, version: saved.version, status: saved.status, totalBalanceDue: balanceDue.toFixed(2) } });
+    return NextResponse.json({ success: true, data: { id: saved.id, version: saved.version, status: saved.status, totalBalanceDue: balanceDue.toFixed(2), totalFavorCarryForward: view.settlement.totalFavorCarryForward.toFixed(2) } });
   } catch (error) {
     return NextResponse.json({ success: false, error: `No se pudo guardar la liquidación de IIBB: ${error instanceof Error ? error.message : String(error)}` }, { status: 500 });
   }

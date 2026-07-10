@@ -13,6 +13,7 @@ const commandMap = {
   studio: ['node_modules/prisma/build/index.js', 'studio', '--schema', 'prisma/schema.prisma'],
   validate: ['node_modules/prisma/build/index.js', 'validate', '--schema', 'prisma/schema.prisma'],
   'validate-excel': ['node_modules/vitest/vitest.mjs', 'run', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts'],
+  'validate-integration': ['node_modules/vitest/vitest.mjs', 'run', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts', 'src/domain/ganancias/tests/fiscalLedgerSeedDocker.test.ts'],
   'create-migration': ['node_modules/prisma/build/index.js', 'migrate', 'dev', '--create-only', '--schema', 'prisma/schema.prisma'],
 };
 
@@ -35,7 +36,7 @@ const run = () => {
       DATABASE_URL: TEST_DATABASE_URL,
       SHADOW_DATABASE_URL: TEST_SHADOW_DATABASE_URL,
       APP_ENV: 'test-db',
-      RUN_DOCKER_DB_VALIDATION: commandName === 'validate-excel' ? '1' : process.env.RUN_DOCKER_DB_VALIDATION,
+      RUN_DOCKER_DB_VALIDATION: commandName === 'validate-excel' || commandName === 'validate-integration' ? '1' : process.env.RUN_DOCKER_DB_VALIDATION,
     },
     shell: false,
   });

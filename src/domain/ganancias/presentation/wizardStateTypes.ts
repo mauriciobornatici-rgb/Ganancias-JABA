@@ -180,6 +180,7 @@ export type WizardClient = WizardEditableRecord & {
   id: string;
   cuit: string;
   name: string;
+  status?: string | null;
   fiscalCondition?: string;
   mainActivity?: string | null;
 };
@@ -202,6 +203,8 @@ export type WizardSale = WizardEditableRecord & {
   counterpartyCuit?: string;
   ivaAmount?: WizardMoneyValue;
   totalAmount?: WizardMoneyValue;
+  importSource?: string;
+  sourceFiscalDocumentId?: string;
 };
 
 export type WizardPurchase = WizardEditableRecord & {
@@ -216,6 +219,8 @@ export type WizardPurchase = WizardEditableRecord & {
   counterpartyCuit?: string;
   ivaAmount?: WizardMoneyValue;
   totalAmount?: WizardMoneyValue;
+  importSource?: string;
+  sourceFiscalDocumentId?: string;
 };
 
 export type WizardFixedAsset = WizardEditableRecord & {

@@ -117,6 +117,17 @@ type EditParametersForm = {
   brackets: TaxBracketView[];
 };
 
+type AuditLogRow = {
+  id: string;
+  createdAt: string;
+  action: string;
+  entityType: string;
+  details?: string | null;
+  clientName?: string | null;
+  clientCuit?: string | null;
+  userId?: string | null;
+};
+
 function isDecimalLike(value: Numberish): value is { toNumber: () => number } {
   return typeof value === 'object' && value !== null && typeof value.toNumber === 'function';
 }
@@ -125,6 +136,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'todos' | 'borrador' | 'revision' | 'cerrada'>('todos');
   const [activeView, setActiveView] = useState<'dashboard' | 'clientes' | 'parametros' | 'auditoria'>('dashboard');
+  const [clientStatusTab, setClientStatusTab] = useState<'activos' | 'inactivos'>('activos');
 
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [taxReturns, setTaxReturns] = useState<TaxReturnRow[]>([]);
@@ -144,6 +156,9 @@ export default function Home() {
   const [editForm, setEditForm] = useState<EditParametersForm | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
+  const [auditLoading, setAuditLoading] = useState(true);
+  const [auditError, setAuditError] = useState<string | null>(null);
 
   const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -160,6 +175,25 @@ export default function Home() {
   const [editClientType, setEditClientType] = useState('Persona Humana');
   const [editClientFiscal, setEditClientFiscal] = useState('Responsable Inscripto');
   const [editClientActivity, setEditClientActivity] = useState('');
+
+  useEffect(() => {
+    if (activeView !== 'auditoria') return;
+    const controller = new AbortController();
+    fetch('/api/auditoria?limit=100', { signal: controller.signal })
+      .then(async response => {
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'No se pudo cargar la auditoría.');
+        setAuditLogs(Array.isArray(payload.data) ? payload.data : []);
+        setAuditError(null);
+      })
+      .catch(error => {
+        if (!controller.signal.aborted) setAuditError(error instanceof Error ? error.message : 'No se pudo cargar la auditoría.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setAuditLoading(false);
+      });
+    return () => controller.abort();
+  }, [activeView]);
 
 
   // P31.1: la carga del dashboard ya no traga errores. Si una API falla o devuelve
@@ -493,6 +527,7 @@ export default function Home() {
     .then(res => {
       if (res.success) {
         setClients(prev => [...prev, res.data]);
+        setClientStatusTab('activos');
         setNewClientName('');
         setNewClientCuit('');
         setNewClientActivity('');
@@ -551,7 +586,7 @@ export default function Home() {
   };
 
   const handleDeleteClient = (clientId: string, clientName: string) => {
-    const confirmDelete = window.confirm(`¿Está seguro que desea eliminar al contribuyente "${clientName}"? Esta acción eliminará permanentemente al contribuyente y todos sus borradores asociados.`);
+    const confirmDelete = window.confirm(`¿Desea dar de baja al contribuyente "${clientName}"? Quedará inactivo, pero se conservará todo su historial fiscal y sus declaraciones juradas.`);
     if (!confirmDelete) return;
 
     fetch(`/api/clientes/${clientId}`, {
@@ -560,20 +595,53 @@ export default function Home() {
     .then(res => res.json())
     .then(res => {
       if (res.success) {
-        taxReturns
-          .filter(r => r.clientId === clientId)
-          .forEach(r => removeLocalWizardDraft(r.id));
-        setClients(prev => prev.filter(c => c.id !== clientId));
-        setTaxReturns(prev => prev.filter(r => r.clientId !== clientId));
-        setNotification({ message: `Contribuyente "${clientName}" eliminado con éxito.`, type: 'success' });
+        setClients(prev => prev.map(client => (
+          client.id === clientId ? { ...client, status: 'Inactivo' } : client
+        )));
+        setNotification({
+          message: `Contribuyente "${clientName}" dado de baja. Puede restaurarlo desde la solapa "Dados de baja".`,
+          type: 'success'
+        });
       } else {
         setNotification({ message: `${res.error}`, type: 'error' });
       }
     })
     .catch(err => {
-      console.error("Error deleting client:", err);
-      setNotification({ message: `Error de red al eliminar: ${err.message}`, type: 'error' });
+      console.error("Error deactivating client:", err);
+      setNotification({ message: `Error de red al dar de baja: ${err.message}`, type: 'error' });
     });
+  };
+
+  const handleReactivateClient = (clientId: string, clientName: string) => {
+    const confirmReactivation = window.confirm(
+      `¿Desea reactivar al contribuyente "${clientName}"? Recuperará el acceso operativo conservando todos sus datos e historial fiscal.`
+    );
+    if (!confirmReactivation) return;
+
+    fetch(`/api/clientes/${clientId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reactivate' }),
+    })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          setClients(prev => prev.map(client => (
+            client.id === clientId ? { ...client, ...res.data } : client
+          )));
+          setClientStatusTab('activos');
+          setNotification({
+            message: `Contribuyente "${clientName}" reactivado con éxito. Todos sus datos continúan disponibles.`,
+            type: 'success'
+          });
+        } else {
+          setNotification({ message: `${res.error}`, type: 'error' });
+        }
+      })
+      .catch(err => {
+        console.error('Error reactivating client:', err);
+        setNotification({ message: `Error de red al reactivar: ${err.message}`, type: 'error' });
+      });
   };
 
   const handleDeleteReturn = (returnId: string, clientName: string, year: number) => {
@@ -626,6 +694,10 @@ export default function Home() {
     return matchesSearch;
   });
 
+  const activeClients = clients.filter(client => client.status !== 'Inactivo');
+  const inactiveClients = clients.filter(client => client.status === 'Inactivo');
+  const visibleClients = clientStatusTab === 'activos' ? activeClients : inactiveClients;
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login';
@@ -633,6 +705,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-[#f4f4f5] font-sans antialiased selection:bg-teal-500/25 selection:text-teal-200 font-sans">
+      <a href="#contenido-principal" className="skip-link">Saltar al contenido principal</a>
       
       {/* HEADER DE LA PLATAFORMA (STITCH AESTHETIC) */}
       <header className="border-b border-[#1e1e24] bg-[#09090b]/80 backdrop-blur-md sticky top-0 z-50">
@@ -694,10 +767,28 @@ export default function Home() {
             </button>
           </div>
         </div>
+        <nav aria-label="Navegación principal móvil" className="md:hidden flex overflow-x-auto border-t border-zinc-900 px-4 py-2 gap-2">
+          {([
+            ['dashboard', 'Dashboard'],
+            ['clientes', 'Clientes'],
+            ['parametros', 'Parámetros'],
+            ['auditoria', 'Auditoría'],
+          ] as const).map(([view, label]) => (
+            <button
+              key={view}
+              type="button"
+              aria-current={activeView === view ? 'page' : undefined}
+              onClick={() => setActiveView(view)}
+              className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold ${activeView === view ? 'bg-teal-500/15 text-teal-300' : 'text-zinc-400'}`}
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
       </header>
 
       {/* DASHBOARD PRINCIPAL */}
-      <main className="max-w-7xl mx-auto px-6 py-10">
+      <main id="contenido-principal" tabIndex={-1} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         
         {activeView === 'dashboard' && (
           <>
@@ -749,8 +840,10 @@ export default function Home() {
                     <Users className="h-4 w-4" />
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold text-white tracking-tight">{clients.length}</h2>
-                <p className="text-zinc-500 text-xs mt-1">{clients.length} contribuyentes registrados</p>
+                <h2 className="text-3xl font-bold text-white tracking-tight">{activeClients.length}</h2>
+                <p className="text-zinc-500 text-xs mt-1">
+                  {activeClients.length} activos · {inactiveClients.length} dados de baja
+                </p>
               </button>
 
               {/* Tarjeta 2: DDJJ en Proceso */}
@@ -1033,8 +1126,11 @@ export default function Home() {
             </div>
 
             <div className="bg-[#121216] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
-              <div className="p-6 border-b border-zinc-850 flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wider text-zinc-500 font-bold">Clientes Registrados ({clients.length})</span>
+              <div className="p-6 border-b border-zinc-850 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs uppercase tracking-wider text-zinc-500 font-bold">Clientes registrados ({clients.length})</span>
+                  <p className="text-xs text-zinc-500 mt-1">La baja es reversible y conserva el historial fiscal completo.</p>
+                </div>
                 <button 
                   onClick={() => setShowNewClientModal(true)}
                   className="flex items-center gap-1.5 px-4 h-9 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors cursor-pointer"
@@ -1042,6 +1138,35 @@ export default function Home() {
                   <Plus className="h-4 w-4 stroke-[3]" />
                   Nuevo Cliente
                 </button>
+              </div>
+
+              <div className="px-6 py-4 border-b border-zinc-850 bg-zinc-950/20" role="group" aria-label="Filtrar clientes por estado">
+                <div className="inline-flex rounded-lg border border-zinc-800 bg-[#09090b] p-1">
+                  <button
+                    type="button"
+                    aria-pressed={clientStatusTab === 'activos'}
+                    onClick={() => setClientStatusTab('activos')}
+                    className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${
+                      clientStatusTab === 'activos'
+                        ? 'bg-teal-500 text-[#09090b]'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    Activos ({activeClients.length})
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={clientStatusTab === 'inactivos'}
+                    onClick={() => setClientStatusTab('inactivos')}
+                    className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${
+                      clientStatusTab === 'inactivos'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    Dados de baja ({inactiveClients.length})
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1058,7 +1183,7 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
-                    {clients.map((client) => (
+                    {visibleClients.map((client) => (
                       <tr key={client.id} className="hover:bg-zinc-800/10 transition-colors">
                         <td className="px-6 py-4 font-semibold text-white text-sm">{client.name}</td>
                         <td className="px-6 py-4 text-xs font-mono text-zinc-400">{client.cuit}</td>
@@ -1076,37 +1201,71 @@ export default function Home() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex gap-2 justify-end">
-                            <Link
-                              href={`/clientes/${client.id}/periodos-fiscales`}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
-                              title="Libro fiscal mensual IVA e IIBB"
-                            >
-                              <BookOpen className="h-4 w-4" />
-                            </Link>
+                            {clientStatusTab === 'activos' && (
+                              <Link
+                                href={`/clientes/${client.id}/periodos-fiscales`}
+                                className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
+                                title="Libro fiscal mensual IVA e IIBB"
+                                aria-label={`Abrir libro fiscal de ${client.name}`}
+                              >
+                                <BookOpen className="h-4 w-4" />
+                              </Link>
+                            )}
                             <button 
                               onClick={() => { setActiveView('dashboard'); setSearchTerm(client.name); }}
                               className="px-3 py-1 text-xs font-bold text-teal-400 bg-zinc-800 border border-zinc-700 hover:border-teal-500/30 rounded transition-all cursor-pointer"
                             >
                               Ver Liquidaciones
                             </button>
-                            <button
-                              onClick={() => openEditClientModal(client)}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
-                              title="Editar Contribuyente"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClient(client.id, client.name)}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-red-950/20 hover:bg-red-900/35 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all active:scale-[0.97] cursor-pointer"
-                              title="Eliminar Contribuyente"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {clientStatusTab === 'activos' ? (
+                              <>
+                                <button
+                                  onClick={() => openEditClientModal(client)}
+                                  className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
+                                  title="Editar contribuyente"
+                                  aria-label={`Editar a ${client.name}`}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClient(client.id, client.name)}
+                                  className="inline-flex items-center justify-center h-8 w-8 rounded bg-red-950/20 hover:bg-red-900/35 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all active:scale-[0.97] cursor-pointer"
+                                  title="Dar de baja"
+                                  aria-label={`Dar de baja a ${client.name}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleReactivateClient(client.id, client.name)}
+                                className="inline-flex items-center gap-1.5 px-3 h-8 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 hover:border-emerald-500/40 text-emerald-400 text-xs font-bold transition-all active:scale-[0.97] cursor-pointer"
+                                title="Reactivar contribuyente"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Reactivar
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {visibleClients.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center">
+                          <p className="text-sm font-semibold text-zinc-300">
+                            {clientStatusTab === 'activos'
+                              ? 'No hay clientes activos.'
+                              : 'No hay clientes dados de baja.'}
+                          </p>
+                          <p className="text-xs text-zinc-500 mt-1">
+                            {clientStatusTab === 'activos'
+                              ? 'Puede registrar uno nuevo desde el botón superior.'
+                              : 'Los clientes inactivos aparecerán aquí y podrán reactivarse.'}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1435,44 +1594,26 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50 text-xs font-mono text-zinc-300">
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-28 01:10</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Importador AFIP Optimizado</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Importación de AFIP compras y ventas ajustada con éxito para cabeceras truncadas de ARCA.</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">SISTEMA (JABA)</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Éxito</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-27 22:12</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Parámetro &quot;Disponibilidades&quot;</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Modificación y adición interactiva de saldos en cuentas corrientes y de ahorro.</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Contador JABA</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Éxito</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-27 19:45</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Variación Patrimonial JVP</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">
-                        <span className="text-amber-400">Alerta:</span> Consumo alto proyectado en declaración 2025 de Lobato Francisco ($28.017.191).
-                      </td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">SISTEMA (JABA)</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 uppercase">Advertencia</span>
-                      </td>
-                    </tr>
-                    <tr className="hover:bg-zinc-800/10 transition-colors">
-                      <td className="px-6 py-4 text-zinc-500">2026-05-26 15:30</td>
-                      <td className="px-6 py-4 font-sans font-semibold text-white">Actualización de Coeficientes IPC</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Tablas de inflación impositiva mensual cargadas y vinculadas al AXI dinámico y estático.</td>
-                      <td className="px-6 py-4 font-sans text-zinc-400">Contador JABA</td>
-                      <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Éxito</span>
-                      </td>
-                    </tr>
+                    {auditLoading && (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-400">Cargando eventos reales de auditoría…</td></tr>
+                    )}
+                    {auditError && (
+                      <tr><td colSpan={5} role="alert" className="px-6 py-8 text-center text-red-300">{auditError}</td></tr>
+                    )}
+                    {!auditLoading && !auditError && auditLogs.length === 0 && (
+                      <tr><td colSpan={5} className="px-6 py-8 text-center text-zinc-500">Todavía no hay eventos registrados.</td></tr>
+                    )}
+                    {!auditLoading && !auditError && auditLogs.map(log => (
+                      <tr key={log.id} className="hover:bg-zinc-800/10 transition-colors">
+                        <td className="px-6 py-4 text-zinc-500">{new Date(log.createdAt).toLocaleString('es-AR')}</td>
+                        <td className="px-6 py-4 font-sans font-semibold text-white">{log.action} · {log.entityType}</td>
+                        <td className="px-6 py-4 font-sans text-zinc-400 whitespace-pre-wrap break-words max-w-xl">{log.details || 'Sin detalle adicional'}</td>
+                        <td className="px-6 py-4 font-sans text-zinc-400">{log.userId || log.clientName || log.clientCuit || 'SISTEMA (JABA)'}</td>
+                        <td className="px-6 py-4 text-center font-sans">
+                          <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Registrado</span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

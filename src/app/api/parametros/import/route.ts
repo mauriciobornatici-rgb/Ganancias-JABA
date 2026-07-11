@@ -5,8 +5,11 @@ import { Decimal } from 'decimal.js';
 import * as xlsx from 'xlsx';
 import { parseTaxParameterWorkbook } from '@/domain/ganancias/mappers/parameterImporter';
 import { buildTaxParameterImportAuditDetails } from '@/domain/ganancias/persistence/taxParameterImportAudit';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 export async function POST(req: NextRequest) {
+  const authError = await requireRouteAuth(req);
+  if (authError) return authError;
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
           fiscalYearId: fiscalYear.id,
           version: nextVersion,
           sourceLaw: resolutionName,
-          status: 'validado',
+          status: parsedWorkbook.warnings.length === 0 ? 'validado' : 'borrador',
           minimoNoImponible: new Decimal(finalDeds.minimoNoImponible),
           conyuge: new Decimal(finalDeds.conyuge),
           hijo: new Decimal(finalDeds.hijo),
@@ -188,12 +191,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `¡Normativa e importes de resolución "${resolutionName}" cargados con éxito para el año fiscal ${year}!`,
+      message: parsedWorkbook.warnings.length === 0
+        ? `¡Normativa e importes de resolución "${resolutionName}" cargados y validados para el año fiscal ${year}!`
+        : `La resolución "${resolutionName}" se cargó como borrador para ${year}; revise las advertencias antes de utilizarla.`,
       data: {
         id: result.parameterSet.id,
         year: year,
         version: result.parameterSet.version,
         resolution: result.parameterSet.sourceLaw,
+        status: result.parameterSet.status,
         auditLogId: result.auditLogId,
         bracketsLoaded: result.bracketsCount,
         ipcLoaded: result.ipcCount,

@@ -61,6 +61,17 @@ export async function POST(req: NextRequest) {
     });
 
     if (existing) {
+      if (existing.status === 'Inactivo') {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `El CUIT pertenece a ${existing.name}, que está dado de baja. Reactivalo desde la solapa "Dados de baja" para conservar su historial fiscal.`,
+            code: 'CUIT_BELONGS_TO_INACTIVE_CLIENT',
+            data: { clientId: existing.id },
+          },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
         { success: false, error: 'El CUIT ya se encuentra registrado en el sistema.' },
         { status: 409 }
@@ -79,7 +90,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Registrar en auditoría
-    logAuditEvent({
+    await logAuditEvent({
       action: 'CREATE',
       entityType: 'Client',
       entityId: client.id,

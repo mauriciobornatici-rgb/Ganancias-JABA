@@ -4,6 +4,7 @@ import { Decimal } from 'decimal.js';
 import type { Prisma } from '@/generated/client/client';
 import { buildUsefulCoefficientsFromIndexes } from '@/domain/ganancias/mappers/taxParameterUsefulCoefficients';
 import { PARAMETER_UPDATE_TRANSACTION_OPTIONS } from '@/domain/ganancias/persistence/taxParameterPersistence';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Error desconocido';
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
     if (resolutionId && resolutionId !== 'default') {
       parameterSet = fiscalYear.parameterSets.find((ps) => ps.id === resolutionId) || null;
     } else {
-      parameterSet = fiscalYear.parameterSets[0] || null; // el primero ya que están por versión desc
+      parameterSet = fiscalYear.parameterSets.find((ps) => ps.status === 'validado') || null;
     }
 
     // 3. Cargar brackets específicos
@@ -100,6 +101,7 @@ export async function GET(req: NextRequest) {
         topeGastosEducativos: parameterSet.topeGastosEducativos.toString(),
         version: parameterSet.version,
         sourceLaw: parameterSet.sourceLaw || `Resolución v${parameterSet.version}`,
+        status: parameterSet.status,
         updatedAt: parameterSet.updatedAt.toISOString()
       } : null,
       brackets: brackets.map((b) => ({
@@ -140,6 +142,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const authError = await requireRouteAuth(req);
+  if (authError) return authError;
   try {
     const body = await req.json();
     const { year, parameterSet, brackets } = body;
@@ -147,54 +151,69 @@ export async function PUT(req: NextRequest) {
 
     const fiscalYear = await prisma.fiscalYear.findUnique({
       where: { year: targetYear },
-      include: { parameterSets: true }
+      include: { parameterSets: { orderBy: { version: 'desc' } } }
     });
 
     if (!fiscalYear) {
       return NextResponse.json({ success: false, error: 'Año fiscal no encontrado' }, { status: 404 });
     }
 
-    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // 1. Guardar o actualizar deducciones
-      if (parameterSet) {
-        const latestSet = fiscalYear.parameterSets[0];
-        if (latestSet) {
-          await tx.taxParameterSet.update({
-            where: { id: latestSet.id },
-            data: {
-              minimoNoImponible: new Decimal(parameterSet.minimoNoImponible),
-              conyuge: new Decimal(parameterSet.conyuge),
-              hijo: new Decimal(parameterSet.hijo),
-              hijoIncapacitado: new Decimal(parameterSet.hijoIncapacitado),
-              especialAutonomo: new Decimal(parameterSet.especialAutonomo),
-              especialEmprendedor: new Decimal(parameterSet.especialEmprendedor),
-              especialDependiente: new Decimal(parameterSet.especialDependiente),
-              topeServicioDomestico: new Decimal(parameterSet.topeServicioDomestico),
-              topeSeguroVida: new Decimal(parameterSet.topeSeguroVida),
-              topeSeguroRetiro: new Decimal(parameterSet.topeSeguroRetiro),
-              topeGastosSepelio: new Decimal(parameterSet.topeGastosSepelio),
-              topeInteresHipoteca: new Decimal(parameterSet.topeInteresHipoteca),
-              topeGastosEducativos: new Decimal(parameterSet.topeGastosEducativos),
-              updatedAt: new Date()
-            }
-          });
-        }
-      }
+    const createdVersion = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const latestSet = fiscalYear.parameterSets[0];
+      let newSetId: string | null = null;
 
-      // 2. Guardar o actualizar escalas Art 94
-      if (brackets && brackets.length > 0) {
-        await tx.taxArt94Bracket.deleteMany({ where: { fiscalYearId: fiscalYear.id } });
-        for (const b of brackets) {
-          await tx.taxArt94Bracket.create({
-            data: {
+      // Los cambios manuales generan una versión borrador; nunca reescriben normativa histórica.
+      if (parameterSet || (brackets && brackets.length > 0)) {
+        if (!latestSet && !parameterSet) throw new Error('No existe un conjunto base para versionar.');
+        const source = parameterSet || latestSet;
+        const created = await tx.taxParameterSet.create({
+          data: {
+            fiscalYearId: fiscalYear.id,
+            version: (latestSet?.version ?? 0) + 1,
+            sourceLaw: parameterSet?.sourceLaw || `Ajuste manual ${new Date().toISOString().slice(0, 10)}`,
+            status: 'borrador',
+            minimoNoImponible: new Decimal(source.minimoNoImponible),
+            conyuge: new Decimal(source.conyuge),
+            hijo: new Decimal(source.hijo),
+            hijoIncapacitado: new Decimal(source.hijoIncapacitado),
+            especialAutonomo: new Decimal(source.especialAutonomo),
+            especialEmprendedor: new Decimal(source.especialEmprendedor),
+            especialDependiente: new Decimal(source.especialDependiente),
+            topeServicioDomestico: new Decimal(source.topeServicioDomestico),
+            topeSeguroVida: new Decimal(source.topeSeguroVida),
+            topeSeguroRetiro: new Decimal(source.topeSeguroRetiro),
+            topeGastosSepelio: new Decimal(source.topeGastosSepelio),
+            topeInteresHipoteca: new Decimal(source.topeInteresHipoteca),
+            topeGastosEducativos: new Decimal(source.topeGastosEducativos),
+          },
+        });
+        newSetId = created.id;
+
+        const bracketSource = brackets?.length
+          ? brackets
+          : await tx.taxArt94Bracket.findMany({ where: { taxParameterSetId: latestSet?.id } });
+        if (bracketSource.length > 0) {
+          await tx.taxArt94Bracket.createMany({
+            data: bracketSource.map((b: {
+              fromAmount: Decimal.Value;
+              toAmount: Decimal.Value | null;
+              fixedAmount: Decimal.Value;
+              percentage: Decimal.Value;
+              excessOf: Decimal.Value;
+            }) => ({
               fiscalYearId: fiscalYear.id,
+              taxParameterSetId: created.id,
               fromAmount: new Decimal(b.fromAmount),
               toAmount: b.toAmount ? new Decimal(b.toAmount) : null,
               fixedAmount: new Decimal(b.fixedAmount),
               percentage: new Decimal(b.percentage),
-              excessOf: new Decimal(b.excessOf)
-            }
+              excessOf: new Decimal(b.excessOf),
+            })),
           });
+        }
+
+        if (latestSet) {
+          await tx.taxParameterSet.update({ where: { id: latestSet.id }, data: { status: 'reemplazado' } });
         }
       }
 
@@ -235,9 +254,17 @@ export async function PUT(req: NextRequest) {
           });
         }
       }
+
+      return newSetId;
     }, PARAMETER_UPDATE_TRANSACTION_OPTIONS);
 
-    return NextResponse.json({ success: true, message: 'Parámetros actualizados con éxito en la base de datos.' });
+    return NextResponse.json({
+      success: true,
+      message: createdVersion
+        ? 'Se creó una nueva versión borrador. La versión histórica anterior permanece intacta.'
+        : 'Índices actualizados con éxito.',
+      data: { parameterSetId: createdVersion },
+    });
   } catch (err: unknown) {
     return NextResponse.json({
       success: false,

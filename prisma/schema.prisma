@@ -300,12 +300,32 @@ model TaxReturn {
   attachments    Attachment[]
   importBatches  ImportBatch[]
   annualFiscalConsolidations AnnualFiscalConsolidationSnapshot[]
+  fixedAssetImportCandidates FixedAssetImportCandidate[]
   rectificationLinksAsOriginal RectificationLink[] @relation("OriginalReturn")
   rectificationLinksAsRectified RectificationLink[] @relation("RectifiedReturn")
 
   @@unique([clientId, fiscalYearId, version])
   @@index([clientId])
   @@index([fiscalYearId])
+}
+
+model FixedAssetImportCandidate {
+  id                      String    @id @default(uuid())
+  taxReturnId             String
+  sourceFiscalDocumentId  String
+  sourceMonth             Int
+  description             String
+  counterpartyName        String?
+  purchaseDate            DateTime
+  originalCost            Decimal   @db.Decimal(18, 2)
+  status                  String    @default("PENDING")
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  taxReturn               TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  @@unique([taxReturnId, sourceFiscalDocumentId])
+  @@index([taxReturnId, status])
 }
 
 model RectificationLink {
@@ -554,6 +574,7 @@ model GrossIncomeSettlement {
   totalDeterminedTax    Decimal                      @default(0) @db.Decimal(18, 2)
   totalCredits          Decimal                      @default(0) @db.Decimal(18, 2)
   totalBalance          Decimal                      @default(0) @db.Decimal(18, 2)
+  totalFavorCarryForward Decimal                     @default(0) @db.Decimal(18, 2)
   officialAmount        Decimal?                     @db.Decimal(18, 2)
   officialReference     String?
   filedAt               DateTime?
@@ -581,6 +602,7 @@ model GrossIncomeJurisdictionLine {
   determinedTax         Decimal                 @db.Decimal(18, 2)
   creditsApplied        Decimal                 @default(0) @db.Decimal(18, 2)
   balance               Decimal                 @db.Decimal(18, 2)
+  favorCarryForward     Decimal                 @default(0) @db.Decimal(18, 2)
   createdAt             DateTime                @default(now())
 
   grossIncomeSettlement GrossIncomeSettlement   @relation(fields: [grossIncomeSettlementId], references: [id], onDelete: Cascade)
@@ -592,6 +614,7 @@ model ConventionCoefficientVersion {
   id                  String                      @id @default(uuid())
   clientId            String
   year                Int
+  version             Int                         @default(1)
   sourceReference     String?
   approvedBy          String?
   approvedAt          DateTime?
@@ -602,7 +625,8 @@ model ConventionCoefficientVersion {
   client              Client                      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   coefficientLines    ConventionCoefficientLine[]
 
-  @@unique([clientId, year])
+  @@unique([clientId, year, version])
+  @@index([clientId, year])
   @@index([year])
 }
 

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
-import { logAuditEvent } from '@/domain/ganancias/auditHelper';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -45,11 +45,12 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 /**
- * Crea o actualiza el perfil fiscal del contribuyente (condición de IVA, régimen de IIBB, Convenio).
- * Si ya existe una versión, se actualiza la última; si no, se crea una vigente desde 2020 (cubre los
- * períodos soportados). El régimen define si se liquida IIBB y si aplica Convenio Multilateral.
+ * Crea una nueva versión del perfil fiscal y cierra la vigencia anterior.
+ * Nunca modifica una versión histórica que pueda estar vinculada a períodos ya liquidados.
  */
 export async function PUT(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: clientId } = await context.params;
   try {
     const parsed = profileSchema.safeParse(await request.json());
@@ -61,34 +62,66 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true, cuit: true, name: true } });
     if (!client) return NextResponse.json({ success: false, error: 'El contribuyente no existe.' }, { status: 404 });
 
-    const existing = await prisma.clientTaxProfileVersion.findFirst({ where: { clientId }, orderBy: { validFrom: 'desc' }, select: { id: true } });
-
-    let profileId: string;
-    if (existing) {
-      await prisma.clientTaxProfileVersion.update({
-        where: { id: existing.id },
-        data: { vatCondition, grossIncomeRegime, conventionRegime },
-      });
-      profileId = existing.id;
-    } else {
-      const validFrom = parsed.data.validFrom ? new Date(`${parsed.data.validFrom}T00:00:00Z`) : new Date(Date.UTC(2020, 0, 1));
-      const created = await prisma.clientTaxProfileVersion.create({
-        data: { clientId, validFrom, vatCondition, grossIncomeRegime, conventionRegime },
-        select: { id: true },
-      });
-      profileId = created.id;
-    }
-
-    void logAuditEvent({
-      action: existing ? 'UPDATE' : 'CREATE',
-      entityType: 'ClientTaxProfileVersion',
-      entityId: profileId,
-      clientCuit: client.cuit,
-      clientName: client.name,
-      details: `Perfil fiscal: IVA ${vatCondition}, IIBB ${grossIncomeRegime}, Convenio ${conventionRegime}.`,
+    const existing = await prisma.clientTaxProfileVersion.findFirst({
+      where: { clientId },
+      orderBy: { validFrom: 'desc' },
+      select: {
+        id: true,
+        validFrom: true,
+        jurisdictions: {
+          select: { jurisdictionCode: true, registrationNumber: true, taxRate: true, isActive: true },
+        },
+      },
     });
 
-    return NextResponse.json({ success: true, data: { id: profileId, created: !existing } });
+    const validFrom = parsed.data.validFrom
+      ? new Date(`${parsed.data.validFrom}T00:00:00Z`)
+      : existing ? new Date() : new Date(Date.UTC(2020, 0, 1));
+    if (existing && validFrom.getTime() <= existing.validFrom.getTime()) {
+      return NextResponse.json(
+        { success: false, error: 'La nueva vigencia debe comenzar después de la versión fiscal actual.' },
+        { status: 409 },
+      );
+    }
+
+    const profileId = await prisma.$transaction(async tx => {
+      if (existing) {
+        await tx.clientTaxProfileVersion.update({
+          where: { id: existing.id },
+          data: { validTo: new Date(validFrom.getTime() - 1) },
+        });
+      }
+
+      const created = await tx.clientTaxProfileVersion.create({
+        data: {
+          clientId,
+          validFrom,
+          vatCondition,
+          grossIncomeRegime,
+          conventionRegime,
+          jurisdictions: existing?.jurisdictions.length
+            ? { create: existing.jurisdictions.map(j => ({
+                jurisdictionCode: j.jurisdictionCode,
+                registrationNumber: j.registrationNumber,
+                taxRate: j.taxRate,
+                isActive: j.isActive,
+              })) }
+            : undefined,
+        },
+        select: { id: true },
+      });
+      await tx.auditLog.create({ data: {
+        action: existing ? 'UPDATE' : 'CREATE',
+        entityType: 'ClientTaxProfileVersion',
+        entityId: created.id,
+        clientCuit: client.cuit,
+        clientName: client.name,
+        details: `Perfil fiscal: IVA ${vatCondition}, IIBB ${grossIncomeRegime}, Convenio ${conventionRegime}.`,
+      } });
+      return created.id;
+    });
+
+    return NextResponse.json({ success: true, data: { id: profileId, created: true, supersedes: existing?.id ?? null } });
   } catch (error) {
     return NextResponse.json({ success: false, error: `No se pudo guardar el perfil fiscal: ${messageOf(error)}` }, { status: 500 });
   }

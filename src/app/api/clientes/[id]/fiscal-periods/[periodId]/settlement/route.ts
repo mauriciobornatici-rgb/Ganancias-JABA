@@ -17,6 +17,7 @@ async function loadConventionCoefficients(clientId: string, year: number, regime
   if (regime !== 'CM_REGIMEN_GENERAL' && regime !== 'CM_REGIMEN_ESPECIAL') return map;
   const version = await prisma.conventionCoefficientVersion.findFirst({
     where: { clientId, year },
+    orderBy: { version: 'desc' },
     select: { coefficientLines: { select: { jurisdictionCode: true, unifiedCoefficient: true } } },
   });
   for (const line of version?.coefficientLines ?? []) {
@@ -116,6 +117,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const regime = (period.taxProfile?.grossIncomeRegime ?? 'NONE') as GrossIncomeRegime;
     const activeJurisdictions = (period.taxProfile?.jurisdictions ?? []).filter(j => j.isActive);
     const coefficientMap = await loadConventionCoefficients(clientId, period.year, regime);
+    const previousGrossIncomeBalances = await findPreviousGrossIncomeFavorBalances(clientId, period.year, period.month);
     const giCredits = period.taxCredits
       .filter(c => String(c.tax) === 'GROSS_INCOME')
       .map(c => ({ jurisdictionCode: c.jurisdictionCode, amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) }));
@@ -129,6 +131,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       documents,
       coefficientMap,
       credits: giCredits,
+      previousFavorBalances: previousGrossIncomeBalances,
       year: period.year,
     });
 
@@ -178,6 +181,26 @@ async function findPreviousVatFreeAvailability(clientId: string, year: number, m
   });
   const fav = prevPeriod?.vatSettlements?.[0]?.freeAvailabilityBalance;
   return fav ? new Decimal(fav.toString()) : new Decimal(0);
+}
+
+async function findPreviousGrossIncomeFavorBalances(clientId: string, year: number, month: number): Promise<Map<string, Decimal>> {
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevPeriod = await prisma.fiscalPeriod.findFirst({
+    where: { clientId, year: prevYear, month: prevMonth },
+    select: {
+      grossIncomeSettlements: {
+        where: { status: 'CLOSED' },
+        orderBy: { version: 'desc' },
+        take: 1,
+        select: { jurisdictionLines: { select: { jurisdictionCode: true, favorCarryForward: true } } },
+      },
+    },
+  });
+  return new Map(
+    (prevPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [])
+      .map(line => [line.jurisdictionCode, new Decimal(line.favorCarryForward.toString())] as const),
+  );
 }
 
 function serializeVat(view: ReturnType<typeof buildVatSettlement>) {

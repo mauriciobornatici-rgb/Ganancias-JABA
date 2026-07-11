@@ -1,11 +1,12 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { parseAfipTaxCredits, type TaxCreditDraft } from '@/domain/ganancias/mappers/afipTaxCreditImporter';
 import { persistTaxCredits } from '@/domain/ganancias/persistence/taxCreditPersistence';
 import { MAX_IMPORT_TOTAL_BYTES } from '@/domain/ganancias/presentation/apiValidation';
 import { prisma } from '@/domain/ganancias/prisma';
+import { buildFiscalPeriodSourceMutationDecision } from '@/domain/ganancias/workflow/fiscalPeriodWorkflow';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -50,15 +51,33 @@ export async function GET(_request: NextRequest, context: RouteContext) {
  * idempotente. Estos créditos los aplica el motor de IVA (Art. 24) contra el saldo a ingresar.
  */
 export async function POST(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
   const { id: clientId, periodId } = await context.params;
 
   try {
     const period = await prisma.fiscalPeriod.findUnique({
       where: { id: periodId },
-      select: { id: true, clientId: true, year: true, month: true, client: { select: { cuit: true, name: true } } },
+      select: {
+        id: true,
+        clientId: true,
+        year: true,
+        month: true,
+        client: { select: { cuit: true, name: true } },
+        vatSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+        grossIncomeSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+      },
     });
     if (!period || period.clientId !== clientId) {
       return NextResponse.json({ success: false, error: 'El período no existe o no pertenece a este contribuyente.' }, { status: 404 });
+    }
+
+    const mutationDecision = buildFiscalPeriodSourceMutationDecision({
+      vatStatus: period.vatSettlements[0]?.status,
+      grossIncomeStatus: period.grossIncomeSettlements[0]?.status,
+    });
+    if (!mutationDecision.allowed) {
+      return NextResponse.json({ success: false, error: mutationDecision.error }, { status: mutationDecision.httpStatus });
     }
 
     const formData = await request.formData();
@@ -103,16 +122,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { inserted, duplicates } = await persistTaxCredits(prisma, periodId, all);
-
-    void logAuditEvent({
-      action: 'IMPORT',
-      entityType: 'FiscalPeriod',
-      entityId: periodId,
-      clientCuit: period.client?.cuit,
-      clientName: period.client?.name,
-      fiscalYear: period.year,
-      details: `Importación ret/perc IVA ${String(period.month).padStart(2, '0')}/${period.year}: ${inserted} nuevas, ${duplicates} duplicadas, ${outOfPeriod.length} fuera de período, ${ignoredOtherTax} de otros impuestos.`,
+    const { inserted, duplicates } = await prisma.$transaction(async tx => {
+      const persisted = await persistTaxCredits(tx, periodId, all);
+      await tx.auditLog.create({ data: {
+        action: 'IMPORT',
+        entityType: 'FiscalPeriod',
+        entityId: periodId,
+        clientCuit: period.client?.cuit,
+        clientName: period.client?.name,
+        fiscalYear: period.year,
+        details: `Importación ret/perc IVA ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevas, ${persisted.duplicates} duplicadas, ${outOfPeriod.length} fuera de período, ${ignoredOtherTax} de otros impuestos.`,
+      } });
+      return persisted;
     });
 
     return NextResponse.json({

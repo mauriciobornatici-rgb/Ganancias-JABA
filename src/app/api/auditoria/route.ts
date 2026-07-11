@@ -45,41 +45,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/auditoria — Registrar manualmente un evento de auditoría
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { action, entityType, entityId, clientCuit, clientName, fiscalYear, details } = body;
-
-    if (!action || !entityType) {
-      return NextResponse.json(
-        { success: false, error: 'Se requieren los campos "action" y "entityType".' },
-        { status: 400 }
-      );
-    }
-
-    const log = await prisma.auditLog.create({
-      data: {
-        action,
-        entityType,
-        entityId: entityId || null,
-        clientCuit: clientCuit || null,
-        clientName: clientName || null,
-        fiscalYear: fiscalYear ? parseInt(fiscalYear, 10) : null,
-        details: details || null,
-        // userId se llenará cuando implementemos autenticación
-      },
-    });
-
-    return NextResponse.json({ success: true, data: log }, { status: 201 });
-  } catch (err: unknown) {
-    return NextResponse.json(
-      { success: false, error: `Error al registrar evento de auditoría: ${errorMessage(err)}` },
-      { status: 500 }
-    );
-  }
-}
-
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }

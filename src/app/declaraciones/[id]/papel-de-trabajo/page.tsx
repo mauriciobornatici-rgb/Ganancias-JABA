@@ -131,6 +131,7 @@ export default function PapelDeTrabajoPage() {
   const [data, setData] = useState<PaperDeclarationData | null>(null);
   const [taxParams, setTaxParams] = useState<PaperTaxParams | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'resumen' | 'formulas'>('resumen');
 
   const formatMoney = (amount: MoneyValue) => {
@@ -140,45 +141,71 @@ export default function PapelDeTrabajoPage() {
   };
 
   useEffect(() => {
-    if (id) {
-      fetch(`/api/declaraciones/${id}`)
-        .then(res => res.json())
-        .then(res => {
-          if (res.success && res.data) {
-            setData(res.data);
-            fetch(buildTaxParameterRequestUrl(res.data.fiscalYear, res.data.taxParameterSetId))
-              .then(r => r.json())
-              .then(pRes => {
-                if (pRes.success && pRes.data) {
-                  setTaxParams(pRes.data);
-                }
-              });
-          }
-        })
-        .catch(err => console.error("Error al obtener papel de trabajo de base de datos:", err))
-        .finally(() => setIsLoading(false));
-    }
+    if (!id) return;
+    const controller = new AbortController();
+
+    const loadWorkingPaper = async () => {
+      setIsLoading(true);
+      setLoadError(null);
+      try {
+        const declarationResponse = await fetch(`/api/declaraciones/${id}`, { signal: controller.signal });
+        const declarationPayload = await declarationResponse.json();
+        if (!declarationResponse.ok || !declarationPayload.success || !declarationPayload.data) {
+          throw new Error(declarationPayload.error || 'No se pudo cargar la declaración.');
+        }
+        const declaration = declarationPayload.data as PaperDeclarationData;
+        if (typeof declaration.fiscalYear !== 'number') {
+          throw new Error('La DDJJ no tiene un año fiscal asociado. No es seguro emitir el papel de trabajo.');
+        }
+
+        const parameterResponse = await fetch(
+          buildTaxParameterRequestUrl(declaration.fiscalYear, declaration.taxParameterSetId),
+          { signal: controller.signal },
+        );
+        const parameterPayload = await parameterResponse.json();
+        if (!parameterResponse.ok || !parameterPayload.success || !parameterPayload.data?.parameterSet) {
+          throw new Error(parameterPayload.error || 'No se pudieron cargar los parámetros fiscales de la DDJJ.');
+        }
+
+        setData(declaration);
+        setTaxParams(parameterPayload.data);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setLoadError(error instanceof Error ? error.message : 'No se pudo preparar el papel de trabajo.');
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    };
+
+    void loadWorkingPaper();
+    return () => controller.abort();
   }, [id]);
 
-  const calculationInput = React.useMemo(() => {
-    if (!data || !taxParams) return null;
+  const calculationInputState = React.useMemo(() => {
+    if (!data || !taxParams) return { input: null, error: null };
     try {
-      return buildTaxReturnCalculationInput(data, taxParams);
+      return { input: buildTaxReturnCalculationInput(data, taxParams), error: null };
     } catch (e) {
-      console.error("Error normalizing calculation input for papel de trabajo:", e);
-      return null;
+      return {
+        input: null,
+        error: e instanceof Error ? e.message : 'Los datos de la DDJJ no pudieron normalizarse para el cálculo.',
+      };
     }
   }, [data, taxParams]);
+  const calculationInput = calculationInputState.input;
 
-  const calculationResult = React.useMemo(() => {
-    if (!calculationInput) return null;
+  const calculationState = React.useMemo(() => {
+    if (!calculationInput) return { result: null, error: null };
     try {
-      return calculateTaxReturn(calculationInput);
+      return { result: calculateTaxReturn(calculationInput), error: null };
     } catch (e) {
-      console.error("Error executing dynamic calculation for papel de trabajo:", e);
-      return null;
+      return {
+        result: null,
+        error: e instanceof Error ? e.message : 'El cálculo de la DDJJ no pudo completarse.',
+      };
     }
   }, [calculationInput]);
+  const calculationResult = calculationState.result;
 
   const closingCommercialPatrimony = React.useMemo(() => (
     calculationInput ? calculateClosingCommercialPatrimony(calculationInput) : null
@@ -259,6 +286,26 @@ export default function PapelDeTrabajoPage() {
           <p className="text-zinc-400 text-xs">Consultando base de datos y recalculando determinaciones...</p>
         </div>
       </div>
+    );
+  }
+
+  const blockingError = loadError
+    || calculationInputState.error
+    || calculationState.error
+    || (!data ? 'No hay datos disponibles para emitir el papel de trabajo.' : null)
+    || (!calculationResult ? 'El cálculo de la DDJJ no pudo completarse.' : null);
+  if (blockingError) {
+    return (
+      <main className="min-h-screen bg-[#09090b] text-white flex items-center justify-center p-6">
+        <section role="alert" className="max-w-lg rounded-xl border border-red-500/40 bg-red-950/20 p-6 space-y-4">
+          <h1 className="text-lg font-bold">El papel de trabajo no puede emitirse</h1>
+          <p className="text-sm text-red-100">{blockingError}</p>
+          <p className="text-xs text-zinc-400">No se muestran importes sustitutos ni valores en cero. Corregí la DDJJ o su normativa y volvé a intentarlo.</p>
+          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-teal-300 hover:text-teal-200">
+            <ArrowLeft className="h-4 w-4" /> Volver a Consola
+          </Link>
+        </section>
+      </main>
     );
   }
 

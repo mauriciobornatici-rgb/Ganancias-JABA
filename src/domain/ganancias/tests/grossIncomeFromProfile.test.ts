@@ -27,6 +27,17 @@ describe('buildPeriodGrossIncome', () => {
     expect(view?.settlement.totalDeterminedTax.toString()).toBe('50000'); // 1.000.000 × 5%
   });
 
+  it('arrastra y consume el saldo a favor cerrado del mes anterior por jurisdicción', () => {
+    const { view } = buildPeriodGrossIncome({
+      regime: 'ARBA_LOCAL',
+      jurisdictions: [{ jurisdictionCode: '902', taxRate: D('0.05') }],
+      documents: [sale], coefficientMap: new Map(), credits: [],
+      previousFavorBalances: new Map([['902', D('60000')]]), year: 2025,
+    });
+    expect(view?.settlement.totalBalanceDue.toString()).toBe('0');
+    expect(view?.settlement.totalFavorCarryForward.toString()).toBe('10000');
+  });
+
   it('Convenio Multilateral con coeficiente → reparte la base', () => {
     const { view } = buildPeriodGrossIncome({
       regime: 'CM_REGIMEN_GENERAL',

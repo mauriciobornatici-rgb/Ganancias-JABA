@@ -395,6 +395,7 @@ export const ModelName = {
   TaxArt94Bracket: 'TaxArt94Bracket',
   UpdateIndex: 'UpdateIndex',
   TaxReturn: 'TaxReturn',
+  FixedAssetImportCandidate: 'FixedAssetImportCandidate',
   RectificationLink: 'RectificationLink',
   ClientTaxProfileVersion: 'ClientTaxProfileVersion',
   ClientTaxActivity: 'ClientTaxActivity',
@@ -449,7 +450,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog"
+    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1176,6 +1177,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TaxReturnCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TaxReturnCountAggregateOutputType> | number
+        }
+      }
+    }
+    FixedAssetImportCandidate: {
+      payload: Prisma.$FixedAssetImportCandidatePayload<ExtArgs>
+      fields: Prisma.FixedAssetImportCandidateFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FixedAssetImportCandidateFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FixedAssetImportCandidateFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>
+        }
+        findFirst: {
+          args: Prisma.FixedAssetImportCandidateFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FixedAssetImportCandidateFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>
+        }
+        findMany: {
+          args: Prisma.FixedAssetImportCandidateFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>[]
+        }
+        create: {
+          args: Prisma.FixedAssetImportCandidateCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>
+        }
+        createMany: {
+          args: Prisma.FixedAssetImportCandidateCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.FixedAssetImportCandidateDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>
+        }
+        update: {
+          args: Prisma.FixedAssetImportCandidateUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>
+        }
+        deleteMany: {
+          args: Prisma.FixedAssetImportCandidateDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FixedAssetImportCandidateUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.FixedAssetImportCandidateUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FixedAssetImportCandidatePayload>
+        }
+        aggregate: {
+          args: Prisma.FixedAssetImportCandidateAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFixedAssetImportCandidate>
+        }
+        groupBy: {
+          args: Prisma.FixedAssetImportCandidateGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FixedAssetImportCandidateGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FixedAssetImportCandidateCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FixedAssetImportCandidateCountAggregateOutputType> | number
         }
       }
     }
@@ -3939,6 +4006,23 @@ export const TaxReturnScalarFieldEnum = {
 export type TaxReturnScalarFieldEnum = (typeof TaxReturnScalarFieldEnum)[keyof typeof TaxReturnScalarFieldEnum]
 
 
+export const FixedAssetImportCandidateScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId',
+  sourceMonth: 'sourceMonth',
+  description: 'description',
+  counterpartyName: 'counterpartyName',
+  purchaseDate: 'purchaseDate',
+  originalCost: 'originalCost',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FixedAssetImportCandidateScalarFieldEnum = (typeof FixedAssetImportCandidateScalarFieldEnum)[keyof typeof FixedAssetImportCandidateScalarFieldEnum]
+
+
 export const RectificationLinkScalarFieldEnum = {
   id: 'id',
   originalId: 'originalId',
@@ -4137,6 +4221,7 @@ export const GrossIncomeSettlementScalarFieldEnum = {
   totalDeterminedTax: 'totalDeterminedTax',
   totalCredits: 'totalCredits',
   totalBalance: 'totalBalance',
+  totalFavorCarryForward: 'totalFavorCarryForward',
   officialAmount: 'officialAmount',
   officialReference: 'officialReference',
   filedAt: 'filedAt',
@@ -4159,6 +4244,7 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
   determinedTax: 'determinedTax',
   creditsApplied: 'creditsApplied',
   balance: 'balance',
+  favorCarryForward: 'favorCarryForward',
   createdAt: 'createdAt'
 } as const
 
@@ -4169,6 +4255,7 @@ export const ConventionCoefficientVersionScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
   year: 'year',
+  version: 'version',
   sourceReference: 'sourceReference',
   approvedBy: 'approvedBy',
   approvedAt: 'approvedAt',
@@ -4726,6 +4813,18 @@ export const TaxReturnOrderByRelevanceFieldEnum = {
 } as const
 
 export type TaxReturnOrderByRelevanceFieldEnum = (typeof TaxReturnOrderByRelevanceFieldEnum)[keyof typeof TaxReturnOrderByRelevanceFieldEnum]
+
+
+export const FixedAssetImportCandidateOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  sourceFiscalDocumentId: 'sourceFiscalDocumentId',
+  description: 'description',
+  counterpartyName: 'counterpartyName',
+  status: 'status'
+} as const
+
+export type FixedAssetImportCandidateOrderByRelevanceFieldEnum = (typeof FixedAssetImportCandidateOrderByRelevanceFieldEnum)[keyof typeof FixedAssetImportCandidateOrderByRelevanceFieldEnum]
 
 
 export const RectificationLinkOrderByRelevanceFieldEnum = {
@@ -5401,6 +5500,7 @@ export type GlobalOmitConfig = {
   taxArt94Bracket?: Prisma.TaxArt94BracketOmit
   updateIndex?: Prisma.UpdateIndexOmit
   taxReturn?: Prisma.TaxReturnOmit
+  fixedAssetImportCandidate?: Prisma.FixedAssetImportCandidateOmit
   rectificationLink?: Prisma.RectificationLinkOmit
   clientTaxProfileVersion?: Prisma.ClientTaxProfileVersionOmit
   clientTaxActivity?: Prisma.ClientTaxActivityOmit

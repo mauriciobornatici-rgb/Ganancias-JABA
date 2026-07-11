@@ -28,16 +28,19 @@ export type AggregateConventionCoefficientVersion = {
 
 export type ConventionCoefficientVersionAvgAggregateOutputType = {
   year: number | null
+  version: number | null
 }
 
 export type ConventionCoefficientVersionSumAggregateOutputType = {
   year: number | null
+  version: number | null
 }
 
 export type ConventionCoefficientVersionMinAggregateOutputType = {
   id: string | null
   clientId: string | null
   year: number | null
+  version: number | null
   sourceReference: string | null
   approvedBy: string | null
   approvedAt: Date | null
@@ -50,6 +53,7 @@ export type ConventionCoefficientVersionMaxAggregateOutputType = {
   id: string | null
   clientId: string | null
   year: number | null
+  version: number | null
   sourceReference: string | null
   approvedBy: string | null
   approvedAt: Date | null
@@ -62,6 +66,7 @@ export type ConventionCoefficientVersionCountAggregateOutputType = {
   id: number
   clientId: number
   year: number
+  version: number
   sourceReference: number
   approvedBy: number
   approvedAt: number
@@ -74,16 +79,19 @@ export type ConventionCoefficientVersionCountAggregateOutputType = {
 
 export type ConventionCoefficientVersionAvgAggregateInputType = {
   year?: true
+  version?: true
 }
 
 export type ConventionCoefficientVersionSumAggregateInputType = {
   year?: true
+  version?: true
 }
 
 export type ConventionCoefficientVersionMinAggregateInputType = {
   id?: true
   clientId?: true
   year?: true
+  version?: true
   sourceReference?: true
   approvedBy?: true
   approvedAt?: true
@@ -96,6 +104,7 @@ export type ConventionCoefficientVersionMaxAggregateInputType = {
   id?: true
   clientId?: true
   year?: true
+  version?: true
   sourceReference?: true
   approvedBy?: true
   approvedAt?: true
@@ -108,6 +117,7 @@ export type ConventionCoefficientVersionCountAggregateInputType = {
   id?: true
   clientId?: true
   year?: true
+  version?: true
   sourceReference?: true
   approvedBy?: true
   approvedAt?: true
@@ -207,6 +217,7 @@ export type ConventionCoefficientVersionGroupByOutputType = {
   id: string
   clientId: string
   year: number
+  version: number
   sourceReference: string | null
   approvedBy: string | null
   approvedAt: Date | null
@@ -242,6 +253,7 @@ export type ConventionCoefficientVersionWhereInput = {
   id?: Prisma.StringFilter<"ConventionCoefficientVersion"> | string
   clientId?: Prisma.StringFilter<"ConventionCoefficientVersion"> | string
   year?: Prisma.IntFilter<"ConventionCoefficientVersion"> | number
+  version?: Prisma.IntFilter<"ConventionCoefficientVersion"> | number
   sourceReference?: Prisma.StringNullableFilter<"ConventionCoefficientVersion"> | string | null
   approvedBy?: Prisma.StringNullableFilter<"ConventionCoefficientVersion"> | string | null
   approvedAt?: Prisma.DateTimeNullableFilter<"ConventionCoefficientVersion"> | Date | string | null
@@ -256,6 +268,7 @@ export type ConventionCoefficientVersionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrderInput | Prisma.SortOrder
   approvedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   approvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -269,12 +282,13 @@ export type ConventionCoefficientVersionOrderByWithRelationInput = {
 
 export type ConventionCoefficientVersionWhereUniqueInput = Prisma.AtLeast<{
   id?: string
-  clientId_year?: Prisma.ConventionCoefficientVersionClientIdYearCompoundUniqueInput
+  clientId_year_version?: Prisma.ConventionCoefficientVersionClientIdYearVersionCompoundUniqueInput
   AND?: Prisma.ConventionCoefficientVersionWhereInput | Prisma.ConventionCoefficientVersionWhereInput[]
   OR?: Prisma.ConventionCoefficientVersionWhereInput[]
   NOT?: Prisma.ConventionCoefficientVersionWhereInput | Prisma.ConventionCoefficientVersionWhereInput[]
   clientId?: Prisma.StringFilter<"ConventionCoefficientVersion"> | string
   year?: Prisma.IntFilter<"ConventionCoefficientVersion"> | number
+  version?: Prisma.IntFilter<"ConventionCoefficientVersion"> | number
   sourceReference?: Prisma.StringNullableFilter<"ConventionCoefficientVersion"> | string | null
   approvedBy?: Prisma.StringNullableFilter<"ConventionCoefficientVersion"> | string | null
   approvedAt?: Prisma.DateTimeNullableFilter<"ConventionCoefficientVersion"> | Date | string | null
@@ -283,12 +297,13 @@ export type ConventionCoefficientVersionWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"ConventionCoefficientVersion"> | Date | string
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
   coefficientLines?: Prisma.ConventionCoefficientLineListRelationFilter
-}, "id" | "clientId_year">
+}, "id" | "clientId_year_version">
 
 export type ConventionCoefficientVersionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrderInput | Prisma.SortOrder
   approvedBy?: Prisma.SortOrderInput | Prisma.SortOrder
   approvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -309,6 +324,7 @@ export type ConventionCoefficientVersionScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"ConventionCoefficientVersion"> | string
   clientId?: Prisma.StringWithAggregatesFilter<"ConventionCoefficientVersion"> | string
   year?: Prisma.IntWithAggregatesFilter<"ConventionCoefficientVersion"> | number
+  version?: Prisma.IntWithAggregatesFilter<"ConventionCoefficientVersion"> | number
   sourceReference?: Prisma.StringNullableWithAggregatesFilter<"ConventionCoefficientVersion"> | string | null
   approvedBy?: Prisma.StringNullableWithAggregatesFilter<"ConventionCoefficientVersion"> | string | null
   approvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"ConventionCoefficientVersion"> | Date | string | null
@@ -320,6 +336,7 @@ export type ConventionCoefficientVersionScalarWhereWithAggregatesInput = {
 export type ConventionCoefficientVersionCreateInput = {
   id?: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -334,6 +351,7 @@ export type ConventionCoefficientVersionUncheckedCreateInput = {
   id?: string
   clientId: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -346,6 +364,7 @@ export type ConventionCoefficientVersionUncheckedCreateInput = {
 export type ConventionCoefficientVersionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -360,6 +379,7 @@ export type ConventionCoefficientVersionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -373,6 +393,7 @@ export type ConventionCoefficientVersionCreateManyInput = {
   id?: string
   clientId: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -384,6 +405,7 @@ export type ConventionCoefficientVersionCreateManyInput = {
 export type ConventionCoefficientVersionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -396,6 +418,7 @@ export type ConventionCoefficientVersionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -420,15 +443,17 @@ export type ConventionCoefficientVersionOrderByRelevanceInput = {
   search: string
 }
 
-export type ConventionCoefficientVersionClientIdYearCompoundUniqueInput = {
+export type ConventionCoefficientVersionClientIdYearVersionCompoundUniqueInput = {
   clientId: string
   year: number
+  version: number
 }
 
 export type ConventionCoefficientVersionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrder
   approvedBy?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -439,12 +464,14 @@ export type ConventionCoefficientVersionCountOrderByAggregateInput = {
 
 export type ConventionCoefficientVersionAvgOrderByAggregateInput = {
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
 }
 
 export type ConventionCoefficientVersionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrder
   approvedBy?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -457,6 +484,7 @@ export type ConventionCoefficientVersionMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrder
   approvedBy?: Prisma.SortOrder
   approvedAt?: Prisma.SortOrder
@@ -467,6 +495,7 @@ export type ConventionCoefficientVersionMinOrderByAggregateInput = {
 
 export type ConventionCoefficientVersionSumOrderByAggregateInput = {
   year?: Prisma.SortOrder
+  version?: Prisma.SortOrder
 }
 
 export type ConventionCoefficientVersionScalarRelationFilter = {
@@ -533,6 +562,7 @@ export type ConventionCoefficientVersionUpdateOneRequiredWithoutCoefficientLines
 export type ConventionCoefficientVersionCreateWithoutClientInput = {
   id?: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -545,6 +575,7 @@ export type ConventionCoefficientVersionCreateWithoutClientInput = {
 export type ConventionCoefficientVersionUncheckedCreateWithoutClientInput = {
   id?: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -587,6 +618,7 @@ export type ConventionCoefficientVersionScalarWhereInput = {
   id?: Prisma.StringFilter<"ConventionCoefficientVersion"> | string
   clientId?: Prisma.StringFilter<"ConventionCoefficientVersion"> | string
   year?: Prisma.IntFilter<"ConventionCoefficientVersion"> | number
+  version?: Prisma.IntFilter<"ConventionCoefficientVersion"> | number
   sourceReference?: Prisma.StringNullableFilter<"ConventionCoefficientVersion"> | string | null
   approvedBy?: Prisma.StringNullableFilter<"ConventionCoefficientVersion"> | string | null
   approvedAt?: Prisma.DateTimeNullableFilter<"ConventionCoefficientVersion"> | Date | string | null
@@ -598,6 +630,7 @@ export type ConventionCoefficientVersionScalarWhereInput = {
 export type ConventionCoefficientVersionCreateWithoutCoefficientLinesInput = {
   id?: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -611,6 +644,7 @@ export type ConventionCoefficientVersionUncheckedCreateWithoutCoefficientLinesIn
   id?: string
   clientId: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -638,6 +672,7 @@ export type ConventionCoefficientVersionUpdateToOneWithWhereWithoutCoefficientLi
 export type ConventionCoefficientVersionUpdateWithoutCoefficientLinesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -651,6 +686,7 @@ export type ConventionCoefficientVersionUncheckedUpdateWithoutCoefficientLinesIn
   id?: Prisma.StringFieldUpdateOperationsInput | string
   clientId?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -662,6 +698,7 @@ export type ConventionCoefficientVersionUncheckedUpdateWithoutCoefficientLinesIn
 export type ConventionCoefficientVersionCreateManyClientInput = {
   id?: string
   year: number
+  version?: number
   sourceReference?: string | null
   approvedBy?: string | null
   approvedAt?: Date | string | null
@@ -673,6 +710,7 @@ export type ConventionCoefficientVersionCreateManyClientInput = {
 export type ConventionCoefficientVersionUpdateWithoutClientInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -685,6 +723,7 @@ export type ConventionCoefficientVersionUpdateWithoutClientInput = {
 export type ConventionCoefficientVersionUncheckedUpdateWithoutClientInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -697,6 +736,7 @@ export type ConventionCoefficientVersionUncheckedUpdateWithoutClientInput = {
 export type ConventionCoefficientVersionUncheckedUpdateManyWithoutClientInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   year?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.IntFieldUpdateOperationsInput | number
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -740,6 +780,7 @@ export type ConventionCoefficientVersionSelect<ExtArgs extends runtime.Types.Ext
   id?: boolean
   clientId?: boolean
   year?: boolean
+  version?: boolean
   sourceReference?: boolean
   approvedBy?: boolean
   approvedAt?: boolean
@@ -757,6 +798,7 @@ export type ConventionCoefficientVersionSelectScalar = {
   id?: boolean
   clientId?: boolean
   year?: boolean
+  version?: boolean
   sourceReference?: boolean
   approvedBy?: boolean
   approvedAt?: boolean
@@ -765,7 +807,7 @@ export type ConventionCoefficientVersionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ConventionCoefficientVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "year" | "sourceReference" | "approvedBy" | "approvedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["conventionCoefficientVersion"]>
+export type ConventionCoefficientVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "year" | "version" | "sourceReference" | "approvedBy" | "approvedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["conventionCoefficientVersion"]>
 export type ConventionCoefficientVersionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   coefficientLines?: boolean | Prisma.ConventionCoefficientVersion$coefficientLinesArgs<ExtArgs>
@@ -782,6 +824,7 @@ export type $ConventionCoefficientVersionPayload<ExtArgs extends runtime.Types.E
     id: string
     clientId: string
     year: number
+    version: number
     sourceReference: string | null
     approvedBy: string | null
     approvedAt: Date | null
@@ -1162,6 +1205,7 @@ export interface ConventionCoefficientVersionFieldRefs {
   readonly id: Prisma.FieldRef<"ConventionCoefficientVersion", 'String'>
   readonly clientId: Prisma.FieldRef<"ConventionCoefficientVersion", 'String'>
   readonly year: Prisma.FieldRef<"ConventionCoefficientVersion", 'Int'>
+  readonly version: Prisma.FieldRef<"ConventionCoefficientVersion", 'Int'>
   readonly sourceReference: Prisma.FieldRef<"ConventionCoefficientVersion", 'String'>
   readonly approvedBy: Prisma.FieldRef<"ConventionCoefficientVersion", 'String'>
   readonly approvedAt: Prisma.FieldRef<"ConventionCoefficientVersion", 'DateTime'>

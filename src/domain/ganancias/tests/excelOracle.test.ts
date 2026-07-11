@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import * as xlsx from 'xlsx';
@@ -19,7 +19,7 @@ describe('JABA Excel Oracle - DJ Ganancias 2025 Tercera Categoria', () => {
   const runIfWorkbookExists = workbookPath ? it : it.skip;
 
   runIfWorkbookExists('contiene las hojas base esperadas para la liquidacion', () => {
-    const workbook = xlsx.readFile(workbookPath!, { cellFormula: true });
+    const workbook = xlsx.read(readFileSync(workbookPath!), { type: 'buffer', cellFormula: true });
 
     expect(workbook.SheetNames).toEqual([
       'IG 25',
@@ -47,7 +47,7 @@ describe('JABA Excel Oracle - DJ Ganancias 2025 Tercera Categoria', () => {
   });
 
   runIfWorkbookExists('mantiene formulas clave usadas como oraculo funcional', () => {
-    const workbook = xlsx.readFile(workbookPath!, { cellFormula: true, cellText: false });
+    const workbook = xlsx.read(readFileSync(workbookPath!), { type: 'buffer', cellFormula: true, cellText: false });
 
     const expectedFormulas: Record<string, Record<string, string>> = {
       'IG 25': {

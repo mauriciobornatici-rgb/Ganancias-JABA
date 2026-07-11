@@ -27,6 +27,8 @@ export function buildPeriodGrossIncome(params: {
   coefficientMap: Map<string, Decimal>;
   /** Percepciones/retenciones de IIBB sufridas (tax=GROSS_INCOME). */
   credits: LoadedGiCredit[];
+  /** Saldos a favor de la última liquidación cerrada del período anterior. */
+  previousFavorBalances?: Map<string, Decimal>;
   year: number;
 }): { view: GrossIncomeSettlementView | null; notice: string | null } {
   const isConvenio = params.regime === 'CM_REGIMEN_GENERAL' || params.regime === 'CM_REGIMEN_ESPECIAL';
@@ -43,6 +45,7 @@ export function buildPeriodGrossIncome(params: {
     taxRate: j.taxRate ?? new Decimal(0),
     coefficient: isConvenio ? params.coefficientMap.get(j.jurisdictionCode) : undefined,
     credits: params.credits.filter(c => c.jurisdictionCode === j.jurisdictionCode).map(c => ({ amount: c.amount })),
+    previousFavorBalance: params.previousFavorBalances?.get(j.jurisdictionCode),
   }));
 
   const view = buildGrossIncomeSettlement({ regime: params.regime, documents: params.documents, jurisdictions });
@@ -50,7 +53,7 @@ export function buildPeriodGrossIncome(params: {
   const sinAlicuota = params.jurisdictions.filter(j => j.taxRate == null).map(j => j.jurisdictionCode);
   const sinCoef = isConvenio ? params.jurisdictions.filter(j => !params.coefficientMap.has(j.jurisdictionCode)).map(j => j.jurisdictionCode) : [];
   const avisos: string[] = [];
-  if (sinAlicuota.length) avisos.push(`Sin alícuota cargada: ${sinAlicuota.join(', ')} (se toman como 0).`);
+  if (sinAlicuota.length) avisos.push(`Sin alícuota cargada: ${sinAlicuota.join(', ')}.`);
   if (sinCoef.length) avisos.push(`Sin coeficiente CM ${params.year}: ${sinCoef.join(', ')}.`);
 
   return { view, notice: avisos.length ? avisos.join(' ') : null };

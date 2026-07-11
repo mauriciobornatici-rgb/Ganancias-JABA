@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 import { prisma } from '@/domain/ganancias/prisma';
-import { logAuditEvent } from '@/domain/ganancias/auditHelper';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import {
   TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS,
@@ -49,6 +49,7 @@ export async function GET(
         personalDeduction: true,
         axiStaticItems: true,
         axiDynamicItems: true,
+        fixedAssetImportCandidates: { where: { status: 'PENDING' }, orderBy: { purchaseDate: 'asc' } },
         calculations: {
           orderBy: { runDate: 'desc' },
           take: 1,
@@ -123,6 +124,8 @@ export async function GET(
         counterpartyCuit: s.counterpartyCuit || snapshotStringAt(extraState.sales, index, 'counterpartyCuit'),
         ivaAmount: s.ivaAmount.toString(),
         totalAmount: s.totalAmount.toString(),
+        importSource: s.importSource || undefined,
+        sourceFiscalDocumentId: s.sourceFiscalDocumentId || undefined,
       })),
       purchases: taxReturn.purchases.map((p, index) => ({
         date: formatDateForWizardInput(p.date),
@@ -136,6 +139,18 @@ export async function GET(
         counterpartyCuit: p.counterpartyCuit || snapshotStringAt(extraState.purchases, index, 'counterpartyCuit'),
         ivaAmount: p.ivaAmount.toString(),
         totalAmount: p.totalAmount.toString(),
+        importSource: p.importSource || undefined,
+        sourceFiscalDocumentId: p.sourceFiscalDocumentId || undefined,
+      })),
+      fixedAssetImportCandidates: taxReturn.fixedAssetImportCandidates.map(candidate => ({
+        id: candidate.id,
+        sourceFiscalDocumentId: candidate.sourceFiscalDocumentId,
+        month: candidate.sourceMonth,
+        description: candidate.description,
+        counterpartyName: candidate.counterpartyName,
+        cost: candidate.originalCost.toString(),
+        date: formatDateForWizardInput(candidate.purchaseDate),
+        status: candidate.status,
       })),
       fixedAssets: taxReturn.fixedAssets.map((a, index) => {
         const extraAssetSnapshot = Array.isArray(extraState.fixedAssets)
@@ -263,6 +278,8 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireRouteAuth(req);
+  if (authError) return authError;
   try {
     const { id } = await params;
 
@@ -276,6 +293,13 @@ export async function PUT(
 
     const body = await req.json();
     const { clientName, status, workflowAction, workflowReason, lastKnownUpdatedAt } = body;
+
+    if (typeof lastKnownUpdatedAt !== 'string' || !Number.isFinite(Date.parse(lastKnownUpdatedAt))) {
+      return NextResponse.json(
+        { success: false, error: 'Falta la versión de la DDJJ cargada. Recargue antes de guardar.', code: 'MISSING_TAX_RETURN_VERSION' },
+        { status: 400 },
+      );
+    }
 
     const existingReturn = await prisma.taxReturn.findUnique({
       where: { id },
@@ -304,23 +328,31 @@ export async function PUT(
     }
 
     if (!workflowDecision.persistDetails) {
-      const reopenedReturn = await prisma.taxReturn.update({
-        where: { id },
-        data: {
-          status: workflowDecision.nextStatus,
-          notes: appendWorkflowNote(existingReturn.notes, 'REAPERTURA', workflowDecision.reason || ''),
-          updatedAt: new Date(),
-        },
-      });
+      const reopenedReturn = await prisma.$transaction(async tx => {
+        const reserved = await tx.taxReturn.updateMany({
+          where: { id, updatedAt: new Date(lastKnownUpdatedAt) },
+          data: { updatedAt: new Date() },
+        });
+        if (reserved.count !== 1) throw new StaleTaxReturnWriteError();
 
-      logAuditEvent({
-        action: workflowDecision.auditAction,
-        entityType: 'TaxReturn',
-        entityId: id,
-        clientCuit: existingReturn.client?.cuit,
-        clientName: clientName || existingReturn.client?.name,
-        fiscalYear: existingReturn.fiscalYear?.year,
-        details: `Reapertura de DDJJ ${id}. Motivo: ${workflowDecision.reason}`,
+        const updated = await tx.taxReturn.update({
+          where: { id },
+          data: {
+            status: workflowDecision.nextStatus,
+            notes: appendWorkflowNote(existingReturn.notes, 'REAPERTURA', workflowDecision.reason || ''),
+            updatedAt: new Date(),
+          },
+        });
+        await tx.auditLog.create({ data: {
+          action: workflowDecision.auditAction,
+          entityType: 'TaxReturn',
+          entityId: id,
+          clientCuit: existingReturn.client?.cuit,
+          clientName: clientName || existingReturn.client?.name,
+          fiscalYear: existingReturn.fiscalYear?.year,
+          details: `Reapertura de DDJJ ${id}. Motivo: ${workflowDecision.reason}`,
+        } });
+        return updated;
       });
 
       return NextResponse.json({
@@ -349,6 +381,12 @@ export async function PUT(
     }
 
     const savedReturn = await prisma.$transaction(async tx => {
+      const reserved = await tx.taxReturn.updateMany({
+        where: { id, updatedAt: new Date(lastKnownUpdatedAt) },
+        data: { updatedAt: new Date() },
+      });
+      if (reserved.count !== 1) throw new StaleTaxReturnWriteError();
+
       await persistTaxReturnDetails({
         db: tx,
         taxReturnId: id,
@@ -358,6 +396,16 @@ export async function PUT(
           status: workflowDecision.nextStatus,
         },
       });
+
+      await tx.auditLog.create({ data: {
+        action: workflowDecision.auditAction,
+        entityType: 'TaxReturn',
+        entityId: id,
+        clientCuit: existingReturn.client?.cuit,
+        clientName: clientName || existingReturn.client?.name,
+        fiscalYear: existingReturn.fiscalYear?.year,
+        details: `Actualización de DDJJ ${id} - Estado: ${workflowDecision.nextStatus}`,
+      } });
 
       return tx.taxReturn.findUnique({
         where: { id },
@@ -369,16 +417,6 @@ export async function PUT(
       });
     }, TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS);
 
-    logAuditEvent({
-      action: workflowDecision.auditAction,
-      entityType: 'TaxReturn',
-      entityId: id,
-      clientCuit: existingReturn.client?.cuit,
-      clientName: clientName || existingReturn.client?.name,
-      fiscalYear: existingReturn.fiscalYear?.year,
-      details: `Actualizacion de DDJJ ${id} - Estado: ${workflowDecision.nextStatus}`,
-    });
-
     return NextResponse.json({
       success: true,
       message: 'Declaracion actualizada con exito en la base de datos.',
@@ -389,6 +427,16 @@ export async function PUT(
       } : undefined,
     });
   } catch (err: unknown) {
+    if (err instanceof StaleTaxReturnWriteError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'La DDJJ fue modificada en otra ventana o equipo. Recargue antes de sobrescribir datos.',
+          code: 'STALE_TAX_RETURN',
+        },
+        { status: 409 },
+      );
+    }
     if (err instanceof TaxReturnInvalidPayloadError) {
       return NextResponse.json(
         { success: false, error: err.message, code: 'INVALID_TAX_RETURN_PAYLOAD', fieldPath: err.fieldPath },
@@ -407,11 +455,12 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authError = await requireRouteAuth(req);
+  if (authError) return authError;
   try {
     const { id } = await params;
     const { searchParams } = new URL(req.url);
     const reason = searchParams.get('reason') || '';
-    const isTechnicalRollback = req.headers.get('x-jaba-rollback') === 'true';
 
     const existingReturn = await prisma.taxReturn.findUnique({
       where: { id },
@@ -431,7 +480,6 @@ export async function DELETE(
     const annulmentDecision = buildTaxReturnAnnulmentDecision({
       currentStatus: existingReturn.status,
       reason,
-      isTechnicalRollback,
     });
 
     if (!annulmentDecision.allowed) {
@@ -441,45 +489,25 @@ export async function DELETE(
       );
     }
 
-    if (annulmentDecision.mode === 'physical-delete') {
-      await prisma.taxReturn.delete({
+    await prisma.$transaction([
+      prisma.taxReturn.update({
         where: { id },
-      });
-
-      logAuditEvent({
+        data: {
+          status: annulmentDecision.nextStatus,
+          notes: appendWorkflowNote(existingReturn.notes, 'ANULACION', annulmentDecision.reason),
+          updatedAt: new Date(),
+        },
+      }),
+      prisma.auditLog.create({ data: {
         action: annulmentDecision.auditAction,
         entityType: 'TaxReturn',
         entityId: id,
         clientCuit: existingReturn.client?.cuit,
         clientName: existingReturn.client?.name,
         fiscalYear: existingReturn.fiscalYear?.year,
-        details: annulmentDecision.reason,
-      });
-
-      return NextResponse.json({
-        success: true,
-        message: 'Rollback tecnico ejecutado: cabecera borrador eliminada fisicamente.',
-      });
-    }
-
-    await prisma.taxReturn.update({
-      where: { id },
-      data: {
-        status: annulmentDecision.nextStatus,
-        notes: appendWorkflowNote(existingReturn.notes, 'ANULACION', annulmentDecision.reason),
-        updatedAt: new Date(),
-      },
-    });
-
-    logAuditEvent({
-      action: annulmentDecision.auditAction,
-      entityType: 'TaxReturn',
-      entityId: id,
-      clientCuit: existingReturn.client?.cuit,
-      clientName: existingReturn.client?.name,
-      fiscalYear: existingReturn.fiscalYear?.year,
-      details: `Anulacion operativa de DDJJ ${id}. Motivo: ${annulmentDecision.reason}`,
-    });
+        details: `Anulación operativa de DDJJ ${id}. Motivo: ${annulmentDecision.reason}`,
+      } }),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -496,6 +524,8 @@ export async function DELETE(
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
+
+class StaleTaxReturnWriteError extends Error {}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;

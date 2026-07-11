@@ -82,11 +82,14 @@ type CellRow = unknown[];
 
 export function parseTaxParameterWorkbook(workbook: xlsx.WorkBook, fiscalYear: number): ParsedTaxParameterWorkbook {
   const warnings: string[] = [];
-  const deductions = parseDeductions(workbook);
+  const deductionResult = parseDeductions(workbook);
+  const deductions = deductionResult.deductions;
   const brackets = parseArt94Brackets(workbook);
   const { ipc, previousYearDecemberIndex, usefulCoefficients, warnings: ipcWarnings } = parseIpcIndexes(workbook, fiscalYear);
 
-  warnings.push(...ipcWarnings);
+  warnings.push(...deductionResult.warnings, ...ipcWarnings);
+  if (brackets.length === 0) warnings.push('No se encontró una escala del Art. 94 utilizable.');
+  if (ipc.length === 0) warnings.push(`No se encontraron índices IPC para ${fiscalYear}.`);
 
   return {
     deductions,
@@ -98,12 +101,15 @@ export function parseTaxParameterWorkbook(workbook: xlsx.WorkBook, fiscalYear: n
   };
 }
 
-function parseDeductions(workbook: xlsx.WorkBook): ParsedDeductions {
+function parseDeductions(workbook: xlsx.WorkBook): { deductions: ParsedDeductions; warnings: string[] } {
   const sheetName = findSheetName(workbook, ['deduc']) ?? workbook.SheetNames[0];
-  if (!sheetName) return DEFAULT_DEDUCTIONS;
+  if (!sheetName) {
+    return { deductions: DEFAULT_DEDUCTIONS, warnings: ['No se encontró la hoja de deducciones; se cargaron valores de referencia y el conjunto debe revisarse.'] };
+  }
 
   const rows = xlsx.utils.sheet_to_json<SheetRow>(workbook.Sheets[sheetName], { defval: null });
   const rawValues = new Map<string, number>();
+  const warnings: string[] = [];
 
   for (const row of rows) {
     const keys = Object.keys(row);
@@ -116,25 +122,36 @@ function parseDeductions(workbook: xlsx.WorkBook): ParsedDeductions {
     }
   }
 
-  const minimoNoImponible = pickValue(rawValues, ['minimonoimponible', 'minimo no imponible', 'mni'], DEFAULT_DEDUCTIONS.minimoNoImponible);
+  const read = (label: string, aliases: string[], fallback: number): number => {
+    const value = pickValueOrNull(rawValues, aliases);
+    if (value !== null) return value;
+    warnings.push(`Falta ${label}; se usó un valor de referencia que requiere validación.`);
+    return fallback;
+  };
+
+  const minimoNoImponible = read('mínimo no imponible', ['minimonoimponible', 'minimo no imponible', 'mni'], DEFAULT_DEDUCTIONS.minimoNoImponible);
   const topeGastosEducativos = pickValueOrNull(rawValues, ['topegastoseducativos', 'gastos educativos'])
     ?? roundCurrency(minimoNoImponible * 0.4);
 
-  return {
+  if (pickValueOrNull(rawValues, ['topegastoseducativos', 'gastos educativos']) === null) {
+    warnings.push('Falta el tope de gastos educativos; se calculó como 40% del mínimo no imponible y requiere validación.');
+  }
+
+  return { deductions: {
     minimoNoImponible,
-    conyuge: pickValue(rawValues, ['conyuge'], DEFAULT_DEDUCTIONS.conyuge),
-    hijo: pickValue(rawValues, ['hijo'], DEFAULT_DEDUCTIONS.hijo),
-    hijoIncapacitado: pickValue(rawValues, ['hijoincapacitado', 'hijo incapacitado'], DEFAULT_DEDUCTIONS.hijoIncapacitado),
-    especialAutonomo: pickValue(rawValues, ['especialautonomo', 'especial autonomo'], DEFAULT_DEDUCTIONS.especialAutonomo),
-    especialEmprendedor: pickValue(rawValues, ['especialemprendedor', 'especial emprendedor'], DEFAULT_DEDUCTIONS.especialEmprendedor),
-    especialDependiente: pickValue(rawValues, ['especialdependiente', 'especial dependiente'], DEFAULT_DEDUCTIONS.especialDependiente),
-    topeServicioDomestico: pickValue(rawValues, ['topeserviciodomestico', 'servicio domestico'], DEFAULT_DEDUCTIONS.topeServicioDomestico),
-    topeSeguroVida: pickValue(rawValues, ['topesegurovida', 'seguro de vida'], DEFAULT_DEDUCTIONS.topeSeguroVida),
-    topeSeguroRetiro: pickValue(rawValues, ['topeseguroretiro', 'seguro de retiro'], DEFAULT_DEDUCTIONS.topeSeguroRetiro),
-    topeGastosSepelio: pickValue(rawValues, ['topegastossepelio', 'gastos de sepelio'], DEFAULT_DEDUCTIONS.topeGastosSepelio),
-    topeInteresHipoteca: pickValue(rawValues, ['topeintereshipoteca', 'intereses hipoteca'], DEFAULT_DEDUCTIONS.topeInteresHipoteca),
+    conyuge: read('deducción por cónyuge', ['conyuge'], DEFAULT_DEDUCTIONS.conyuge),
+    hijo: read('deducción por hijo', ['hijo'], DEFAULT_DEDUCTIONS.hijo),
+    hijoIncapacitado: read('deducción por hijo incapacitado', ['hijoincapacitado', 'hijo incapacitado'], DEFAULT_DEDUCTIONS.hijoIncapacitado),
+    especialAutonomo: read('deducción especial autónomo', ['especialautonomo', 'especial autonomo'], DEFAULT_DEDUCTIONS.especialAutonomo),
+    especialEmprendedor: read('deducción especial emprendedor', ['especialemprendedor', 'especial emprendedor'], DEFAULT_DEDUCTIONS.especialEmprendedor),
+    especialDependiente: read('deducción especial dependiente', ['especialdependiente', 'especial dependiente'], DEFAULT_DEDUCTIONS.especialDependiente),
+    topeServicioDomestico: read('tope de servicio doméstico', ['topeserviciodomestico', 'servicio domestico'], DEFAULT_DEDUCTIONS.topeServicioDomestico),
+    topeSeguroVida: read('tope de seguro de vida', ['topesegurovida', 'seguro de vida'], DEFAULT_DEDUCTIONS.topeSeguroVida),
+    topeSeguroRetiro: read('tope de seguro de retiro', ['topeseguroretiro', 'seguro de retiro'], DEFAULT_DEDUCTIONS.topeSeguroRetiro),
+    topeGastosSepelio: read('tope de gastos de sepelio', ['topegastossepelio', 'gastos de sepelio'], DEFAULT_DEDUCTIONS.topeGastosSepelio),
+    topeInteresHipoteca: read('tope de intereses hipotecarios', ['topeintereshipoteca', 'intereses hipoteca'], DEFAULT_DEDUCTIONS.topeInteresHipoteca),
     topeGastosEducativos,
-  };
+  }, warnings };
 }
 
 function parseArt94Brackets(workbook: xlsx.WorkBook): ParsedArt94Bracket[] {
@@ -300,10 +317,6 @@ function findSheetName(workbook: xlsx.WorkBook, candidates: string[]): string | 
     const normalizedSheet = normalizeLabel(sheetName);
     return normalizedCandidates.some((candidate) => normalizedSheet.includes(candidate));
   }) ?? null;
-}
-
-function pickValue(values: Map<string, number>, labels: string[], fallback: number): number {
-  return pickValueOrNull(values, labels) ?? fallback;
 }
 
 function pickValueOrNull(values: Map<string, number>, labels: string[]): number | null {

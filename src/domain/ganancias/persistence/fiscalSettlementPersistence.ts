@@ -205,6 +205,7 @@ export async function persistGrossIncomeSettlement(
     totalDeterminedTax: s.totalDeterminedTax.toFixed(2),
     totalCredits: s.totalCreditsApplied.toFixed(2),
     totalBalance: s.totalBalanceDue.toFixed(2),
+    totalFavorCarryForward: s.totalFavorCarryForward.toFixed(2),
     officialAmount: toStr(input.official?.amount),
     officialReference: input.official?.reference ?? null,
     filedAt: status === 'CLOSED' ? new Date() : null,
@@ -218,6 +219,7 @@ export async function persistGrossIncomeSettlement(
         determinedTax: l.determinedTax.toFixed(2),
         creditsApplied: l.creditsApplied.toFixed(2),
         balance: l.balanceDue.toFixed(2),
+        favorCarryForward: l.favorCarryForward.toFixed(2),
       })),
     },
   });

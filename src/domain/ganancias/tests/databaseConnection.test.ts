@@ -28,7 +28,10 @@ describe('buildMariaDbConnectionConfig', () => {
     // Guarda del incidente 2026-07-11: max_connect_errors=5 en Hostinger bloquea la IP de Vercel
     // si el pool reusa conexiones que el servidor ya mato (wait_timeout=20).
     expect(config.idleTimeout).toBeLessThan(20);
-    expect(config.minimumIdle).toBe(0);
+    // Debe ser MENOR que connectionLimit (si son iguales el pool nunca libera ociosas)
+    // y MAYOR que 0 (con 0 el adapter de Prisma se queda sin conexiones: "pool is closed").
+    expect(config.minimumIdle).toBeGreaterThan(0);
+    expect(config.minimumIdle).toBeLessThan(config.connectionLimit);
     expect(config.connectionLimit).toBeLessThanOrEqual(5);
   });
 

@@ -21,7 +21,9 @@ export type MariaDbConnectionConfig = {
 const POOL_TUNING = {
   connectionLimit: 5,
   idleTimeout: 15,
-  minimumIdle: 0,
+  // 1 y no 0: con 0 el adapter de Prisma queda sin conexiones ("pool is closed");
+  // con el default (= connectionLimit) el pool nunca libera ociosas y el fix seria inerte.
+  minimumIdle: 1,
 } as const;
 
 function requireDatabaseUrl(databaseUrl: string | undefined): string {

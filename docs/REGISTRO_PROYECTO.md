@@ -1,8 +1,16 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-24
+Ultima actualizacion: 2026-07-10
 
 ## Entrada reciente
+
+### 2026-07-10 - MIGRACIONES PRODUCTIVAS del hardening aplicadas (fix del papel de trabajo/informe caidos)
+
+- Sintoma en produccion: papel de trabajo e informe cliente bloqueados con "The table FixedAssetImportCandidate does not exist" (las pantallas de error nuevas funcionaron: no se emitio ningun documento con ceros).
+- Causa: el merge del PR #4 (commit de produccion cba9fde) desplego el codigo del hardening pero las 3 migraciones nuevas nunca se corrieron contra la base (el deploy de Vercel no migra por diseno).
+- Bloqueo intermedio: el `.env` local tenia la password de DB anterior a la rotacion post-incidente; la vigente esta solo en Vercel (Sensitive) y Hostinger. El usuario actualizo `.env` a mano.
+- Aplicado con `prisma migrate deploy` (solo aditivas, sin tocar datos): `20260710190000_add_iibb_carry_forward`, `20260710193000_version_iibb_coefficients`, `20260710194500_add_fixed_asset_import_candidates`. `migrate status` verifica "Database schema is up to date".
+- Leccion operativa: el checklist pre-merge debe incluir `migrate deploy` SIEMPRE que el PR agregue carpetas en `prisma/migrations` (quedo omitido en el pase del PR #4).
 
 ### 2026-06-22 - VALIDACION CONTRA AFIP REAL: motor IVA clava la liquidacion al peso
 

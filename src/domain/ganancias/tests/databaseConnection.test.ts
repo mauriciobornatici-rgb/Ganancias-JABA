@@ -20,6 +20,18 @@ describe('buildMariaDbConnectionConfig', () => {
     });
   });
 
+  it('cierra conexiones ociosas antes del wait_timeout=20s de Hostinger para no bloquear la IP', () => {
+    const config = buildMariaDbConnectionConfig(
+      'mysql://user:pass@sql123.hostinger.com:3306/db'
+    );
+
+    // Guarda del incidente 2026-07-11: max_connect_errors=5 en Hostinger bloquea la IP de Vercel
+    // si el pool reusa conexiones que el servidor ya mato (wait_timeout=20).
+    expect(config.idleTimeout).toBeLessThan(20);
+    expect(config.minimumIdle).toBe(0);
+    expect(config.connectionLimit).toBeLessThanOrEqual(5);
+  });
+
   it('usa puerto 3306 por defecto cuando la URL no lo informa', () => {
     const config = buildMariaDbConnectionConfig(
       'mariadb://u669600172_jaba_app:secret@sql123.hostinger.com/u669600172_ganancias_jaba'

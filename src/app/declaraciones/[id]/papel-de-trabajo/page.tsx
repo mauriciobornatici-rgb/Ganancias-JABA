@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Printer,
   Sparkles,
-  CheckCircle,
   TrendingUp,
   DollarSign,
   FileText,
@@ -34,6 +33,12 @@ import {
 import { buildTaxParameterSourceNotice } from '@/domain/ganancias/presentation/taxParameterNotice';
 import { buildTaxParameterRequestUrl } from '@/domain/ganancias/presentation/taxParameterRequest';
 import { downloadTaxReturnExcel } from '@/domain/ganancias/exports/excelGenerator';
+import {
+  TaxReturnStatusBadge,
+  FiscalDocumentWatermark,
+  FiscalDocumentFooter,
+  type FiscalDocumentParameterSet,
+} from '../fiscalDocumentChrome';
 
 type MoneyValue = Decimal.Value | Decimal | null | undefined;
 type ExportMoneyValue = string | number | Decimal | undefined;
@@ -96,6 +101,7 @@ type PaperBracket = {
 
 type PaperTaxParams = Record<string, unknown> & {
   brackets?: PaperBracket[];
+  parameterSet?: FiscalDocumentParameterSet | null;
 };
 
 type PaperDeclarationData = Record<string, unknown> & {
@@ -103,6 +109,7 @@ type PaperDeclarationData = Record<string, unknown> & {
   cuit?: string;
   fiscalYear?: number;
   mainActivity?: string;
+  status?: string;
   version?: number;
   updatedAt?: string;
   taxParameterSetId?: string | null;
@@ -352,12 +359,11 @@ export default function PapelDeTrabajoPage() {
       {/* DOCUMENTO PRINCIPAL (PAPEL DE TRABAJO IMPOSITIVO) */}
       <article className="max-w-5xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
 
-        {/* Marca de agua / Badge Cerrada */}
+        <FiscalDocumentWatermark status={data?.status} />
+
+        {/* Sello con el estado real de la DDJJ */}
         <div className="absolute top-6 right-6 flex items-center gap-2 print:top-0 print:right-0">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-widest print:border-black print:text-black">
-            <CheckCircle className="h-3.5 w-3.5" />
-            Cerrada e Inmutable
-          </span>
+          <TaxReturnStatusBadge status={data?.status} />
         </div>
 
         {/* ENCABEZADO CORPORATIVO */}
@@ -376,10 +382,16 @@ export default function PapelDeTrabajoPage() {
             <div>
               <h1 className="text-2xl font-black tracking-tight text-white print:text-black">Papel de Trabajo Determinativo</h1>
               <p className="text-zinc-400 text-xs mt-1 print:text-black">Impuesto a las Ganancias de Personas Humanas y Sucesiones Indivisas.</p>
-              <div className="flex gap-4 mt-3 text-xs text-zinc-500 font-mono print:text-black">
-                <span>Versión: DDJJ Original (v{version})</span>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-zinc-500 font-mono print:text-black">
+                <span>DDJJ v{version}{data?.status ? ` — ${data.status}` : ''}</span>
                 <span>•</span>
-                <span>Cierre: {updatedAt ? new Date(updatedAt).toLocaleDateString('es-AR') : ''}</span>
+                <span>Última modificación: {updatedAt ? new Date(updatedAt).toLocaleDateString('es-AR') : '—'}</span>
+                {taxParams?.parameterSet?.sourceLaw && (
+                  <>
+                    <span>•</span>
+                    <span>Normativa: {taxParams.parameterSet.sourceLaw}</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1209,23 +1221,12 @@ export default function PapelDeTrabajoPage() {
           </div>
         )}
 
-        {/* SECCIÓN DE FIRMAS Y VALIDEZ (PRINT ONLY) */}
-        <section className="hidden print:grid grid-cols-2 gap-12 mt-20 pt-12 border-t border-black text-center text-xs text-black">
-          <div>
-            <div className="h-[60px]"></div>
-            <div className="border-t border-dashed border-black pt-2 mx-12">
-              <span className="font-bold block">{clientName}</span>
-              <span className="text-[10px] text-zinc-650 block">Firma del Contribuyente</span>
-            </div>
-          </div>
-          <div>
-            <div className="h-[60px]"></div>
-            <div className="border-t border-dashed border-black pt-2 mx-12">
-              <span className="font-bold block">JABA Contabilidad</span>
-              <span className="text-[10px] text-zinc-650 block">Firma y Sello del Profesional</span>
-            </div>
-          </div>
-        </section>
+        <FiscalDocumentFooter
+          documentLabel="Papel de Trabajo Determinativo — Impuesto a las Ganancias"
+          disclaimer="Documento de trabajo profesional de uso interno del estudio. Respalda la determinación practicada y no reemplaza a la declaración jurada presentada ante ARCA ni a sus formularios oficiales."
+          taxReturnVersion={version}
+          parameterSet={taxParams?.parameterSet}
+        />
 
       </article>
 

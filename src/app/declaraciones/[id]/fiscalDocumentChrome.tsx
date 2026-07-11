@@ -72,7 +72,7 @@ export function FiscalDocumentWatermark({ status }: { status?: string }) {
   if (!text) return null;
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center overflow-hidden select-none">
-      <span className="rotate-[-30deg] text-[7rem] md:text-[9rem] font-black tracking-[0.35em] text-zinc-100/[0.04] print:text-black/10 whitespace-nowrap">
+      <span className="print-watermark rotate-[-30deg] text-[7rem] md:text-[9rem] font-black tracking-[0.35em] text-zinc-100/[0.04] print:text-black/10 whitespace-nowrap">
         {text}
       </span>
     </div>
@@ -104,7 +104,7 @@ export function FiscalDocumentFooter({
     : 'Sin versión normativa informada';
 
   return (
-    <footer className="relative z-10 mt-12 pt-6 border-t border-zinc-800 print:border-black space-y-6">
+    <footer className="print-keep relative z-10 mt-12 pt-6 border-t border-zinc-800 print:border-black print:mt-6 print:pt-4 space-y-6 print:space-y-3">
       {/* Trazabilidad del documento */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-[10px] font-mono text-zinc-500 print:text-black print:grid-cols-3">
         <div>
@@ -128,7 +128,7 @@ export function FiscalDocumentFooter({
       </p>
 
       {/* Bloque de firmas (pensado para la copia impresa) */}
-      <div className={`grid grid-cols-1 ${showRecipientSignature ? 'md:grid-cols-2 print:grid-cols-2' : 'md:grid-cols-2 print:grid-cols-2'} gap-12 pt-10`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-12 pt-10 print:pt-8">
         <div className="text-center">
           <div className="border-t border-zinc-600 print:border-black pt-2 mx-6">
             <span className="block text-[10px] uppercase tracking-wider font-bold text-zinc-500 print:text-black">Firma y sello del profesional interviniente</span>

@@ -48,3 +48,72 @@ body {
 .skip-link:focus {
   transform: translateY(0);
 }
+
+/*
+ * Impresión A4 de documentos fiscales (papel de trabajo e informe cliente).
+ * Objetivo: hoja A4 con márgenes de documento profesional, texto negro pleno,
+ * y bloques que nunca quedan cortados entre páginas.
+ */
+@media print {
+  @page {
+    size: A4;
+    margin: 13mm 12mm;
+  }
+
+  .print-fiscal-doc {
+    font-size: 11px;
+    line-height: 1.4;
+    max-width: 100% !important;
+  }
+
+  /* Texto negro y fondos limpios en papel, sin depender de overrides puntuales. */
+  .print-fiscal-doc,
+  .print-fiscal-doc * {
+    color: #000 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* La marca de agua es la única excepción: debe seguir siendo tenue. */
+  .print-fiscal-doc .print-watermark {
+    color: rgba(0, 0, 0, 0.07) !important;
+  }
+
+  /* Gráficos: en papel se imprimen en escala de grises diferenciables. */
+  .print-fiscal-doc .print-seg-1 {
+    background: #3f3f46 !important;
+  }
+  .print-fiscal-doc .print-seg-2 {
+    background: #a1a1aa !important;
+  }
+  .print-fiscal-doc .print-seg-3 {
+    background: #e4e4e7 !important;
+  }
+  .print-fiscal-doc .print-donut-track {
+    color: #e4e4e7 !important;
+  }
+
+  .print-fiscal-doc table {
+    font-size: 10px;
+  }
+
+  /* Ninguna fila, tarjeta o firma puede quedar partida entre dos páginas. */
+  .print-fiscal-doc tr,
+  .print-fiscal-doc .print-keep {
+    break-inside: avoid;
+  }
+
+  /* Los encabezados de tabla se repiten si la tabla continúa en la página siguiente. */
+  .print-fiscal-doc thead {
+    display: table-header-group;
+  }
+
+  /* Un título nunca queda huérfano al pie de página, separado de su contenido. */
+  .print-fiscal-doc h1,
+  .print-fiscal-doc h2,
+  .print-fiscal-doc h3,
+  .print-fiscal-doc h4 {
+    break-after: avoid;
+  }
+}

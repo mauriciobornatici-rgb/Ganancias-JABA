@@ -357,7 +357,7 @@ export default function PapelDeTrabajoPage() {
       </div>
 
       {/* DOCUMENTO PRINCIPAL (PAPEL DE TRABAJO IMPOSITIVO) */}
-      <article className="max-w-5xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
+      <article className="print-fiscal-doc max-w-5xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
 
         <FiscalDocumentWatermark status={data?.status} />
 
@@ -423,7 +423,7 @@ export default function PapelDeTrabajoPage() {
         )}
 
         {/* FICHA CONTRIBUYENTE */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black print:p-3 print:mb-4">
           <div className="flex items-center gap-3">
             <User className="h-5 w-5 text-teal-400 print:text-black stroke-[2.5]" />
             <div>
@@ -474,10 +474,10 @@ export default function PapelDeTrabajoPage() {
         </div>
 
         {activeTab === 'resumen' ? (
-          <div className="space-y-8">
+          <div className="space-y-8 print:space-y-4">
 
             {/* APARTADO I: CATEGORÍA DE GANANCIAS */}
-            <section className="space-y-3">
+            <section className="print-keep space-y-3">
               <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
                 <span>Apartado I: Rentas de la Tercera Categoría (Comerciales)</span>
                 <span className="text-[10px] font-mono text-zinc-400">Determinación Cedular</span>
@@ -525,7 +525,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* APARTADO II: DEDUCCIONES ADMITIDAS */}
-            <section className="space-y-3">
+            <section className="print-keep space-y-3">
               <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
                 <span>Apartado II: Deducciones Personales y Mínimos (Art. 30)</span>
                 <span className="text-[10px] font-mono text-zinc-400">Topes Aplicados 2024/2025</span>
@@ -564,7 +564,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* APARTADO III: ESCALA ARTÍCULO 94 */}
-            <section className="space-y-3">
+            <section className="print-keep space-y-3">
               <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
                 <span>Apartado III: Determinación de la Base Imponible y Alícuota</span>
                 <span className="text-[10px] font-mono text-zinc-400">Escala de Tramos Art. 94</span>
@@ -600,7 +600,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* APARTADO IV: PAGOS A CUENTA Y SALDO FINAL */}
-            <section className="space-y-3">
+            <section className="print-keep space-y-3">
               <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
                 <span>Apartado IV: Retenciones, Percepciones y Saldo de Impuesto</span>
                 <span className="text-[10px] font-mono text-zinc-400">Mis Retenciones AFIP</span>
@@ -629,7 +629,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* APARTADO V: PROYECCIÓN DE ANTICIPOS */}
-            <section className="space-y-3 print:break-before-page">
+            <section className="print-keep space-y-3">
               <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
                 <span>Apartado V: Proyección de Anticipos Impositivos (Siguiente Período)</span>
                 <span className="text-[10px] font-mono text-zinc-400">Cinco Cuotas 20%</span>
@@ -639,7 +639,7 @@ export default function PapelDeTrabajoPage() {
                 Los anticipos se liquidan y vencen de forma mensual e indexada para mitigar el devengamiento de intereses resarcitorios:
               </p>
 
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2 text-center">
+              <div className="print-keep grid grid-cols-2 md:grid-cols-5 gap-4 pt-2 text-center print:grid-cols-5">
                 {anticipos.map((anticipo, idx) => (
                   <div key={idx} className="p-3.5 rounded-lg bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black">
                     <span className="text-[10px] text-zinc-500 font-bold block mb-1">ANTICIPO {idx + 1}</span>
@@ -651,10 +651,10 @@ export default function PapelDeTrabajoPage() {
             </section>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-8 print:space-y-4">
 
             {/* 1. SOPORTE DE COSTO DE VENTAS */}
-            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4">
+            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4 print:p-3 print:space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">1. Soporte de Costo de Ventas (CMV)</h3>
@@ -681,7 +681,7 @@ export default function PapelDeTrabajoPage() {
                     <span>{formatMoney(costoVentas)}</span>
                   </div>
                 </div>
-                <div className="p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center">
+                <div className="print-keep p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center print:p-2">
                   <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider mb-2">Trazabilidad Matemática:</span>
                   <div className="font-mono text-xs text-zinc-300 space-y-1 bg-zinc-950/40 p-3 rounded border border-zinc-900">
                     <p className="pl-4">  {Number(data?.initialStock || 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })} <span className="text-zinc-650">[Stock Inicial]</span></p>
@@ -695,7 +695,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* 2. SOPORTE DE AMORTIZACIÓN Y BAJAS */}
-            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-6">
+            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-6 print:p-3 print:space-y-4">
               <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">2. Soporte de Amortización y Bajas de Bienes de Uso</h3>
@@ -744,7 +744,7 @@ export default function PapelDeTrabajoPage() {
                   </table>
                 </div>
 
-                <div className="p-3 rounded-lg bg-[#121216]/50 border border-zinc-850 font-mono text-xs text-zinc-400 flex justify-between items-center">
+                <div className="print-keep p-3 rounded-lg bg-[#121216]/50 border border-zinc-850 font-mono text-xs text-zinc-400 flex justify-between items-center print:p-2">
                   <span>Total Amortización del Ejercicio (Detalle):</span>
                   <span className="text-white font-extrabold text-xs">{formatMoney(amortizaciones)}</span>
                 </div>
@@ -785,7 +785,7 @@ export default function PapelDeTrabajoPage() {
                     </table>
                   </div>
 
-                  <div className="p-3 rounded-lg bg-[#121216]/50 border border-zinc-850 font-mono text-xs text-zinc-400 flex justify-between items-center">
+                  <div className="print-keep p-3 rounded-lg bg-[#121216]/50 border border-zinc-850 font-mono text-xs text-zinc-400 flex justify-between items-center print:p-2">
                     <span>Total Pérdida Computable por Bajas de Bienes de Uso (Apartado I):</span>
                     <span className="text-white font-extrabold text-xs">{formatMoney(calculationResult?.bajaBienesDeUsoLoss)}</span>
                   </div>
@@ -794,7 +794,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* 3. SOPORTE DE AJUSTE POR INFLACIÓN (AXI) */}
-            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-6">
+            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-6 print:p-3 print:space-y-4">
               <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">3. Soporte de Ajuste por Inflación (AXI Estático y Dinámico)</h3>
@@ -838,7 +838,7 @@ export default function PapelDeTrabajoPage() {
                       <span>{formatMoney(calculationResult?.axiStaticResult)}</span>
                     </div>
                   </div>
-                  <div className="p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center">
+                  <div className="print-keep p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center print:p-2">
                     <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider mb-2">Trazabilidad AXI Estático:</span>
                     <div className="font-mono text-[11px] text-zinc-300 space-y-1 bg-zinc-950/40 p-3.5 rounded border border-zinc-900">
                       <p className="pl-4">  {formatMoney(Number(data?.activoTotalInicio || 0) - Number(data?.bienesNoComputablesInicio || 0))} <span className="text-zinc-650">[Activo Computable]</span></p>
@@ -895,7 +895,7 @@ export default function PapelDeTrabajoPage() {
                   </table>
                 </div>
 
-                <div className="p-3 rounded-lg bg-[#121216]/50 border border-zinc-850 font-mono text-xs text-zinc-400 flex justify-between items-center">
+                <div className="print-keep p-3 rounded-lg bg-[#121216]/50 border border-zinc-850 font-mono text-xs text-zinc-400 flex justify-between items-center print:p-2">
                   <span>Total Ajuste Dinámico (Detalle):</span>
                   <span className={`font-extrabold text-xs ${calculationResult && calculationResult.axiDynamicResult.isNegative() ? 'text-red-400' : 'text-emerald-455'}`}>
                     {formatMoney(calculationResult?.axiDynamicResult)}
@@ -933,7 +933,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* 4. SOPORTE DE PATRIMONIO NETO */}
-            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4">
+            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4 print:p-3 print:space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">4. Soporte de Patrimonio Neto Comercial y Personal</h3>
@@ -943,7 +943,7 @@ export default function PapelDeTrabajoPage() {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs font-mono text-zinc-400">
                 {/* PATRIMONIO INICIO */}
-                <div className="space-y-3 p-4 rounded-lg bg-[#121216] border border-zinc-850">
+                <div className="print-keep space-y-3 p-4 rounded-lg bg-[#121216] border border-zinc-850 print:p-2">
                   <h4 className="text-[10px] uppercase font-bold text-zinc-450 tracking-wider border-b border-zinc-800 pb-2">Patrimonio Neto al INICIO</h4>
                   <div className="space-y-1 pl-2 border-l border-zinc-800">
                     <span className="text-[9px] uppercase text-zinc-550 font-bold block">Rubros Comerciales (Inicio)</span>
@@ -998,7 +998,7 @@ export default function PapelDeTrabajoPage() {
                 </div>
 
                 {/* PATRIMONIO CIERRE */}
-                <div className="space-y-3 p-4 rounded-lg bg-[#121216] border border-zinc-850">
+                <div className="print-keep space-y-3 p-4 rounded-lg bg-[#121216] border border-zinc-850 print:p-2">
                   <h4 className="text-[10px] uppercase font-bold text-zinc-450 tracking-wider border-b border-zinc-800 pb-2">Patrimonio Neto al CIERRE</h4>
                   <div className="space-y-1 pl-2 border-l border-zinc-800">
                     <span className="text-[9px] uppercase text-zinc-550 font-bold block">Rubros Comerciales (Cierre)</span>
@@ -1055,7 +1055,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* 5. SOPORTE DE JVP Y CONSUMO */}
-            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4">
+            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4 print:p-3 print:space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">5. Soporte de Justificación de Variaciones Patrimoniales (JVP)</h3>
@@ -1065,7 +1065,7 @@ export default function PapelDeTrabajoPage() {
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs font-mono text-zinc-400">
                 {/* COL II */}
-                <div className="space-y-2 p-4 rounded-lg bg-[#121216] border border-zinc-850">
+                <div className="print-keep space-y-2 p-4 rounded-lg bg-[#121216] border border-zinc-850 print:p-2">
                   <h4 className="text-[10px] uppercase font-bold text-zinc-450 tracking-wider border-b border-zinc-800 pb-2">Columna II (Recursos / Justificaciones)</h4>
                   <div className="flex justify-between">
                     <span>Patrimonio Neto al Inicio</span>
@@ -1102,7 +1102,7 @@ export default function PapelDeTrabajoPage() {
                 </div>
 
                 {/* COL I */}
-                <div className="space-y-2 p-4 rounded-lg bg-[#121216] border border-zinc-850">
+                <div className="print-keep space-y-2 p-4 rounded-lg bg-[#121216] border border-zinc-850 print:p-2">
                   <h4 className="text-[10px] uppercase font-bold text-zinc-450 tracking-wider border-b border-zinc-800 pb-2">Columna I (Erogaciones / Aplicaciones)</h4>
                   <div className="flex justify-between">
                     <span>Patrimonio Neto al Cierre</span>
@@ -1142,7 +1142,7 @@ export default function PapelDeTrabajoPage() {
                   </div>
                 </div>
               </div>
-              <div className="p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center">
+              <div className="print-keep p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center print:p-2">
                 <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider mb-2">Fórmula de Cuadre del Consumo:</span>
                 <div className="font-mono text-xs text-zinc-300 space-y-1 bg-zinc-950/40 p-3 rounded border border-zinc-900">
                   <p className="pl-4">  {formatMoney(calculationResult?.jvpTotalColumnaII)} <span className="text-zinc-650">[Total Recursos Col II]</span></p>
@@ -1154,7 +1154,7 @@ export default function PapelDeTrabajoPage() {
             </section>
 
             {/* 6. SOPORTE DE ESCALA DEL IMPUESTO */}
-            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4">
+            <section className="p-6 rounded-xl bg-[#09090b] border border-zinc-805 space-y-4 print:p-3 print:space-y-3">
               <div className="flex items-center justify-between border-b border-zinc-850 pb-3">
                 <div>
                   <h3 className="text-sm font-bold text-white uppercase tracking-wider">6. Soporte de Cálculo del Impuesto (Escala Art. 94)</h3>
@@ -1199,7 +1199,7 @@ export default function PapelDeTrabajoPage() {
                     <span>{formatMoney(impuestoDeterminado)}</span>
                   </div>
                 </div>
-                <div className="p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center">
+                <div className="print-keep p-4 rounded-lg bg-[#121216] border border-zinc-850 flex flex-col justify-center print:p-2">
                   <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider mb-2">Trazabilidad Escala:</span>
                   <div className="font-mono text-xs text-zinc-300 space-y-1 bg-zinc-950/40 p-3 rounded border border-zinc-900">
                     {appliedBracket ? (

@@ -208,7 +208,7 @@ export default function InformeClientePage() {
       </div>
 
       {/* REPORTE PRINCIPAL */}
-      <article className="max-w-4xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
+      <article className="print-fiscal-doc max-w-4xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
 
         <FiscalDocumentWatermark status={data?.status} />
 
@@ -242,7 +242,7 @@ export default function InformeClientePage() {
         </header>
 
         {/* FICHA DEL CONTRIBUYENTE */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black print:p-4">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black print:p-3 print:mb-4">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <User className="h-4 w-4 text-teal-400 print:text-black stroke-[2.5]" />
@@ -282,7 +282,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* MÉTRICAS FINANCIERAS CLAVE (TARJETAS GRANDES) */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:grid-cols-3 print:gap-4 print:mb-8">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:grid-cols-3 print:gap-3 print:mb-4">
           
           <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col justify-between print:border-black print:bg-white print:p-4">
             <div>
@@ -317,7 +317,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* COMPOSICIÓN GRÁFICA VISUAL (COMPORTAMIENTO FINANCIERO) */}
-        <section className="mb-10 p-6 rounded-xl bg-zinc-900/30 border border-zinc-850/50 print:border-black print:bg-white print:p-4">
+        <section className="print-keep mb-10 p-6 rounded-xl bg-zinc-900/30 border border-zinc-850/50 print:border-black print:bg-white print:p-3 print:mb-4">
           <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest mb-4 print:text-black">Análisis de Estructura de Ingresos y Egresos</h3>
           
           {/* Stacked progress bar */}
@@ -325,22 +325,22 @@ export default function InformeClientePage() {
             {(() => { const safeTotal = totalIngresos.isZero() ? new Decimal(1) : totalIngresos; return (
             <>
             <div className="h-6 w-full rounded-lg bg-zinc-800 overflow-hidden flex print:border print:border-black">
-              <div className="h-full bg-teal-500" style={{ width: `${Math.max(5, (utilidadComercial.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Utilidad"></div>
-              <div className="h-full bg-red-400" style={{ width: `${Math.max(5, (costoVentas.plus(gastosComerciales).toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Gastos Operativos"></div>
-              <div className="h-full bg-indigo-500" style={{ width: `${Math.max(5, (amortizaciones.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Amortización de Capital"></div>
+              <div className="print-seg-1 h-full bg-teal-500" style={{ width: `${Math.max(5, (utilidadComercial.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Utilidad"></div>
+              <div className="print-seg-2 h-full bg-red-400" style={{ width: `${Math.max(5, (costoVentas.plus(gastosComerciales).toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Gastos Operativos"></div>
+              <div className="print-seg-3 h-full bg-indigo-500" style={{ width: `${Math.max(5, (amortizaciones.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Amortización de Capital"></div>
             </div>
 
             <div className="grid grid-cols-3 gap-4 text-xs font-semibold">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-teal-500 print:border print:border-black"></div>
+                <div className="print-seg-1 h-3 w-3 rounded bg-teal-500 print:border print:border-black"></div>
                 <span className="text-zinc-400 print:text-black">Utilidad: {(utilidadComercial.toNumber() / safeTotal.toNumber() * 100).toFixed(0)}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-red-400 print:border print:border-black"></div>
+                <div className="print-seg-2 h-3 w-3 rounded bg-red-400 print:border print:border-black"></div>
                 <span className="text-zinc-400 print:text-black">Gastos: {((costoVentas.plus(gastosComerciales).toNumber()) / safeTotal.toNumber() * 100).toFixed(0)}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-indigo-500 print:border print:border-black"></div>
+                <div className="print-seg-3 h-3 w-3 rounded bg-indigo-500 print:border print:border-black"></div>
                 <span className="text-zinc-400 print:text-black">Amortización: {(amortizaciones.toNumber() / safeTotal.toNumber() * 100).toFixed(0)}%</span>
               </div>
             </div>
@@ -350,7 +350,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* DETALLE TRIBUTARIO PARA EL CLIENTE */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 print:grid-cols-2 print:gap-6 print:mb-8">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 print:grid-cols-2 print:gap-5 print:mb-4">
           
           <div className="space-y-4">
             <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 print:text-black print:border-black">Deducciones Personales Computadas</h3>
@@ -409,7 +409,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* ALÍCUOTA EFECTIVA GRÁFICO CIRCULAR SVG */}
-        <section className="mb-10 p-6 rounded-xl bg-[#09090b] border border-zinc-805 grid grid-cols-1 md:grid-cols-3 gap-6 items-center print:border-black print:bg-white print:p-4">
+        <section className="print-keep mb-10 p-6 rounded-xl bg-[#09090b] border border-zinc-805 grid grid-cols-1 md:grid-cols-3 gap-6 items-center print:border-black print:bg-white print:p-3 print:mb-4">
           <div className="md:col-span-2 space-y-2">
             <h4 className="text-sm font-bold text-white flex items-center gap-2 print:text-black">
               <Percent className="h-4 w-4 text-teal-400 print:text-black" />
@@ -425,7 +425,7 @@ export default function InformeClientePage() {
             <div className="relative h-28 w-28 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 <path
-                  className="text-zinc-800"
+                  className="print-donut-track text-zinc-800"
                   strokeWidth="3.5"
                   stroke="currentColor"
                   fill="none"
@@ -449,7 +449,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* CRONOGRAMA DE ANTICIPOS (EJERCICIO SIGUIENTE) */}
-        <section className="space-y-3 mb-10 print:break-before-page">
+        <section className="print-keep space-y-3 mb-10 print:mb-4">
           <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
             <span>Proyección y Calendario de Anticipos Obligatorios</span>
             <span className="text-[10px] font-mono text-zinc-400">Cinco Vencimientos 20%</span>
@@ -458,7 +458,7 @@ export default function InformeClientePage() {
             La AFIP (ex ARCA) exige el ingreso de 5 anticipos mensuales a cuenta del impuesto correspondiente al próximo período fiscal. Mantenerlos al día previene la acumulación de intereses resarcitorios:
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
+          <div className="print-keep grid grid-cols-2 md:grid-cols-5 gap-4 pt-2 print:grid-cols-5">
             {anticipos.map((ant, idx) => {
               // Simular meses de vencimiento tradicionales
               const meses = ['Agosto', 'Octubre', 'Diciembre', 'Febrero', 'Abril'];

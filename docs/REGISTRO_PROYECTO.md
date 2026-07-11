@@ -1,8 +1,16 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-10
+Ultima actualizacion: 2026-07-11
 
 ## Entrada reciente
+
+### 2026-07-11 - INCIDENTE: produccion sin acceso a la base (pool timeout) - resuelto
+
+- Sintoma: todas las rutas con DB devolvian 500 con "pool timeout ... active=0 idle=0" desde Vercel, mientras la base respondia bien desde afuera (conexion local OK).
+- Causa raiz REAL: al buscar la password de la base en Hostinger para actualizar el `.env` local, se genero una password nueva sin advertirlo. El `.env` local quedo con la nueva (todo funcionaba local) pero la `DATABASE_URL` de Vercel quedo con la anterior: produccion no podia autenticar. El pool del adapter enmascara el error de auth como "pool timeout".
+- Resolucion: el usuario actualizo `DATABASE_URL` en Vercel (Production) con el mismo valor del `.env` local + `vercel redeploy` (los cambios de env no aplican sin redeploy). Verificado con 200 en papel de trabajo, informe, parametros y declaraciones.
+- Mejora colateral que quedo en main (PR #5): pool ajustado al servidor compartido de Hostinger (wait_timeout=20, max_connect_errors=5): `idleTimeout 15s`, `minimumIdle 1`, `connectionLimit 5`. Hallazgo tecnico: `minimumIdle: 0` rompe el adapter de Prisma ("pool is closed"); el default (= connectionLimit) hace que el pool nunca libere ociosas. Test de guarda en `databaseConnection.test.ts`.
+- Leccion operativa: la password de DB vive en DOS lugares (`.env` local y Vercel Production, esta ultima Sensitive e ilegible). Cualquier cambio en Hostinger exige actualizar ambos y redesplegar. Ojo: el panel de Hostinger no muestra la password vigente; "verla" suele implicar regenerarla.
 
 ### 2026-07-10 - MIGRACIONES PRODUCTIVAS del hardening aplicadas (fix del papel de trabajo/informe caidos)
 

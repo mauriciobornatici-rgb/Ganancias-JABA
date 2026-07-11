@@ -1,8 +1,24 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-06-24
+Ultima actualizacion: 2026-07-11
 
 ## Entrada reciente
+
+### 2026-07-11 - INCIDENTE: produccion sin acceso a la base (pool timeout) - resuelto
+
+- Sintoma: todas las rutas con DB devolvian 500 con "pool timeout ... active=0 idle=0" desde Vercel, mientras la base respondia bien desde afuera (conexion local OK).
+- Causa raiz REAL: al buscar la password de la base en Hostinger para actualizar el `.env` local, se genero una password nueva sin advertirlo. El `.env` local quedo con la nueva (todo funcionaba local) pero la `DATABASE_URL` de Vercel quedo con la anterior: produccion no podia autenticar. El pool del adapter enmascara el error de auth como "pool timeout".
+- Resolucion: el usuario actualizo `DATABASE_URL` en Vercel (Production) con el mismo valor del `.env` local + `vercel redeploy` (los cambios de env no aplican sin redeploy). Verificado con 200 en papel de trabajo, informe, parametros y declaraciones.
+- Mejora colateral que quedo en main (PR #5): pool ajustado al servidor compartido de Hostinger (wait_timeout=20, max_connect_errors=5): `idleTimeout 15s`, `minimumIdle 1`, `connectionLimit 5`. Hallazgo tecnico: `minimumIdle: 0` rompe el adapter de Prisma ("pool is closed"); el default (= connectionLimit) hace que el pool nunca libere ociosas. Test de guarda en `databaseConnection.test.ts`.
+- Leccion operativa: la password de DB vive en DOS lugares (`.env` local y Vercel Production, esta ultima Sensitive e ilegible). Cualquier cambio en Hostinger exige actualizar ambos y redesplegar. Ojo: el panel de Hostinger no muestra la password vigente; "verla" suele implicar regenerarla.
+
+### 2026-07-10 - MIGRACIONES PRODUCTIVAS del hardening aplicadas (fix del papel de trabajo/informe caidos)
+
+- Sintoma en produccion: papel de trabajo e informe cliente bloqueados con "The table FixedAssetImportCandidate does not exist" (las pantallas de error nuevas funcionaron: no se emitio ningun documento con ceros).
+- Causa: el merge del PR #4 (commit de produccion cba9fde) desplego el codigo del hardening pero las 3 migraciones nuevas nunca se corrieron contra la base (el deploy de Vercel no migra por diseno).
+- Bloqueo intermedio: el `.env` local tenia la password de DB anterior a la rotacion post-incidente; la vigente esta solo en Vercel (Sensitive) y Hostinger. El usuario actualizo `.env` a mano.
+- Aplicado con `prisma migrate deploy` (solo aditivas, sin tocar datos): `20260710190000_add_iibb_carry_forward`, `20260710193000_version_iibb_coefficients`, `20260710194500_add_fixed_asset_import_candidates`. `migrate status` verifica "Database schema is up to date".
+- Leccion operativa: el checklist pre-merge debe incluir `migrate deploy` SIEMPRE que el PR agregue carpetas en `prisma/migrations` (quedo omitido en el pase del PR #4).
 
 ### 2026-06-22 - VALIDACION CONTRA AFIP REAL: motor IVA clava la liquidacion al peso
 

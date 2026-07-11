@@ -17,6 +17,12 @@ import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { sumDeductibleNonCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
+import {
+  TaxReturnStatusBadge,
+  FiscalDocumentWatermark,
+  FiscalDocumentFooter,
+  type FiscalDocumentParameterSet,
+} from '../fiscalDocumentChrome';
 
 type ReportPurchase = NonNullable<Parameters<typeof sumDeductibleNonCostPurchases>[0]>[number];
 
@@ -25,9 +31,15 @@ type ReportDeclarationData = Record<string, unknown> & {
   cuit?: string;
   fiscalYear?: number;
   mainActivity?: string;
+  status?: string;
+  version?: number;
   updatedAt?: string;
   taxParameterSetId?: string | null;
   purchases?: ReportPurchase[];
+};
+
+type ReportTaxParams = Record<string, unknown> & {
+  parameterSet?: FiscalDocumentParameterSet | null;
 };
 
 export default function InformeClientePage() {
@@ -35,7 +47,7 @@ export default function InformeClientePage() {
   const id = params?.id as string;
 
   const [data, setData] = useState<ReportDeclarationData | null>(null);
-  const [taxParams, setTaxParams] = useState<Record<string, unknown> | null>(null);
+  const [taxParams, setTaxParams] = useState<ReportTaxParams | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -196,27 +208,41 @@ export default function InformeClientePage() {
       </div>
 
       {/* REPORTE PRINCIPAL */}
-      <article className="max-w-4xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
-        
+      <article className="print-fiscal-doc max-w-4xl mx-auto bg-[#121216] border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden print:border-0 print:bg-white print:p-0 print:shadow-none">
+
+        <FiscalDocumentWatermark status={data?.status} />
+
         {/* ENCABEZADO RESUMIDO */}
-        <header className="border-b border-[#1e1e24] pb-8 mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6 print:border-black print:pb-6 print:mb-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2 print:hidden">
-              <ShieldCheck className="h-5 w-5 text-teal-400" />
-              <span className="text-[10px] uppercase tracking-widest text-teal-400 font-extrabold">Informe Ejecutivo</span>
+        <header className="relative z-10 border-b border-[#1e1e24] pb-8 mb-8 print:border-black print:pb-6 print:mb-6">
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center print:hidden">
+                <ShieldCheck className="h-5 w-5 text-[#09090b]" />
+              </div>
+              <div>
+                <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-teal-200 to-zinc-100 bg-clip-text text-transparent block print:text-black print:bg-none">JABA</span>
+                <span className="text-[10px] uppercase tracking-wider block text-teal-400 font-bold -mt-1 print:text-black">Estudio Impositivo Contable</span>
+              </div>
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-white print:text-black">Liquidación de Ganancias</h1>
-            <p className="text-zinc-400 text-xs print:text-zinc-650">Resumen y estado de situación fiscal para el contribuyente.</p>
+            <TaxReturnStatusBadge status={data?.status} />
           </div>
 
-          <div className="p-4 rounded-xl bg-[#09090b] border border-zinc-805 text-right font-mono print:border-black print:bg-white print:text-black">
-            <span className="text-zinc-500 block uppercase font-bold text-[8px] print:text-zinc-600">Ejercicio Fiscal</span>
-            <span className="text-teal-400 font-extrabold text-2xl print:text-black">{year}</span>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase tracking-widest text-teal-400 font-extrabold block print:text-black">Informe Ejecutivo</span>
+              <h1 className="text-3xl font-black tracking-tight text-white print:text-black">Liquidación de Ganancias</h1>
+              <p className="text-zinc-400 text-xs print:text-zinc-650">Resumen y estado de situación fiscal para el contribuyente.</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-[#09090b] border border-zinc-805 text-right font-mono print:border-black print:bg-white print:text-black">
+              <span className="text-zinc-500 block uppercase font-bold text-[8px] print:text-zinc-600">Ejercicio Fiscal</span>
+              <span className="text-teal-400 font-extrabold text-2xl print:text-black">{year}</span>
+            </div>
           </div>
         </header>
 
         {/* FICHA DEL CONTRIBUYENTE */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black print:p-4">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 p-6 rounded-xl bg-[#09090b] border border-zinc-805 print:border-black print:bg-white print:text-black print:p-3 print:mb-4">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <User className="h-4 w-4 text-teal-400 print:text-black stroke-[2.5]" />
@@ -244,9 +270,11 @@ export default function InformeClientePage() {
             <div className="flex items-center gap-3">
               <Calendar className="h-4 w-4 text-teal-400 print:text-black stroke-[2.5]" />
               <div>
-                <span className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold block print:text-zinc-600">Fecha de Cierre</span>
+                <span className="text-[9px] uppercase tracking-wider text-zinc-550 font-bold block print:text-zinc-600">
+                  {data?.status === 'Cerrada' || data?.status === 'Presentada' ? 'Fecha de Cierre' : 'Última Modificación'}
+                </span>
                 <span className="text-sm font-bold text-white print:text-black">
-                  {updatedAt ? new Date(updatedAt).toLocaleDateString('es-AR') : 'Original'}
+                  {updatedAt ? new Date(updatedAt).toLocaleDateString('es-AR') : '—'}
                 </span>
               </div>
             </div>
@@ -254,7 +282,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* MÉTRICAS FINANCIERAS CLAVE (TARJETAS GRANDES) */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:grid-cols-3 print:gap-4 print:mb-8">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 print:grid-cols-3 print:gap-3 print:mb-4">
           
           <div className="p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col justify-between print:border-black print:bg-white print:p-4">
             <div>
@@ -289,7 +317,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* COMPOSICIÓN GRÁFICA VISUAL (COMPORTAMIENTO FINANCIERO) */}
-        <section className="mb-10 p-6 rounded-xl bg-zinc-900/30 border border-zinc-850/50 print:border-black print:bg-white print:p-4">
+        <section className="print-keep mb-10 p-6 rounded-xl bg-zinc-900/30 border border-zinc-850/50 print:border-black print:bg-white print:p-3 print:mb-4">
           <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest mb-4 print:text-black">Análisis de Estructura de Ingresos y Egresos</h3>
           
           {/* Stacked progress bar */}
@@ -297,22 +325,22 @@ export default function InformeClientePage() {
             {(() => { const safeTotal = totalIngresos.isZero() ? new Decimal(1) : totalIngresos; return (
             <>
             <div className="h-6 w-full rounded-lg bg-zinc-800 overflow-hidden flex print:border print:border-black">
-              <div className="h-full bg-teal-500" style={{ width: `${Math.max(5, (utilidadComercial.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Utilidad"></div>
-              <div className="h-full bg-red-400" style={{ width: `${Math.max(5, (costoVentas.plus(gastosComerciales).toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Gastos Operativos"></div>
-              <div className="h-full bg-indigo-500" style={{ width: `${Math.max(5, (amortizaciones.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Amortización de Capital"></div>
+              <div className="print-seg-1 h-full bg-teal-500" style={{ width: `${Math.max(5, (utilidadComercial.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Utilidad"></div>
+              <div className="print-seg-2 h-full bg-red-400" style={{ width: `${Math.max(5, (costoVentas.plus(gastosComerciales).toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Gastos Operativos"></div>
+              <div className="print-seg-3 h-full bg-indigo-500" style={{ width: `${Math.max(5, (amortizaciones.toNumber() / safeTotal.toNumber()) * 100)}%` }} title="Amortización de Capital"></div>
             </div>
 
             <div className="grid grid-cols-3 gap-4 text-xs font-semibold">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-teal-500 print:border print:border-black"></div>
+                <div className="print-seg-1 h-3 w-3 rounded bg-teal-500 print:border print:border-black"></div>
                 <span className="text-zinc-400 print:text-black">Utilidad: {(utilidadComercial.toNumber() / safeTotal.toNumber() * 100).toFixed(0)}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-red-400 print:border print:border-black"></div>
+                <div className="print-seg-2 h-3 w-3 rounded bg-red-400 print:border print:border-black"></div>
                 <span className="text-zinc-400 print:text-black">Gastos: {((costoVentas.plus(gastosComerciales).toNumber()) / safeTotal.toNumber() * 100).toFixed(0)}%</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-indigo-500 print:border print:border-black"></div>
+                <div className="print-seg-3 h-3 w-3 rounded bg-indigo-500 print:border print:border-black"></div>
                 <span className="text-zinc-400 print:text-black">Amortización: {(amortizaciones.toNumber() / safeTotal.toNumber() * 100).toFixed(0)}%</span>
               </div>
             </div>
@@ -322,7 +350,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* DETALLE TRIBUTARIO PARA EL CLIENTE */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 print:grid-cols-2 print:gap-6 print:mb-8">
+        <section className="print-keep grid grid-cols-1 md:grid-cols-2 gap-8 mb-10 print:grid-cols-2 print:gap-5 print:mb-4">
           
           <div className="space-y-4">
             <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 print:text-black print:border-black">Deducciones Personales Computadas</h3>
@@ -381,7 +409,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* ALÍCUOTA EFECTIVA GRÁFICO CIRCULAR SVG */}
-        <section className="mb-10 p-6 rounded-xl bg-[#09090b] border border-zinc-805 grid grid-cols-1 md:grid-cols-3 gap-6 items-center print:border-black print:bg-white print:p-4">
+        <section className="print-keep mb-10 p-6 rounded-xl bg-[#09090b] border border-zinc-805 grid grid-cols-1 md:grid-cols-3 gap-6 items-center print:border-black print:bg-white print:p-3 print:mb-4">
           <div className="md:col-span-2 space-y-2">
             <h4 className="text-sm font-bold text-white flex items-center gap-2 print:text-black">
               <Percent className="h-4 w-4 text-teal-400 print:text-black" />
@@ -397,7 +425,7 @@ export default function InformeClientePage() {
             <div className="relative h-28 w-28 flex items-center justify-center">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 <path
-                  className="text-zinc-800"
+                  className="print-donut-track text-zinc-800"
                   strokeWidth="3.5"
                   stroke="currentColor"
                   fill="none"
@@ -421,7 +449,7 @@ export default function InformeClientePage() {
         </section>
 
         {/* CRONOGRAMA DE ANTICIPOS (EJERCICIO SIGUIENTE) */}
-        <section className="space-y-3 mb-10 print:break-before-page">
+        <section className="print-keep space-y-3 mb-10 print:mb-4">
           <h3 className="text-xs uppercase font-extrabold text-teal-400 tracking-widest border-b border-zinc-800 pb-2 flex items-center justify-between print:text-black print:border-black">
             <span>Proyección y Calendario de Anticipos Obligatorios</span>
             <span className="text-[10px] font-mono text-zinc-400">Cinco Vencimientos 20%</span>
@@ -430,7 +458,7 @@ export default function InformeClientePage() {
             La AFIP (ex ARCA) exige el ingreso de 5 anticipos mensuales a cuenta del impuesto correspondiente al próximo período fiscal. Mantenerlos al día previene la acumulación de intereses resarcitorios:
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-2">
+          <div className="print-keep grid grid-cols-2 md:grid-cols-5 gap-4 pt-2 print:grid-cols-5">
             {anticipos.map((ant, idx) => {
               // Simular meses de vencimiento tradicionales
               const meses = ['Agosto', 'Octubre', 'Diciembre', 'Febrero', 'Abril'];
@@ -445,29 +473,13 @@ export default function InformeClientePage() {
           </div>
         </section>
 
-        {/* NOTA PROFESIONAL DE SEGURIDAD */}
-        <footer className="border-t border-[#1e1e24] pt-8 text-xs text-zinc-500 leading-relaxed space-y-4 print:border-black print:text-black print:pt-6">
-          <p>
-            * Este informe ejecutivo ha sido procesado mediante el motor tributario auditado JABA, reexpresando activos fijos y conciliando variaciones patrimoniales según los parámetros establecidos por la Ley N° 20.628 de Impuesto a las Ganancias y modificatorias vigentes al cierre.
-          </p>
-          
-          <div className="hidden print:grid grid-cols-2 gap-12 pt-16 text-center text-black">
-            <div>
-              <div className="h-[50px]"></div>
-              <div className="border-t border-dashed border-black pt-2 mx-12">
-                <span className="font-bold block">{clientName}</span>
-                <span className="text-[9px] text-zinc-650 block">Firma y Aceptación</span>
-              </div>
-            </div>
-            <div>
-              <div className="h-[50px]"></div>
-              <div className="border-t border-dashed border-black pt-2 mx-12">
-                <span className="font-bold block">Estudio Contable JABA</span>
-                <span className="text-[9px] text-zinc-650 block">Profesional Responsable</span>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <FiscalDocumentFooter
+          documentLabel="Informe Ejecutivo — Liquidación de Ganancias"
+          disclaimer="Informe de cortesía elaborado para el contribuyente sobre la base de la documentación aportada. No reemplaza a la declaración jurada presentada ante ARCA ni a sus formularios oficiales."
+          taxReturnVersion={data?.version}
+          parameterSet={taxParams?.parameterSet}
+          showRecipientSignature
+        />
 
       </article>
     </div>

@@ -869,7 +869,9 @@ export default function WizardPage() {
       ])
       .then(([clientsRes, returnsRes]) => {
         if (clientsRes.success) {
-          setDbClients(clientsRes.data as WizardClient[]);
+          const operationalClients = (clientsRes.data as WizardClient[])
+            .filter(client => client.status !== 'Inactivo');
+          setDbClients(operationalClients);
           setClientRegistryLoadError(null);
         } else {
           setClientRegistryLoadError(clientsRes.error || 'No se pudo cargar el padron de Clientes. Reintente antes de avanzar.');

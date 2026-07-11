@@ -180,6 +180,7 @@ export type WizardClient = WizardEditableRecord & {
   id: string;
   cuit: string;
   name: string;
+  status?: string | null;
   fiscalCondition?: string;
   mainActivity?: string | null;
 };

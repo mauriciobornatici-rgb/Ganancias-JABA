@@ -136,6 +136,7 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'todos' | 'borrador' | 'revision' | 'cerrada'>('todos');
   const [activeView, setActiveView] = useState<'dashboard' | 'clientes' | 'parametros' | 'auditoria'>('dashboard');
+  const [clientStatusTab, setClientStatusTab] = useState<'activos' | 'inactivos'>('activos');
 
   const [clients, setClients] = useState<ClientRow[]>([]);
   const [taxReturns, setTaxReturns] = useState<TaxReturnRow[]>([]);
@@ -526,6 +527,7 @@ export default function Home() {
     .then(res => {
       if (res.success) {
         setClients(prev => [...prev, res.data]);
+        setClientStatusTab('activos');
         setNewClientName('');
         setNewClientCuit('');
         setNewClientActivity('');
@@ -593,8 +595,13 @@ export default function Home() {
     .then(res => res.json())
     .then(res => {
       if (res.success) {
-        setClients(prev => prev.filter(c => c.id !== clientId));
-        setNotification({ message: `Contribuyente "${clientName}" dado de baja. Su historial fue conservado.`, type: 'success' });
+        setClients(prev => prev.map(client => (
+          client.id === clientId ? { ...client, status: 'Inactivo' } : client
+        )));
+        setNotification({
+          message: `Contribuyente "${clientName}" dado de baja. Puede restaurarlo desde la solapa "Dados de baja".`,
+          type: 'success'
+        });
       } else {
         setNotification({ message: `${res.error}`, type: 'error' });
       }
@@ -603,6 +610,38 @@ export default function Home() {
       console.error("Error deactivating client:", err);
       setNotification({ message: `Error de red al dar de baja: ${err.message}`, type: 'error' });
     });
+  };
+
+  const handleReactivateClient = (clientId: string, clientName: string) => {
+    const confirmReactivation = window.confirm(
+      `¿Desea reactivar al contribuyente "${clientName}"? Recuperará el acceso operativo conservando todos sus datos e historial fiscal.`
+    );
+    if (!confirmReactivation) return;
+
+    fetch(`/api/clientes/${clientId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reactivate' }),
+    })
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          setClients(prev => prev.map(client => (
+            client.id === clientId ? { ...client, ...res.data } : client
+          )));
+          setClientStatusTab('activos');
+          setNotification({
+            message: `Contribuyente "${clientName}" reactivado con éxito. Todos sus datos continúan disponibles.`,
+            type: 'success'
+          });
+        } else {
+          setNotification({ message: `${res.error}`, type: 'error' });
+        }
+      })
+      .catch(err => {
+        console.error('Error reactivating client:', err);
+        setNotification({ message: `Error de red al reactivar: ${err.message}`, type: 'error' });
+      });
   };
 
   const handleDeleteReturn = (returnId: string, clientName: string, year: number) => {
@@ -654,6 +693,10 @@ export default function Home() {
     if (activeTab === 'cerrada') return matchesSearch && isDashboardImmutableReturn(ret.status);
     return matchesSearch;
   });
+
+  const activeClients = clients.filter(client => client.status !== 'Inactivo');
+  const inactiveClients = clients.filter(client => client.status === 'Inactivo');
+  const visibleClients = clientStatusTab === 'activos' ? activeClients : inactiveClients;
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -797,8 +840,10 @@ export default function Home() {
                     <Users className="h-4 w-4" />
                   </div>
                 </div>
-                <h2 className="text-3xl font-bold text-white tracking-tight">{clients.length}</h2>
-                <p className="text-zinc-500 text-xs mt-1">{clients.length} contribuyentes registrados</p>
+                <h2 className="text-3xl font-bold text-white tracking-tight">{activeClients.length}</h2>
+                <p className="text-zinc-500 text-xs mt-1">
+                  {activeClients.length} activos · {inactiveClients.length} dados de baja
+                </p>
               </button>
 
               {/* Tarjeta 2: DDJJ en Proceso */}
@@ -1081,8 +1126,11 @@ export default function Home() {
             </div>
 
             <div className="bg-[#121216] border border-zinc-800 rounded-xl overflow-hidden shadow-2xl">
-              <div className="p-6 border-b border-zinc-850 flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wider text-zinc-500 font-bold">Clientes Registrados ({clients.length})</span>
+              <div className="p-6 border-b border-zinc-850 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs uppercase tracking-wider text-zinc-500 font-bold">Clientes registrados ({clients.length})</span>
+                  <p className="text-xs text-zinc-500 mt-1">La baja es reversible y conserva el historial fiscal completo.</p>
+                </div>
                 <button 
                   onClick={() => setShowNewClientModal(true)}
                   className="flex items-center gap-1.5 px-4 h-9 rounded bg-teal-500 hover:bg-teal-400 text-[#09090b] font-bold text-xs transition-colors cursor-pointer"
@@ -1090,6 +1138,35 @@ export default function Home() {
                   <Plus className="h-4 w-4 stroke-[3]" />
                   Nuevo Cliente
                 </button>
+              </div>
+
+              <div className="px-6 py-4 border-b border-zinc-850 bg-zinc-950/20" role="group" aria-label="Filtrar clientes por estado">
+                <div className="inline-flex rounded-lg border border-zinc-800 bg-[#09090b] p-1">
+                  <button
+                    type="button"
+                    aria-pressed={clientStatusTab === 'activos'}
+                    onClick={() => setClientStatusTab('activos')}
+                    className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${
+                      clientStatusTab === 'activos'
+                        ? 'bg-teal-500 text-[#09090b]'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    Activos ({activeClients.length})
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={clientStatusTab === 'inactivos'}
+                    onClick={() => setClientStatusTab('inactivos')}
+                    className={`px-4 py-2 rounded-md text-xs font-bold transition-colors ${
+                      clientStatusTab === 'inactivos'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    Dados de baja ({inactiveClients.length})
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -1106,7 +1183,7 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
-                    {clients.map((client) => (
+                    {visibleClients.map((client) => (
                       <tr key={client.id} className="hover:bg-zinc-800/10 transition-colors">
                         <td className="px-6 py-4 font-semibold text-white text-sm">{client.name}</td>
                         <td className="px-6 py-4 text-xs font-mono text-zinc-400">{client.cuit}</td>
@@ -1124,37 +1201,71 @@ export default function Home() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex gap-2 justify-end">
-                            <Link
-                              href={`/clientes/${client.id}/periodos-fiscales`}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
-                              title="Libro fiscal mensual IVA e IIBB"
-                            >
-                              <BookOpen className="h-4 w-4" />
-                            </Link>
+                            {clientStatusTab === 'activos' && (
+                              <Link
+                                href={`/clientes/${client.id}/periodos-fiscales`}
+                                className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
+                                title="Libro fiscal mensual IVA e IIBB"
+                                aria-label={`Abrir libro fiscal de ${client.name}`}
+                              >
+                                <BookOpen className="h-4 w-4" />
+                              </Link>
+                            )}
                             <button 
                               onClick={() => { setActiveView('dashboard'); setSearchTerm(client.name); }}
                               className="px-3 py-1 text-xs font-bold text-teal-400 bg-zinc-800 border border-zinc-700 hover:border-teal-500/30 rounded transition-all cursor-pointer"
                             >
                               Ver Liquidaciones
                             </button>
-                            <button
-                              onClick={() => openEditClientModal(client)}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
-                              title="Editar Contribuyente"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClient(client.id, client.name)}
-                              className="inline-flex items-center justify-center h-8 w-8 rounded bg-red-950/20 hover:bg-red-900/35 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all active:scale-[0.97] cursor-pointer"
-                              title="Eliminar Contribuyente"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
+                            {clientStatusTab === 'activos' ? (
+                              <>
+                                <button
+                                  onClick={() => openEditClientModal(client)}
+                                  className="inline-flex items-center justify-center h-8 w-8 rounded bg-zinc-800 hover:bg-zinc-750 border border-zinc-700 hover:border-teal-500/30 text-teal-400 transition-all active:scale-[0.97] cursor-pointer"
+                                  title="Editar contribuyente"
+                                  aria-label={`Editar a ${client.name}`}
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClient(client.id, client.name)}
+                                  className="inline-flex items-center justify-center h-8 w-8 rounded bg-red-950/20 hover:bg-red-900/35 border border-red-500/25 hover:border-red-500/40 text-red-400 transition-all active:scale-[0.97] cursor-pointer"
+                                  title="Dar de baja"
+                                  aria-label={`Dar de baja a ${client.name}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => handleReactivateClient(client.id, client.name)}
+                                className="inline-flex items-center gap-1.5 px-3 h-8 rounded bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 hover:border-emerald-500/40 text-emerald-400 text-xs font-bold transition-all active:scale-[0.97] cursor-pointer"
+                                title="Reactivar contribuyente"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Reactivar
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ))}
+                    {visibleClients.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-12 text-center">
+                          <p className="text-sm font-semibold text-zinc-300">
+                            {clientStatusTab === 'activos'
+                              ? 'No hay clientes activos.'
+                              : 'No hay clientes dados de baja.'}
+                          </p>
+                          <p className="text-xs text-zinc-500 mt-1">
+                            {clientStatusTab === 'activos'
+                              ? 'Puede registrar uno nuevo desde el botón superior.'
+                              : 'Los clientes inactivos aparecerán aquí y podrán reactivarse.'}
+                          </p>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

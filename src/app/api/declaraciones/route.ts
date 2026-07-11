@@ -5,6 +5,7 @@ import type { Prisma } from '@/generated/client/client';
 import { prisma } from '@/domain/ganancias/prisma';
 import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxReturnDetailsPersistence';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
+import { canStartClientWork } from '@/domain/ganancias/clients/clientLifecycle';
 import { buildDuplicateTaxReturnCreateResponse } from '@/domain/ganancias/persistence/taxReturnDuplicate';
 import {
   TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS,
@@ -113,6 +114,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'El contribuyente ingresado no se encuentra registrado en el padron de Clientes. Debe registrarlo previamente en la seccion de Clientes.' },
         { status: 400 }
+      );
+    }
+
+    if (!canStartClientWork(client.status)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'El contribuyente se encuentra dado de baja. Reactívelo desde Clientes antes de iniciar una nueva liquidación.',
+        },
+        { status: 409 }
       );
     }
 

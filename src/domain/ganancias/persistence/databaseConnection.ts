@@ -5,7 +5,26 @@ export type MariaDbConnectionConfig = {
   password: string;
   database: string;
   allowPublicKeyRetrieval: boolean;
+  connectionLimit: number;
+  idleTimeout: number;
+  minimumIdle: number;
 };
+
+/**
+ * El MySQL compartido de Hostinger corta conexiones inactivas a los 20 s (wait_timeout=20) y
+ * bloquea la IP del cliente al 5.º error de conexión (max_connect_errors=5). Si el pool retiene
+ * conexiones inactivas más tiempo que el servidor (default del driver: 30 min), cada reuso de una
+ * conexión ya matada cuenta como error y las IPs de salida de Vercel terminan bloqueadas
+ * (incidente de producción 2026-07-11). Por eso el cliente cierra sus conexiones ANTES que el
+ * servidor y no mantiene conexiones ociosas de reserva.
+ */
+const POOL_TUNING = {
+  connectionLimit: 5,
+  idleTimeout: 15,
+  // 1 y no 0: con 0 el adapter de Prisma queda sin conexiones ("pool is closed");
+  // con el default (= connectionLimit) el pool nunca libera ociosas y el fix seria inerte.
+  minimumIdle: 1,
+} as const;
 
 function requireDatabaseUrl(databaseUrl: string | undefined): string {
   if (!databaseUrl || databaseUrl.trim() === '') {
@@ -40,6 +59,7 @@ export function buildMariaDbConnectionConfig(databaseUrl = process.env.DATABASE_
     password: decodeURIComponent(parsed.password),
     database,
     allowPublicKeyRetrieval: true,
+    ...POOL_TUNING,
   };
 }
 

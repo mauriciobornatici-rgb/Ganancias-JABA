@@ -97,7 +97,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       select: { id: true, year: true, month: true, taxProfileId: true, createdAt: true },
     });
 
-    void logAuditEvent({
+    await logAuditEvent({
       action: 'CREATE',
       entityType: 'FiscalPeriod',
       entityId: period.id,

@@ -84,7 +84,7 @@ export async function PUT(
     // No se permite cambiar el CUIT (es inmutable como identificador fiscal)
     if (body.cuit && body.cuit !== existing.cuit) {
       return NextResponse.json(
-        { success: false, error: 'El CUIT no puede ser modificado. Si necesita corregirlo, elimine el contribuyente y cree uno nuevo.' },
+        { success: false, error: 'El CUIT no puede ser modificado: es el identificador fiscal del contribuyente y su historial depende de él. Si se cargó un CUIT incorrecto, contactá al administrador para una corrección controlada.' },
         { status: 400 }
       );
     }
@@ -96,7 +96,7 @@ export async function PUT(
 
     // Registrar en auditoría
     const changedFields = Object.keys(updateData).join(', ');
-    logAuditEvent({
+    await logAuditEvent({
       action: 'UPDATE',
       entityType: 'Client',
       entityId: id,

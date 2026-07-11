@@ -48,7 +48,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     if (!isTaxReturnEditable(taxReturn.status)) {
       return NextResponse.json(
-        { success: false, error: `La declaraciÃ³n estÃ¡ en estado ${taxReturn.status} y es inmutable. Reabrila con motivo antes de volver a importar.` },
+        { success: false, error: `La declaración está en estado ${taxReturn.status} y es inmutable. Reabrila con motivo antes de volver a importar.` },
         { status: 409 },
       );
     }
@@ -125,7 +125,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       prisma.fixedAssetImportCandidate.deleteMany({ where: { taxReturnId, status: 'PENDING' } }),
       prisma.salesInvoice.createMany({ data: mapped.sales.map(s => ({ ...s, taxReturnId })) }),
       prisma.purchaseInvoice.createMany({ data: mapped.purchases.map(p => ({ ...p, taxReturnId })) }),
-      prisma.fixedAssetImportCandidate.createMany({ data: mapped.fixedAssetCandidates.map(candidate => ({
+      // skipDuplicates: un candidato ya procesado (status != PENDING) no se borra arriba; sin esto,
+      // recrearlo violaría @@unique(taxReturnId, sourceFiscalDocumentId) y abortaría toda la importación.
+      prisma.fixedAssetImportCandidate.createMany({ skipDuplicates: true, data: mapped.fixedAssetCandidates.map(candidate => ({
         taxReturnId,
         sourceFiscalDocumentId: candidate.sourceFiscalDocumentId,
         sourceMonth: candidate.month,
@@ -152,12 +154,21 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     // Snapshot durable (sourceHash) para detectar si la base mensual cambió luego.
     let snapshot: { id: string; confirmed: boolean } | null = null;
+    let snapshotError: string | null = null;
     try {
       const assembly = await readAnnualConsolidation(prisma, clientId, year);
       const saved = await persistAnnualConsolidationSnapshot(prisma, taxReturnId, assembly, { confirm: assembly.gate.canConsolidateYear });
       snapshot = { id: saved.id, confirmed: saved.confirmed };
-    } catch {
-      // el snapshot es complementario; si falla no invalida la importación de registros
+    } catch (error) {
+      // el snapshot es complementario; si falla no invalida la importación de registros,
+      // pero el usuario debe saber que la red de detección de cambios no quedó armada.
+      snapshotError = error instanceof Error ? error.message : String(error);
+      console.error(`No se pudo guardar el snapshot de consolidación anual (taxReturn ${taxReturnId}):`, error);
+    }
+
+    const notices = buildNotices(mapped.summary, iibbTotal);
+    if (snapshotError) {
+      notices.push('La importación se guardó, pero no pudo registrarse el snapshot de consolidación anual: cambios posteriores en el libro mensual no serán detectados automáticamente. Reintentá la importación para regenerarlo.');
     }
 
     return NextResponse.json({
@@ -169,7 +180,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         fixedAssetCandidates: mapped.fixedAssetCandidates,
         iibbTotal: iibbTotal.toFixed(2),
         snapshot,
-        notices: buildNotices(mapped.summary, iibbTotal),
+        notices,
       },
     });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildDefaultWizardCashHolding,
+  createWizardFixedAssetId,
   buildDefaultWizardLiability,
   buildDefaultWizardReceivable,
   buildWizardEspAuxiliarySummary,
@@ -38,6 +39,14 @@ describe('wizardStateTypes', () => {
     expect(wizardMoneyToString(undefined)).toBe('0');
     expect(wizardMoneyToNumber('15.5')).toBe(15.5);
     expect(wizardMoneyToNumber('sin-dato', 7)).toBe(7);
+  });
+
+  it('genera UUID distintos para bienes de uso nuevos', () => {
+    const firstId = createWizardFixedAssetId();
+    const secondId = createWizardFixedAssetId();
+
+    expect(firstId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    expect(secondId).not.toBe(firstId);
   });
 
   it('normaliza filas de otras justificaciones patrimoniales para carga agil JVP', () => {

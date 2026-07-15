@@ -703,7 +703,10 @@ describe('persistTaxReturnDetails', () => {
       updateIndex: model(),
       salesInvoice: model(),
       purchaseInvoice: model(),
-      fixedAsset: model({ create: async (args: unknown) => { captures.fixedAssetCreate = args as { data: Record<string, unknown> }; } }),
+      fixedAsset: model({
+        findMany: async () => [{ id: 'asset-retired', taxReturnId: 'return-fixed-assets' }],
+        create: async (args: unknown) => { captures.fixedAssetCreate = args as { data: Record<string, unknown> }; },
+      }),
       inventoryValue: model(),
       bankAccountBalance: model(),
       taxWithholding: model(),
@@ -739,6 +742,62 @@ describe('persistTaxReturnDetails', () => {
     });
     expect(Number(captures.fixedAssetCreate?.data.bajaLossHist)).toBeGreaterThan(0);
     expect(Number(captures.fixedAssetCreate?.data.bajaLossAdj)).toBeGreaterThan(0);
+  });
+
+  it('recupera un borrador legado cuando asset-1 pertenece a otra DDJJ', async () => {
+    const createdAssets: Array<{ data: Record<string, unknown> }> = [];
+    const db = {
+      taxParameterSet: model({ findUnique: async () => parameterSet }),
+      taxArt94Bracket: model({ findMany: async () => [bracket] }),
+      updateIndex: model(),
+      salesInvoice: model(),
+      purchaseInvoice: model(),
+      fixedAsset: model({
+        findMany: async () => [{ id: 'asset-1', taxReturnId: 'return-other' }],
+        create: async (args: unknown) => { createdAssets.push(args as { data: Record<string, unknown> }); },
+      }),
+      inventoryValue: model(),
+      bankAccountBalance: model(),
+      taxWithholding: model(),
+      personalAsset: model(),
+      personalLiability: model(),
+      axiDynamicItem: model(),
+      calculationRun: model(),
+      taxReturn: model(),
+    };
+
+    await persistTaxReturnDetails({
+      db,
+      taxReturnId: 'return-current',
+      existingReturn: {
+        taxParameterSetId: 'params-2025',
+        fiscalYearId: 'fy-2025',
+        status: 'Borrador',
+        client: { name: 'Cliente afectado', cuit: '20-22222222-2' },
+        fiscalYear: { year: 2025 },
+      },
+      payload: {
+        fiscalYear: 2025,
+        fixedAssets: [{
+          id: 'asset-1',
+          name: 'Bien conservado desde borrador local',
+          type: 'Equipamiento',
+          purchaseDate: '2025-01-01',
+          originalCost: '100000',
+          usefulLife: 10,
+          yearsElapsed: 0,
+          customReexpIndex: '1',
+        }],
+      },
+    });
+
+    expect(createdAssets).toHaveLength(1);
+    expect(createdAssets[0].data).toMatchObject({
+      taxReturnId: 'return-current',
+      name: 'Bien conservado desde borrador local',
+    });
+    expect(createdAssets[0].data.id).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(createdAssets[0].data.id).not.toBe('asset-1');
   });
 
   it('persiste otras justificaciones patrimoniales y las conserva en snapshot', async () => {

@@ -20,3 +20,7 @@ export function buildTaxReturnInvalidPayloadMessage(fieldPath: string, value: un
 
   return `Dato invalido en ${fieldPath}: ${String(value).slice(0, 80)}. Revise la carga antes de guardar.`;
 }
+
+export function isPrismaUniqueConstraintError(error: unknown): boolean {
+  return Boolean(error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'P2002');
+}

@@ -5,6 +5,7 @@ import { persistTaxReturnDetails } from '@/domain/ganancias/persistence/taxRetur
 import {
   TAX_RETURN_PERSISTENCE_TRANSACTION_OPTIONS,
   TaxReturnInvalidPayloadError,
+  isPrismaUniqueConstraintError,
 } from '@/domain/ganancias/persistence/taxReturnPersistencePolicy';
 import {
   formatDateForWizardInput,
@@ -441,6 +442,16 @@ export async function PUT(
       return NextResponse.json(
         { success: false, error: err.message, code: 'INVALID_TAX_RETURN_PAYLOAD', fieldPath: err.fieldPath },
         { status: 400 }
+      );
+    }
+    if (isPrismaUniqueConstraintError(err)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Se detecto una colision interna al guardar el borrador. La copia local sigue disponible; reintente y, si persiste, informe el incidente.',
+          code: 'PERSISTENCE_ID_CONFLICT',
+        },
+        { status: 409 }
       );
     }
 

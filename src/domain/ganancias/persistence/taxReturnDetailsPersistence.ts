@@ -6,6 +6,10 @@ import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMappe
 import { buildUsefulCoefficientsFromIndexes } from '../mappers/taxParameterUsefulCoefficients';
 import { normalizeArgentineAmountInput } from '../presentation/moneyFormat';
 import { TaxReturnInvalidPayloadError } from './taxReturnPersistencePolicy';
+import {
+  resolveFixedAssetPersistenceIds,
+  type FixedAssetIdentityOwner,
+} from './fixedAssetIdentity';
 import type { AxiDynamicInput } from '../types';
 
 type NumericValue = string | number;
@@ -646,6 +650,20 @@ export async function persistTaxReturnDetails({
 
   const calcResult = calculateTaxReturn(calculationInput);
 
+  const requestedFixedAssetIds = fixedAssets.map(asset => stringInput(asset.id).trim() || undefined);
+  const uniqueRequestedFixedAssetIds = [...new Set(requestedFixedAssetIds.filter((id): id is string => Boolean(id)))];
+  const occupiedFixedAssetIdentities = uniqueRequestedFixedAssetIds.length > 0
+    ? await db.fixedAsset.findMany({
+      where: { id: { in: uniqueRequestedFixedAssetIds } },
+      select: { id: true, taxReturnId: true },
+    }) as FixedAssetIdentityOwner[]
+    : [];
+  const persistedFixedAssetIds = resolveFixedAssetPersistenceIds({
+    taxReturnId,
+    requestedIds: requestedFixedAssetIds,
+    occupiedIdentities: occupiedFixedAssetIdentities,
+  });
+
   await db.salesInvoice.deleteMany({ where: { taxReturnId } });
   await db.purchaseInvoice.deleteMany({ where: { taxReturnId } });
   await db.fixedAsset.deleteMany({ where: { taxReturnId } });
@@ -701,8 +719,9 @@ export async function persistTaxReturnDetails({
     });
   }
 
-  for (const asset of fixedAssets) {
+  for (const [assetIndex, asset] of fixedAssets.entries()) {
     const assetId = stringInput(asset.id);
+    const persistedAssetId = persistedFixedAssetIds[assetIndex];
     const assetName = stringInput(asset.name);
     const assetType = fixedAssetType(asset.type);
     const purchaseDate = dateInput(asset.purchaseDate, 'bienesUso.purchaseDate');
@@ -726,7 +745,7 @@ export async function persistTaxReturnDetails({
 
     await db.fixedAsset.create({
       data: {
-        id: assetId || undefined,
+        id: persistedAssetId,
         taxReturnId,
         name: assetName,
         type: assetType,

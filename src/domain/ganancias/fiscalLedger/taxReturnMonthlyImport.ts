@@ -1,6 +1,7 @@
 import { Decimal } from 'decimal.js';
 import { inferDocumentAllocation, type ImputationVatLine } from './gainsImputation';
 import type { GainsAllocationKind } from './annualConsolidation';
+import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '../purchaseExpenseType';
 
 /**
  * Mapeo del libro fiscal mensual (módulo IVA) hacia los registros transaccionales de la DDJJ anual
@@ -133,7 +134,7 @@ function expenseTypeFor(gainsKind: GainsAllocationKind): { expenseType: string; 
       return { expenseType: 'IVA No Computable', isDeductible: true };
     case 'DEDUCTIBLE_EXPENSE':
     default:
-      return { expenseType: 'GastosGenerales', isDeductible: true };
+      return { expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE, isDeductible: true };
   }
 }
 

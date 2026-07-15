@@ -224,6 +224,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
 
     expect(summary.purchases![0].netAmount.toNumber()).toBe(21250);
     expect(summary.purchases![0].isExempt).toBe(false);
+    expect(summary.purchases![0].expenseType).toBe('MateriaPrima');
     expect(summary.purchases![0].invoiceType).toBe('1');
     expect(summary.purchases![0].invoiceNumber).toBe('0004-00000243');
     expect(summary.purchases![0].vendorName).toBe('VAVCOMS.P');
@@ -233,6 +234,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
 
     expect(summary.purchases![1].netAmount.toNumber()).toBe(1200);
     expect(summary.purchases![1].isExempt).toBe(true);
+    expect(summary.purchases![1].expenseType).toBe('MateriaPrima');
     expect(summary.purchases![1].invoiceNumber).toBe('0004-00000244');
   });
 
@@ -335,6 +337,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     const purchase = summary.purchases![0];
     expect(purchase.netAmount.toNumber()).toBe(21487.6); // NO 2148760
     expect(purchase.totalAmount?.toNumber()).toBe(26000);
+    expect(purchase.expenseType).toBe('MateriaPrima');
     expect(purchase.vendorName).toBe('AURIERI MARIA ANGELICA');
     expect(purchase.date?.toISOString().startsWith('2025-01-01')).toBe(true);
   });
@@ -352,6 +355,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     const purchase = summary.purchases![0];
     expect(purchase.netAmount.toNumber()).toBe(26000); // Importe Total como gasto deducible
     expect(purchase.isDeductible).toBe(true);
+    expect(purchase.expenseType).toBe('MateriaPrima');
     expect(purchase.vendorName).toBe('AURIERI MARIA ANGELICA');
   });
 

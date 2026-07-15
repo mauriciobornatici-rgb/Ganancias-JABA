@@ -34,6 +34,7 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal, normalizeArgentineAmountInput } from '@/domain/ganancias/presentation/moneyFormat';
 import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
+import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '@/domain/ganancias/purchaseExpenseType';
 import {
   buildPurchaseMonthlySummary,
   matchesPurchaseMonthFilter,
@@ -1265,7 +1266,7 @@ export default function WizardPage() {
     if (type === 'sales') {
       setSales([...sales, { date: `${fiscalYear}-01-01`, netAmount: '0', isExempt: false }]);
     } else if (type === 'purchases') {
-      setPurchases([...purchases, { date: `${fiscalYear}-01-01`, netAmount: '0', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' }]);
+      setPurchases([...purchases, { date: `${fiscalYear}-01-01`, netAmount: '0', isDeductible: true, isExempt: false, expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE }]);
     } else if (type === 'assets') {
       const purchaseDate = `${fiscalYear}-01-01`;
       setFixedAssets([...fixedAssets, { id: createWizardFixedAssetId(), name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate, originalCost: '0', usefulLife: 10, yearsElapsed: calculateYearsElapsedAtClose(purchaseDate, fiscalYear), customReexpIndex: '1.0' }]);
@@ -1443,7 +1444,7 @@ export default function WizardPage() {
           netAmount: p.netAmount,
           isDeductible: p.isDeductible,
           isExempt: p.isExempt,
-          expenseType: p.expenseType || 'GastosGenerales',
+          expenseType: p.expenseType || DEFAULT_PURCHASE_EXPENSE_TYPE,
           invoiceType: p.invoiceType,
           invoiceNumber: p.invoiceNumber,
           vendorName: p.vendorName,

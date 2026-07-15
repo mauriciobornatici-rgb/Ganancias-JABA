@@ -20,6 +20,7 @@ import {
   buildTaxReturnUpdateDecision,
 } from '@/domain/ganancias/workflow/taxReturnWorkflow';
 import { MAX_DECLARATION_PAYLOAD_BYTES, exceedsContentLength } from '@/domain/ganancias/presentation/apiValidation';
+import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '@/domain/ganancias/purchaseExpenseType';
 
 export async function GET(
   req: NextRequest,
@@ -133,7 +134,7 @@ export async function GET(
         netAmount: p.netAmount.toString(),
         isDeductible: p.isDeductible,
         isExempt: p.isExempt,
-        expenseType: p.expenseType || 'GastosGenerales',
+        expenseType: p.expenseType || DEFAULT_PURCHASE_EXPENSE_TYPE,
         invoiceType: p.invoiceType,
         invoiceNumber: p.invoiceNumber,
         vendorName: p.vendorName,

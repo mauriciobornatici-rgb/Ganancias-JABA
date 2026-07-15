@@ -36,7 +36,7 @@ describe('mapMonthlyDocumentsToTaxReturnInputs', () => {
       doc({ id: 'c1', direction: 'PURCHASE', voucherType: '1', vatLines: [vl('TAXED', '40000', '8400', true)] }),
     ]);
     expect(r.purchases).toHaveLength(1);
-    expect(r.purchases[0].expenseType).toBe('GastosGenerales');
+    expect(r.purchases[0].expenseType).toBe('MateriaPrima');
     expect(r.purchases[0].isDeductible).toBe(true);
     expect(r.summary.pendingReview).toBe(1);
   });

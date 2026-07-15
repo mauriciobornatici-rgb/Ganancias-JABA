@@ -1,5 +1,6 @@
 import { Decimal } from 'decimal.js';
 import { normalizeArgentineAmountInput } from '../presentation/moneyFormat';
+import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '../purchaseExpenseType';
 import type {
   AxiDynamicInput,
   FixedAssetInput,
@@ -203,7 +204,7 @@ export function buildTaxReturnCalculationInput(
       netAmount: decimalValue(purchase.netAmount),
       isDeductible: purchase.isDeductible !== false,
       isExempt: booleanValue(purchase.isExempt),
-      expenseType: stringValue(purchase.expenseType, 'GastosGenerales'),
+      expenseType: stringValue(purchase.expenseType, DEFAULT_PURCHASE_EXPENSE_TYPE),
     })),
     fixedAssets: asRecordArray(data.fixedAssets).map(asset => ({
       id: stringValue(asset.id),

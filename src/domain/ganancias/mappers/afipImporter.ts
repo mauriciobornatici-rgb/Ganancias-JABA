@@ -1,6 +1,7 @@
 import * as xlsx from 'xlsx';
 import { Decimal } from 'decimal.js';
 import { SalesInput, PurchaseInput, TaxWithholdingInput } from '../types';
+import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '../purchaseExpenseType';
 
 export type AfipSheetCell = string | number | boolean | Date | null | undefined;
 export type AfipSheetRow = AfipSheetCell[];
@@ -530,6 +531,7 @@ function parseLibroCompras(
           netAmount: netVal,
           isDeductible: true,
           isExempt: false,
+          expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE,
           ...importedDetail,
         });
         totalAmount = totalAmount.add(netVal);
@@ -542,6 +544,7 @@ function parseLibroCompras(
           netAmount: totalExemptVal,
           isDeductible: false, // Por defecto no deducible en ganancias comunes si es exento
           isExempt: true,      // Marcado como egreso exento
+          expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE,
           ...importedDetail,
         });
         totalAmount = totalAmount.add(totalExemptVal);
@@ -557,7 +560,7 @@ function parseLibroCompras(
           netAmount: totalVal,
           isDeductible: true,
           isExempt: false,
-          expenseType: 'GastosGenerales',
+          expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE,
           ...importedDetail,
         });
         totalAmount = totalAmount.add(totalVal);

@@ -6,6 +6,7 @@ import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMappe
 import { buildUsefulCoefficientsFromIndexes } from '../mappers/taxParameterUsefulCoefficients';
 import { normalizeArgentineAmountInput } from '../presentation/moneyFormat';
 import { TaxReturnInvalidPayloadError } from './taxReturnPersistencePolicy';
+import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '../purchaseExpenseType';
 import {
   resolveFixedAssetPersistenceIds,
   type FixedAssetIdentityOwner,
@@ -712,7 +713,7 @@ export async function persistTaxReturnDetails({
         totalAmount: numberInput(p.totalAmount, numberInput(p.netAmount, 0, 'compras.netAmount'), 'compras.totalAmount'),
         isDeductible: p.isDeductible !== false,
         isExempt: p.isExempt || false,
-        expenseType: p.expenseType || 'GastosGenerales',
+        expenseType: p.expenseType || DEFAULT_PURCHASE_EXPENSE_TYPE,
         importSource: stringInput(p.importSource) || undefined,
         sourceFiscalDocumentId: stringInput(p.sourceFiscalDocumentId) || undefined,
       })),

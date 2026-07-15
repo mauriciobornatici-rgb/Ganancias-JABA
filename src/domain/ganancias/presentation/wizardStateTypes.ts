@@ -23,6 +23,10 @@ export type WizardMoneyValue = string | number;
 export type WizardParameterScalar = string | number | null | undefined;
 export type WizardImportKind = 'sales' | 'purchases' | 'withholdings';
 
+export function createWizardFixedAssetId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
 export function wizardMoneyToString(value: WizardMoneyValue | null | undefined, fallback = '0'): string {
   if (value === null || value === undefined || value === '') return fallback;
   return String(value);

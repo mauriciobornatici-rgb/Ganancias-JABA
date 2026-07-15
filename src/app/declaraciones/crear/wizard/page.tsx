@@ -62,6 +62,7 @@ import {
 } from '@/domain/ganancias/presentation/wizardCalculationParams';
 import {
   buildDefaultWizardCashHolding,
+  createWizardFixedAssetId,
   buildDefaultWizardLiability,
   buildDefaultWizardOtherJustification,
   buildDefaultWizardReceivable,
@@ -1254,7 +1255,7 @@ export default function WizardPage() {
       setPurchases([...purchases, { date: `${fiscalYear}-01-01`, netAmount: '0', isDeductible: true, isExempt: false, expenseType: 'GastosGenerales' }]);
     } else if (type === 'assets') {
       const purchaseDate = `${fiscalYear}-01-01`;
-      setFixedAssets([...fixedAssets, { id: `asset-${fixedAssets.length + 1}`, name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate, originalCost: '0', usefulLife: 10, yearsElapsed: calculateYearsElapsedAtClose(purchaseDate, fiscalYear), customReexpIndex: '1.0' }]);
+      setFixedAssets([...fixedAssets, { id: createWizardFixedAssetId(), name: 'Nuevo Bien', type: 'Equipamiento', purchaseDate, originalCost: '0', usefulLife: 10, yearsElapsed: calculateYearsElapsedAtClose(purchaseDate, fiscalYear), customReexpIndex: '1.0' }]);
     } else if (type === 'withholdings') {
       setWithholdings([...withholdings, { amount: '0', taxCode: 'Ganancias' }]);
     } else if (type === 'personalAssets') {
@@ -2454,7 +2455,7 @@ export default function WizardPage() {
                                 const fixedMapped = (prevData.fixedAssets || []).map(a => {
                                   totalActivosCierre = totalActivosCierre.plus(new Decimal(a.originalCost || 0));
                                   return {
-                                    id: `asset-${Date.now()}-${Math.random()}`,
+                                    id: createWizardFixedAssetId(),
                                     name: a.name || '',
                                     type: a.type || 'Otro',
                                     purchaseDate: a.purchaseDate,

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import MonthlyImportButton from './MonthlyImportButton';
+import { PurchaseMonthlySummaryPanel } from './PurchaseMonthlySummaryPanel';
 import {
   Sparkles,
   ArrowLeft,
@@ -33,6 +34,11 @@ import { buildTaxParameterClosureWarning } from '@/domain/ganancias/presentation
 import { buildInvoiceTraceSummary } from '@/domain/ganancias/presentation/invoiceTrace';
 import { formatCurrencyCents, formatCurrencyWhole as formatDecimal, normalizeArgentineAmountInput } from '@/domain/ganancias/presentation/moneyFormat';
 import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
+import {
+  buildPurchaseMonthlySummary,
+  matchesPurchaseMonthFilter,
+  type PurchaseMonthFilter,
+} from '@/domain/ganancias/presentation/purchaseMonthlySummary';
 import {
   WIZARD_UNSAVED_EXIT_MESSAGE,
   shouldWarnBeforeWizardExit,
@@ -1131,6 +1137,7 @@ export default function WizardPage() {
   const [salesSearch, setSalesSearch] = useState('');
   const [purchasesPage, setPurchasesPage] = useState(1);
   const [purchasesSearch, setPurchasesSearch] = useState('');
+  const [purchaseMonthFilter, setPurchaseMonthFilter] = useState<PurchaseMonthFilter>('all');
 
   const handleSelectSale = (index: number) => {
     setSelectedSales(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -1162,12 +1169,18 @@ export default function WizardPage() {
     setSelectedPurchases(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
   };
 
-  const handleSelectAllPurchases = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectAllPurchases = (e: React.ChangeEvent<HTMLInputElement>, matchingIndexes: number[]) => {
     if (e.target.checked) {
-      setSelectedPurchases(purchases.map((_, i) => i));
+      setSelectedPurchases(matchingIndexes);
     } else {
       setSelectedPurchases([]);
     }
+  };
+
+  const handlePurchaseMonthFilter = (filter: PurchaseMonthFilter) => {
+    setPurchaseMonthFilter(filter);
+    setPurchasesPage(1);
+    setSelectedPurchases([]);
   };
 
   const applyBulkPurchasesAction = (action: 'deductible' | 'nondeductible' | 'exempt' | 'delete' | string) => {
@@ -1279,7 +1292,10 @@ export default function WizardPage() {
 
   const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
     if (type === 'sales') setSales(sales.filter((_, i) => i !== index));
-    if (type === 'purchases') setPurchases(purchases.filter((_, i) => i !== index));
+    if (type === 'purchases') {
+      setPurchases(purchases.filter((_, i) => i !== index));
+      setSelectedPurchases([]);
+    }
     if (type === 'assets') setFixedAssets(fixedAssets.filter((_, i) => i !== index));
     if (type === 'withholdings') setWithholdings(withholdings.filter((_, i) => i !== index));
     if (type === 'personalAssets') setPersonalAssets(personalAssets.filter((_, i) => i !== index));
@@ -1315,6 +1331,9 @@ export default function WizardPage() {
       const updated = [...purchases];
       updated[index][field] = cellValue;
       setPurchases(updated);
+      if (field === 'date') {
+        setSelectedPurchases(prev => prev.filter(selectedIndex => selectedIndex !== index));
+      }
     } else if (type === 'assets') {
       const updated = [...fixedAssets];
       updated[index][field] = cellValue;
@@ -1919,14 +1938,22 @@ export default function WizardPage() {
 
   // P31 UX: filas con indice original preservado para que los handlers sigan operando
   // sobre la coleccion completa aunque la grilla este filtrada/paginada.
-  const buildPagedRows = <T,>(rows: T[], search: string, page: number, textOf: (row: T) => string) => {
+  const buildPagedRows = <T,>(
+    rows: T[],
+    search: string,
+    page: number,
+    textOf: (row: T) => string,
+    includeRow: (row: T) => boolean = () => true,
+  ) => {
     const term = search.trim().toLowerCase();
     const withIndex = rows.map((row, originalIndex) => ({ row, originalIndex }));
-    const filtered = term === '' ? withIndex : withIndex.filter(({ row }) => textOf(row).toLowerCase().includes(term));
+    const included = withIndex.filter(({ row }) => includeRow(row));
+    const filtered = term === '' ? included : included.filter(({ row }) => textOf(row).toLowerCase().includes(term));
     const totalPages = Math.max(1, Math.ceil(filtered.length / GRID_PAGE_SIZE));
     const safePage = Math.min(Math.max(page, 1), totalPages);
     return {
       paged: filtered.slice((safePage - 1) * GRID_PAGE_SIZE, safePage * GRID_PAGE_SIZE),
+      matchingIndexes: filtered.map(({ originalIndex }) => originalIndex),
       totalPages,
       safePage,
       totalRows: filtered.length,
@@ -1934,8 +1961,15 @@ export default function WizardPage() {
   };
   const salesGrid = buildPagedRows(sales, salesSearch, salesPage,
     s => `${s.customerName ?? ''} ${s.counterpartyCuit ?? ''} ${s.invoiceNumber ?? ''} ${s.date ?? ''} ${s.netAmount ?? ''}`);
+  const purchaseMonthlySummary = buildPurchaseMonthlySummary(purchases);
   const purchasesGrid = buildPagedRows(purchases, purchasesSearch, purchasesPage,
-    p => `${p.vendorName ?? ''} ${p.counterpartyCuit ?? ''} ${p.invoiceNumber ?? ''} ${p.date ?? ''} ${p.netAmount ?? ''}`);
+    p => `${p.vendorName ?? ''} ${p.counterpartyCuit ?? ''} ${p.invoiceNumber ?? ''} ${p.date ?? ''} ${p.netAmount ?? ''}`,
+    p => matchesPurchaseMonthFilter(p.date, purchaseMonthFilter));
+  const activePurchaseMonthLabel = purchaseMonthFilter === 'all'
+    ? 'Todos los meses'
+    : purchaseMonthFilter === 'undated'
+      ? 'Sin fecha válida'
+      : purchaseMonthlySummary.months[purchaseMonthFilter - 1]?.label ?? 'Mes';
 
   // P31.7: pegar "1.234,56" (formato AR, tipico de Excel) dentro de un input numerico
   // se intercepta y normaliza; sin esto el navegador lo rechaza o lo malinterpreta.
@@ -2757,7 +2791,7 @@ export default function WizardPage() {
                       <div className="text-left">
                         <span className="text-[9px] uppercase tracking-wider text-teal-400 block font-bold">Total Compras</span>
                         <span className="text-sm font-bold font-mono text-teal-300">
-                          ${purchases.reduce((sum, p) => sum.add(new Decimal(p.netAmount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {formatCurrencyCents(purchaseMonthlySummary.totalNetAmount)}
                         </span>
                       </div>
                       <div className="h-6 w-[1px] bg-teal-500/20"></div>
@@ -2793,6 +2827,15 @@ export default function WizardPage() {
               )}
 
               {renderUploadSummary('purchases')}
+
+              {purchases.length > 0 && (
+                <PurchaseMonthlySummaryPanel
+                  summary={purchaseMonthlySummary}
+                  activeFilter={purchaseMonthFilter}
+                  activeFilterLabel={activePurchaseMonthLabel}
+                  onFilterChange={handlePurchaseMonthFilter}
+                />
+              )}
 
               {/* ACCIONES MASIVAS - BULK ACTIONS PANEL */}
               {selectedPurchases.length > 0 && (
@@ -2846,8 +2889,9 @@ export default function WizardPage() {
                       <th className="px-4 py-3 w-10 text-center">
                         <input
                           type="checkbox"
-                          checked={purchases.length > 0 && selectedPurchases.length === purchases.length}
-                          onChange={handleSelectAllPurchases}
+                          checked={purchasesGrid.matchingIndexes.length > 0 && purchasesGrid.matchingIndexes.every(index => selectedPurchases.includes(index))}
+                          onChange={(event) => handleSelectAllPurchases(event, purchasesGrid.matchingIndexes)}
+                          aria-label={`Seleccionar los comprobantes de ${activePurchaseMonthLabel}`}
                           className="h-4 w-4 rounded bg-zinc-900 border-zinc-800 text-teal-500 focus:ring-teal-500/50 cursor-pointer"
                         />
                       </th>
@@ -2860,6 +2904,14 @@ export default function WizardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-850/50">
+                    {purchasesGrid.paged.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-10 text-center">
+                          <p className="text-xs font-semibold text-zinc-400">No hay comprobantes para mostrar en {activePurchaseMonthLabel.toLowerCase()}.</p>
+                          <p className="mt-1 text-[10px] text-zinc-600">Cambie el mes o quite el texto de búsqueda para volver a ver registros.</p>
+                        </td>
+                      </tr>
+                    )}
                     {purchasesGrid.paged.map(({ row: purchase, originalIndex: index }) => {
                       const invoiceTrace = buildInvoiceTraceSummary({
                         invoiceType: purchase.invoiceType,
@@ -2954,12 +3006,12 @@ export default function WizardPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <input
                     value={purchasesSearch}
-                    onChange={(e) => { setPurchasesSearch(e.target.value); setPurchasesPage(1); }}
+                    onChange={(e) => { setPurchasesSearch(e.target.value); setPurchasesPage(1); setSelectedPurchases([]); }}
                     placeholder="Buscar por proveedor, CUIT, comprobante o fecha..."
                     className="h-9 px-3 rounded bg-[#121216] border border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-teal-500/40 w-full sm:w-80"
                   />
                   <div className="flex items-center gap-3 text-[11px] text-zinc-400 font-mono">
-                    <span>{purchasesGrid.totalRows} comprobante{purchasesGrid.totalRows === 1 ? '' : 's'}{purchasesSearch.trim() !== '' ? ' (filtrados)' : ''}</span>
+                    <span>{purchasesGrid.totalRows} comprobante{purchasesGrid.totalRows === 1 ? '' : 's'} · {activePurchaseMonthLabel}{purchasesSearch.trim() !== '' ? ' · búsqueda activa' : ''}</span>
                     {purchasesGrid.totalPages > 1 && (
                       <>
                         <button onClick={() => setPurchasesPage(purchasesGrid.safePage - 1)} disabled={purchasesGrid.safePage <= 1} className="px-2.5 h-7 rounded border border-zinc-800 disabled:opacity-30 hover:border-teal-500/40 cursor-pointer">←</button>
@@ -2974,6 +3026,8 @@ export default function WizardPage() {
               <button
                 onClick={() => {
                   setPurchasesSearch('');
+                  setPurchaseMonthFilter('all');
+                  setSelectedPurchases([]);
                   addRow('purchases');
                   setPurchasesPage(Math.max(1, Math.ceil((purchases.length + 1) / GRID_PAGE_SIZE)));
                 }}

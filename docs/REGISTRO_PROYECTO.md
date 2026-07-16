@@ -1,8 +1,15 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-11
+Ultima actualizacion: 2026-07-16
 
 ## Entrada reciente
+
+### 2026-07-16 - Desglose por tipo de gasto en las tarjetas mensuales del Paso 3
+
+- Cada tarjeta de mes (y los buckets "Ver todos los meses" y "Sin fecha valida") muestra, ademas del total y la cantidad, la suma discriminada por las 4 categorias del selector por comprobante: Materia Prima / Insumos, Gastos Generales, Servicios Basicos y Alquileres.
+- Tipos desconocidos o vacios se agrupan como "Sin clasificar" (nada queda invisible). Solo se muestran categorias con movimiento; el desglose siempre cuadra con el total del mes.
+- Implementacion: `buildPurchaseMonthlySummary` acumula `byExpenseType` por bucket (fuente unica: `PURCHASE_EXPENSE_CATEGORIES` en `purchaseMonthlySummary.ts`); `PurchaseMonthlySummaryPanel` renderiza los renglones. Se actualiza en vivo al cambiar el tipo de gasto en la grilla.
+- Contexto operativo: la esposa del usuario ajusta la categoria de cada comprobante (default MateriaPrima desde la importacion); este desglose le permite controlar mes a mes sin salir del Paso 3.
 
 ### 2026-07-11 - CRITERIO PROFESIONAL por codigo AFIP en importacion de compras (Paso 3)
 

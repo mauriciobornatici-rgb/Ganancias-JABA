@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildPurchaseMonthlySummary,
+  listExpenseBreakdown,
   matchesPurchaseMonthFilter,
   purchaseMonthFromDate,
 } from '../presentation/purchaseMonthlySummary';
@@ -43,6 +44,49 @@ describe('purchaseMonthlySummary', () => {
     expect(matchesPurchaseMonthFilter('2025-07-14', 7)).toBe(true);
     expect(matchesPurchaseMonthFilter('2025-07-14', 8)).toBe(false);
     expect(matchesPurchaseMonthFilter('', 'undated')).toBe(true);
+  });
+
+  it('discrimina cada mes por tipo de gasto y el desglose cuadra con el total del mes', () => {
+    const summary = buildPurchaseMonthlySummary([
+      { date: '2025-01-05', netAmount: '1000', expenseType: 'MateriaPrima' },
+      { date: '2025-01-10', netAmount: '250.50', expenseType: 'GastosGenerales' },
+      { date: '2025-01-15', netAmount: '80', expenseType: 'Servicios' },
+      { date: '2025-01-20', netAmount: '400', expenseType: 'Alquiler' },
+      { date: '2025-01-25', netAmount: '30', expenseType: 'TipoInexistente' }, // -> Sin clasificar
+      { date: '2025-02-01', netAmount: '999', expenseType: 'MateriaPrima' },
+    ]);
+
+    const enero = summary.months[0];
+    expect(enero.byExpenseType.MateriaPrima.toString()).toBe('1000');
+    expect(enero.byExpenseType.GastosGenerales.toString()).toBe('250.5');
+    expect(enero.byExpenseType.Servicios.toString()).toBe('80');
+    expect(enero.byExpenseType.Alquiler.toString()).toBe('400');
+    expect(enero.byExpenseType.SinClasificar.toString()).toBe('30');
+
+    // El desglose siempre cuadra con el total del mes
+    const sumaDesglose = Object.values(enero.byExpenseType)
+      .reduce((total, amount) => total.add(amount));
+    expect(sumaDesglose.equals(enero.netAmount)).toBe(true);
+
+    // Febrero solo tiene materia prima; el resto queda en cero
+    expect(summary.months[1].byExpenseType.MateriaPrima.toString()).toBe('999');
+    expect(summary.months[1].byExpenseType.Alquiler.isZero()).toBe(true);
+
+    // Total general tambien discriminado
+    expect(summary.totalByExpenseType.MateriaPrima.toString()).toBe('1999');
+  });
+
+  it('listExpenseBreakdown devuelve solo categorias con movimiento, en el orden del selector', () => {
+    const summary = buildPurchaseMonthlySummary([
+      { date: '2025-03-01', netAmount: '500', expenseType: 'Alquiler' },
+      { date: '2025-03-02', netAmount: '100', expenseType: 'MateriaPrima' },
+      { date: '2025-03-03', netAmount: '-100', expenseType: 'MateriaPrima' }, // NC: queda en cero y no se muestra
+    ]);
+
+    const lines = listExpenseBreakdown(summary.months[2].byExpenseType);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ key: 'Alquiler', shortLabel: 'Alquileres' });
+    expect(lines[0].amount.toString()).toBe('500');
   });
 
   it('trata importes no numericos como cero sin romper el resumen', () => {

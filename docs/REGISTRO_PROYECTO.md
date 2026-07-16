@@ -4,6 +4,19 @@ Ultima actualizacion: 2026-07-11
 
 ## Entrada reciente
 
+### 2026-07-11 - CRITERIO PROFESIONAL por codigo AFIP en importacion de compras (Paso 3)
+
+- Definicion del usuario (tabla 2026-07-11), aplicada en `parseLibroCompras` de `afipImporter.ts`:
+  - **Codigos 1/2/3 (Factura/ND/NC A)**: suma el **Total Neto Gravado** (col. AE del export AFIP) + su parte exenta/no gravada como fila aparte (tambien suma, decision explicita del usuario).
+  - **Codigos 6/7/8 (Factura/ND/NC B)**: **NO suman nada**. Se importan visibles con netAmount $0 y isDeductible=false para conservar la traza (decision: "importar sin sumar", no descartar).
+  - **Codigos 11/12/13/15 (Factura/ND/NC/Recibo C)**: suman el **Importe Total** (col. H), SIEMPRE, aunque traigan neto o exento discriminado.
+  - Comprobantes sin codigo legible: fallback anterior (neto -> exento -> importe total).
+  - El signo de AFIP se preserva: las NC vienen negativas y restan.
+- Hallazgo corregido: las Facturas B entraban como gasto deducible por el Importe Total e inflaban compras/deducciones de Ganancias.
+- Verificacion: contra el Excel real `comprobantes_comprasprueba.xlsx` el importador dio 3.795.852,11, identico al calculo manual del criterio (cod 1: 3.533.202,27 / cod 6: 0 / cod 11: 257.966,79 / cod 12: 4.683,05). Test integral en `importer.test.ts` fija la tabla completa.
+- OPERATIVO: las compras importadas ANTES de este cambio quedaron con la regla vieja; para aplicar el criterio hay que RE-IMPORTAR los archivos de compras en el Paso 3 y guardar.
+- Nota: el modulo mensual de IVA (fiscal-periods) usa otro parser (`afipFiscalLedgerImporter`) con logica propia de IVA; NO fue alcanzado por este criterio.
+
 ### 2026-07-11 - INCIDENTE: produccion sin acceso a la base (pool timeout) - resuelto
 
 - Sintoma: todas las rutas con DB devolvian 500 con "pool timeout ... active=0 idle=0" desde Vercel, mientras la base respondia bien desde afuera (conexion local OK).

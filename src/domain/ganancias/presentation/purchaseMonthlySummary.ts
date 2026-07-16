@@ -5,7 +5,24 @@ export type PurchaseMonthFilter = 'all' | 'undated' | number;
 type PurchaseMonthlyRow = {
   date?: string | null;
   netAmount?: string | number | null;
+  expenseType?: string | null;
 };
+
+/**
+ * Las 4 categorías de tipo de gasto del selector por comprobante (Paso 3).
+ * Todo valor desconocido o vacío se agrupa como "Sin clasificar".
+ */
+export const PURCHASE_EXPENSE_CATEGORIES = [
+  { key: 'MateriaPrima', label: 'Materia Prima / Insumos', shortLabel: 'Mat. Prima' },
+  { key: 'GastosGenerales', label: 'Gastos Generales', shortLabel: 'G. Grales.' },
+  { key: 'Servicios', label: 'Servicios Básicos', shortLabel: 'Servicios' },
+  { key: 'Alquiler', label: 'Alquileres', shortLabel: 'Alquileres' },
+  { key: 'SinClasificar', label: 'Sin clasificar', shortLabel: 'Sin clasif.' },
+] as const;
+
+export type PurchaseExpenseCategoryKey = (typeof PURCHASE_EXPENSE_CATEGORIES)[number]['key'];
+
+export type PurchaseExpenseBreakdown = Record<PurchaseExpenseCategoryKey, Decimal>;
 
 export type PurchaseMonthlyBucket = {
   key: number;
@@ -13,7 +30,43 @@ export type PurchaseMonthlyBucket = {
   shortLabel: string;
   count: number;
   netAmount: Decimal;
+  byExpenseType: PurchaseExpenseBreakdown;
 };
+
+const KNOWN_EXPENSE_KEYS = new Set<string>(
+  PURCHASE_EXPENSE_CATEGORIES.map(category => category.key),
+);
+
+function emptyExpenseBreakdown(): PurchaseExpenseBreakdown {
+  return {
+    MateriaPrima: new Decimal(0),
+    GastosGenerales: new Decimal(0),
+    Servicios: new Decimal(0),
+    Alquiler: new Decimal(0),
+    SinClasificar: new Decimal(0),
+  };
+}
+
+function expenseCategoryOf(expenseType: string | null | undefined): PurchaseExpenseCategoryKey {
+  const value = expenseType?.trim();
+  if (value && KNOWN_EXPENSE_KEYS.has(value)) return value as PurchaseExpenseCategoryKey;
+  return 'SinClasificar';
+}
+
+/**
+ * Devuelve las categorías con movimiento de un bucket, en el orden del selector,
+ * listas para renderizar (las que están en cero no se muestran).
+ */
+export function listExpenseBreakdown(byExpenseType: PurchaseExpenseBreakdown) {
+  return PURCHASE_EXPENSE_CATEGORIES
+    .filter(category => !byExpenseType[category.key].isZero())
+    .map(category => ({
+      key: category.key,
+      label: category.label,
+      shortLabel: category.shortLabel,
+      amount: byExpenseType[category.key],
+    }));
+}
 
 const MONTH_LABELS = [
   ['Enero', 'Ene'],
@@ -37,28 +90,35 @@ export function buildPurchaseMonthlySummary(rows: PurchaseMonthlyRow[]) {
     shortLabel,
     count: 0,
     netAmount: new Decimal(0),
+    byExpenseType: emptyExpenseBreakdown(),
   }));
-  const undated = { count: 0, netAmount: new Decimal(0) };
+  const undated = { count: 0, netAmount: new Decimal(0), byExpenseType: emptyExpenseBreakdown() };
   let totalNetAmount = new Decimal(0);
+  const totalByExpenseType = emptyExpenseBreakdown();
 
   for (const row of rows) {
     const amount = safeDecimal(row.netAmount);
     const month = purchaseMonthFromDate(row.date);
+    const category = expenseCategoryOf(row.expenseType);
     totalNetAmount = totalNetAmount.add(amount);
+    totalByExpenseType[category] = totalByExpenseType[category].add(amount);
 
     if (month === null) {
       undated.count += 1;
       undated.netAmount = undated.netAmount.add(amount);
+      undated.byExpenseType[category] = undated.byExpenseType[category].add(amount);
       continue;
     }
 
     months[month - 1].count += 1;
     months[month - 1].netAmount = months[month - 1].netAmount.add(amount);
+    months[month - 1].byExpenseType[category] = months[month - 1].byExpenseType[category].add(amount);
   }
 
   return {
     totalCount: rows.length,
     totalNetAmount,
+    totalByExpenseType,
     months,
     undated,
   };

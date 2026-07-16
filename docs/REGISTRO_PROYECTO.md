@@ -4,6 +4,13 @@ Ultima actualizacion: 2026-07-16
 
 ## Entrada reciente
 
+### 2026-07-16 - Tarjetas mensuales del Paso 3: solo suman comprobantes Deducibles
+
+- Hallazgo del usuario: al marcar un comprobante como "No Deducible" (columna Tratamiento), el total Deducible de cabecera lo excluia pero las tarjetas mensuales lo seguian sumando.
+- Criterio aplicado: el total del mes y el desglose por categoria suman UNICAMENTE lo marcado "Deducible en Ganancias". Aplica tambien a "Ver todos los meses" y "Sin fecha valida". Ahora todo el panel es consistente con el total Deducible de cabecera.
+- La cantidad de comprobantes del mes sigue incluyendo los no deducibles (la tarjeta tambien es filtro para encontrarlos); solo se excluye su importe. La leyenda del panel lo aclara.
+- Implementacion: `buildPurchaseMonthlySummary` (campo `isDeductible`; sin flag se asume deducible por compatibilidad). Test que fija el criterio en `purchaseMonthlySummary.test.ts`.
+
 ### 2026-07-16 - Desglose por tipo de gasto en las tarjetas mensuales del Paso 3
 
 - Cada tarjeta de mes (y los buckets "Ver todos los meses" y "Sin fecha valida") muestra, ademas del total y la cantidad, la suma discriminada por las 4 categorias del selector por comprobante: Materia Prima / Insumos, Gastos Generales, Servicios Basicos y Alquileres.

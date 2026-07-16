@@ -89,6 +89,26 @@ describe('purchaseMonthlySummary', () => {
     expect(lines[0].amount.toString()).toBe('500');
   });
 
+  it('excluye los comprobantes No Deducibles de los totales mensuales y del desglose (criterio 2026-07-16)', () => {
+    const summary = buildPurchaseMonthlySummary([
+      { date: '2025-01-05', netAmount: '1000', expenseType: 'MateriaPrima', isDeductible: true },
+      { date: '2025-01-10', netAmount: '500', expenseType: 'MateriaPrima', isDeductible: false }, // NO suma
+      { date: '2025-01-15', netAmount: '200', expenseType: 'GastosGenerales' }, // sin flag -> suma (compat)
+      { date: '', netAmount: '300', expenseType: 'Servicios', isDeductible: false }, // sin fecha, NO suma
+    ]);
+
+    const enero = summary.months[0];
+    expect(enero.count).toBe(3); // el no deducible sigue contando como comprobante del mes
+    expect(enero.netAmount.toString()).toBe('1200'); // 1000 + 200; los 500 no deducibles quedan afuera
+    expect(enero.byExpenseType.MateriaPrima.toString()).toBe('1000');
+    expect(enero.byExpenseType.GastosGenerales.toString()).toBe('200');
+
+    expect(summary.undated.netAmount.toString()).toBe('0');
+    expect(summary.undated.count).toBe(1);
+    expect(summary.totalNetAmount.toString()).toBe('1200');
+    expect(summary.totalByExpenseType.Servicios.isZero()).toBe(true);
+  });
+
   it('trata importes no numericos como cero sin romper el resumen', () => {
     const summary = buildPurchaseMonthlySummary([
       { date: '2025-03-01', netAmount: 'importe-invalido' },

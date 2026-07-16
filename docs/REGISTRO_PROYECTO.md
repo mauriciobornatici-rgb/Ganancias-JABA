@@ -4,6 +4,12 @@ Ultima actualizacion: 2026-07-16
 
 ## Entrada reciente
 
+### 2026-07-16 - UX: contenido del wizard al ancho completo del header (fix de tablas cortadas)
+
+- Reporte del usuario: en el Paso 3 la tabla de comprobantes aparecia cortada con barra de scroll horizontal aun con pantalla ancha de sobra.
+- Causa: el `<main>` del wizard estaba en `max-w-5xl` (1024px) mientras el header y la barra de progreso usan `max-w-7xl` (1280px); las tablas tienen columnas con ancho minimo que superan los 1024px.
+- Fix: el contenido usa el mismo `max-w-7xl` que el header. Beneficia a todas las tablas del wizard (ventas Paso 2, compras Paso 3, creditos Paso 5). En pantallas angostas el scroll horizontal sigue siendo el comportamiento correcto (las columnas conservan anchos minimos legibles).
+
 ### 2026-07-16 - Tarjetas mensuales del Paso 3: solo suman comprobantes Deducibles
 
 - Hallazgo del usuario: al marcar un comprobante como "No Deducible" (columna Tratamiento), el total Deducible de cabecera lo excluia pero las tarjetas mensuales lo seguian sumando.

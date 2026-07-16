@@ -2145,8 +2145,10 @@ export default function WizardPage() {
 
       <WizardLoadReportPrint report={loadReport} />
 
-      {/* CONTENIDO DEL WIZARD */}
-      <main className="max-w-5xl mx-auto px-6 py-10 print:hidden">
+      {/* CONTENIDO DEL WIZARD: mismo ancho que el header y la barra de progreso (max-w-7xl).
+          Con max-w-5xl las tablas de comprobantes scrolleaban horizontalmente aun con
+          pantalla ancha de sobra (reporte del usuario 2026-07-16). */}
+      <main className="max-w-7xl mx-auto px-6 py-10 print:hidden">
         {localDraftWarning && (
           <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
             <div className="flex items-start gap-3">

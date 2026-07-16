@@ -198,7 +198,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
         '0.00', '0.00', '0.00', '0.00', '0.00',
         '21250,00', '3118,75'
       ],
-      // Fila 2: Compra exenta (Importe Ex = 1200)
+      // Fila 2: Factura C (codigo 11) con Importe Exento informado: por criterio C suma Importe Total
       [
         '03/02/2025', '11', '4', '244', '80',
         '307141419', 'EXENTO PROVEEDOR', '1200,00', 'PES', '1',
@@ -220,7 +220,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(summary.fileType).toBe('LibroIVACompras');
     expect(summary.totalRecords).toBe(2);
     expect(summary.errors.length).toBe(0);
-    expect(summary.totalAmount.toNumber()).toBe(22450); // 21250.00 + 1200.00
+    expect(summary.totalAmount.toNumber()).toBe(22450); // 21250.00 (neto A) + 1200.00 (total C)
 
     expect(summary.purchases![0].netAmount.toNumber()).toBe(21250);
     expect(summary.purchases![0].isExempt).toBe(false);
@@ -232,8 +232,10 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(summary.purchases![0].ivaAmount?.toNumber()).toBe(3118.75);
     expect(summary.purchases![0].totalAmount?.toNumber()).toBe(25833.75);
 
+    // Criterio 2026-07-11: codigo 11 siempre suma el Importe Total como gasto deducible.
     expect(summary.purchases![1].netAmount.toNumber()).toBe(1200);
-    expect(summary.purchases![1].isExempt).toBe(true);
+    expect(summary.purchases![1].isExempt).toBe(false);
+    expect(summary.purchases![1].isDeductible).toBe(true);
     expect(summary.purchases![1].expenseType).toBe('MateriaPrima');
     expect(summary.purchases![1].invoiceNumber).toBe('0004-00000244');
   });
@@ -335,7 +337,8 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(summary.errors.length).toBe(0);
 
     const purchase = summary.purchases![0];
-    expect(purchase.netAmount.toNumber()).toBe(21487.6); // NO 2148760
+    // Codigo 11 (Factura C): por criterio 2026-07-11 suma el Importe Total, no el neto discriminado.
+    expect(purchase.netAmount.toNumber()).toBe(26000); // NO 2600000 (regresion del parser Latin-1)
     expect(purchase.totalAmount?.toNumber()).toBe(26000);
     expect(purchase.expenseType).toBe('MateriaPrima');
     expect(purchase.vendorName).toBe('AURIERI MARIA ANGELICA');
@@ -357,6 +360,61 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(purchase.isDeductible).toBe(true);
     expect(purchase.expenseType).toBe('MateriaPrima');
     expect(purchase.vendorName).toBe('AURIERI MARIA ANGELICA');
+  });
+
+  // Criterio profesional 2026-07-11 (tabla del usuario):
+  //   codigo 1/2/3 (A)      -> suma Total Neto Gravado (col. AE)
+  //   codigo 6/7/8 (B)      -> NO suma (se importa visible con $0)
+  //   codigo 11/12/13/15 (C) -> suma Importe Total (col. H)
+  it('aplica el criterio por codigo de comprobante en compras: A neto gravado, B no suma, C importe total', () => {
+    const header = 'Fecha de Emisión;Tipo de Comprobante;Punto de Venta;Número de Comprobante;Tipo Doc. Vendedor;Nro. Doc. Vendedor;Denominación Vendedor;Importe Total;Moneda Original;Tipo de Cambio;Importe No Gravado;Importe Exento;Crédito Fiscal Computable;Importe de Per. o Pagos a Cta. de Otros Imp. Nac.;Importe de Percepciones de Ingresos Brutos;Importe de Impuestos Municipales;Importe de Percepciones o Pagos a Cuenta de IVA;Importe de Impuestos Internos;Importe Otros Tributos;Neto Gravado IVA 0%;Neto Gravado IVA 2,5%;Importe IVA 2,5%;Neto Gravado IVA 5%;Importe IVA 5%;Neto Gravado IVA 10,5%;Importe IVA 10,5%;Neto Gravado IVA 21%;Importe IVA 21%;Neto Gravado IVA 27%;Importe IVA 27%;Total Neto Gravado;Total IVA';
+    const fila = (codigo: string, total: string, neto: string, exento = '0,00') =>
+      `2025-02-05;${codigo};1;100;80;30111111112;"PROVEEDOR";${total};"PES";1,00;0,00;${exento};0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;0,00;${neto};0,00;0,00;0,00;${neto};0,00`;
+
+    const csv = [
+      header,
+      fila('1', '12100,00', '10000,00'),   // Factura A: suma neto 10000
+      fila('3', '-2420,00', '-2000,00'),   // NC A: resta neto -2000
+      fila('6', '5000,00', '0,00'),        // Factura B: NO suma (visible con $0)
+      fila('7', '800,00', '0,00'),         // ND B: NO suma
+      fila('11', '3000,00', '0,00'),       // Factura C: suma total 3000
+      fila('13', '-500,00', '0,00'),       // NC C: resta total -500
+      fila('15', '1500,00', '0,00'),       // Recibo C: suma total 1500
+      fila('1', '6050,00', '4000,00', '1000,00'), // Factura A con parte exenta: neto 4000 + fila exenta 1000
+    ].join('\r\n');
+
+    const summary = parseAfipExportFile(Buffer.from(csv, 'latin1'), 'compras_criterio.csv');
+
+    expect(summary.fileType).toBe('LibroIVACompras');
+    expect(summary.errors.length).toBe(0);
+
+    // Total que suma a efectos de Ganancias: 10000 - 2000 + 0 + 0 + 3000 - 500 + 1500 + 4000 + 1000 = 17000
+    expect(summary.totalAmount.toNumber()).toBe(17000);
+
+    const byType = (code: string) => summary.purchases!.filter(p => p.invoiceType === code);
+
+    // A: neto gravado con signo
+    expect(byType('1')[0].netAmount.toNumber()).toBe(10000);
+    expect(byType('3')[0].netAmount.toNumber()).toBe(-2000);
+
+    // B: importados visibles pero con $0 y no deducibles (no suman en ningun total)
+    const facturaB = byType('6')[0];
+    expect(facturaB.netAmount.toNumber()).toBe(0);
+    expect(facturaB.isDeductible).toBe(false);
+    expect(facturaB.totalAmount?.toNumber()).toBe(5000); // traza del importe real
+    expect(byType('7')[0].netAmount.toNumber()).toBe(0);
+
+    // C: importe total con signo, deducible
+    expect(byType('11')[0].netAmount.toNumber()).toBe(3000);
+    expect(byType('11')[0].isDeductible).toBe(true);
+    expect(byType('13')[0].netAmount.toNumber()).toBe(-500);
+    expect(byType('15')[0].netAmount.toNumber()).toBe(1500);
+
+    // Factura A con parte exenta: fila neto deducible + fila exenta aparte (ambas suman)
+    const facturasA = byType('1');
+    expect(facturasA).toHaveLength(3); // 10000 + neto 4000 + exenta 1000
+    const exenta = facturasA.find(p => p.isExempt);
+    expect(exenta?.netAmount.toNumber()).toBe(1000);
   });
 
   it('importa Notas de Credito preservando el signo negativo de AFIP (restan)', () => {

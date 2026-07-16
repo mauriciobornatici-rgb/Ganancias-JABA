@@ -6,6 +6,7 @@ type PurchaseMonthlyRow = {
   date?: string | null;
   netAmount?: string | number | null;
   expenseType?: string | null;
+  isDeductible?: boolean | null;
 };
 
 /**
@@ -97,7 +98,11 @@ export function buildPurchaseMonthlySummary(rows: PurchaseMonthlyRow[]) {
   const totalByExpenseType = emptyExpenseBreakdown();
 
   for (const row of rows) {
-    const amount = safeDecimal(row.netAmount);
+    // Criterio 2026-07-16: los totales mensuales solo suman lo marcado "Deducible en Ganancias"
+    // (columna Tratamiento). Los no deducibles se cuentan como comprobantes pero suman $0,
+    // igual que en el total Deducible de la cabecera.
+    const isDeductible = row.isDeductible !== false;
+    const amount = isDeductible ? safeDecimal(row.netAmount) : new Decimal(0);
     const month = purchaseMonthFromDate(row.date);
     const category = expenseCategoryOf(row.expenseType);
     totalNetAmount = totalNetAmount.add(amount);

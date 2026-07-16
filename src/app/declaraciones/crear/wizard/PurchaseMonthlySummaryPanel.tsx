@@ -43,7 +43,7 @@ export function PurchaseMonthlySummaryPanel({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
           <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-200">Compras por mes</h3>
-          <p className="mt-1 text-[10px] text-zinc-500">Importe neto y cantidad de comprobantes. Seleccione un mes para analizar su detalle.</p>
+          <p className="mt-1 text-[10px] text-zinc-500">Importe neto deducible y cantidad de comprobantes (los no deducibles no suman). Seleccione un mes para analizar su detalle.</p>
         </div>
         <button
           type="button"

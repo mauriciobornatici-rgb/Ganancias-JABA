@@ -467,6 +467,30 @@ function parseLibroVentas(
 }
 
 /**
+ * Codigos AFIP de comprobantes tipo B: no suman a efectos de Ganancias (criterio 2026-07-11).
+ * 6 = Factura B, 7 = Nota de Debito B, 8 = Nota de Credito B.
+ */
+const PURCHASE_B_CODES = new Set([6, 7, 8]);
+
+/**
+ * Codigos AFIP de comprobantes tipo C: suman por el Importe Total (criterio 2026-07-11).
+ * 11 = Factura C, 12 = Nota de Debito C, 13 = Nota de Credito C, 15 = Recibo C.
+ */
+const PURCHASE_C_CODES = new Set([11, 12, 13, 15]);
+
+/**
+ * Extrae el codigo numerico AFIP de la celda "Tipo de Comprobante".
+ * Acepta variantes como "1", "001", "11 - Factura C". Devuelve null si no hay codigo legible.
+ */
+export function parsePurchaseVoucherCode(rawType: string | undefined): number | null {
+  if (!rawType) return null;
+  const match = /^\s*0*(\d{1,3})\b/.exec(rawType);
+  if (!match) return null;
+  const code = Number(match[1]);
+  return Number.isInteger(code) && code > 0 ? code : null;
+}
+
+/**
  * Parsea e importa compras y egresos (Libro de IVA Compras / Comprobantes Recibidos)
  */
 function parseLibroCompras(
@@ -515,8 +539,10 @@ function parseLibroCompras(
       const exemptVal = exemptIndex !== -1 ? parseAfipDecimal(row[exemptIndex] || 0) : new Decimal(0);
       const noGravadoVal = noGravadoIndex !== -1 ? parseAfipDecimal(row[noGravadoIndex] || 0) : new Decimal(0);
       const totalVal = totalIndex !== -1 ? parseAfipDecimal(row[totalIndex] || 0) : new Decimal(0);
+      const rawInvoiceType = textCell(row, invoiceTypeIndex);
+      const voucherCode = parsePurchaseVoucherCode(rawInvoiceType);
       const importedDetail = {
-        invoiceType: textCell(row, invoiceTypeIndex) || undefined,
+        invoiceType: rawInvoiceType || undefined,
         invoiceNumber: buildInvoiceNumber(row, pointOfSaleIndex, invoiceNumberIndex),
         vendorName: textCell(row, vendorNameIndex) || undefined,
         counterpartyCuit: textCell(row, vendorCuitIndex) || undefined,
@@ -524,7 +550,39 @@ function parseLibroCompras(
         totalAmount: moneyCell(row, totalIndex),
       };
 
-      // Neto gravado con su signo de AFIP (negativo en notas de credito recibidas = resta).
+      // Criterio profesional (2026-07-11) por codigo AFIP de comprobante:
+      //   A (1, 2, 3)      -> suma el Total Neto Gravado (+ su parte exenta/no gravada como fila aparte).
+      //   B (6, 7, 8)      -> NO suma: se importa visible con $0 para conservar la traza.
+      //   C (11, 12, 13, 15) -> suma el Importe Total.
+      // El signo de AFIP se preserva siempre (una NC recibida viene negativa y resta).
+      if (voucherCode !== null && PURCHASE_B_CODES.has(voucherCode)) {
+        purchases.push({
+          date: dateVal,
+          netAmount: new Decimal(0),
+          isDeductible: false,
+          isExempt: false,
+          expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE,
+          ...importedDetail,
+        });
+        continue;
+      }
+
+      if (voucherCode !== null && PURCHASE_C_CODES.has(voucherCode)) {
+        if (!totalVal.isZero()) {
+          purchases.push({
+            date: dateVal,
+            netAmount: totalVal,
+            isDeductible: true,
+            isExempt: false,
+            expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE,
+            ...importedDetail,
+          });
+          totalAmount = totalAmount.add(totalVal);
+        }
+        continue;
+      }
+
+      // Codigos A y comprobantes sin codigo reconocido: neto gravado con su signo de AFIP.
       if (!netVal.isZero()) {
         purchases.push({
           date: dateVal,
@@ -550,11 +608,11 @@ function parseLibroCompras(
         totalAmount = totalAmount.add(totalExemptVal);
       }
 
-      // Decision del usuario (2026-06-10): comprobantes sin neto/exento/no gravado discriminado
-      // (Facturas/Recibos C de monotributistas, Facturas B) se importan usando el Importe Total
-      // como gasto deducible. El signo de AFIP se preserva (una NC sin discriminar restaria).
       const sinDiscriminar = netVal.isZero() && totalExemptVal.isZero();
-      if (sinDiscriminar && !totalVal.isZero()) {
+
+      // Comprobantes SIN codigo reconocido y sin neto/exento discriminado (decision 2026-06-10):
+      // se importan usando el Importe Total como gasto deducible.
+      if (voucherCode === null && sinDiscriminar && !totalVal.isZero()) {
         purchases.push({
           date: dateVal,
           netAmount: totalVal,
@@ -564,6 +622,19 @@ function parseLibroCompras(
           ...importedDetail,
         });
         totalAmount = totalAmount.add(totalVal);
+      }
+
+      // Comprobante A sin neto gravado ni exento: segun el criterio suma $0, pero se importa
+      // visible para no perder la traza del comprobante.
+      if (voucherCode !== null && sinDiscriminar && !totalVal.isZero()) {
+        purchases.push({
+          date: dateVal,
+          netAmount: new Decimal(0),
+          isDeductible: false,
+          isExempt: false,
+          expenseType: DEFAULT_PURCHASE_EXPENSE_TYPE,
+          ...importedDetail,
+        });
       }
     } catch (err: unknown) {
       errors.push(`Fila ${i + 1}: Error de procesamiento: ${errorMessage(err)}`);

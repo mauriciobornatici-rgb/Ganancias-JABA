@@ -706,6 +706,10 @@ model SalesInvoice {
   ivaAmount     Decimal   @db.Decimal(18, 2)
   totalAmount   Decimal   @db.Decimal(18, 2)
   isExempt      Boolean   @default(false) // Soporte para Ingresos Exentos (Monotributo/Exenciones)
+  // Criterio 2026-07-16: categoría de la venta (Bienes / Servicios / MueblesYUtiles) y si computa
+  // en los ingresos de Ganancias (No computable = excluida del cálculo de la DDJJ).
+  saleCategory  String    @default("Bienes")
+  isComputable  Boolean   @default(true)
   // Trazabilidad de la importación desde el libro fiscal mensual (módulo IVA). Nulos = carga manual.
   importSource         String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
   sourceFiscalDocumentId String? // Comprobante mensual de origen, para auditar registro anual ↔ mensual.

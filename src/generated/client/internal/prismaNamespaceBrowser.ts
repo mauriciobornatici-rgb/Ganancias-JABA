@@ -590,6 +590,8 @@ export const SalesInvoiceScalarFieldEnum = {
   ivaAmount: 'ivaAmount',
   totalAmount: 'totalAmount',
   isExempt: 'isExempt',
+  saleCategory: 'saleCategory',
+  isComputable: 'isComputable',
   importSource: 'importSource',
   sourceFiscalDocumentId: 'sourceFiscalDocumentId',
   createdAt: 'createdAt',
@@ -1278,6 +1280,7 @@ export const SalesInvoiceOrderByRelevanceFieldEnum = {
   invoiceNumber: 'invoiceNumber',
   customerName: 'customerName',
   counterpartyCuit: 'counterpartyCuit',
+  saleCategory: 'saleCategory',
   importSource: 'importSource',
   sourceFiscalDocumentId: 'sourceFiscalDocumentId'
 } as const

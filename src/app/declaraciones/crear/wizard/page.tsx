@@ -110,6 +110,8 @@ import {
   type WizardWithholding,
 } from '@/domain/ganancias/presentation/wizardStateTypes';
 import { FixedAssetCandidatesPanel, type FixedAssetCandidateView } from './FixedAssetCandidatesPanel';
+import { buildSalesMonthlySummary } from '@/domain/ganancias/presentation/salesMonthlySummary';
+import { SalesMonthlySummaryPanel } from './SalesMonthlySummaryPanel';
 import {
   buildTaxReturnCloseConsistencyWarning,
   buildTaxReturnPreviewStatus,
@@ -1189,6 +1191,7 @@ export default function WizardPage() {
   const [purchasesPage, setPurchasesPage] = useState(1);
   const [purchasesSearch, setPurchasesSearch] = useState('');
   const [purchaseMonthFilter, setPurchaseMonthFilter] = useState<PurchaseMonthFilter>('all');
+  const [salesMonthFilter, setSalesMonthFilter] = useState<PurchaseMonthFilter>('all');
 
   const handleSelectSale = (index: number) => {
     setSelectedSales(prev => prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]);
@@ -1232,6 +1235,12 @@ export default function WizardPage() {
     setPurchaseMonthFilter(filter);
     setPurchasesPage(1);
     setSelectedPurchases([]);
+  };
+
+  const handleSalesMonthFilter = (filter: PurchaseMonthFilter) => {
+    setSalesMonthFilter(filter);
+    setSalesPage(1);
+    setSelectedSales([]);
   };
 
   const applyBulkPurchasesAction = (action: 'deductible' | 'nondeductible' | 'exempt' | 'delete' | string) => {
@@ -2010,8 +2019,15 @@ export default function WizardPage() {
       totalRows: filtered.length,
     };
   };
+  const salesMonthlySummary = buildSalesMonthlySummary(sales);
   const salesGrid = buildPagedRows(sales, salesSearch, salesPage,
-    s => `${s.customerName ?? ''} ${s.counterpartyCuit ?? ''} ${s.invoiceNumber ?? ''} ${s.date ?? ''} ${s.netAmount ?? ''}`);
+    s => `${s.customerName ?? ''} ${s.counterpartyCuit ?? ''} ${s.invoiceNumber ?? ''} ${s.date ?? ''} ${s.netAmount ?? ''}`,
+    s => matchesPurchaseMonthFilter(s.date, salesMonthFilter));
+  const activeSalesMonthLabel = salesMonthFilter === 'all'
+    ? 'Todos los meses'
+    : salesMonthFilter === 'undated'
+      ? 'Sin fecha válida'
+      : salesMonthlySummary.months[salesMonthFilter - 1]?.label ?? 'Mes';
   const purchaseMonthlySummary = buildPurchaseMonthlySummary(purchases);
   const purchasesGrid = buildPagedRows(purchases, purchasesSearch, purchasesPage,
     p => `${p.vendorName ?? ''} ${p.counterpartyCuit ?? ''} ${p.invoiceNumber ?? ''} ${p.date ?? ''} ${p.netAmount ?? ''}`,
@@ -2666,6 +2682,15 @@ export default function WizardPage() {
 
               {renderUploadSummary('sales')}
 
+              {sales.length > 0 && (
+                <SalesMonthlySummaryPanel
+                  summary={salesMonthlySummary}
+                  activeFilter={salesMonthFilter}
+                  activeFilterLabel={activeSalesMonthLabel}
+                  onFilterChange={handleSalesMonthFilter}
+                />
+              )}
+
               {/* ACCIONES MASIVAS - BULK ACTIONS PANEL */}
               {selectedSales.length > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-lg bg-teal-500/10 border border-teal-500/25 mb-4 animate-fadeIn">
@@ -2712,6 +2737,8 @@ export default function WizardPage() {
                       <th className="px-4 py-3">Comprobante / Contraparte</th>
                       <th className="px-4 py-3 text-right">Importe Neto ($)</th>
                       <th className="px-4 py-3 text-center">Tipo de Ingreso</th>
+                      <th className="px-4 py-3 text-center">Categoría</th>
+                      <th className="px-4 py-3 text-center">Tratamiento</th>
                       <th className="px-4 py-3 text-right">Eliminar</th>
                     </tr>
                   </thead>
@@ -2777,6 +2804,27 @@ export default function WizardPage() {
                           >
                             <option value="false">Gravado (Ganancias)</option>
                             <option value="true">Exento (Monotributo/Ley)</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <select
+                            value={sale.saleCategory || 'Bienes'}
+                            onChange={(e) => handleCellChange(index, 'saleCategory', e.target.value, 'sales')}
+                            className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
+                          >
+                            <option value="Bienes">Bienes</option>
+                            <option value="Servicios">Servicios</option>
+                            <option value="MueblesYUtiles">Muebles y Útiles</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          <select
+                            value={sale.isComputable === false ? 'false' : 'true'}
+                            onChange={(e) => handleCellChange(index, 'isComputable', e.target.value === 'true', 'sales')}
+                            className="bg-[#09090b] border border-zinc-800 rounded px-2.5 py-1 text-xs text-zinc-300 focus:outline-none"
+                          >
+                            <option value="true">Deducible en Ganancias</option>
+                            <option value="false">No Computable</option>
                           </select>
                         </td>
                         <td className="px-4 py-2 text-right">

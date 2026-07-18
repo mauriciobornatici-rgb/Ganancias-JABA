@@ -120,6 +120,8 @@ export async function GET(
         date: formatDateForWizardInput(s.date),
         netAmount: s.netAmount.toString(),
         isExempt: s.isExempt,
+        saleCategory: s.saleCategory,
+        isComputable: s.isComputable,
         invoiceType: s.invoiceType,
         invoiceNumber: s.invoiceNumber,
         customerName: s.customerName,

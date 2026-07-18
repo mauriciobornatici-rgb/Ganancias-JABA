@@ -1,0 +1,3 @@
+﻿ALTER TABLE `SalesInvoice`
+  ADD COLUMN `saleCategory` VARCHAR(191) NOT NULL DEFAULT 'Bienes',
+  ADD COLUMN `isComputable` BOOLEAN NOT NULL DEFAULT true;

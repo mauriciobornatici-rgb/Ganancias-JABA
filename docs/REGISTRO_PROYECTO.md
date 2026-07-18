@@ -1,8 +1,15 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-16
+Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
+
+### 2026-07-18 - Punto 3 (parte 1): /clientes como ruta propia - piloto de navegacion por URLs
+
+- Arranca la migracion del dashboard monolitico (page.tsx) a rutas reales. Piloto: la pestania Clientes ahora vive en `/clientes` (favoritos, boton atras y F5 funcionan), misma UI y comportamiento (solapas Activos/Dados de baja, alta, edicion, baja logica, reactivacion).
+- Header compartido nuevo `AppHeader` (src/app/AppHeader.tsx) con Links reales; lo usan el dashboard y /clientes. Parametros y Auditoria siguen como vistas internas de "/" seleccionadas por `?view=parametros|auditoria` (URLs marcables) hasta migrarlas.
+- "Ver Liquidaciones" navega a `/?buscar=<nombre>`; el dashboard lee `?buscar` (searchTerm inicial) y deriva `activeView` de `?view` (sin estado, evita la regla react-hooks/set-state-in-effect). `useSearchParams` exige envolver Home en `<Suspense>` para el prerender.
+- El monolito perdio la vista clientes, sus modales y handlers (~350 lineas menos). Proximos pasos de la migracion: Parametros y Auditoria a sus propias rutas, luego partir el dashboard.
 
 ### 2026-07-17 - Punto 2 del plan: IIBB automatico + circuito de candidatos + ventas con categorias
 

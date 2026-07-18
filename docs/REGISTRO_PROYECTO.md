@@ -4,6 +4,14 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-18 - Punto 3 (parte 2): /parametros y /auditoria como rutas propias - navegacion 100% por URLs
+
+- Segunda etapa de la migracion: Parametros y Auditoria dejaron de ser vistas internas del dashboard y viven en `/parametros` y `/auditoria` con la misma UI y comportamiento. La navegacion completa (Dashboard, Clientes, Parametros, Auditoria) es ahora por URLs reales.
+- Compatibilidad: `/?view=parametros|auditoria` redirige a las rutas nuevas (router.replace), los favoritos viejos siguen funcionando.
+- El dashboard quedo solo con su vista: page.tsx bajo de ~1477 a ~590 lineas (2050 al inicio de la migracion). Conserva una carga compacta de parametros 2025 para la tarjeta "Periodo Activo".
+- Fix colateral: al guardar una edicion manual de parametros ahora se recarga la lista de resoluciones (el guardado crea una version nueva por el versionado append-only; antes el selector seguia mostrando la version anterior).
+- Pendiente de la migracion: partir el resto del dashboard si crece, y accesibilidad/tamanios de texto (punto 3 parte 3).
+
 ### 2026-07-18 - Punto 3 (parte 1): /clientes como ruta propia - piloto de navegacion por URLs
 
 - Arranca la migracion del dashboard monolitico (page.tsx) a rutas reales. Piloto: la pestania Clientes ahora vive en `/clientes` (favoritos, boton atras y F5 funcionan), misma UI y comportamiento (solapas Activos/Dados de baja, alta, edicion, baja logica, reactivacion).

@@ -5,17 +5,12 @@ import { Sparkles, LogOut } from 'lucide-react';
 
 export type AppSection = 'dashboard' | 'clientes' | 'parametros' | 'auditoria';
 
-/**
- * Navegación principal por URLs (migración progresiva del dashboard monolítico):
- * - /clientes ya es una ruta propia.
- * - Parámetros y Auditoría siguen viviendo como vistas internas de "/" y se
- *   accede con ?view=... hasta que se migren a sus propias rutas.
- */
+/** Navegación principal por URLs: cada sección es una ruta propia. */
 const NAV_ITEMS: ReadonlyArray<{ key: AppSection; label: string; href: string }> = [
   { key: 'dashboard', label: 'Dashboard', href: '/' },
   { key: 'clientes', label: 'Clientes', href: '/clientes' },
-  { key: 'parametros', label: 'Parámetros', href: '/?view=parametros' },
-  { key: 'auditoria', label: 'Auditoría', href: '/?view=auditoria' },
+  { key: 'parametros', label: 'Parámetros', href: '/parametros' },
+  { key: 'auditoria', label: 'Auditoría', href: '/auditoria' },
 ];
 
 async function handleLogout() {

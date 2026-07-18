@@ -2,6 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { buildTaxReturnCalculationInput } from '../mappers/calculationInputMapper';
 
 describe('buildTaxReturnCalculationInput', () => {
+  it('excluye del cálculo las ventas marcadas No Computable (criterio 2026-07-16)', () => {
+    const input = buildTaxReturnCalculationInput(
+      {
+        fiscalYear: 2025,
+        sales: [
+          { date: '2025-03-10', netAmount: '1000', isExempt: false },                        // sin flag -> computa
+          { date: '2025-04-10', netAmount: '2000', isExempt: false, isComputable: true },    // computa
+          { date: '2025-05-10', netAmount: '5000', isExempt: false, isComputable: false },   // excluida
+          { date: '2025-06-10', netAmount: '300', isExempt: true, isComputable: false },     // excluida (ni exenta)
+        ],
+      },
+      {},
+    );
+
+    expect(input.sales).toHaveLength(2);
+    const amounts = input.sales.map(sale => sale.netAmount.toString());
+    expect(amounts).toEqual(['1000', '2000']);
+  });
+
   it('preserva campos guardados que impactan papel de trabajo y JVP', () => {
     const input = buildTaxReturnCalculationInput(
       {

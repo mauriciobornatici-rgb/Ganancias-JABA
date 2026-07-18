@@ -138,6 +138,43 @@ function expenseTypeFor(gainsKind: GainsAllocationKind): { expenseType: string; 
   }
 }
 
+export type IibbDeterminedEntry = {
+  year: number;
+  month: number;
+  /** Impuesto determinado de IIBB del mes (liquidación CLOSED del módulo mensual). */
+  determinedTax: Decimal;
+};
+
+/**
+ * Crea las filas de gasto deducible por el IIBB determinado de cada mes cotejado
+ * (criterio del usuario 2026-07-16: una fila por mes, con el impuesto determinado).
+ * Llevan importSource=MONTHLY_LEDGER, por lo que la reimportación las reemplaza
+ * de forma idempotente igual que los comprobantes.
+ */
+export function buildIibbDeterminedExpenseDrafts(entries: IibbDeterminedEntry[]): PurchaseInvoiceDraft[] {
+  return entries
+    .filter(entry => !entry.determinedTax.isZero())
+    .map(entry => {
+      const mm = String(entry.month).padStart(2, '0');
+      return {
+        // Último día del mes del período liquidado.
+        date: new Date(Date.UTC(entry.year, entry.month, 0)),
+        invoiceType: 'IIBB',
+        invoiceNumber: `IIBB-${entry.year}-${mm}`,
+        vendorName: `Ingresos Brutos determinado ${mm}/${entry.year}`,
+        counterpartyCuit: null,
+        netAmount: entry.determinedTax.toFixed(2),
+        ivaAmount: '0.00',
+        totalAmount: entry.determinedTax.toFixed(2),
+        isDeductible: true,
+        isExempt: false,
+        expenseType: 'GastosGenerales',
+        importSource: MONTHLY_IMPORT_SOURCE,
+        sourceFiscalDocumentId: `IIBB-DETERMINADO-${entry.year}-${mm}`,
+      };
+    });
+}
+
 export function mapMonthlyDocumentsToTaxReturnInputs(documents: MonthlyImportDocument[]): MonthlyImportResult {
   const sales: SalesInvoiceDraft[] = [];
   const purchases: PurchaseInvoiceDraft[] = [];

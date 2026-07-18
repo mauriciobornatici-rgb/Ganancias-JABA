@@ -5,7 +5,9 @@ import { Decimal } from 'decimal.js';
 import { prisma } from '@/domain/ganancias/prisma';
 import {
   mapMonthlyDocumentsToTaxReturnInputs,
+  buildIibbDeterminedExpenseDrafts,
   MONTHLY_IMPORT_SOURCE,
+  type IibbDeterminedEntry,
   type MonthlyImportDocument,
 } from '@/domain/ganancias/fiscalLedger/taxReturnMonthlyImport';
 import { readAnnualConsolidation } from '@/domain/ganancias/persistence/annualConsolidationRead';
@@ -87,11 +89,16 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const importDocs: MonthlyImportDocument[] = [];
     let iibbTotal = new Decimal(0);
+    const iibbEntries: IibbDeterminedEntry[] = [];
     const monthsUsed: number[] = [];
     for (const period of closedPeriods) {
       monthsUsed.push(period.month);
       const iibb = period.grossIncomeSettlements[0]?.totalDeterminedTax;
-      if (iibb) iibbTotal = iibbTotal.add(new Decimal(iibb.toString()));
+      if (iibb) {
+        const determinedTax = new Decimal(iibb.toString());
+        iibbTotal = iibbTotal.add(determinedTax);
+        iibbEntries.push({ year, month: period.month, determinedTax });
+      }
       for (const d of period.documents) {
         importDocs.push({
           id: d.id,
@@ -117,6 +124,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const mapped = mapMonthlyDocumentsToTaxReturnInputs(importDocs);
+    const iibbExpenseDrafts = buildIibbDeterminedExpenseDrafts(iibbEntries);
 
     // Reemplazo idempotente: borra lo importado antes (no las cargas manuales) y recrea.
     await prisma.$transaction([
@@ -124,7 +132,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       prisma.purchaseInvoice.deleteMany({ where: { taxReturnId, importSource: MONTHLY_IMPORT_SOURCE } }),
       prisma.fixedAssetImportCandidate.deleteMany({ where: { taxReturnId, status: 'PENDING' } }),
       prisma.salesInvoice.createMany({ data: mapped.sales.map(s => ({ ...s, taxReturnId })) }),
-      prisma.purchaseInvoice.createMany({ data: mapped.purchases.map(p => ({ ...p, taxReturnId })) }),
+      prisma.purchaseInvoice.createMany({ data: [...mapped.purchases, ...iibbExpenseDrafts].map(p => ({ ...p, taxReturnId })) }),
       // skipDuplicates: un candidato ya procesado (status != PENDING) no se borra arriba; sin esto,
       // recrearlo violaría @@unique(taxReturnId, sourceFiscalDocumentId) y abortaría toda la importación.
       prisma.fixedAssetImportCandidate.createMany({ skipDuplicates: true, data: mapped.fixedAssetCandidates.map(candidate => ({
@@ -166,7 +174,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       console.error(`No se pudo guardar el snapshot de consolidación anual (taxReturn ${taxReturnId}):`, error);
     }
 
-    const notices = buildNotices(mapped.summary, iibbTotal);
+    const notices = buildNotices(mapped.summary, iibbTotal, iibbExpenseDrafts.length);
     if (snapshotError) {
       notices.push('La importación se guardó, pero no pudo registrarse el snapshot de consolidación anual: cambios posteriores en el libro mensual no serán detectados automáticamente. Reintentá la importación para regenerarlo.');
     }
@@ -191,7 +199,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 }
 
-function buildNotices(summary: { fixedAssetCount: number; pendingReview: number }, iibbTotal: Decimal): string[] {
+function buildNotices(summary: { fixedAssetCount: number; pendingReview: number }, iibbTotal: Decimal, iibbMonthsLoaded: number): string[] {
   const notices: string[] = [];
   if (summary.fixedAssetCount > 0) {
     notices.push(`${summary.fixedAssetCount} comprobante(s) de bienes de uso quedaron como candidatos: cargá su vida útil en la sección de amortizaciones.`);
@@ -199,8 +207,8 @@ function buildNotices(summary: { fixedAssetCount: number; pendingReview: number 
   if (summary.pendingReview > 0) {
     notices.push(`${summary.pendingReview} compra(s) se importaron como gasto deducible por defecto: revisá si alguna es mercadería o bien de uso.`);
   }
-  if (iibbTotal.greaterThan(0)) {
-    notices.push(`IIBB cotejado del año: ${iibbTotal.toFixed(2)}. Cargalo como gasto deducible si corresponde (no se crea automáticamente).`);
+  if (iibbMonthsLoaded > 0) {
+    notices.push(`IIBB determinado cargado automáticamente como gasto deducible: ${iibbMonthsLoaded} mes(es) por un total de ${iibbTotal.toFixed(2)} (una fila por mes, se reemplazan al reimportar).`);
   }
   return notices;
 }

@@ -50,6 +50,8 @@ export type SalesInvoiceMinAggregateOutputType = {
   ivaAmount: runtime.Decimal | null
   totalAmount: runtime.Decimal | null
   isExempt: boolean | null
+  saleCategory: string | null
+  isComputable: boolean | null
   importSource: string | null
   sourceFiscalDocumentId: string | null
   createdAt: Date | null
@@ -68,6 +70,8 @@ export type SalesInvoiceMaxAggregateOutputType = {
   ivaAmount: runtime.Decimal | null
   totalAmount: runtime.Decimal | null
   isExempt: boolean | null
+  saleCategory: string | null
+  isComputable: boolean | null
   importSource: string | null
   sourceFiscalDocumentId: string | null
   createdAt: Date | null
@@ -86,6 +90,8 @@ export type SalesInvoiceCountAggregateOutputType = {
   ivaAmount: number
   totalAmount: number
   isExempt: number
+  saleCategory: number
+  isComputable: number
   importSource: number
   sourceFiscalDocumentId: number
   createdAt: number
@@ -118,6 +124,8 @@ export type SalesInvoiceMinAggregateInputType = {
   ivaAmount?: true
   totalAmount?: true
   isExempt?: true
+  saleCategory?: true
+  isComputable?: true
   importSource?: true
   sourceFiscalDocumentId?: true
   createdAt?: true
@@ -136,6 +144,8 @@ export type SalesInvoiceMaxAggregateInputType = {
   ivaAmount?: true
   totalAmount?: true
   isExempt?: true
+  saleCategory?: true
+  isComputable?: true
   importSource?: true
   sourceFiscalDocumentId?: true
   createdAt?: true
@@ -154,6 +164,8 @@ export type SalesInvoiceCountAggregateInputType = {
   ivaAmount?: true
   totalAmount?: true
   isExempt?: true
+  saleCategory?: true
+  isComputable?: true
   importSource?: true
   sourceFiscalDocumentId?: true
   createdAt?: true
@@ -259,6 +271,8 @@ export type SalesInvoiceGroupByOutputType = {
   ivaAmount: runtime.Decimal
   totalAmount: runtime.Decimal
   isExempt: boolean
+  saleCategory: string
+  isComputable: boolean
   importSource: string | null
   sourceFiscalDocumentId: string | null
   createdAt: Date
@@ -300,6 +314,8 @@ export type SalesInvoiceWhereInput = {
   ivaAmount?: Prisma.DecimalFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFilter<"SalesInvoice"> | boolean
+  saleCategory?: Prisma.StringFilter<"SalesInvoice"> | string
+  isComputable?: Prisma.BoolFilter<"SalesInvoice"> | boolean
   importSource?: Prisma.StringNullableFilter<"SalesInvoice"> | string | null
   sourceFiscalDocumentId?: Prisma.StringNullableFilter<"SalesInvoice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SalesInvoice"> | Date | string
@@ -319,6 +335,8 @@ export type SalesInvoiceOrderByWithRelationInput = {
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
+  saleCategory?: Prisma.SortOrder
+  isComputable?: Prisma.SortOrder
   importSource?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceFiscalDocumentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -342,6 +360,8 @@ export type SalesInvoiceWhereUniqueInput = Prisma.AtLeast<{
   ivaAmount?: Prisma.DecimalFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFilter<"SalesInvoice"> | boolean
+  saleCategory?: Prisma.StringFilter<"SalesInvoice"> | string
+  isComputable?: Prisma.BoolFilter<"SalesInvoice"> | boolean
   importSource?: Prisma.StringNullableFilter<"SalesInvoice"> | string | null
   sourceFiscalDocumentId?: Prisma.StringNullableFilter<"SalesInvoice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SalesInvoice"> | Date | string
@@ -361,6 +381,8 @@ export type SalesInvoiceOrderByWithAggregationInput = {
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
+  saleCategory?: Prisma.SortOrder
+  isComputable?: Prisma.SortOrder
   importSource?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceFiscalDocumentId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -387,6 +409,8 @@ export type SalesInvoiceScalarWhereWithAggregatesInput = {
   ivaAmount?: Prisma.DecimalWithAggregatesFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalWithAggregatesFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolWithAggregatesFilter<"SalesInvoice"> | boolean
+  saleCategory?: Prisma.StringWithAggregatesFilter<"SalesInvoice"> | string
+  isComputable?: Prisma.BoolWithAggregatesFilter<"SalesInvoice"> | boolean
   importSource?: Prisma.StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
   sourceFiscalDocumentId?: Prisma.StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SalesInvoice"> | Date | string
@@ -404,6 +428,8 @@ export type SalesInvoiceCreateInput = {
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: boolean
+  saleCategory?: string
+  isComputable?: boolean
   importSource?: string | null
   sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
@@ -423,6 +449,8 @@ export type SalesInvoiceUncheckedCreateInput = {
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: boolean
+  saleCategory?: string
+  isComputable?: boolean
   importSource?: string | null
   sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
@@ -440,6 +468,8 @@ export type SalesInvoiceUpdateInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -459,6 +489,8 @@ export type SalesInvoiceUncheckedUpdateInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -477,6 +509,8 @@ export type SalesInvoiceCreateManyInput = {
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: boolean
+  saleCategory?: string
+  isComputable?: boolean
   importSource?: string | null
   sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
@@ -494,6 +528,8 @@ export type SalesInvoiceUpdateManyMutationInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -512,6 +548,8 @@ export type SalesInvoiceUncheckedUpdateManyInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -546,6 +584,8 @@ export type SalesInvoiceCountOrderByAggregateInput = {
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
+  saleCategory?: Prisma.SortOrder
+  isComputable?: Prisma.SortOrder
   importSource?: Prisma.SortOrder
   sourceFiscalDocumentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -570,6 +610,8 @@ export type SalesInvoiceMaxOrderByAggregateInput = {
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
+  saleCategory?: Prisma.SortOrder
+  isComputable?: Prisma.SortOrder
   importSource?: Prisma.SortOrder
   sourceFiscalDocumentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -588,6 +630,8 @@ export type SalesInvoiceMinOrderByAggregateInput = {
   ivaAmount?: Prisma.SortOrder
   totalAmount?: Prisma.SortOrder
   isExempt?: Prisma.SortOrder
+  saleCategory?: Prisma.SortOrder
+  isComputable?: Prisma.SortOrder
   importSource?: Prisma.SortOrder
   sourceFiscalDocumentId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
@@ -653,6 +697,8 @@ export type SalesInvoiceCreateWithoutTaxReturnInput = {
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: boolean
+  saleCategory?: string
+  isComputable?: boolean
   importSource?: string | null
   sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
@@ -670,6 +716,8 @@ export type SalesInvoiceUncheckedCreateWithoutTaxReturnInput = {
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: boolean
+  saleCategory?: string
+  isComputable?: boolean
   importSource?: string | null
   sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
@@ -717,6 +765,8 @@ export type SalesInvoiceScalarWhereInput = {
   ivaAmount?: Prisma.DecimalFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFilter<"SalesInvoice"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFilter<"SalesInvoice"> | boolean
+  saleCategory?: Prisma.StringFilter<"SalesInvoice"> | string
+  isComputable?: Prisma.BoolFilter<"SalesInvoice"> | boolean
   importSource?: Prisma.StringNullableFilter<"SalesInvoice"> | string | null
   sourceFiscalDocumentId?: Prisma.StringNullableFilter<"SalesInvoice"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SalesInvoice"> | Date | string
@@ -734,6 +784,8 @@ export type SalesInvoiceCreateManyTaxReturnInput = {
   ivaAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: boolean
+  saleCategory?: string
+  isComputable?: boolean
   importSource?: string | null
   sourceFiscalDocumentId?: string | null
   createdAt?: Date | string
@@ -751,6 +803,8 @@ export type SalesInvoiceUpdateWithoutTaxReturnInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -768,6 +822,8 @@ export type SalesInvoiceUncheckedUpdateWithoutTaxReturnInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -785,6 +841,8 @@ export type SalesInvoiceUncheckedUpdateManyWithoutTaxReturnInput = {
   ivaAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   totalAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   isExempt?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  saleCategory?: Prisma.StringFieldUpdateOperationsInput | string
+  isComputable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   importSource?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceFiscalDocumentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -805,6 +863,8 @@ export type SalesInvoiceSelect<ExtArgs extends runtime.Types.Extensions.Internal
   ivaAmount?: boolean
   totalAmount?: boolean
   isExempt?: boolean
+  saleCategory?: boolean
+  isComputable?: boolean
   importSource?: boolean
   sourceFiscalDocumentId?: boolean
   createdAt?: boolean
@@ -826,13 +886,15 @@ export type SalesInvoiceSelectScalar = {
   ivaAmount?: boolean
   totalAmount?: boolean
   isExempt?: boolean
+  saleCategory?: boolean
+  isComputable?: boolean
   importSource?: boolean
   sourceFiscalDocumentId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SalesInvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "date" | "invoiceType" | "invoiceNumber" | "customerName" | "counterpartyCuit" | "netAmount" | "ivaAmount" | "totalAmount" | "isExempt" | "importSource" | "sourceFiscalDocumentId" | "createdAt" | "updatedAt", ExtArgs["result"]["salesInvoice"]>
+export type SalesInvoiceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "date" | "invoiceType" | "invoiceNumber" | "customerName" | "counterpartyCuit" | "netAmount" | "ivaAmount" | "totalAmount" | "isExempt" | "saleCategory" | "isComputable" | "importSource" | "sourceFiscalDocumentId" | "createdAt" | "updatedAt", ExtArgs["result"]["salesInvoice"]>
 export type SalesInvoiceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }
@@ -854,6 +916,8 @@ export type $SalesInvoicePayload<ExtArgs extends runtime.Types.Extensions.Intern
     ivaAmount: runtime.Decimal
     totalAmount: runtime.Decimal
     isExempt: boolean
+    saleCategory: string
+    isComputable: boolean
     importSource: string | null
     sourceFiscalDocumentId: string | null
     createdAt: Date
@@ -1239,6 +1303,8 @@ export interface SalesInvoiceFieldRefs {
   readonly ivaAmount: Prisma.FieldRef<"SalesInvoice", 'Decimal'>
   readonly totalAmount: Prisma.FieldRef<"SalesInvoice", 'Decimal'>
   readonly isExempt: Prisma.FieldRef<"SalesInvoice", 'Boolean'>
+  readonly saleCategory: Prisma.FieldRef<"SalesInvoice", 'String'>
+  readonly isComputable: Prisma.FieldRef<"SalesInvoice", 'Boolean'>
   readonly importSource: Prisma.FieldRef<"SalesInvoice", 'String'>
   readonly sourceFiscalDocumentId: Prisma.FieldRef<"SalesInvoice", 'String'>
   readonly createdAt: Prisma.FieldRef<"SalesInvoice", 'DateTime'>

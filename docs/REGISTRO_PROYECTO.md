@@ -4,6 +4,16 @@ Ultima actualizacion: 2026-07-16
 
 ## Entrada reciente
 
+### 2026-07-17 - Punto 2 del plan: IIBB automatico + circuito de candidatos + ventas con categorias
+
+Tres mejoras funcionales definidas por el usuario (criterios 2026-07-16):
+
+1. **IIBB determinado automatico**: al importar el libro mensual a la DDJJ anual, cada mes con IIBB cotejado (CLOSED) crea una fila de gasto deducible con el impuesto determinado de ese mes, fechada el ultimo dia del periodo (expenseType GastosGenerales, invoiceNumber IIBB-AAAA-MM). Lleva importSource=MONTHLY_LEDGER: la reimportacion reemplaza sin duplicar. Builder puro `buildIibbDeterminedExpenseDrafts` con tests.
+2. **Circuito de candidatos a bienes de uso (Paso 4)**: panel sobre la tabla de bienes con los candidatos PENDING de la importacion mensual; "Agregar como bien" precarga proveedor/fecha/importe y marca CONFIRMED, "Descartar" marca DISMISSED, ambos con "Deshacer" (REOPEN). API `GET/PATCH /api/declaraciones/[id]/candidatos-bienes-uso` con guard de inmutabilidad y auditoria.
+3. **Ventas con categorias (Paso 2)**: columnas nuevas Categoria (Bienes/Servicios/MueblesYUtiles, default Bienes) y Tratamiento (Deducible/No Computable, default Deducible). Tarjetas mensuales como en compras: suman SOLO el neto gravado computable (exentas y No Computables cuentan pero no suman) con desglose por categoria y filtro de grilla. EFECTO FISCAL: una venta No Computable queda excluida del calculo de ingresos de la DDJJ (filtro en `calculationInputMapper`, decision explicita del usuario).
+   - Migracion aditiva `20260716130000_add_sales_category_computable` (saleCategory/isComputable con defaults) APLICADA a produccion via migrate deploy el 2026-07-17. Leccion tecnica: el SQL de migracion no debe tener BOM (Set-Content -Encoding utf8 de PowerShell 5.1 lo agrega y MariaDB lo rechaza con error 1064; se resolvio con migrate resolve --rolled-back + archivo limpio).
+   - Las ventas guardadas antes del cambio quedaron con los defaults (Bienes/Deducible); ajustar a mano las que correspondan.
+
 ### 2026-07-16 - UX: contenido del wizard al ancho completo del header (fix de tablas cortadas)
 
 - Reporte del usuario: en el Paso 3 la tabla de comprobantes aparecia cortada con barra de scroll horizontal aun con pantalla ancha de sobra.

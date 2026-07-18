@@ -70,6 +70,8 @@ type SalesPayload = {
   date?: DateValue;
   netAmount?: NumericValue;
   isExempt?: boolean;
+  saleCategory?: string;
+  isComputable?: boolean;
   invoiceType?: string;
   invoiceNumber?: string;
   customerName?: string;
@@ -693,6 +695,8 @@ export async function persistTaxReturnDetails({
         ivaAmount: numberInput(s.ivaAmount, 0, 'ventas.ivaAmount'),
         totalAmount: numberInput(s.totalAmount, numberInput(s.netAmount, 0, 'ventas.netAmount'), 'ventas.totalAmount'),
         isExempt: s.isExempt || false,
+        saleCategory: stringInput(s.saleCategory) || 'Bienes',
+        isComputable: s.isComputable !== false,
         importSource: stringInput(s.importSource) || undefined,
         sourceFiscalDocumentId: stringInput(s.sourceFiscalDocumentId) || undefined,
       })),

@@ -194,11 +194,15 @@ export function buildTaxReturnCalculationInput(
       })),
       ...(usefulCoefficients ? { usefulCoefficients } : {}),
     },
-    sales: asRecordArray(data.sales).map(sale => ({
-      date: dateValue(sale.date),
-      netAmount: decimalValue(sale.netAmount),
-      isExempt: booleanValue(sale.isExempt),
-    })),
+    sales: asRecordArray(data.sales)
+      // Criterio 2026-07-16: las ventas marcadas "No computable" quedan fuera de los
+      // ingresos de la DDJJ (caso típico: venta de bienes de uso que tributa por otro esquema).
+      .filter(sale => sale.isComputable !== false)
+      .map(sale => ({
+        date: dateValue(sale.date),
+        netAmount: decimalValue(sale.netAmount),
+        isExempt: booleanValue(sale.isExempt),
+      })),
     purchases: asRecordArray(data.purchases).map(purchase => ({
       date: dateValue(purchase.date),
       netAmount: decimalValue(purchase.netAmount),

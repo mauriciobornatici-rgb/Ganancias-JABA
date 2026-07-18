@@ -201,6 +201,10 @@ export type WizardSale = WizardEditableRecord & {
   date?: string;
   netAmount?: WizardMoneyValue;
   isExempt?: boolean;
+  /** Categoría de la venta (criterio 2026-07-16): Bienes | Servicios | MueblesYUtiles. */
+  saleCategory?: string;
+  /** false = No computable: excluida de los ingresos de la DDJJ y de las tarjetas mensuales. */
+  isComputable?: boolean;
   invoiceType?: string;
   invoiceNumber?: string;
   customerName?: string;

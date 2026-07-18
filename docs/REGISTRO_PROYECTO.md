@@ -4,6 +4,12 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-19 - UX: importes visibles completos + tipografias legibles (punto 3, parte 3a)
+
+- Pedido del usuario: los campos de carga manual de importes cortaban los digitos (se veia "26006" en lugar del numero completo). Fix: los ~20 inputs numericos de las grillas del wizard (ventas, compras, bienes, bancos, efectivo, deudas, retenciones, justificaciones, AXI) tienen `min-w-[130px]`; la columna crece sola y entran 10+ digitos con centavos.
+- Accesibilidad (primera tajada): todas las tipografias de 8px y 9px subieron a 10px en la app (wizard, tarjetas mensuales y sus desgloses, parametros, auditoria, clientes). EXCLUIDOS a proposito los documentos imprimibles (papel de trabajo, informe cliente, fiscalDocumentChrome, WizardLoadReportPrint): su diseño A4 aprobado queda pixel-identico.
+- Pendiente parte 3b: contraste de textos grises y menu movil.
+
 ### 2026-07-18 - Punto 3 (parte 2): /parametros y /auditoria como rutas propias - navegacion 100% por URLs
 
 - Segunda etapa de la migracion: Parametros y Auditoria dejaron de ser vistas internas del dashboard y viven en `/parametros` y `/auditoria` con la misma UI y comportamiento. La navegacion completa (Dashboard, Clientes, Parametros, Auditoria) es ahora por URLs reales.

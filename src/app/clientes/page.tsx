@@ -324,7 +324,7 @@ export default function ClientesPage() {
                       <td className="px-6 py-4 text-xs text-zinc-400">{client.fiscalCondition}</td>
                       <td className="px-6 py-4 text-xs text-zinc-400">{client.mainActivity}</td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-2.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                        <span className={`inline-flex px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                           client.status === 'Activo' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
                           client.status === 'Inactivo' ? 'bg-zinc-800 text-zinc-400 border border-zinc-700' :
                           'bg-red-500/10 text-red-400 border border-red-500/20'

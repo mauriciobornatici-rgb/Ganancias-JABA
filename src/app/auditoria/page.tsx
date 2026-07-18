@@ -88,7 +88,7 @@ export default function AuditoriaPage() {
                       <td className="px-6 py-4 font-sans text-zinc-400 whitespace-pre-wrap break-words max-w-xl">{log.details || 'Sin detalle adicional'}</td>
                       <td className="px-6 py-4 font-sans text-zinc-400">{log.userId || log.clientName || log.clientCuit || 'SISTEMA (JABA)'}</td>
                       <td className="px-6 py-4 text-center font-sans">
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Registrado</span>
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20 uppercase">Registrado</span>
                       </td>
                     </tr>
                   ))}

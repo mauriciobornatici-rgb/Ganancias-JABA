@@ -633,7 +633,7 @@ export default function ParametrosPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
                     {paramsData.indices.map((idx) => (
                       <div key={idx.monthIndex} className="p-3 rounded-lg bg-[#09090b] border border-zinc-850 text-center font-mono">
-                        <span className="text-[9px] uppercase font-bold text-zinc-500 block mb-1">{idx.monthName}</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-500 block mb-1">{idx.monthName}</span>
                         <span className="text-xs text-teal-400 font-extrabold">{Number(idx.ipcValue).toFixed(4)}</span>
                       </div>
                     ))}

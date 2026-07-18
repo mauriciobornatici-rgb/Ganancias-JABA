@@ -14,8 +14,8 @@ function ExpenseBreakdownLines({ byExpenseType }: { byExpenseType: PurchaseExpen
     <ul className="mt-1.5 space-y-0.5 border-t border-zinc-800/70 pt-1.5">
       {lines.map(line => (
         <li key={line.key} className="flex items-baseline justify-between gap-2" title={`${line.label}: ${formatCurrencyCents(line.amount)}`}>
-          <span className="truncate text-[9px] text-zinc-500">{line.shortLabel}</span>
-          <span className="shrink-0 font-mono text-[9px] text-zinc-300">{formatCurrencyCents(line.amount)}</span>
+          <span className="truncate text-[10px] text-zinc-500">{line.shortLabel}</span>
+          <span className="shrink-0 font-mono text-[10px] text-zinc-300">{formatCurrencyCents(line.amount)}</span>
         </li>
       ))}
     </ul>
@@ -53,11 +53,11 @@ export function PurchaseMonthlySummaryPanel({
             ? 'border-teal-400/60 bg-teal-500/15'
             : 'border-zinc-800 bg-[#111115] hover:border-teal-500/35'}`}
         >
-          <span className="block text-[9px] font-black uppercase tracking-wider text-teal-300">Ver todos los meses</span>
+          <span className="block text-[10px] font-black uppercase tracking-wider text-teal-300">Ver todos los meses</span>
           <span className="mt-0.5 block text-[10px] font-mono text-zinc-300">
             {formatCurrencyCents(summary.totalNetAmount)} · {summary.totalCount} comprobante{summary.totalCount === 1 ? '' : 's'}
           </span>
-          <span className="mt-0.5 block text-[9px] text-zinc-500">
+          <span className="mt-0.5 block text-[10px] text-zinc-500">
             {listExpenseBreakdown(summary.totalByExpenseType)
               .map(line => `${line.shortLabel} ${formatCurrencyCents(line.amount)}`)
               .join(' · ')}
@@ -81,7 +81,7 @@ export function PurchaseMonthlySummaryPanel({
             >
               <span className={`block text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-teal-300' : 'text-zinc-400'}`}>{month.label}</span>
               <span className="mt-1 block truncate text-xs font-bold font-mono text-white" title={formatCurrencyCents(month.netAmount)}>{formatCurrencyCents(month.netAmount)}</span>
-              <span className="mt-0.5 block text-[9px] text-zinc-500">{month.count} comprobante{month.count === 1 ? '' : 's'}</span>
+              <span className="mt-0.5 block text-[10px] text-zinc-500">{month.count} comprobante{month.count === 1 ? '' : 's'}</span>
               <ExpenseBreakdownLines byExpenseType={month.byExpenseType} />
             </button>
           );
@@ -98,7 +98,7 @@ export function PurchaseMonthlySummaryPanel({
           >
             <span className="block text-[10px] font-black uppercase tracking-wider text-amber-300">Sin fecha válida</span>
             <span className="mt-1 block truncate text-xs font-bold font-mono text-white" title={formatCurrencyCents(summary.undated.netAmount)}>{formatCurrencyCents(summary.undated.netAmount)}</span>
-            <span className="mt-0.5 block text-[9px] text-amber-200/60">{summary.undated.count} para revisar</span>
+            <span className="mt-0.5 block text-[10px] text-amber-200/60">{summary.undated.count} para revisar</span>
             <ExpenseBreakdownLines byExpenseType={summary.undated.byExpenseType} />
           </button>
         )}

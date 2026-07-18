@@ -2179,13 +2179,13 @@ export default function WizardPage() {
                   <div className="absolute top-0 left-2 right-2 h-[2px] bg-teal-500 rounded-b"></div>
                 )}
 
-                <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[9px] font-bold border transition-all shrink-0 ${
+                <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-bold border transition-all shrink-0 ${
                   isActive ? 'bg-teal-500 text-[#09090b] border-teal-500 shadow-md shadow-teal-500/20' :
                   hasData ? 'bg-teal-500/10 text-teal-400 border-teal-500/30' :
                   isVisited ? 'bg-amber-500/10 text-amber-450 border-amber-500/25' :
                   'bg-zinc-900 text-zinc-500 border-zinc-800'
                 }`}>
-                  {isActive ? stepNum : (hasData ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : (isVisited ? <span className="text-[9px] font-extrabold">-</span> : stepNum))}
+                  {isActive ? stepNum : (hasData ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : (isVisited ? <span className="text-[10px] font-extrabold">-</span> : stepNum))}
                 </div>
 
                 <div className="flex flex-col min-w-0">
@@ -2198,7 +2198,7 @@ export default function WizardPage() {
                     {stepName}
                   </span>
                   {!isActive && isVisited && !hasData && (
-                    <span className="text-[8px] text-amber-550/90 font-black tracking-tight leading-none mt-0.5 uppercase">
+                    <span className="text-[10px] text-amber-550/90 font-black tracking-tight leading-none mt-0.5 uppercase">
                       Sin datos
                     </span>
                   )}
@@ -2643,7 +2643,7 @@ export default function WizardPage() {
                   {sales.length > 0 && (
                     <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25">
                       <div className="text-left">
-                        <span className="text-[9px] uppercase tracking-wider text-teal-400 block font-bold">Total Ventas</span>
+                        <span className="text-[10px] uppercase tracking-wider text-teal-400 block font-bold">Total Ventas</span>
                         <span className="text-sm font-bold font-mono text-teal-300">
                           ${sales.reduce((sum, s) => sum.add(new Decimal(s.netAmount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
@@ -2793,7 +2793,7 @@ export default function WizardPage() {
                             value={sale.netAmount ?? ''}
                             onChange={(e) => handleCellChange(index, 'netAmount', e.target.value, 'sales')}
                             onKeyDown={(e) => handleSalesKeyDown(e, index, 'amount')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                           />
                         </td>
                         <td className="px-4 py-2 text-center">
@@ -2890,7 +2890,7 @@ export default function WizardPage() {
                   {purchases.length > 0 && (
                     <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25">
                       <div className="text-left">
-                        <span className="text-[9px] uppercase tracking-wider text-teal-400 block font-bold">Total Compras</span>
+                        <span className="text-[10px] uppercase tracking-wider text-teal-400 block font-bold">Total Compras</span>
                         <span className="text-sm font-bold font-mono text-teal-300">
                           {formatCurrencyCents(purchaseMonthlySummary.totalNetAmount)}
                         </span>
@@ -3063,7 +3063,7 @@ export default function WizardPage() {
                             value={purchase.netAmount ?? ''}
                             onChange={(e) => handleCellChange(index, 'netAmount', e.target.value, 'purchases')}
                             onKeyDown={(e) => handlePurchasesKeyDown(e, index, 'amount')}
-                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                            className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                           />
                         </td>
                         <td className="px-4 py-2 text-center">
@@ -3177,11 +3177,11 @@ export default function WizardPage() {
                         </div>
                       </div>
                       <div className="sm:col-span-2 p-4 rounded-xl bg-teal-500/5 border border-teal-500/25 text-right space-y-1">
-                        <span className="text-[9px] uppercase font-extrabold tracking-wider text-teal-400 block">Costo de Mercaderías Vendidas (CMV) en Vivo</span>
+                        <span className="text-[10px] uppercase font-extrabold tracking-wider text-teal-400 block">Costo de Mercaderías Vendidas (CMV) en Vivo</span>
                         <div className="text-lg font-black font-mono text-white">
                           ${cmvCalculated.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </div>
-                        <span className="text-[9px] font-bold text-zinc-400 block">
+                        <span className="text-[10px] font-bold text-zinc-400 block">
                           CMV = EI (${ei.toNumber().toLocaleString('es-AR')}) + Compras (${comprasTotal.toNumber().toLocaleString('es-AR')}) - EF (${ef.toNumber().toLocaleString('es-AR')})
                         </span>
                       </div>
@@ -3268,7 +3268,7 @@ export default function WizardPage() {
                               value={asset.originalCost ?? ''}
                               onChange={(e) => handleCellChange(index, 'originalCost', e.target.value, 'assets')}
                               onKeyDown={(e) => handleAssetsKeyDown(e, index, 'cost')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                             />
                           </td>
                           <td className="px-4 py-2 text-center">
@@ -3382,18 +3382,18 @@ export default function WizardPage() {
                                 type="number"
                                 value={bank.nominalInitial ?? ''}
                                 onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'bankAccounts')}
-                                className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
+                                className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right"
                               />
                               {bank.currency === 'USD' && (
                                 <div className="flex flex-col items-end space-y-1">
-                                  <div className="flex items-center gap-1 text-[9px] text-zinc-500">
+                                  <div className="flex items-center gap-1 text-[10px] text-zinc-500">
                                     <span>TC Inicial:</span>
                                     <input
                                       type="number"
                                       step="0.01"
                                       value={bank.tcInitial ?? '1'}
                                       onChange={(e) => handleCellChange(index, 'tcInitial', e.target.value, 'bankAccounts')}
-                                      className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                      className="bg-[#09090b] border border-zinc-800 text-white text-[10px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                     />
                                   </div>
                                   <span className="text-[10px] font-bold text-teal-400 font-mono">
@@ -3409,18 +3409,18 @@ export default function WizardPage() {
                                 type="number"
                                 value={bank.nominalFinal ?? ''}
                                 onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'bankAccounts')}
-                                className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                                className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                               />
                               {bank.currency === 'USD' && (
                                 <div className="flex flex-col items-end space-y-1">
-                                  <div className="flex items-center gap-1 text-[9px] text-zinc-500">
+                                  <div className="flex items-center gap-1 text-[10px] text-zinc-500">
                                     <span>TC Cierre:</span>
                                     <input
                                       type="number"
                                       step="0.01"
                                       value={bank.tcFinal ?? '1'}
                                       onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'bankAccounts')}
-                                      className="bg-[#09090b] border border-zinc-800 text-white text-[9px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                                      className="bg-[#09090b] border border-zinc-800 text-white text-[10px] font-mono rounded w-16 text-right px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-teal-500"
                                     />
                                   </div>
                                   <span className="text-[10px] font-bold text-teal-400 font-mono">
@@ -3435,7 +3435,7 @@ export default function WizardPage() {
                               type="number"
                               value={bank.interests ?? ''}
                               onChange={(e) => handleCellChange(index, 'interests', e.target.value, 'bankAccounts')}
-                              className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              className="bg-transparent border-0 text-teal-400 text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
@@ -3485,19 +3485,19 @@ export default function WizardPage() {
                 <div className="mt-4 space-y-6 rounded-xl border border-zinc-850 bg-[#09090b]/35 p-4">
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. inicio</span>
+                      <span className="block text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. inicio</span>
                       <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAuxiliarySummary.activosAuxiliaresInicio)}</span>
                     </div>
                     <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. cierre</span>
+                      <span className="block text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Activo aux. cierre</span>
                       <span className="block text-xs font-mono text-zinc-200">{formatDecimal(espAuxiliarySummary.activosAuxiliaresCierre)}</span>
                     </div>
                     <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. inicio</span>
+                      <span className="block text-[10px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. inicio</span>
                       <span className="block text-xs font-mono text-teal-300">{formatDecimal(espAuxiliarySummary.patrimonioNetoAuxiliarInicio)}</span>
                     </div>
                     <div className="rounded-lg border border-zinc-800 bg-[#09090b]/80 px-3 py-2">
-                      <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. cierre</span>
+                      <span className="block text-[10px] uppercase tracking-wider text-zinc-500 font-bold">PN aux. cierre</span>
                       <span className="block text-xs font-mono text-teal-300">{formatDecimal(espAuxiliarySummary.patrimonioNetoAuxiliarCierre)}</span>
                     </div>
                   </div>
@@ -3570,13 +3570,13 @@ export default function WizardPage() {
                                 </select>
                               </td>
                               <td className="px-4 py-2 text-right">
-                                <input type="number" value={cash.nominalInitial ?? ''} onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right" />
+                                <input type="number" value={cash.nominalInitial ?? ''} onChange={(e) => handleCellChange(index, 'nominalInitial', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right" />
                               </td>
                               <td className="px-4 py-2 text-right">
-                                <input type="number" value={cash.nominalFinal ?? ''} onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                                <input type="number" value={cash.nominalFinal ?? ''} onChange={(e) => handleCellChange(index, 'nominalFinal', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold" />
                               </td>
                               <td className="px-4 py-2 text-right">
-                                <input type="number" step="0.01" value={cash.tcFinal ?? '1'} onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-teal-300 text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                                <input type="number" step="0.01" value={cash.tcFinal ?? '1'} onChange={(e) => handleCellChange(index, 'tcFinal', e.target.value, 'cashHoldings')} className="bg-transparent border-0 text-teal-300 text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold" />
                               </td>
                               <td className="px-4 py-2 text-right">
                                 <button onClick={() => deleteRow(index, 'cashHoldings')} className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer">
@@ -3631,10 +3631,10 @@ export default function WizardPage() {
                                   </select>
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                  <input type="number" value={receivable.balanceInitial ?? ''} onChange={(e) => handleCellChange(index, 'balanceInitial', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right" />
+                                  <input type="number" value={receivable.balanceInitial ?? ''} onChange={(e) => handleCellChange(index, 'balanceInitial', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right" />
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                  <input type="number" value={receivable.balanceFinal ?? ''} onChange={(e) => handleCellChange(index, 'balanceFinal', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                                  <input type="number" value={receivable.balanceFinal ?? ''} onChange={(e) => handleCellChange(index, 'balanceFinal', e.target.value, 'receivables')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold" />
                                 </td>
                                 <td className="px-4 py-2 text-right">
                                   <button onClick={() => deleteRow(index, 'receivables')} className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer">
@@ -3687,10 +3687,10 @@ export default function WizardPage() {
                                   </select>
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                  <input type="number" value={liability.balanceInitial ?? ''} onChange={(e) => handleCellChange(index, 'balanceInitial', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right" />
+                                  <input type="number" value={liability.balanceInitial ?? ''} onChange={(e) => handleCellChange(index, 'balanceInitial', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right" />
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                  <input type="number" value={liability.balanceFinal ?? ''} onChange={(e) => handleCellChange(index, 'balanceFinal', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold" />
+                                  <input type="number" value={liability.balanceFinal ?? ''} onChange={(e) => handleCellChange(index, 'balanceFinal', e.target.value, 'liabilities')} className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold" />
                                 </td>
                                 <td className="px-4 py-2 text-right">
                                   <button onClick={() => deleteRow(index, 'liabilities')} className="text-zinc-500 hover:text-red-400 p-1.5 transition-colors cursor-pointer">
@@ -3761,7 +3761,7 @@ export default function WizardPage() {
                               type="number"
                               value={asset.valueInitial ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueInitial', e.target.value, 'personalAssets')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right"
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
@@ -3769,7 +3769,7 @@ export default function WizardPage() {
                               type="number"
                               value={asset.valueFinal ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueFinal', e.target.value, 'personalAssets')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
@@ -3836,7 +3836,7 @@ export default function WizardPage() {
                               type="number"
                               value={liab.valueInitial ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueInitial', e.target.value, 'personalLiabilities')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right"
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
@@ -3844,7 +3844,7 @@ export default function WizardPage() {
                               type="number"
                               value={liab.valueFinal ?? ''}
                               onChange={(e) => handleCellChange(index, 'valueFinal', e.target.value, 'personalLiabilities')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
@@ -3898,11 +3898,11 @@ export default function WizardPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-2 min-w-64">
                           <div className="rounded-lg border border-zinc-800 bg-[#09090b]/70 px-3 py-2">
-                            <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Columna I</span>
+                            <span className="block text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Columna I</span>
                             <span className="block text-xs font-mono text-amber-300">{formatDecimal(columnOneTotal)}</span>
                           </div>
                           <div className="rounded-lg border border-zinc-800 bg-[#09090b]/70 px-3 py-2">
-                            <span className="block text-[9px] uppercase tracking-wider text-zinc-500 font-bold">Columna II</span>
+                            <span className="block text-[10px] uppercase tracking-wider text-zinc-500 font-bold">Columna II</span>
                             <span className="block text-xs font-mono text-emerald-300">{formatDecimal(columnTwoTotal)}</span>
                           </div>
                         </div>
@@ -3963,7 +3963,7 @@ export default function WizardPage() {
                                     type="number"
                                     value={justification.amount ?? ''}
                                     onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'otherJustifications')}
-                                    className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                                    className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                                   />
                                 </td>
                                 <td className="px-4 py-2 text-right">
@@ -4124,7 +4124,7 @@ export default function WizardPage() {
                             <p className="font-extrabold uppercase tracking-wider text-sky-200">{documentationNotice.title}</p>
                             <p className="mt-1">{documentationNotice.body}</p>
                           </div>
-                          <span className="shrink-0 rounded-md border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-sky-200">
+                          <span className="shrink-0 rounded-md border border-sky-400/20 bg-sky-400/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-sky-200">
                             {documentationNotice.reference}
                           </span>
                         </div>
@@ -4285,7 +4285,7 @@ export default function WizardPage() {
                     {withholdings.length > 0 && (
                       <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25 font-mono">
                         <div className="text-left">
-                          <span className="text-[9px] uppercase tracking-wider text-teal-400 block font-bold">Total Retenciones</span>
+                          <span className="text-[10px] uppercase tracking-wider text-teal-400 block font-bold">Total Retenciones</span>
                           <span className="text-sm font-bold text-teal-300">
                             ${withholdings.reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
@@ -4421,7 +4421,7 @@ export default function WizardPage() {
                               type="number"
                               value={withholding.amount ?? ''}
                               onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'withholdings')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                             />
                           </td>
                           <td className="px-4 py-2 text-right">
@@ -4602,7 +4602,7 @@ export default function WizardPage() {
                             </span>
                           </div>
                         </div>
-                        <p className="text-[9px] text-zinc-500 italic leading-normal">
+                        <p className="text-[10px] text-zinc-500 italic leading-normal">
                           * El Retiro/Aporte se calcula como Capital Afectado Teorico menos Capital Afectado Real. Presione &quot;Copiar a Variaciones&quot; para agregarlo abajo y calcular su ajuste por coeficiente promedio anual ponderado.
                         </p>
                       </div>
@@ -4635,7 +4635,7 @@ export default function WizardPage() {
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-900">
-                              <tr className="bg-zinc-950/25"><td colSpan={3} className="py-2 pr-4 font-extrabold text-teal-400 uppercase text-[9px] tracking-widest pl-2 font-bold">Activo Computable</td></tr>
+                              <tr className="bg-zinc-950/25"><td colSpan={3} className="py-2 pr-4 font-extrabold text-teal-400 uppercase text-[10px] tracking-widest pl-2 font-bold">Activo Computable</td></tr>
 
                               {[
                                 { key: 'disponibilidadesBancos', label: 'Disponibilidades-Bancos' },
@@ -4676,7 +4676,7 @@ export default function WizardPage() {
                                 );
                               })}
 
-                              <tr className="bg-zinc-950/25"><td colSpan={3} className="py-2 pr-4 font-extrabold text-teal-400 uppercase text-[9px] tracking-widest border-t border-zinc-850/50 pl-2 font-bold">Pasivo Computable</td></tr>
+                              <tr className="bg-zinc-950/25"><td colSpan={3} className="py-2 pr-4 font-extrabold text-teal-400 uppercase text-[10px] tracking-widest border-t border-zinc-850/50 pl-2 font-bold">Pasivo Computable</td></tr>
 
                               {[
                                 { key: 'deudasSociales', label: 'Deudas Sociales' },
@@ -4725,19 +4725,19 @@ export default function WizardPage() {
 
                         <div className="p-4 rounded-lg bg-[#09090b] border border-zinc-850 grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-center shadow-inner">
                           <div className="p-2 bg-zinc-900/30 rounded border border-zinc-800">
-                            <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Capital Computable</span>
+                            <span className="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Capital Computable</span>
                             <span className="text-sm font-extrabold text-white block mt-0.5">
                               ${staticCapitalAfectadoComputable.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                           <div className="p-2 bg-zinc-900/30 rounded border border-zinc-800">
-                            <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Coef. Ajuste IPC</span>
+                            <span className="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Coef. Ajuste IPC</span>
                             <span className="text-sm font-extrabold text-teal-400 block mt-0.5">
                               {staticInflationRateVal.toLocaleString('es-AR', { minimumFractionDigits: 4, maximumFractionDigits: 6 })}
                             </span>
                           </div>
                           <div className="p-2 bg-zinc-900/30 rounded border border-zinc-800">
-                            <span className="text-[9px] text-zinc-500 block uppercase font-bold tracking-wider">Ajuste Estático</span>
+                            <span className="text-[10px] text-zinc-500 block uppercase font-bold tracking-wider">Ajuste Estático</span>
                             <span className={`text-sm font-extrabold block mt-0.5 ${calculatedStaticAxiResult >= 0 ? 'text-[#34d399]' : 'text-[#fbbf24]'}`}>
                               {calculatedStaticAxiResult >= 0 ? '+' : ''}${calculatedStaticAxiResult.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
@@ -4802,7 +4802,7 @@ export default function WizardPage() {
                               type="number"
                               value={item.amount ?? ''}
                               onChange={(e) => handleCellChange(index, 'amount', e.target.value, 'axiDynamic')}
-                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full text-right font-bold"
+                              className="bg-transparent border-0 text-white text-xs font-mono focus:ring-0 focus:outline-none w-full min-w-[130px] text-right font-bold"
                             />
                           </td>
                           <td className="px-4 py-2 text-right w-28 text-[11px] font-mono text-zinc-350">
@@ -4875,7 +4875,7 @@ export default function WizardPage() {
                   <span className={`text-2xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.isNegative() ? 'text-emerald-450' : 'text-white'}`}>
                     ${calculationResult.impuestoAPagarOARCA.toNumber().toLocaleString('es-AR')}
                   </span>
-                  <span className="text-[9px] font-semibold text-zinc-400 block -mt-1">
+                  <span className="text-[10px] font-semibold text-zinc-400 block -mt-1">
                     {calculationResult.impuestoAPagarOARCA.isNegative() ? 'SALDO A FAVOR DEL CONTRIBUYENTE' : 'IMPUESTO NETO A PAGAR'}
                   </span>
                 </div>
@@ -5065,7 +5065,7 @@ export default function WizardPage() {
                     <div className="overflow-x-auto border border-zinc-800 rounded-lg bg-[#09090b]">
                       <table className="w-full text-left border-collapse text-xs font-mono">
                         <thead>
-                          <tr className="border-b border-zinc-850 bg-zinc-900/20 text-zinc-450 uppercase font-bold text-[9px] tracking-wider">
+                          <tr className="border-b border-zinc-850 bg-zinc-900/20 text-zinc-450 uppercase font-bold text-[10px] tracking-wider">
                             <th className="px-4 py-3">Rubro / Concepto Determinativo</th>
                             <th className="px-4 py-3">Referencia Legal / Cálculo</th>
                             <th className="px-4 py-3 text-right">Parcial ($)</th>
@@ -5233,7 +5233,7 @@ export default function WizardPage() {
                     <div key={idx} className="p-3.5 rounded-lg bg-[#09090b] border border-zinc-800 relative">
                       <span className="text-[10px] text-zinc-500 font-bold block mb-1">CUOTA {idx + 1}</span>
                       <span className="font-mono font-bold text-white text-sm">${anticipo.toNumber().toLocaleString('es-AR')}</span>
-                      <span className="text-[8px] tracking-wider text-teal-400 font-semibold block mt-0.5">VENCE {fiscalYear + 1}</span>
+                      <span className="text-[10px] tracking-wider text-teal-400 font-semibold block mt-0.5">VENCE {fiscalYear + 1}</span>
                     </div>
                   ))}
                 </div>

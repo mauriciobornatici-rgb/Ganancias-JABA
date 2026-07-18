@@ -2134,7 +2134,7 @@ export default function WizardPage() {
           <div className="text-right text-xs font-semibold text-zinc-500">
             <div>Paso {currentStep} de 6</div>
             {!localDraftWarning && localDraftSavedAtLabel && (
-              <div className="mt-0.5 text-[10px] font-medium text-zinc-600">
+              <div className="mt-0.5 text-[10px] font-medium text-zinc-400">
                 Copia local {localDraftSavedAtLabel}
               </div>
             )}
@@ -2143,7 +2143,7 @@ export default function WizardPage() {
                 Base pendiente
               </div>
             ) : serverDraftSavedAtLabel ? (
-              <div className="mt-0.5 text-[10px] font-medium text-zinc-600">
+              <div className="mt-0.5 text-[10px] font-medium text-zinc-400">
                 Base {serverDraftSavedAtLabel}
               </div>
             ) : null}
@@ -2341,7 +2341,7 @@ export default function WizardPage() {
                             className="w-full text-left px-4 py-3 hover:bg-teal-500/10 hover:text-teal-400 transition-colors text-xs space-y-0.5 focus:outline-none block"
                           >
                             <span className="font-bold text-white block">{client.name}</span>
-                            <span className="text-[10px] text-zinc-550 font-mono block">CUIT: {client.cuit} • {client.fiscalCondition}</span>
+                            <span className="text-[10px] text-zinc-400 font-mono block">CUIT: {client.cuit} • {client.fiscalCondition}</span>
                           </button>
                         ))}
                     </div>
@@ -2448,7 +2448,7 @@ export default function WizardPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs uppercase font-bold text-zinc-550 tracking-wider">Hijos Incapacitados para el Trabajo</label>
+                    <label className="text-xs uppercase font-bold text-zinc-400 tracking-wider">Hijos Incapacitados para el Trabajo</label>
                     <input
                       type="number"
                       value={personalDeductions.cantidadHijosIncapacitados ?? 0}
@@ -3009,7 +3009,7 @@ export default function WizardPage() {
                       <tr>
                         <td colSpan={7} className="px-4 py-10 text-center">
                           <p className="text-xs font-semibold text-zinc-400">No hay comprobantes para mostrar en {activePurchaseMonthLabel.toLowerCase()}.</p>
-                          <p className="mt-1 text-[10px] text-zinc-600">Cambie el mes o quite el texto de búsqueda para volver a ver registros.</p>
+                          <p className="mt-1 text-[10px] text-zinc-400">Cambie el mes o quite el texto de búsqueda para volver a ver registros.</p>
                         </td>
                       </tr>
                     )}
@@ -4031,15 +4031,15 @@ export default function WizardPage() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
                       <div className="p-3.5 rounded-lg bg-[#09090b]/80 border border-zinc-850">
-                        <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Patrimonio Neto Inicial</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Patrimonio Neto Inicial</span>
                         <span className="text-base font-bold text-zinc-200">{formatDecimal(totalIni)}</span>
                       </div>
                       <div className="p-3.5 rounded-lg bg-[#09090b]/80 border border-zinc-850">
-                        <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Patrimonio Neto Cierre</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Patrimonio Neto Cierre</span>
                         <span className="text-base font-bold text-zinc-200">{formatDecimal(totalFin)}</span>
                       </div>
                       <div className={`p-3.5 rounded-lg bg-[#09090b]/80 border ${variacion.toNumber() >= 0 ? 'border-emerald-500/20' : 'border-amber-500/20'}`}>
-                        <span className="text-[10px] uppercase font-bold text-zinc-550 block mb-1">Variación Neta Ejercicio</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">Variación Neta Ejercicio</span>
                         <span className={`text-base font-extrabold block ${variacion.toNumber() >= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                           {formatDecimal(variacion)}
                         </span>
@@ -4462,7 +4462,7 @@ export default function WizardPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#09090b] p-5 rounded-lg border border-zinc-850">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block">Saldo a Favor del Período Anterior ($)</label>
+                    <label className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Saldo a Favor del Período Anterior ($)</label>
                     <input
                       type="number"
                       value={saldoAFavorAnterior ?? ''}
@@ -4473,7 +4473,7 @@ export default function WizardPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block">Quebrantos de Períodos Anteriores a Compensar ($)</label>
+                    <label className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block">Quebrantos de Períodos Anteriores a Compensar ($)</label>
                     <input
                       type="number"
                       value={quebrantosAnteriores ?? ''}
@@ -4503,7 +4503,7 @@ export default function WizardPage() {
                             type="button"
                             onClick={handleSaveIpcIndices}
                             disabled={isSavingIpcs}
-                            className="px-3 h-8 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-zinc-800 disabled:text-zinc-550 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center shadow-md shadow-teal-500/10"
+                            className="px-3 h-8 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-zinc-800 disabled:text-zinc-400 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center shadow-md shadow-teal-500/10"
                           >
                             {isSavingIpcs ? 'Guardando...' : 'Guardar Índices'}
                           </button>
@@ -4568,7 +4568,7 @@ export default function WizardPage() {
                             type="button"
                             onClick={() => handleCopyAxiDynamicDifference(dynamicRetiroAporteNeto)}
                             disabled={dynamicRetiroAporteNeto === 0}
-                            className="px-3 h-8 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-[#121216] disabled:border disabled:border-zinc-800 disabled:text-zinc-550 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-md shadow-teal-500/5"
+                            className="px-3 h-8 rounded bg-teal-500 hover:bg-teal-400 disabled:bg-[#121216] disabled:border disabled:border-zinc-800 disabled:text-zinc-400 text-[#09090b] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center shrink-0 shadow-md shadow-teal-500/5"
                           >
                             Copiar a Variaciones
                           </button>
@@ -4668,7 +4668,7 @@ export default function WizardPage() {
                                         onChange={e => handleAxiStaticCellChange('activo', row.key, 'computable', e.target.value)}
                                         disabled={row.disabled}
                                         className={`w-24 h-7 px-1.5 rounded border text-right text-xs font-mono focus:outline-none focus:border-teal-500/50 ${
-                                          row.disabled ? 'bg-[#0c0c0e]/40 border-zinc-900 text-zinc-550 cursor-not-allowed' : 'bg-[#09090b] border-zinc-800'
+                                          row.disabled ? 'bg-[#0c0c0e]/40 border-zinc-900 text-zinc-400 cursor-not-allowed' : 'bg-[#09090b] border-zinc-800'
                                         }`}
                                       />
                                     </td>
@@ -4871,7 +4871,7 @@ export default function WizardPage() {
                 </div>
 
                 <div className="p-4 rounded-lg bg-[#09090b] border border-zinc-800 text-right">
-                  <span className="text-[10px] uppercase font-bold text-zinc-550 block">Saldo Final Determinado</span>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Saldo Final Determinado</span>
                   <span className={`text-2xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.isNegative() ? 'text-emerald-450' : 'text-white'}`}>
                     ${calculationResult.impuestoAPagarOARCA.toNumber().toLocaleString('es-AR')}
                   </span>
@@ -4902,7 +4902,7 @@ export default function WizardPage() {
                   <div>
                     <span className="text-xs text-zinc-500 block">Total JVP Col. II</span>
                     <span className="text-base font-bold font-mono text-emerald-300 block">${calculationResult.jvpTotalColumnaII.toNumber().toLocaleString('es-AR')}</span>
-                    <span className="text-[10px] text-zinc-600 block">Cuadre: ${calculationResult.jvpJustificationDiff.toNumber().toLocaleString('es-AR')}</span>
+                    <span className="text-[10px] text-zinc-400 block">Cuadre: ${calculationResult.jvpJustificationDiff.toNumber().toLocaleString('es-AR')}</span>
                   </div>
                   <div className="border-l border-zinc-800 pl-6">
                     <span className="text-xs text-teal-400 block font-semibold">Consumo Anual por Diferencia</span>
@@ -5371,7 +5371,7 @@ export default function WizardPage() {
 
                 {/* Resultado Comercial */}
                 <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
-                  <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Resultado Neto 3ra Cat.</span>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1">Resultado Neto 3ra Cat.</span>
                   <span className="text-lg font-black font-mono text-zinc-200">
                     {formatDecimal(calculationResult.resultadoComercialNeto)}
                   </span>
@@ -5379,7 +5379,7 @@ export default function WizardPage() {
 
                 {/* Impuesto Neto */}
                 <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
-                  <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Impuesto Neto / Saldo DDJJ</span>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1">Impuesto Neto / Saldo DDJJ</span>
                   <span className={`text-xl font-black font-mono block ${calculationResult.impuestoAPagarOARCA.toNumber() > 0 ? 'text-red-400' : 'text-teal-400'}`}>
                     {formatDecimal(calculationResult.impuestoAPagarOARCA)}
                   </span>
@@ -5387,7 +5387,7 @@ export default function WizardPage() {
 
                 {/* Consumo Diferencia (JVP) */}
                 <div className="p-3 rounded-lg bg-[#09090b]/80 border border-zinc-850">
-                  <span className="text-[10px] uppercase font-bold text-zinc-550 tracking-wider block mb-1">Consumo Proyectado (JVP)</span>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-wider block mb-1">Consumo Proyectado (JVP)</span>
                   <span className="text-lg font-black font-mono text-zinc-350 block mb-2">
                     {formatDecimal(calculationResult.consumoDiferencial)}
                   </span>

@@ -735,7 +735,7 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
   const allOn = rows.length > 0 && rows.every(r => r.includedInSettlement);
   const includedCount = rows.filter(r => r.includedInSettlement).length;
   if (rows.length === 0) {
-    return <div className="rounded border border-dashed border-zinc-800 px-3 py-3 text-[11px] text-zinc-600">{title}: sin comprobantes.</div>;
+    return <div className="rounded border border-dashed border-zinc-800 px-3 py-3 text-[11px] text-zinc-400">{title}: sin comprobantes.</div>;
   }
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800">

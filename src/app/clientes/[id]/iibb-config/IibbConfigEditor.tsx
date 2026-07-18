@@ -263,7 +263,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
                     </tr>
                   ))}
                   {rows.length === 0 ? (
-                    <tr><td colSpan={isConvenio ? 6 : 5} className="px-2 py-6 text-center text-[11px] text-zinc-600">{isLoading ? 'Cargando…' : 'Sin jurisdicciones. Agregá una.'}</td></tr>
+                    <tr><td colSpan={isConvenio ? 6 : 5} className="px-2 py-6 text-center text-[11px] text-zinc-400">{isLoading ? 'Cargando…' : 'Sin jurisdicciones. Agregá una.'}</td></tr>
                   ) : null}
                 </tbody>
               </table>

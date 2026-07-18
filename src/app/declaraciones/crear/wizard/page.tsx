@@ -109,6 +109,7 @@ import {
   type WizardTaxReturnSummary,
   type WizardWithholding,
 } from '@/domain/ganancias/presentation/wizardStateTypes';
+import { FixedAssetCandidatesPanel, type FixedAssetCandidateView } from './FixedAssetCandidatesPanel';
 import {
   buildTaxReturnCloseConsistencyWarning,
   buildTaxReturnPreviewStatus,
@@ -669,6 +670,7 @@ export default function WizardPage() {
   const [purchases, setPurchases] = useState<WizardPurchase[]>([]);
 
   const [fixedAssets, setFixedAssets] = useState<WizardFixedAsset[]>([]);
+  const [assetCandidates, setAssetCandidates] = useState<FixedAssetCandidateView[]>([]);
 
   const [initialStock, setInitialStock] = useState('0');
   const [finalStock, setFinalStock] = useState('0');
@@ -924,6 +926,54 @@ export default function WizardPage() {
       }
     }
   }, [loadFromLocalStorage, routeReturnId, applyWizardSnapshot]);
+
+  // Candidatos a bienes de uso detectados por la importación del libro mensual (circuito del Paso 4).
+  useEffect(() => {
+    if (!routeReturnId) return;
+    fetch(`/api/declaraciones/${routeReturnId}/candidatos-bienes-uso`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.success && Array.isArray(res.data)) setAssetCandidates(res.data as FixedAssetCandidateView[]);
+      })
+      .catch(err => console.error('No se pudieron cargar los candidatos a bienes de uso:', err));
+  }, [routeReturnId]);
+
+  const patchAssetCandidate = async (candidate: FixedAssetCandidateView, action: 'CONFIRM' | 'DISMISS' | 'REOPEN'): Promise<boolean> => {
+    if (!routeReturnId) return false;
+    try {
+      const response = await fetch(`/api/declaraciones/${routeReturnId}/candidatos-bienes-uso`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ candidateId: candidate.id, action }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.success) {
+        alert(payload.error || 'No se pudo actualizar el candidato a bien de uso.');
+        return false;
+      }
+      setAssetCandidates(prev => prev.map(c => (c.id === candidate.id ? { ...c, status: payload.data.status } : c)));
+      return true;
+    } catch (err) {
+      console.error('Error al actualizar candidato a bien de uso:', err);
+      alert('No se pudo actualizar el candidato: verifique la conexión y reintente.');
+      return false;
+    }
+  };
+
+  const confirmAssetCandidate = async (candidate: FixedAssetCandidateView) => {
+    const ok = await patchAssetCandidate(candidate, 'CONFIRM');
+    if (!ok) return;
+    setFixedAssets(prev => [...prev, {
+      id: createWizardFixedAssetId(),
+      name: candidate.counterpartyName || 'Bien importado del libro mensual',
+      type: 'Equipamiento',
+      purchaseDate: candidate.purchaseDate,
+      originalCost: candidate.originalCost,
+      usefulLife: 10,
+      yearsElapsed: calculateYearsElapsedAtClose(candidate.purchaseDate, fiscalYear),
+      customReexpIndex: '1.0',
+    }]);
+  };
 
   // Hook 2: Auto-Guardar progreso del Wizard en tiempo real (reaccionando a cualquier cambio de estado)
   useEffect(() => {
@@ -3108,6 +3158,13 @@ export default function WizardPage() {
                   <h3 className="text-sm font-extrabold text-teal-400 uppercase tracking-wider">Bienes de Uso Afectados (Activos Fijos)</h3>
                   <span className="text-[10px] text-zinc-450 italic">Generan amortizaciones deducibles comercialmente</span>
                 </div>
+
+                <FixedAssetCandidatesPanel
+                  candidates={assetCandidates}
+                  onConfirm={confirmAssetCandidate}
+                  onDismiss={(candidate) => { void patchAssetCandidate(candidate, 'DISMISS'); }}
+                  onReopen={(candidate) => { void patchAssetCandidate(candidate, 'REOPEN'); }}
+                />
 
                 <div className="border border-zinc-800 rounded-lg overflow-x-auto">
                   <table className="w-full min-w-[920px] text-left border-collapse">

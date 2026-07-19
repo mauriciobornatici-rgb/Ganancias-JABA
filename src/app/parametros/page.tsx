@@ -628,7 +628,7 @@ export default function ParametrosPage() {
                 <div className="bg-[#121216] border border-zinc-800 rounded-xl p-6 shadow-2xl lg:col-span-2 animate-fadeIn">
                   <h3 className="text-base font-bold text-teal-400 mb-4 uppercase tracking-wider border-b border-zinc-850 pb-2 flex items-center justify-between">
                     <span>Índices de Actualización Mensual (IPC - {selectedYear})</span>
-                    <span className="text-[10px] text-zinc-550 font-normal">Reexpresión impositiva de activos y AXI</span>
+                    <span className="text-[10px] text-zinc-400 font-normal">Reexpresión impositiva de activos y AXI</span>
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-4">
                     {paramsData.indices.map((idx) => (

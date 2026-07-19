@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles, LogOut } from 'lucide-react';
+import Image from 'next/image';
+import { LogOut } from 'lucide-react';
 
 export type AppSection = 'dashboard' | 'clientes' | 'parametros' | 'auditoria';
 
@@ -24,8 +25,8 @@ export function AppHeader({ active }: { active: AppSection }) {
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link href="/" className="flex items-center gap-3 text-left focus:outline-none">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/10">
-              <Sparkles className="h-5 w-5 text-[#09090b] stroke-[2.5]" />
+            <div className="h-9 w-9 rounded-lg bg-white flex items-center justify-center p-0.5 shadow-lg shadow-teal-500/10 overflow-hidden">
+              <Image src="/logo-jaba-color.jpg" alt="JABA Dirección y Gestión" width={1064} height={946} className="h-full w-full object-contain" priority />
             </div>
             <div>
               <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-teal-200 to-zinc-100 bg-clip-text text-transparent block">JABA</span>

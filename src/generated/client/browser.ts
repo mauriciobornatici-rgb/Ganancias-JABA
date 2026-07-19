@@ -272,3 +272,8 @@ export type ImportFile = Prisma.ImportFileModel
  * 
  */
 export type AuditLog = Prisma.AuditLogModel
+/**
+ * Model BackupConfig
+ * 
+ */
+export type BackupConfig = Prisma.BackupConfigModel

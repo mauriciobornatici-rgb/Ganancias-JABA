@@ -434,7 +434,8 @@ export const ModelName = {
   AttachmentBlob: 'AttachmentBlob',
   ImportBatch: 'ImportBatch',
   ImportFile: 'ImportFile',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  BackupConfig: 'BackupConfig'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -450,7 +451,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog"
+    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3820,6 +3821,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BackupConfig: {
+      payload: Prisma.$BackupConfigPayload<ExtArgs>
+      fields: Prisma.BackupConfigFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BackupConfigFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BackupConfigFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>
+        }
+        findFirst: {
+          args: Prisma.BackupConfigFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BackupConfigFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>
+        }
+        findMany: {
+          args: Prisma.BackupConfigFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>[]
+        }
+        create: {
+          args: Prisma.BackupConfigCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>
+        }
+        createMany: {
+          args: Prisma.BackupConfigCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.BackupConfigDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>
+        }
+        update: {
+          args: Prisma.BackupConfigUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>
+        }
+        deleteMany: {
+          args: Prisma.BackupConfigDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BackupConfigUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.BackupConfigUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BackupConfigPayload>
+        }
+        aggregate: {
+          args: Prisma.BackupConfigAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBackupConfig>
+        }
+        groupBy: {
+          args: Prisma.BackupConfigGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BackupConfigGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BackupConfigCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BackupConfigCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -4693,6 +4760,24 @@ export const AuditLogScalarFieldEnum = {
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
+export const BackupConfigScalarFieldEnum = {
+  id: 'id',
+  enabled: 'enabled',
+  destinationPath: 'destinationPath',
+  frequency: 'frequency',
+  hour: 'hour',
+  weekday: 'weekday',
+  retentionDays: 'retentionDays',
+  lastRunAt: 'lastRunAt',
+  lastRunStatus: 'lastRunStatus',
+  lastRunFile: 'lastRunFile',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BackupConfigScalarFieldEnum = (typeof BackupConfigScalarFieldEnum)[keyof typeof BackupConfigScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -5258,6 +5343,17 @@ export const AuditLogOrderByRelevanceFieldEnum = {
 export type AuditLogOrderByRelevanceFieldEnum = (typeof AuditLogOrderByRelevanceFieldEnum)[keyof typeof AuditLogOrderByRelevanceFieldEnum]
 
 
+export const BackupConfigOrderByRelevanceFieldEnum = {
+  id: 'id',
+  destinationPath: 'destinationPath',
+  frequency: 'frequency',
+  lastRunStatus: 'lastRunStatus',
+  lastRunFile: 'lastRunFile'
+} as const
+
+export type BackupConfigOrderByRelevanceFieldEnum = (typeof BackupConfigOrderByRelevanceFieldEnum)[keyof typeof BackupConfigOrderByRelevanceFieldEnum]
+
+
 
 /**
  * Field references
@@ -5543,6 +5639,7 @@ export type GlobalOmitConfig = {
   importBatch?: Prisma.ImportBatchOmit
   importFile?: Prisma.ImportFileOmit
   auditLog?: Prisma.AuditLogOmit
+  backupConfig?: Prisma.BackupConfigOmit
 }
 
 /* Types for Logging */

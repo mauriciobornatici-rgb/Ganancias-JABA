@@ -4,6 +4,16 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-19 - Backup automatico configurable desde la app (arquitectura A) + monitor activado
+
+- **PR #19 mergeado**: monitor de salud ACTIVO y verificado en verde (el primer intento fallo por un \r de PowerShell al setear el token via pipe; se recargo por argumento/archivo sin newline en GitHub y Vercel + redeploy). El monitor corre cada 15 min y avisa por mail.
+- **Arquitectura elegida por el usuario (opcion A)**: backup hacia carpeta local sincronizada de Google Drive. La app guarda la configuracion; un runner local la ejecuta.
+- **Nueva seccion /configuracion** (item de nav nuevo): activar/desactivar, carpeta destino, frecuencia diaria/semanal (+dia), hora y retencion (1-365 dias). Muestra el resultado del ultimo backup (fecha, estado, archivo) reportado por el runner. API `GET/PUT /api/backup-config` con validaciones y auditoria. Tabla nueva `BackupConfig` (migracion `20260719160000_add_backup_config`, APLICADA a produccion).
+- **Runner** `scripts/backup-runner.mjs`: corre cada hora via tarea programada "JABA Backup Automatico" (wscript oculto via `scripts/backup-runner-oculto.vbs`, sin admin, StartWhenAvailable: si la PC estaba apagada corre al encender). Calcula la ultima ocurrencia vencida (logica pura `lastDueOccurrence` en `backupCore.mjs`, con tests), ejecuta el backup, aplica retencion y reporta en BackupConfig. Log en `backups/runner.log`.
+- **Refactor**: `scripts/backupCore.mjs` comparte el volcado entre el backup manual (`npm run db:backup`) y el runner.
+- **E2E verificado**: corrida vencida -> backup real de 60MB/53 tablas en carpeta de prueba + reporte OK en la base; segunda corrida no duplica. Config de prueba eliminada: el usuario configura desde la app.
+- Para desinstalar el runner: `Unregister-ScheduledTask -TaskName "JABA Backup Automatico"`.
+
 ### 2026-07-19 - Punto 1: backup automatizable + simulacro de restauracion + monitor de salud
 
 - **Backup**: nuevo `scripts/backup-db.mjs` (npm run db:backup). Descubre las tablas con SHOW TABLES (52, incluye _prisma_migrations), solo LECTURA, vuelca a `backups/ganancias-jaba-AAAA-MM-DD-HHmm.sql` con retencion de 30 dias. Primer backup real: 52 tablas, 8.684 filas, 60MB. Carpeta /backups en .gitignore (datos fiscales fuera del repo).

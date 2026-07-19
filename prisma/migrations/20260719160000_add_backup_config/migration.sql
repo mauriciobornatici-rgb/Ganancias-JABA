@@ -1,0 +1,15 @@
+CREATE TABLE `BackupConfig` (
+  `id` VARCHAR(191) NOT NULL,
+  `enabled` BOOLEAN NOT NULL DEFAULT false,
+  `destinationPath` VARCHAR(191) NOT NULL,
+  `frequency` VARCHAR(191) NOT NULL DEFAULT 'DAILY',
+  `hour` INTEGER NOT NULL DEFAULT 21,
+  `weekday` INTEGER NOT NULL DEFAULT 6,
+  `retentionDays` INTEGER NOT NULL DEFAULT 30,
+  `lastRunAt` DATETIME(3) NULL,
+  `lastRunStatus` VARCHAR(191) NULL,
+  `lastRunFile` VARCHAR(191) NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

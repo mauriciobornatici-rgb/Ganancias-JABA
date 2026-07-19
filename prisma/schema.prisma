@@ -1126,3 +1126,21 @@ model AuditLog {
   @@index([userId])
   @@index([createdAt])
 }
+
+// Configuracion del backup automatico local (arquitectura elegida 2026-07-19: carpeta
+// sincronizada de Google Drive en la PC del usuario; el runner scripts/backup-runner.mjs
+// lee esta fila y ejecuta el backup cuando corresponde).
+model BackupConfig {
+  id              String    @id @default(uuid())
+  enabled         Boolean   @default(false)
+  destinationPath String    // Carpeta de destino (ej. G:\Mi unidad\Backups JABA)
+  frequency       String    @default("DAILY") // DAILY | WEEKLY
+  hour            Int       @default(21)      // 0-23, hora local de la PC
+  weekday         Int       @default(6)       // 0=domingo..6=sabado (solo WEEKLY)
+  retentionDays   Int       @default(30)
+  lastRunAt       DateTime?
+  lastRunStatus   String?   // OK | ERROR: detalle
+  lastRunFile     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}

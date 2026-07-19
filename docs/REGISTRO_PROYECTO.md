@@ -4,6 +4,11 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-19 - UX: contraste AA (punto 3, parte 3b) + logo institucional JABA
+
+- **Contraste**: `text-zinc-600` (2.8:1, fallaba AA) y las clases invalidas `text-zinc-550` (no existen en Tailwind; renderizaban color heredado impredecible) pasaron a `text-zinc-400` (7:1) en 21 etiquetas/textos de ayuda del wizard, parametros, liquidacion IVA y config IIBB. Menu movil: ya cubierto por el AppHeader compartido desde la migracion a rutas (pendiente solo en pantallas del modulo mensual).
+- **Logo institucional** (JABA Direccion & Gestion, provisto por el usuario en JPG fondo blanco): en el header de toda la app, login y wizard como placa blanca redondeada discreta (fondo oscuro); en los encabezados del papel de trabajo e informe cliente en color, visible en la impresion A4; favicon desde el logo (src/app/icon.jpg). Assets versionados en /public (logo-jaba-color.jpg y logo-jaba-negro.jpg); carpeta fuente /logos en .gitignore. Si se consigue version PNG transparente, reemplazar los archivos de /public mejora la integracion en fondo oscuro.
+
 ### 2026-07-19 - UX: importes visibles completos + tipografias legibles (punto 3, parte 3a)
 
 - Pedido del usuario: los campos de carga manual de importes cortaban los digitos (se veia "26006" en lugar del numero completo). Fix: los ~20 inputs numericos de las grillas del wizard (ventas, compras, bienes, bancos, efectivo, deudas, retenciones, justificaciones, AXI) tienen `min-w-[130px]`; la columna crece sola y entran 10+ digitos con centavos.

@@ -101,7 +101,8 @@ export const ModelName = {
   AttachmentBlob: 'AttachmentBlob',
   ImportBatch: 'ImportBatch',
   ImportFile: 'ImportFile',
-  AuditLog: 'AuditLog'
+  AuditLog: 'AuditLog',
+  BackupConfig: 'BackupConfig'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -954,6 +955,24 @@ export const AuditLogScalarFieldEnum = {
 export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
 
 
+export const BackupConfigScalarFieldEnum = {
+  id: 'id',
+  enabled: 'enabled',
+  destinationPath: 'destinationPath',
+  frequency: 'frequency',
+  hour: 'hour',
+  weekday: 'weekday',
+  retentionDays: 'retentionDays',
+  lastRunAt: 'lastRunAt',
+  lastRunStatus: 'lastRunStatus',
+  lastRunFile: 'lastRunFile',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BackupConfigScalarFieldEnum = (typeof BackupConfigScalarFieldEnum)[keyof typeof BackupConfigScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -1517,4 +1536,15 @@ export const AuditLogOrderByRelevanceFieldEnum = {
 } as const
 
 export type AuditLogOrderByRelevanceFieldEnum = (typeof AuditLogOrderByRelevanceFieldEnum)[keyof typeof AuditLogOrderByRelevanceFieldEnum]
+
+
+export const BackupConfigOrderByRelevanceFieldEnum = {
+  id: 'id',
+  destinationPath: 'destinationPath',
+  frequency: 'frequency',
+  lastRunStatus: 'lastRunStatus',
+  lastRunFile: 'lastRunFile'
+} as const
+
+export type BackupConfigOrderByRelevanceFieldEnum = (typeof BackupConfigOrderByRelevanceFieldEnum)[keyof typeof BackupConfigOrderByRelevanceFieldEnum]
 

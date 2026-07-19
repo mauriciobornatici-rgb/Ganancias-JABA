@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { LogOut } from 'lucide-react';
 
-export type AppSection = 'dashboard' | 'clientes' | 'parametros' | 'auditoria';
+export type AppSection = 'dashboard' | 'clientes' | 'parametros' | 'auditoria' | 'configuracion';
 
 /** Navegación principal por URLs: cada sección es una ruta propia. */
 const NAV_ITEMS: ReadonlyArray<{ key: AppSection; label: string; href: string }> = [
@@ -12,6 +12,7 @@ const NAV_ITEMS: ReadonlyArray<{ key: AppSection; label: string; href: string }>
   { key: 'clientes', label: 'Clientes', href: '/clientes' },
   { key: 'parametros', label: 'Parámetros', href: '/parametros' },
   { key: 'auditoria', label: 'Auditoría', href: '/auditoria' },
+  { key: 'configuracion', label: 'Configuración', href: '/configuracion' },
 ];
 
 async function handleLogout() {

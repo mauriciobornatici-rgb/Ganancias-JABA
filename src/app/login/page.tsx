@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import React, { FormEvent, Suspense, useState } from 'react';
-import { LockKeyhole, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import { ShieldCheck } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { sanitizeSimpleAuthRedirectPath } from '@/domain/ganancias/auth/redirect';
 
@@ -106,12 +107,12 @@ function LoginShell({
 
           <form onSubmit={onSubmit} className="rounded-3xl border border-zinc-800 bg-[#0b0b0f]/85 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl md:p-8">
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-400 text-[#050506]">
-                <LockKeyhole className="h-6 w-6" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white p-1 overflow-hidden">
+                <Image src="/logo-jaba-color.jpg" alt="JABA Dirección y Gestión" width={1064} height={946} className="h-full w-full object-contain" priority />
               </div>
               <div>
                 <h2 className="text-lg font-black text-white">Ingreso al sistema</h2>
-                <p className="text-xs text-zinc-500">Sesion simple de uso personal.</p>
+                <p className="text-xs text-zinc-500">JABA Dirección &amp; Gestión — sesión de uso interno.</p>
               </div>
             </div>
 

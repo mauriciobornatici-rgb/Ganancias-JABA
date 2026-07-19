@@ -109,6 +109,7 @@ import {
   type WizardTaxReturnSummary,
   type WizardWithholding,
 } from '@/domain/ganancias/presentation/wizardStateTypes';
+import Image from 'next/image';
 import { FixedAssetCandidatesPanel, type FixedAssetCandidateView } from './FixedAssetCandidatesPanel';
 import { buildSalesMonthlySummary } from '@/domain/ganancias/presentation/salesMonthlySummary';
 import { SalesMonthlySummaryPanel } from './SalesMonthlySummaryPanel';
@@ -2116,8 +2117,8 @@ export default function WizardPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-teal-500/10 flex items-center justify-center text-teal-400">
-              <Sparkles className="h-3.5 w-3.5" />
+            <div className="h-6 w-6 rounded bg-white flex items-center justify-center p-0.5 overflow-hidden">
+              <Image src="/logo-jaba-color.jpg" alt="JABA Dirección y Gestión" width={1064} height={946} className="h-full w-full object-contain" />
             </div>
             <span className="text-xs font-bold text-zinc-300">Asistente de Liquidación JABA</span>
             <button

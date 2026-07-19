@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   ArrowLeft, 
   Printer, 
@@ -10,7 +11,6 @@ import {
   Building,
   User,
   Calendar,
-  ShieldCheck,
   Percent,
 } from 'lucide-react';
 import { Decimal } from 'decimal.js';
@@ -216,13 +216,10 @@ export default function InformeClientePage() {
         <header className="relative z-10 border-b border-[#1e1e24] pb-8 mb-8 print:border-black print:pb-6 print:mb-6">
           <div className="flex items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-teal-400 to-emerald-600 flex items-center justify-center print:hidden">
-                <ShieldCheck className="h-5 w-5 text-[#09090b]" />
+              <div className="inline-flex rounded-lg bg-white p-1.5 print:p-0 print:rounded-none">
+                <Image src="/logo-jaba-color.jpg" alt="JABA Dirección y Gestión" width={1064} height={946} className="h-14 w-auto print:h-16" priority />
               </div>
-              <div>
-                <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-teal-200 to-zinc-100 bg-clip-text text-transparent block print:text-black print:bg-none">JABA</span>
-                <span className="text-[10px] uppercase tracking-wider block text-teal-400 font-bold -mt-1 print:text-black">Estudio Impositivo Contable</span>
-              </div>
+              <span className="text-[10px] uppercase tracking-wider block text-teal-400 font-bold print:text-black">Estudio Impositivo Contable</span>
             </div>
             <TaxReturnStatusBadge status={data?.status} />
           </div>

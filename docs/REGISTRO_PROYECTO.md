@@ -4,6 +4,14 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-19 - Punto 1: backup automatizable + simulacro de restauracion + monitor de salud
+
+- **Backup**: nuevo `scripts/backup-db.mjs` (npm run db:backup). Descubre las tablas con SHOW TABLES (52, incluye _prisma_migrations), solo LECTURA, vuelca a `backups/ganancias-jaba-AAAA-MM-DD-HHmm.sql` con retencion de 30 dias. Primer backup real: 52 tablas, 8.684 filas, 60MB. Carpeta /backups en .gitignore (datos fiscales fuera del repo).
+- **SIMULACRO DE RESTAURACION EJECUTADO Y VERIFICADO** (2026-07-19): el backup se restauro en una base aislada del contenedor Docker de pruebas (`docker exec ... mysql < backup.sql`); verificados 52 tablas y conteos clave (6 clientes, 6 DDJJ, 7.343 ventas, 802 compras, auditoria y migraciones). El circuito backup→restore funciona de punta a punta.
+- **Monitor de salud**: workflow `health-monitor.yml` chequea `/api/health` de produccion cada 15 minutos con el header x-health-token; si falla, GitHub envia mail automatico al dueño del repo. Token nuevo generado y cargado como secret HEALTH_CHECK_TOKEN en GitHub Actions y en Vercel (Production) - requiere el redeploy del merge para activarse en Vercel.
+- DECISION DEL USUARIO (2026-07-19): el backup automatico NO va por Task Scheduler. Quiere configurarlo DENTRO DE LA APP: ubicacion de destino (seguramente Google Drive), hora, frecuencia y periodo de almacenamiento. Direccion tecnica a evaluar al retomar: (a) integracion server-side con Google Drive API + cron de Vercel (requiere credenciales de Google del usuario y evaluar limites del plan de Vercel), vs (b) runner local que lee la configuracion guardada por la app. Mientras tanto: backup manual con `npm run db:backup` (recomendado antes de cada sesion de carga importante).
+- Pendiente ademas: merge del PR #19 (quedo listo con CI verde; el redeploy activa el token del monitor en Vercel) y TLS a MySQL.
+
 ### 2026-07-19 - UX: contraste AA (punto 3, parte 3b) + logo institucional JABA
 
 - **Contraste**: `text-zinc-600` (2.8:1, fallaba AA) y las clases invalidas `text-zinc-550` (no existen en Tailwind; renderizaban color heredado impredecible) pasaron a `text-zinc-400` (7:1) en 21 etiquetas/textos de ayuda del wizard, parametros, liquidacion IVA y config IIBB. Menu movil: ya cubierto por el AppHeader compartido desde la migracion a rutas (pendiente solo en pantallas del modulo mensual).

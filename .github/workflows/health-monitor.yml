@@ -1,0 +1,33 @@
+name: Monitor de salud de produccion
+
+# Chequea /api/health cada 15 minutos. Si produccion no responde "ok",
+# el workflow falla y GitHub envia un mail automatico al dueño del repo.
+# Requiere el secret HEALTH_CHECK_TOKEN (mismo valor que en Vercel).
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  health:
+    name: Chequear produccion
+    runs-on: ubuntu-latest
+    steps:
+      - name: GET /api/health
+        run: |
+          if [ -z "${{ secrets.HEALTH_CHECK_TOKEN }}" ]; then
+            echo "Falta el secret HEALTH_CHECK_TOKEN: el monitor no puede autenticarse."
+            exit 1
+          fi
+          response=$(curl -sS -w "\n%{http_code}" --max-time 30 \
+            -H "x-health-token: ${{ secrets.HEALTH_CHECK_TOKEN }}" \
+            "https://ganancias-jaba.vercel.app/api/health")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP $status"
+          echo "$body"
+          if [ "$status" != "200" ]; then
+            echo "PRODUCCION CON PROBLEMAS: /api/health devolvio $status"
+            exit 1
+          fi

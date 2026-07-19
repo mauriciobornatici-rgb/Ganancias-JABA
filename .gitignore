@@ -46,3 +46,6 @@ next-env.d.ts
 
 # Carpeta fuente de logos (los assets usados viven en /public)
 /logos
+
+# Backups locales de la base (no versionar datos fiscales)
+/backups

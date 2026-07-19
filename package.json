@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
     "verify": "npm run test && npm run lint && npm run typecheck && npm run prisma:validate && npm run build",
+    "db:backup": "node scripts/backup-db.mjs",
     "db:test:up": "docker compose up -d mysql-test",
     "db:test:down": "docker compose down",
     "db:test:reset": "docker compose down -v && docker compose up -d mysql-test",

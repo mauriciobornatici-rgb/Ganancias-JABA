@@ -170,7 +170,8 @@ export function parseAfipFiscalLedgerDocuments(
   const pointOfSaleIndex = headerIndex(headers, ['punto de venta', 'punto de ve', 'pto. vta']);
   // "Número de Comprobante" (Libro IVA Digital) o "Número Desde" (Mis Comprobantes).
   const voucherNumberIndex = headerIndex(headers, ['numero de comprobante', 'nro. comprobante', 'numero desde']);
-  const totalIndex = headerIndex(headers, ['importe total', 'importe tota']);
+  // Libro IVA Digital: "Importe Total". Mis Comprobantes: "Imp. Total".
+  const totalIndex = headerIndex(headers, ['importe total', 'importe tota', 'imp. total']);
   // Contraparte: en ventas es Comprador/Receptor; en compras es Vendedor/Emisor.
   const counterpartyCuitIndex = direction === 'SALE'
     ? headerIndex(headers, ['nro. doc. comprador', 'doc. co', 'nro. doc. receptor', 'doc. receptor'])

@@ -4002,3 +4002,20 @@ Aplicar la columna en la base con `npx prisma migrate deploy` (las DOS migracion
 - Probar la importacion end-to-end en la app (clic en "Importar del modulo mensual" en el wizard) con datos reales.
 - Verificar que el GET `/api/declaraciones/[id]` devuelve los SalesInvoice/PurchaseInvoice importados para que el wizard los muestre tras la recarga (si no, ajustar el read).
 - Opcional: auto-crear el IIBB como gasto deducible (hoy se reporta el total para carga manual); pantalla de revision de imputacion de compras.
+
+---
+
+## Corrección integral importación ARCA + IIBB multi-actividad (2026-07-20)
+
+- El importador reconoce la columna real `Imp. Total` de Mis Comprobantes y conserva el total
+  documental aunque un comprobante B/C no traiga desglose de IVA.
+- Reimportar un CSV ahora corrige comprobantes ya existentes cuyo contenido cambió, sin duplicarlos
+  ni alterar su selección para la liquidación.
+- IIBB admite varias actividades/alícuotas por jurisdicción: reparte la base por actividad, aplica
+  créditos y saldos a favor una sola vez por jurisdicción y evita saldos a pagar/a favor simultáneos.
+- Convenio Multilateral usa el coeficiente una sola vez por jurisdicción y reparte únicamente la base
+  jurisdiccional entre sus actividades.
+- El cotejo en pantalla recalcula impuesto, créditos, saldo a pagar y saldo a favor con las bases
+  editadas; el servidor rechaza bases inválidas, negativas, duplicadas o ajenas al perfil.
+- Validación: CSV reales (973 emitidos + 113 recibidos), 379 tests unitarios, 3 tests de integración
+  MariaDB, ESLint, TypeScript, Prisma y build Next.js 16.2.6 en verde.

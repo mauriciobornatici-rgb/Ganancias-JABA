@@ -23,6 +23,64 @@ export function giLineKey(jurisdictionCode: string, activityCode: string | undef
   return `${jurisdictionCode}|${activityCode ?? ''}`;
 }
 
+/** Suma los saldos persistidos de todas las actividades de una misma jurisdicción. */
+export function aggregateFavorBalancesByJurisdiction(
+  lines: ReadonlyArray<{ jurisdictionCode: string; favorCarryForward: { toString(): string } }>,
+): Map<string, Decimal> {
+  const balances = new Map<string, Decimal>();
+  for (const line of lines) {
+    balances.set(
+      line.jurisdictionCode,
+      (balances.get(line.jurisdictionCode) ?? new Decimal(0))
+        .add(new Decimal(line.favorCarryForward.toString())),
+    );
+  }
+  return balances;
+}
+
+/**
+ * Sugiere un reparto equitativo y exacto a centavos para jurisdicciones con varias actividades.
+ * En Convenio Multilateral reparte la base de la jurisdicción (base total × coeficiente), no la
+ * base global completa.
+ */
+export function suggestActivityBases(params: {
+  regime: GrossIncomeRegime;
+  taxableBase: Decimal;
+  jurisdictions: ReadonlyArray<{ jurisdictionCode: string; activityCode?: string }>;
+  coefficientMap: Map<string, Decimal>;
+}): Map<string, Decimal> {
+  const isConvenio = params.regime === 'CM_REGIMEN_GENERAL' || params.regime === 'CM_REGIMEN_ESPECIAL';
+  const groups = new Map<string, Array<{ jurisdictionCode: string; activityCode?: string }>>();
+  for (const jurisdiction of params.jurisdictions) {
+    const group = groups.get(jurisdiction.jurisdictionCode) ?? [];
+    group.push(jurisdiction);
+    groups.set(jurisdiction.jurisdictionCode, group);
+  }
+
+  const suggestions = new Map<string, Decimal>();
+  for (const [jurisdictionCode, group] of groups) {
+    if (group.length <= 1) continue;
+    const coefficient = isConvenio
+      ? (params.coefficientMap.get(jurisdictionCode) ?? new Decimal(0))
+      : new Decimal(1);
+    const jurisdictionBase = params.taxableBase
+      .mul(coefficient)
+      .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+    const equalShare = jurisdictionBase
+      .div(group.length)
+      .toDecimalPlaces(2, Decimal.ROUND_DOWN);
+    let allocated = new Decimal(0);
+    group.forEach((jurisdiction, index) => {
+      const share = index === group.length - 1
+        ? jurisdictionBase.sub(allocated)
+        : equalShare;
+      suggestions.set(giLineKey(jurisdictionCode, jurisdiction.activityCode), share);
+      allocated = allocated.add(share);
+    });
+  }
+  return suggestions;
+}
+
 export function buildPeriodGrossIncome(params: {
   regime: GrossIncomeRegime;
   /** Jurisdicciones ACTIVAS del perfil (una línea por actividad). */
@@ -81,8 +139,10 @@ export function buildPeriodGrossIncome(params: {
 
   const view = buildGrossIncomeSettlement({ regime: params.regime, documents: params.documents, jurisdictions });
 
-  const sinAlicuota = params.jurisdictions.filter(j => j.taxRate == null).map(j => j.jurisdictionCode);
-  const sinCoef = isConvenio ? params.jurisdictions.filter(j => !params.coefficientMap.has(j.jurisdictionCode)).map(j => j.jurisdictionCode) : [];
+  const sinAlicuota = [...new Set(params.jurisdictions.filter(j => j.taxRate == null).map(j => j.jurisdictionCode))];
+  const sinCoef = isConvenio
+    ? [...new Set(params.jurisdictions.filter(j => !params.coefficientMap.has(j.jurisdictionCode)).map(j => j.jurisdictionCode))]
+    : [];
   const avisos: string[] = [];
   if (sinAlicuota.length) avisos.push(`Sin alícuota cargada: ${sinAlicuota.join(', ')}.`);
   if (sinCoef.length) avisos.push(`Sin coeficiente CM ${params.year}: ${sinCoef.join(', ')}.`);

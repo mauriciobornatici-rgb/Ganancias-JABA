@@ -145,10 +145,37 @@ describe('AFIP fiscal monthly ledger importer', () => {
       counterpartyName: 'DISTRIBUIDORA EL CERRO S.R.L.',
     });
     expect(result.documents[0].netAmount.toString()).toBe('227873.77');
+    expect(result.documents[0].totalAmount.toString()).toBe('282563.47');
     expect(result.documents[0].vatLines).toHaveLength(1);
     expect(result.documents[0].vatLines[0]).toMatchObject({ kind: 'TAXED', creditComputable: true });
     expect(result.documents[0].vatLines[0].vatAmount.toString()).toBe('47853.49');
     expect(result.documents[0].vatLines[0].rate.toString()).toBe('0.21');
+  });
+
+  it('conserva el total de comprobantes B/C sin desglose de IVA como importe no gravado', async () => {
+    const importerModule = await import(importerModulePath).catch(() => null);
+    if (!importerModule) return;
+
+    const result = importerModule.parseAfipFiscalLedgerDocuments({
+      fileName: 'recibidos-tipo-c.csv',
+      fileBuffer: misComprobantesCsv(misComprobantesRecibidosHeader, [
+        '2026-06-16', '11', '1', '499', '499', '86240000000000', '80', '27123456789', 'PROVEEDOR TIPO C',
+        '80', '20352424731', '1,00', '$',
+        '', '', '', '', '', '', '', '', '', '', '', '0,00', '0,00',
+        '0,00', '100000,00', '0,00', '600000,00',
+      ]),
+    }, { ownerCuit: '20-35242473-1' });
+
+    expect(result.errors).toEqual([]);
+    expect(result.documents).toHaveLength(1);
+    expect(result.documents[0].netAmount.toString()).toBe('600000');
+    expect(result.documents[0].totalAmount.toString()).toBe('600000');
+    expect(result.documents[0].vatLines).toHaveLength(1);
+    expect(result.documents[0].vatLines[0]).toMatchObject({
+      kind: 'NON_TAXED',
+      creditComputable: false,
+    });
+    expect(result.documents[0].vatLines[0].taxableBase.toString()).toBe('600000');
   });
 
   it('importa el formato "Mis Comprobantes" emitidos como venta y separa dos alícuotas', async () => {

@@ -5,7 +5,11 @@ import { Decimal } from 'decimal.js';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
-import { buildPeriodGrossIncome, giLineKey } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
+import {
+  aggregateFavorBalancesByJurisdiction,
+  buildPeriodGrossIncome,
+  giLineKey,
+} from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import { persistGrossIncomeSettlement } from '@/domain/ganancias/persistence/fiscalSettlementPersistence';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 import type { SettlementDocument } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
@@ -21,8 +25,8 @@ const saveSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
   // Reparto por monto: base imponible de cada actividad (solo cuando una jurisdicción tiene varias).
   activityBases: z.array(z.object({
-    jurisdictionCode: z.string(),
-    activityCode: z.string().optional().default(''),
+    jurisdictionCode: z.string().trim().min(1).max(20),
+    activityCode: z.string().trim().max(191).optional().default(''),
     base: z.union([z.string(), z.number()]),
   })).optional(),
 });
@@ -95,15 +99,43 @@ export async function POST(request: NextRequest, context: RouteContext) {
         },
       },
     });
-    const previousFavorBalances = new Map(
-      (previousPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [])
-        .map(line => [line.jurisdictionCode, new Decimal(line.favorCarryForward.toString())] as const),
+    const previousFavorBalances = aggregateFavorBalancesByJurisdiction(
+      previousPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [],
     );
 
     const assignedBases = new Map<string, Decimal>();
+    const configuredKeys = new Set(
+      activeJurisdictions.map(j => giLineKey(j.jurisdictionCode, j.activityCode)),
+    );
     for (const ab of parsed.data.activityBases ?? []) {
+      const key = giLineKey(ab.jurisdictionCode, ab.activityCode);
+      if (!configuredKeys.has(key)) {
+        return NextResponse.json(
+          { success: false, error: `La actividad ${key} no pertenece a la configuración activa de IIBB.` },
+          { status: 400 },
+        );
+      }
+      if (assignedBases.has(key)) {
+        return NextResponse.json(
+          { success: false, error: `La base de la actividad ${key} está repetida.` },
+          { status: 400 },
+        );
+      }
       const plain = norm(ab.base);
-      if (plain != null) assignedBases.set(giLineKey(ab.jurisdictionCode, ab.activityCode), new Decimal(plain));
+      if (plain == null) {
+        return NextResponse.json(
+          { success: false, error: `La base de la actividad ${key} no es un importe válido.` },
+          { status: 400 },
+        );
+      }
+      const base = new Decimal(plain);
+      if (base.isNegative()) {
+        return NextResponse.json(
+          { success: false, error: `La base de la actividad ${key} no puede ser negativa.` },
+          { status: 400 },
+        );
+      }
+      assignedBases.set(key, base);
     }
 
     const { view, notice } = buildPeriodGrossIncome({
@@ -121,14 +153,38 @@ export async function POST(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: 'No hay IIBB para liquidar (régimen NONE o sin jurisdicciones configuradas).' }, { status: 400 });
     }
 
-    if (notice && parsed.data.official?.amount != null) {
+    const officialRaw = parsed.data.official?.amount;
+    const officialAmount = norm(officialRaw);
+    if (officialRaw != null && String(officialRaw).trim() !== '' && officialAmount == null) {
+      return NextResponse.json(
+        { success: false, error: 'El saldo oficial de IIBB no es un importe válido.' },
+        { status: 400 },
+      );
+    }
+    if (officialAmount != null && new Decimal(officialAmount).isNegative()) {
+      return NextResponse.json(
+        { success: false, error: 'El saldo oficial de IIBB no puede ser negativo.' },
+        { status: 400 },
+      );
+    }
+
+    if (notice && officialAmount != null) {
       return NextResponse.json(
         { success: false, error: `No se puede cerrar IIBB con configuración incompleta. ${notice}` },
         { status: 409 },
       );
     }
 
-    const officialAmount = norm(parsed.data.official?.amount);
+    if (officialAmount != null && view.settlement.warnings.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `No se puede cerrar IIBB hasta corregir el cálculo. ${view.settlement.warnings.join(' ')}`,
+        },
+        { status: 409 },
+      );
+    }
+
     const balanceDue = view.settlement.totalBalanceDue;
     const matches = officialAmount != null && balanceDue.sub(officialAmount).abs().lessThanOrEqualTo('0.01');
 

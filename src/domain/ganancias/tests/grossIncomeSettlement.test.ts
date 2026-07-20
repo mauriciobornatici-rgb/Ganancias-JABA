@@ -52,6 +52,54 @@ describe('calculateGrossIncomeSettlement — liquidación mensual de IIBB', () =
     expect(r.warnings.some(w => w.includes('no coincide'))).toBe(true);
   });
 
+  it('compensa los créditos de una jurisdicción contra todas sus actividades', () => {
+    const r = calculateGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      taxableBase: D('1000000'),
+      jurisdictions: [
+        {
+          jurisdictionCode: '902', activityCode: 'A', taxRate: D('0.035'),
+          assignedBaseOverride: D('600000'), credits: [{ amount: D('30000') }],
+        },
+        { jurisdictionCode: '902', activityCode: 'B', taxRate: D('0.05'), assignedBaseOverride: D('400000') },
+      ],
+    });
+    expect(r.totalDeterminedTax.toString()).toBe('41000');
+    expect(r.totalCreditsApplied.toString()).toBe('30000');
+    expect(r.totalBalanceDue.toString()).toBe('11000');
+    expect(r.totalFavorCarryForward.toString()).toBe('0');
+  });
+
+  it('genera un único saldo a favor cuando los créditos superan el impuesto de todas las actividades', () => {
+    const r = calculateGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      taxableBase: D('1000000'),
+      jurisdictions: [
+        {
+          jurisdictionCode: '902', activityCode: 'A', taxRate: D('0.035'),
+          assignedBaseOverride: D('600000'), credits: [{ amount: D('50000') }],
+        },
+        { jurisdictionCode: '902', activityCode: 'B', taxRate: D('0.05'), assignedBaseOverride: D('400000') },
+      ],
+    });
+    expect(r.totalCreditsApplied.toString()).toBe('41000');
+    expect(r.totalBalanceDue.toString()).toBe('0');
+    expect(r.totalFavorCarryForward.toString()).toBe('9000');
+    expect(r.jurisdictionLines.filter(line => line.favorCarryForward.greaterThan(0))).toHaveLength(1);
+  });
+
+  it('avisa si una base por actividad es negativa', () => {
+    const r = calculateGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      taxableBase: D('1000000'),
+      jurisdictions: [
+        { jurisdictionCode: '902', activityCode: 'A', taxRate: D('0.035'), assignedBaseOverride: D('-1') },
+        { jurisdictionCode: '902', activityCode: 'B', taxRate: D('0.05'), assignedBaseOverride: D('1000001') },
+      ],
+    });
+    expect(r.warnings.some(w => w.includes('negativas'))).toBe(true);
+  });
+
   it('régimen local: percepciones/retenciones reducen el saldo a pagar', () => {
     const r = calculateGrossIncomeSettlement({
       regime: 'ARBA_LOCAL',
@@ -106,6 +154,21 @@ describe('calculateGrossIncomeSettlement — liquidación mensual de IIBB', () =
     expect(r.jurisdictionLines[1].assignedBase.toString()).toBe('400000');
     expect(r.jurisdictionLines[1].determinedTax.toString()).toBe('16000');
     expect(r.totalDeterminedTax.toString()).toBe('46000');
+    expect(r.warnings).toHaveLength(0);
+  });
+
+  it('Convenio Multilateral con varias actividades cuenta el coeficiente una vez y respeta su base jurisdiccional', () => {
+    const r = calculateGrossIncomeSettlement({
+      regime: 'CM_REGIMEN_GENERAL',
+      taxableBase: D('1000000'),
+      jurisdictions: [
+        { jurisdictionCode: '902', activityCode: 'A', taxRate: D('0.035'), coefficient: D('0.6'), assignedBaseOverride: D('360000') },
+        { jurisdictionCode: '902', activityCode: 'B', taxRate: D('0.05'), coefficient: D('0.6'), assignedBaseOverride: D('240000') },
+        { jurisdictionCode: '901', activityCode: 'C', taxRate: D('0.04'), coefficient: D('0.4') },
+      ],
+    });
+    expect(r.jurisdictionLines.map(line => line.assignedBase.toString())).toEqual(['360000', '240000', '400000']);
+    expect(r.totalDeterminedTax.toString()).toBe('40600');
     expect(r.warnings).toHaveLength(0);
   });
 

@@ -158,7 +158,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const { inserted, duplicates } = await prisma.$transaction(async tx => {
+    const { inserted, updated, duplicates } = await prisma.$transaction(async tx => {
       const persisted = await persistFiscalDocuments(tx, periodId, documents);
       await tx.auditLog.create({ data: {
         action: 'IMPORT',
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         clientCuit: period.client?.cuit,
         clientName: period.client?.name,
         fiscalYear: period.year,
-        details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevos, ${persisted.duplicates} duplicados omitidos, ${files.length} archivo(s).`,
+        details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevos, ${persisted.updated} actualizados, ${persisted.duplicates} duplicados sin cambios, ${files.length} archivo(s).`,
       } });
       return persisted;
     }, { timeout: 60000, maxWait: 10000 }); // importaciones grandes sobre base remota: nunca el default de 5 s
@@ -176,6 +176,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       success: true,
       data: {
         inserted,
+        updated,
         duplicates,
         totalDocuments: documents.length,
         totalFiles: files.length,

@@ -9,7 +9,7 @@ import type { TaxCreditDraft } from '../mappers/afipTaxCreditImporter';
 type TaxCreditStore = {
   taxCreditRecord: {
     findMany(args: unknown): Promise<Array<{ creditKey: string }>>;
-    create(args: { data: Record<string, unknown> }): Promise<unknown>;
+    createMany(args: unknown): Promise<unknown>;
   };
 };
 
@@ -24,7 +24,10 @@ export async function persistTaxCredits(
     select: { creditKey: true },
   });
   const known = new Set(existing.map(c => c.creditKey));
-  let inserted = 0;
+
+  // Inserción EN LOTE (un solo viaje a la base): los creates fila por fila superaban
+  // el timeout de la transacción interactiva desde Vercel (incidente 2026-07-19).
+  const rows: Array<Record<string, unknown>> = [];
   let duplicates = 0;
 
   for (const credit of credits) {
@@ -32,24 +35,25 @@ export async function persistTaxCredits(
       duplicates += 1;
       continue;
     }
-    await db.taxCreditRecord.create({
-      data: {
-        fiscalPeriodId,
-        creditKey: credit.creditKey,
-        tax: credit.tax,
-        kind: credit.kind,
-        issueDate: credit.issueDate,
-        agentCuit: credit.agentCuit,
-        certificateNumber: credit.certificateNumber,
-        originalAmount: credit.originalAmount.toFixed(2),
-        appliedAmount: '0',
-        source: credit.source,
-        notes: credit.notes,
-      },
-    });
     known.add(credit.creditKey);
-    inserted += 1;
+    rows.push({
+      fiscalPeriodId,
+      creditKey: credit.creditKey,
+      tax: credit.tax,
+      kind: credit.kind,
+      issueDate: credit.issueDate,
+      agentCuit: credit.agentCuit,
+      certificateNumber: credit.certificateNumber,
+      originalAmount: credit.originalAmount.toFixed(2),
+      appliedAmount: '0',
+      source: credit.source,
+      notes: credit.notes,
+    });
   }
 
-  return { inserted, duplicates };
+  if (rows.length > 0) {
+    await db.taxCreditRecord.createMany({ data: rows });
+  }
+
+  return { inserted: rows.length, duplicates };
 }

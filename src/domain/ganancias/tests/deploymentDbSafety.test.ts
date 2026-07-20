@@ -21,15 +21,16 @@ const productionDatabaseUrl = 'mysql://user:placeholder@srv1199.hstgr.io:3306/u6
 const stagingDatabaseUrl = 'mysql://user:placeholder@srv1199.hstgr.io:3306/u669600172_ganancias_jaba_staging';
 
 describe('evaluateDeploymentDatabaseSafety', () => {
-  it('permite desarrollo local aunque use la base productiva para tareas controladas', async () => {
+  it('bloquea desarrollo local si apunta a la base productiva', async () => {
     const { evaluateDeploymentDatabaseSafety } = await loadSafetyModule();
 
     const result = evaluateDeploymentDatabaseSafety({
       DATABASE_URL: productionDatabaseUrl,
     });
 
-    expect(result.ok).toBe(true);
-    expect(result.severity).toBe('safe');
+    expect(result.ok).toBe(false);
+    expect(result.severity).toBe('blocked');
+    expect(result.message).toContain('entorno local');
   });
 
   it('bloquea Vercel Production si falta DATABASE_URL', async () => {
@@ -114,7 +115,7 @@ describe('evaluateDeploymentDatabaseSafety', () => {
     expect(result.ok).toBe(true);
   });
 
-  it('permite una excepcion explicita para mantenimiento controlado', async () => {
+  it('no permite excepciones de Preview hacia la base productiva', async () => {
     const { evaluateDeploymentDatabaseSafety } = await loadSafetyModule();
 
     const result = evaluateDeploymentDatabaseSafety({
@@ -125,6 +126,19 @@ describe('evaluateDeploymentDatabaseSafety', () => {
       ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION: 'true',
     });
 
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('base productiva');
+  });
+
+  it('permite desarrollo local con la base Docker aislada', async () => {
+    const { evaluateDeploymentDatabaseSafety } = await loadSafetyModule();
+
+    const result = evaluateDeploymentDatabaseSafety({
+      DATABASE_URL: 'mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test',
+      APP_ENV: 'test-db',
+    });
+
     expect(result.ok).toBe(true);
+    expect(result.severity).toBe('safe');
   });
 });

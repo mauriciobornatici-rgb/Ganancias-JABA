@@ -4019,3 +4019,19 @@ Aplicar la columna en la base con `npx prisma migrate deploy` (las DOS migracion
   editadas; el servidor rechaza bases inválidas, negativas, duplicadas o ajenas al perfil.
 - Validación: CSV reales (973 emitidos + 113 recibidos), 379 tests unitarios, 3 tests de integración
   MariaDB, ESLint, TypeScript, Prisma y build Next.js 16.2.6 en verde.
+
+---
+
+## Aislamiento estricto de desarrollo y pruebas (2026-07-20)
+
+- Hallazgo: el arranque histÃ³rico `npm run dev` leÃ­a `.env` y podÃ­a conectar localhost con la base
+  productiva. Los datos ingresados localmente podÃ­an impactar Hostinger en forma inmediata.
+- `npm run dev`, `dev:testdb`, `dev:turbopack` y `start` ahora fuerzan el runner Docker local
+  `127.0.0.1:3317/ganancias_jaba_test` con `APP_ENV=test-db`.
+- La conexiÃ³n Prisma bloquea la base productiva desde localhost, tests y Vercel Preview. SÃ³lo se
+  habilita en Vercel Production cuando el despliegue proviene de `main`; no existe bypass.
+- La interfaz muestra una franja amarilla permanente `ENTORNO DE PRUEBA` cuando usa Docker.
+- `.env.example` y la documentaciÃ³n quedaron orientados a Docker; se agregÃ³ una sobrescritura local
+  ignorada por Git para proteger tambiÃ©n invocaciones directas de Next en esta mÃ¡quina.
+- ValidaciÃ³n: 389 tests unitarios, 3 tests de integraciÃ³n MariaDB, ESLint, TypeScript, Prisma, build
+  Next.js y smoke HTTP real de `npm run dev` con la franja de aislamiento en verde.

@@ -25,6 +25,20 @@ describe('Docker migration shadow database configuration', () => {
     expect(initSql).toContain("GRANT ALL PRIVILEGES ON ganancias_jaba_test_shadow.* TO 'jaba_test'@'%'");
   });
 
+  it('routes every local app startup command through the isolated database runner', () => {
+    const packageJson = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+    const runner = readFileSync(join(root, 'scripts/run-test-db-command.mjs'), 'utf8');
+
+    expect(packageJson.scripts.dev).toBe('node scripts/run-test-db-command.mjs dev');
+    expect(packageJson.scripts['dev:testdb']).toBe(packageJson.scripts.dev);
+    expect(packageJson.scripts['dev:turbopack']).toContain('run-test-db-command.mjs');
+    expect(packageJson.scripts.start).toContain('run-test-db-command.mjs');
+    expect(runner).toContain("APP_ENV: 'test-db'");
+    expect(runner).toContain('DATABASE_URL: TEST_DATABASE_URL');
+  });
+
   it('loads the isolated seed after migrations and before integration tests in CI', () => {
     const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
     const migrateStep = workflow.indexOf('run: npm run db:test:migrate');

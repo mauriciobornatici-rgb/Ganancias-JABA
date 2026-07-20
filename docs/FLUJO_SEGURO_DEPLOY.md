@@ -30,7 +30,7 @@ Se agrego `scripts/check-deployment-db-safety.mjs` y se conecto como `prebuild`.
 
 Comportamiento:
 
-- En local no bloquea tareas controladas.
+- En local bloquea cualquier intento de usar la base productiva.
 - En Vercel Production exige `DATABASE_URL`.
 - En Vercel Production bloquea si la rama detectada no es `main`.
 - En Vercel Preview permite no tener `DATABASE_URL`, porque asi no puede escribir en produccion.
@@ -42,10 +42,9 @@ Variables opcionales del script:
 ```env
 PRODUCTION_DATABASE_HOSTS="srv1199.hstgr.io,193.203.175.56"
 PRODUCTION_DATABASE_NAME="u669600172_ganancias_jaba"
-ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION="false"
 ```
 
-No usar `ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION="true"` en Vercel salvo mantenimiento excepcional y consciente.
+No existe una bandera de excepciÃ³n para conectar Preview o localhost a producciÃ³n.
 
 ## Configuracion recomendada en Vercel
 

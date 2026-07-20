@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --webpack",
-    "dev:turbopack": "next dev",
+    "dev": "node scripts/run-test-db-command.mjs dev",
+    "dev:testdb": "node scripts/run-test-db-command.mjs dev",
+    "dev:turbopack": "node scripts/run-test-db-command.mjs dev-turbopack",
     "prebuild": "node scripts/check-deployment-db-safety.mjs",
     "build": "next build --webpack",
     "build:turbopack": "next build",
-    "start": "next start",
+    "start": "node scripts/run-test-db-command.mjs start",
     "lint": "eslint",
     "test": "vitest run",
     "test:integration": "node scripts/run-test-db-command.mjs validate-integration",
@@ -24,7 +25,7 @@
     "db:test:validate": "node scripts/run-test-db-command.mjs validate",
     "db:test:validate:excel": "node scripts/run-test-db-command.mjs validate-excel",
     "db:test:studio": "node scripts/run-test-db-command.mjs studio",
-    "dev:testdb": "node scripts/run-test-db-command.mjs dev"
+    "start:testdb": "node scripts/run-test-db-command.mjs start"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",

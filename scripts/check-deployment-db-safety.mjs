@@ -1,7 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
-const DEFAULT_PRODUCTION_DATABASE_HOSTS = ['srv1199.hstgr.io', '193.203.175.56'];
 const DEFAULT_PRODUCTION_DATABASE_NAME = 'u669600172_ganancias_jaba';
 
 const trimQuotes = (value) => value.replace(/^["']|["']$/g, '');
@@ -35,13 +34,6 @@ const parseDatabaseUrl = (databaseUrl) => {
   }
 };
 
-const splitHosts = (value) => (
-  value
-    .split(',')
-    .map((host) => host.trim().toLowerCase())
-    .filter(Boolean)
-);
-
 const buildResult = (ok, message) => ({
   ok,
   severity: ok ? 'safe' : 'blocked',
@@ -60,12 +52,14 @@ export const evaluateDeploymentDatabaseSafety = (env = process.env) => {
   const gitRef = env.VERCEL_GIT_COMMIT_REF ?? '';
   const databaseUrl = normalizeDatabaseUrl(env.DATABASE_URL);
   const productionDatabaseName = env.PRODUCTION_DATABASE_NAME ?? DEFAULT_PRODUCTION_DATABASE_NAME;
-  const productionHosts = splitHosts(
-    env.PRODUCTION_DATABASE_HOSTS ?? DEFAULT_PRODUCTION_DATABASE_HOSTS.join(','),
-  );
+  const parsedDatabaseUrl = parseDatabaseUrl(databaseUrl);
+  const pointsToProductionDatabase = parsedDatabaseUrl?.databaseName === productionDatabaseName;
 
   if (!isVercel) {
-    return buildResult(true, 'Entorno local: la proteccion de Vercel no bloquea tareas controladas.');
+    if (pointsToProductionDatabase) {
+      return buildResult(false, 'El entorno local no puede usar la base productiva. Use Docker con npm run dev.');
+    }
+    return buildResult(true, 'Entorno local aislado de la base productiva.');
   }
 
   if (vercelEnv === 'production') {
@@ -88,20 +82,11 @@ export const evaluateDeploymentDatabaseSafety = (env = process.env) => {
     return buildResult(true, 'Preview sin DATABASE_URL: seguro porque no puede escribir en la base productiva.');
   }
 
-  const parsedDatabaseUrl = parseDatabaseUrl(databaseUrl);
   if (!parsedDatabaseUrl) {
     return buildResult(false, 'DATABASE_URL no tiene formato valido; se bloquea el deploy para evitar un entorno ambiguo.');
   }
 
-  const pointsToProductionDatabase = (
-    productionHosts.includes(parsedDatabaseUrl.host)
-    && parsedDatabaseUrl.databaseName === productionDatabaseName
-  );
-
-  if (
-    pointsToProductionDatabase
-    && env.ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION !== 'true'
-  ) {
+  if (pointsToProductionDatabase) {
     return buildResult(
       false,
       'Preview/Staging no puede usar la base productiva. Use una base staging o quite DATABASE_URL en Preview.',

@@ -10,6 +10,8 @@ const commandMap = {
   migrate: ['node_modules/prisma/build/index.js', 'migrate', 'deploy', '--schema', 'prisma/schema.prisma'],
   seed: ['node_modules/prisma/build/index.js', 'db', 'seed', '--schema', 'prisma/schema.prisma'],
   dev: ['node_modules/next/dist/bin/next', 'dev', '--webpack'],
+  'dev-turbopack': ['node_modules/next/dist/bin/next', 'dev'],
+  start: ['node_modules/next/dist/bin/next', 'start'],
   studio: ['node_modules/prisma/build/index.js', 'studio', '--schema', 'prisma/schema.prisma'],
   validate: ['node_modules/prisma/build/index.js', 'validate', '--schema', 'prisma/schema.prisma'],
   'validate-excel': ['node_modules/vitest/vitest.mjs', 'run', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts'],
@@ -31,7 +33,8 @@ const run = () => {
   }
 
   const [scriptPath, ...args] = command;
-  const extraArgs = commandName === 'create-migration' ? process.argv.slice(3) : [];
+  const commandsWithExtraArgs = new Set(['create-migration', 'dev', 'dev-turbopack', 'start']);
+  const extraArgs = commandsWithExtraArgs.has(commandName) ? process.argv.slice(3) : [];
   const child = spawn(process.execPath, [scriptPath, ...args, ...extraArgs], {
     stdio: 'inherit',
     env: {

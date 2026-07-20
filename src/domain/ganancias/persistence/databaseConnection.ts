@@ -10,6 +10,46 @@ export type MariaDbConnectionConfig = {
   minimumIdle: number;
 };
 
+export type DatabaseRuntimeEnvironment = Record<string, string | undefined>;
+
+const DEFAULT_PRODUCTION_DATABASE_NAME = 'u669600172_ganancias_jaba';
+const TEST_DATABASE_NAME = 'ganancias_jaba_test';
+
+/**
+ * Impide que un servidor local, un test o un Preview de Vercel abra la base productiva.
+ * La Ãºnica autorizaciÃ³n posible es el runtime Production de Vercel desplegado desde main.
+ */
+export function assertDatabaseEnvironmentSafety(
+  databaseUrl: string,
+  env: DatabaseRuntimeEnvironment = process.env,
+): void {
+  const parsed = new URL(databaseUrl);
+  const host = parsed.hostname.toLowerCase();
+  const database = decodeURIComponent(parsed.pathname.replace(/^\/+/, ''));
+  const productionDatabaseName = env.PRODUCTION_DATABASE_NAME ?? DEFAULT_PRODUCTION_DATABASE_NAME;
+  const isProductionTarget = database === productionDatabaseName;
+  const isVercelProduction = env.VERCEL === '1'
+    && env.VERCEL_ENV === 'production'
+    && (!env.VERCEL_GIT_COMMIT_REF || env.VERCEL_GIT_COMMIT_REF === 'main');
+
+  if (isProductionTarget && !isVercelProduction) {
+    throw new Error(
+      'CONEXIÃ“N BLOQUEADA: la base productiva solo puede usarse desde Vercel Production en main. '
+      + 'Para desarrollo ejecute npm run dev y use la base Docker aislada.',
+    );
+  }
+
+  if (env.APP_ENV === 'test-db' || env.NODE_ENV === 'development') {
+    const isLocalHost = host === '127.0.0.1' || host === 'localhost';
+    if (!isLocalHost || database !== TEST_DATABASE_NAME) {
+      throw new Error(
+        `CONEXIÃ“N BLOQUEADA: ${env.APP_ENV === 'test-db' ? 'el entorno de prueba' : 'el desarrollo local'} `
+        + `solo puede usar 127.0.0.1/${TEST_DATABASE_NAME}.`,
+      );
+    }
+  }
+}
+
 /**
  * El MySQL compartido de Hostinger corta conexiones inactivas a los 20 s (wait_timeout=20) y
  * bloquea la IP del cliente al 5.º error de conexión (max_connect_errors=5). Si el pool retiene
@@ -34,7 +74,10 @@ function requireDatabaseUrl(databaseUrl: string | undefined): string {
   return databaseUrl.trim();
 }
 
-export function buildMariaDbConnectionConfig(databaseUrl = process.env.DATABASE_URL): MariaDbConnectionConfig {
+export function buildMariaDbConnectionConfig(
+  databaseUrl = process.env.DATABASE_URL,
+  env: DatabaseRuntimeEnvironment = process.env,
+): MariaDbConnectionConfig {
   const rawUrl = requireDatabaseUrl(databaseUrl);
   const parsed = new URL(rawUrl);
 
@@ -51,6 +94,8 @@ export function buildMariaDbConnectionConfig(databaseUrl = process.env.DATABASE_
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error('DATABASE_URL tiene un puerto MySQL invalido.');
   }
+
+  assertDatabaseEnvironmentSafety(rawUrl, env);
 
   return {
     host: parsed.hostname,

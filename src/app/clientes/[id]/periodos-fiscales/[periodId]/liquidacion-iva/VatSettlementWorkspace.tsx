@@ -6,6 +6,7 @@ import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
   Calculator, Save, FileSpreadsheet, ScanLine, MapPin,
 } from 'lucide-react';
+import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -289,7 +290,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudieron importar los archivos.');
-      setNotice(`Importados ${payload.data.inserted} comprobantes nuevos (${payload.data.duplicates} duplicados omitidos).`);
+      setNotice(`Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`);
       await loadDocuments();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron importar los archivos.');
@@ -638,21 +639,20 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
   for (const l of view?.jurisdictionLines ?? []) perJur.set(l.jurisdictionCode, (perJur.get(l.jurisdictionCode) ?? 0) + 1);
   const isMulti = [...perJur.values()].some(n => n > 1);
 
-  // En modo multi, la base de cada actividad es editable y el determinado se recalcula en vivo.
-  const baseOf = (l: { jurisdictionCode: string; activityCode: string; assignedBase: string }) =>
-    isMulti ? (activityBases[`${l.jurisdictionCode}|${l.activityCode}`] ?? l.assignedBase) : l.assignedBase;
-  const numBase = (v: string) => Number(parseMoneyToPlain(v) ?? 0);
-  const localDetermined = (l: { jurisdictionCode: string; activityCode: string; assignedBase: string; taxRate: string }) =>
-    numBase(baseOf(l)) * Number(l.taxRate);
-  const localTotalDetermined = (view?.jurisdictionLines ?? []).reduce((s, l) => s + localDetermined(l), 0);
-  const localBasesSum = (view?.jurisdictionLines ?? []).reduce((s, l) => s + numBase(baseOf(l)), 0);
+  // En modo multi se recalculan en vivo impuesto, créditos, saldo a pagar y saldo a favor.
+  const live = calculateGrossIncomeLivePreview(view?.jurisdictionLines ?? [], activityBases, isMulti);
+  const localDetermined = (l: { jurisdictionCode: string; activityCode: string }) =>
+    live.determinedByLine[`${l.jurisdictionCode}|${l.activityCode}`] ?? 0;
   const grossBase = Number(view?.taxableBase ?? 0);
-  const basesMatch = Math.abs(localBasesSum - grossBase) <= 0.01;
+  const basesMatch = live.basesValid
+    && live.basesNonNegative
+    && Math.abs(live.totalAssignedBase - grossBase) <= 0.01;
 
-  // Cotejo en vivo: en modo simple contra el saldo del servidor; en multi contra el determinado local
-  // (el saldo definitivo con percepciones/retenciones lo calcula el servidor al guardar).
-  const liveTarget = isMulti ? localTotalDetermined : Number(view?.totalBalanceDue ?? NaN);
-  const liveMatch = view && official.trim() !== '' && Math.abs(liveTarget - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
+  const liveTarget = isMulti ? live.totalBalanceDue : Number(view?.totalBalanceDue ?? NaN);
+  const liveMatch = view
+    && (!isMulti || basesMatch)
+    && official.trim() !== ''
+    && Math.abs(liveTarget - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
 
   return (
     <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
@@ -662,6 +662,9 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
       </div>
 
       {notice ? <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">{notice}</p> : null}
+      {view?.warnings.map(warning => (
+        <p key={warning} className="mt-3 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">{warning}</p>
+      ))}
 
       {view ? (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
@@ -708,15 +711,18 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
             {isMulti ? (
               <p className={`mt-2 flex items-center gap-1.5 text-[11px] font-semibold ${basesMatch ? 'text-emerald-300' : 'text-amber-300'}`}>
                 {basesMatch ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
-                Suma de bases: {fmt(localBasesSum.toFixed(2))} {basesMatch ? '— coincide con la base gravada' : `— debe ser ${fmt(view.taxableBase)}`}
+                Suma de bases: {fmt(live.totalAssignedBase.toFixed(2))} {basesMatch ? '— coincide con la base gravada' : `— debe ser ${fmt(view.taxableBase)}`}
               </p>
             ) : null}
             <div className="mt-3 border-t border-zinc-800 pt-2">
-              <Row label="Impuesto determinado total" value={isMulti ? localTotalDetermined.toFixed(2) : view.totalDeterminedTax} strong />
-              {Number(view.totalCreditsApplied) > 0 ? <Row label="Percep./retenc. IIBB aplicadas" value={view.totalCreditsApplied} muted /> : null}
-              {isMulti
-                ? <p className="mt-1 text-[10px] text-zinc-500">El saldo a pagar (con percepciones/retenciones) se calcula al guardar.</p>
-                : <Row label="Saldo a pagar IIBB" value={view.totalBalanceDue} highlight />}
+              <Row label="Impuesto determinado total" value={isMulti ? live.totalDeterminedTax.toFixed(2) : view.totalDeterminedTax} strong />
+              {(isMulti ? live.totalCreditsApplied : Number(view.totalCreditsApplied)) > 0
+                ? <Row label="Percep./retenc. IIBB aplicadas" value={isMulti ? live.totalCreditsApplied.toFixed(2) : view.totalCreditsApplied} muted />
+                : null}
+              <Row label="Saldo a pagar IIBB" value={isMulti ? live.totalBalanceDue.toFixed(2) : view.totalBalanceDue} highlight />
+              {(isMulti ? live.totalFavorCarryForward : Number(view.totalFavorCarryForward)) > 0
+                ? <Row label="Saldo a favor para el mes siguiente" value={isMulti ? live.totalFavorCarryForward.toFixed(2) : view.totalFavorCarryForward} muted />
+                : null}
             </div>
           </div>
 
@@ -730,7 +736,15 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
               <p className={`mt-3 flex items-center gap-2 text-xs font-bold ${liveMatch ? 'text-emerald-300' : 'text-amber-300'}`}>{liveMatch ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}{liveMatch ? 'Coincide — listo para cerrar' : 'No coincide con el cálculo'}</p>
             ) : null}
             <button type="button" onClick={() => onSave(false)} disabled={saving || (isMulti && !basesMatch)} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
-            {isMulti && !basesMatch ? <p className="mt-2 text-[10px] text-amber-300">Ajustá las bases para que sumen la base gravada antes de guardar.</p> : null}
+            {isMulti && !basesMatch ? (
+              <p className="mt-2 text-[10px] text-amber-300">
+                {!live.basesValid
+                  ? 'Ingresá importes válidos en todas las bases.'
+                  : !live.basesNonNegative
+                    ? 'Las bases por actividad no pueden ser negativas.'
+                    : 'Ajustá las bases para que sumen la base gravada antes de guardar.'}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -8,7 +8,11 @@ import {
   buildGrossIncomeSettlement,
   type SettlementDocument,
 } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
-import { buildPeriodGrossIncome, giLineKey } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
+import {
+  aggregateFavorBalancesByJurisdiction,
+  buildPeriodGrossIncome,
+  suggestActivityBases,
+} from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
 
 /** Carga el mapa de coeficientes unificados CM (CM05) del año, solo si el régimen es Convenio. */
@@ -129,13 +133,12 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       .flatMap(d => d.vatLines)
       .filter(l => String(l.kind) === 'TAXED')
       .reduce((sum, l) => sum.add(l.taxableBase), new Decimal(0));
-    const activitiesPerJur = new Map<string, number>();
-    for (const j of activeJurisdictions) activitiesPerJur.set(j.jurisdictionCode, (activitiesPerJur.get(j.jurisdictionCode) ?? 0) + 1);
-    const suggestedBases = new Map<string, Decimal>();
-    for (const j of activeJurisdictions) {
-      const n = activitiesPerJur.get(j.jurisdictionCode) ?? 1;
-      if (n > 1) suggestedBases.set(giLineKey(j.jurisdictionCode, j.activityCode), grossTaxableBase.div(n).toDecimalPlaces(2));
-    }
+    const suggestedBases = suggestActivityBases({
+      regime,
+      taxableBase: grossTaxableBase,
+      jurisdictions: activeJurisdictions,
+      coefficientMap,
+    });
 
     const { view: grossIncome, notice: grossIncomeNotice } = buildPeriodGrossIncome({
       regime,
@@ -214,9 +217,8 @@ async function findPreviousGrossIncomeFavorBalances(clientId: string, year: numb
       },
     },
   });
-  return new Map(
-    (prevPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [])
-      .map(line => [line.jurisdictionCode, new Decimal(line.favorCarryForward.toString())] as const),
+  return aggregateFavorBalancesByJurisdiction(
+    prevPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [],
   );
 }
 

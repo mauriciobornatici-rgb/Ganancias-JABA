@@ -96,11 +96,25 @@ export function calculateGrossIncomeSettlement(
     };
   }
 
-  // En Convenio Multilateral los coeficientes deberían sumar 1 (ya se valida al guardar el perfil;
-  // aquí se avisa de forma defensiva si lo recibido no cuadra).
+  const distinctJurisdictions = new Set(input.jurisdictions.map(j => j.jurisdictionCode));
+
+  // En Convenio Multilateral el coeficiente es por jurisdicción, no por actividad. Si una
+  // jurisdicción tiene varias actividades debe contarse una sola vez al validar la suma CM05.
+  const coefficientByJurisdiction = new Map<string, Decimal>();
   if (isConvenio) {
-    const coefSum = input.jurisdictions.reduce(
-      (sum, j) => sum.add(j.coefficient ?? new Decimal(0)),
+    for (const jurisdiction of input.jurisdictions) {
+      const coefficient = jurisdiction.coefficient ?? new Decimal(0);
+      const previous = coefficientByJurisdiction.get(jurisdiction.jurisdictionCode);
+      if (previous && !previous.equals(coefficient)) {
+        warnings.push(
+          `Convenio Multilateral: la jurisdicción ${jurisdiction.jurisdictionCode} tiene coeficientes distintos entre actividades.`,
+        );
+      } else if (!previous) {
+        coefficientByJurisdiction.set(jurisdiction.jurisdictionCode, coefficient);
+      }
+    }
+    const coefSum = [...coefficientByJurisdiction.values()].reduce(
+      (sum, coefficient) => sum.add(coefficient),
       new Decimal(0),
     );
     if (coefSum.sub(1).abs().gt('0.000001')) {
@@ -114,24 +128,11 @@ export function calculateGrossIncomeSettlement(
   // "Reparto por monto": si alguna línea trae base asignada explícita, se respeta esa base por actividad
   // en vez de aplicar la base total. En local con una sola actividad no hay override (base total × 1).
   const usesBaseOverride = input.jurisdictions.some(j => j.assignedBaseOverride !== undefined);
-  const distinctJurisdictions = new Set(input.jurisdictions.map(j => j.jurisdictionCode));
 
-  if (!isConvenio && !usesBaseOverride && distinctJurisdictions.size > 1) {
+  if (!isConvenio && distinctJurisdictions.size > 1) {
     warnings.push(
       'Régimen local con más de una jurisdicción: en régimen local toda la base tributa en una sola jurisdicción.',
     );
-  }
-  if (usesBaseOverride) {
-    const assignedSum = input.jurisdictions.reduce(
-      (sum, j) => sum.add(j.assignedBaseOverride ?? new Decimal(0)),
-      new Decimal(0),
-    );
-    if (assignedSum.sub(input.taxableBase).abs().gt('0.01')) {
-      warnings.push(
-        `La suma de las bases por actividad (${assignedSum.toFixed(2)}) no coincide con la base gravada del mes ` +
-        `(${input.taxableBase.toFixed(2)}). Verifique el reparto entre actividades.`,
-      );
-    }
   }
 
   const jurisdictionLines: GrossIncomeJurisdictionResult[] = input.jurisdictions.map(j => {
@@ -141,15 +142,6 @@ export function calculateGrossIncomeSettlement(
       : input.taxableBase.mul(coefficient).toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP);
     const determinedTax = assignedBase.mul(j.taxRate).toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP);
 
-    const creditsAvailable = (j.credits ?? []).reduce(
-      (sum, c) => sum.add(c.amount),
-      new Decimal(0),
-    ).add(j.previousFavorBalance ?? new Decimal(0));
-
-    const creditsApplied = Decimal.min(creditsAvailable, determinedTax);
-    const balanceDue = determinedTax.sub(creditsApplied);
-    const favorCarryForward = creditsAvailable.sub(creditsApplied);
-
     return {
       jurisdictionCode: j.jurisdictionCode,
       activityCode: j.activityCode,
@@ -157,11 +149,85 @@ export function calculateGrossIncomeSettlement(
       assignedBase,
       taxRate: j.taxRate,
       determinedTax,
-      creditsApplied,
-      balanceDue,
-      favorCarryForward,
+      creditsApplied: new Decimal(0),
+      balanceDue: determinedTax,
+      favorCarryForward: new Decimal(0),
     };
   });
+
+  if (usesBaseOverride) {
+    const negativeLines = jurisdictionLines.filter(line => line.assignedBase.isNegative());
+    if (negativeLines.length > 0) {
+      warnings.push('Las bases imponibles por actividad no pueden ser negativas.');
+    }
+
+    if (isConvenio) {
+      for (const [jurisdictionCode, coefficient] of coefficientByJurisdiction) {
+        const assignedSum = jurisdictionLines
+          .filter(line => line.jurisdictionCode === jurisdictionCode)
+          .reduce((sum, line) => sum.add(line.assignedBase), new Decimal(0));
+        const expectedBase = input.taxableBase
+          .mul(coefficient)
+          .toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP);
+        if (assignedSum.sub(expectedBase).abs().gt('0.01')) {
+          warnings.push(
+            `La suma de las bases por actividad de la jurisdicción ${jurisdictionCode} ` +
+            `(${assignedSum.toFixed(2)}) no coincide con su base por coeficiente CM ` +
+            `(${expectedBase.toFixed(2)}).`,
+          );
+        }
+      }
+    } else {
+      const assignedSum = jurisdictionLines.reduce(
+        (sum, line) => sum.add(line.assignedBase),
+        new Decimal(0),
+      );
+      if (assignedSum.sub(input.taxableBase).abs().gt('0.01')) {
+        warnings.push(
+          `La suma de las bases por actividad (${assignedSum.toFixed(2)}) no coincide con la base gravada del mes ` +
+          `(${input.taxableBase.toFixed(2)}). Verifique el reparto entre actividades.`,
+        );
+      }
+    }
+  }
+
+  // Los créditos y saldos a favor pertenecen a la jurisdicción. Se compensan contra la suma
+  // del impuesto de todas sus actividades; así nunca queda simultáneamente saldo a pagar y
+  // saldo a favor dentro de la misma jurisdicción.
+  const lineIndexesByJurisdiction = new Map<string, number[]>();
+  const creditsByJurisdiction = new Map<string, Decimal>();
+  input.jurisdictions.forEach((jurisdiction, index) => {
+    const indexes = lineIndexesByJurisdiction.get(jurisdiction.jurisdictionCode) ?? [];
+    indexes.push(index);
+    lineIndexesByJurisdiction.set(jurisdiction.jurisdictionCode, indexes);
+
+    const available = (jurisdiction.credits ?? []).reduce(
+      (sum, credit) => sum.add(credit.amount),
+      new Decimal(0),
+    ).add(jurisdiction.previousFavorBalance ?? new Decimal(0));
+    creditsByJurisdiction.set(
+      jurisdiction.jurisdictionCode,
+      (creditsByJurisdiction.get(jurisdiction.jurisdictionCode) ?? new Decimal(0)).add(available),
+    );
+  });
+
+  for (const [jurisdictionCode, indexes] of lineIndexesByJurisdiction) {
+    const rawAvailable = creditsByJurisdiction.get(jurisdictionCode) ?? new Decimal(0);
+    if (rawAvailable.isNegative()) {
+      warnings.push(`La jurisdicción ${jurisdictionCode} tiene créditos negativos; se toman como 0.`);
+    }
+    let remaining = Decimal.max(rawAvailable, 0);
+    for (const index of indexes) {
+      const line = jurisdictionLines[index];
+      const applied = Decimal.min(remaining, line.determinedTax);
+      line.creditsApplied = applied;
+      line.balanceDue = line.determinedTax.sub(applied);
+      remaining = remaining.sub(applied);
+    }
+    if (remaining.isPositive() && indexes.length > 0) {
+      jurisdictionLines[indexes[indexes.length - 1]].favorCarryForward = remaining;
+    }
+  }
 
   const totalDeterminedTax = jurisdictionLines.reduce((t, l) => t.add(l.determinedTax), new Decimal(0));
   const totalCreditsApplied = jurisdictionLines.reduce((t, l) => t.add(l.creditsApplied), new Decimal(0));

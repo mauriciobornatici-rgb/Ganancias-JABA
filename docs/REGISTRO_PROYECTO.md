@@ -4037,3 +4037,15 @@ Aplicar la columna en la base con `npx prisma migrate deploy` (las DOS migracion
   `.env` local apunta a la base productiva.
 - ValidaciÃ³n: 393 tests unitarios, 3 tests de integraciÃ³n MariaDB, ESLint, TypeScript, Prisma, build
   Next.js y smoke HTTP real de `npm run dev` con la franja de aislamiento en verde.
+
+---
+
+## Control de importación mensual (2026-07-20)
+
+- La revisión de comprobantes muestra ahora `Neto`, `IVA` y `Total`, para que las facturas C sin
+  IVA discriminado conserven un control visible de su importe real.
+- Se agregó `Eliminar comprobantes cargados`: pide confirmación con mes y cantidad, borra solamente
+  los comprobantes de ese período y conserva las retenciones/percepciones.
+- El servidor exige autenticación, bloquea el borrado si IVA o IIBB están cerrados y registra la
+  operación en auditoría. Las relaciones dependientes se eliminan por cascada dentro de una
+  transacción.

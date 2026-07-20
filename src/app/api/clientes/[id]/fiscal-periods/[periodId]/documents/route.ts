@@ -7,6 +7,7 @@ import { MAX_IMPORT_TOTAL_BYTES } from '@/domain/ganancias/presentation/apiValid
 import { prisma } from '@/domain/ganancias/prisma';
 import type { FiscalDocumentDraft } from '@/domain/ganancias/fiscalLedger/types';
 import { buildFiscalPeriodSourceMutationDecision } from '@/domain/ganancias/workflow/fiscalPeriodWorkflow';
+import { deleteFiscalDocumentsForPeriod } from '@/domain/ganancias/persistence/fiscalDocumentCleanup';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
@@ -66,6 +67,79 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   } catch (error) {
     return NextResponse.json(
       { success: false, error: `No se pudieron listar los comprobantes: ${messageOf(error)}` },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * Vacía los comprobantes cargados en el período para corregir una importación hecha en el mes
+ * equivocado. Las líneas de IVA e imputaciones se eliminan por cascada; las retenciones y
+ * percepciones permanecen porque tienen su propio flujo de carga.
+ */
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const authError = await requireRouteAuth(request);
+  if (authError) return authError;
+  const { id: clientId, periodId } = await context.params;
+
+  try {
+    const period = await prisma.fiscalPeriod.findUnique({
+      where: { id: periodId },
+      select: {
+        id: true,
+        clientId: true,
+        year: true,
+        month: true,
+        client: { select: { cuit: true, name: true } },
+        vatSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+        grossIncomeSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
+      },
+    });
+
+    if (!period || period.clientId !== clientId) {
+      return NextResponse.json(
+        { success: false, error: 'El período mensual no existe o no pertenece a este contribuyente.' },
+        { status: 404 },
+      );
+    }
+
+    const mutationDecision = buildFiscalPeriodSourceMutationDecision({
+      vatStatus: period.vatSettlements[0]?.status,
+      grossIncomeStatus: period.grossIncomeSettlements[0]?.status,
+    });
+    if (!mutationDecision.allowed) {
+      return NextResponse.json(
+        { success: false, error: mutationDecision.error },
+        { status: mutationDecision.httpStatus },
+      );
+    }
+
+    const deleted = await prisma.$transaction(async tx => {
+      const result = await deleteFiscalDocumentsForPeriod(tx, periodId);
+      if (result.deleted > 0) {
+        await tx.auditLog.create({
+          data: {
+            action: 'DELETE',
+            entityType: 'FiscalDocumentBatch',
+            entityId: periodId,
+            clientCuit: period.client.cuit,
+            clientName: period.client.name,
+            fiscalYear: period.year,
+            details: JSON.stringify({
+              period: `${period.year}-${String(period.month).padStart(2, '0')}`,
+              deletedDocuments: result.deleted,
+              reason: 'Corrección de archivos cargados en un período equivocado',
+            }),
+          },
+        });
+      }
+      return result.deleted;
+    });
+
+    return NextResponse.json({ success: true, data: { deleted } });
+  } catch (error) {
+    return NextResponse.json(
+      { success: false, error: `No se pudieron eliminar los comprobantes: ${messageOf(error)}` },
       { status: 500 },
     );
   }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
-  Calculator, Save, FileSpreadsheet, ScanLine, MapPin,
+  Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2,
 } from 'lucide-react';
 import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
@@ -88,6 +88,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [notice, setNotice] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
+  const [deletingDocuments, setDeletingDocuments] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Retenciones y percepciones (créditos de IVA)
@@ -300,6 +301,39 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   };
 
+  const deleteLoadedDocuments = async () => {
+    if (documents.length === 0 || deletingDocuments) return;
+    const periodLabel = period ? `${MONTHS[period.month]} ${period.year}` : 'este período';
+    const confirmed = window.confirm(
+      `Se eliminarán los ${documents.length} comprobantes cargados en ${periodLabel}.\n\n`
+      + 'Las retenciones y percepciones no se eliminarán. Esta acción no se puede deshacer. ¿Desea continuar?',
+    );
+    if (!confirmed) return;
+
+    setDeletingDocuments(true);
+    setError(null);
+    setNotice(null);
+    setSettlement(null);
+    setGrossIncome(null);
+    setActivityBases({});
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, {
+        method: 'DELETE',
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || 'No se pudieron eliminar los comprobantes.');
+      }
+      setDocuments([]);
+      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${periodLabel}. Ya podés cargar los archivos en el mes correcto.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudieron eliminar los comprobantes.');
+      await loadDocuments();
+    } finally {
+      setDeletingDocuments(false);
+    }
+  };
+
   const persistSelection = useCallback(async (changes: Array<{ documentId: string; included: boolean }>) => {
     try {
       await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents/selection`, {
@@ -471,12 +505,20 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
           <StepTitle n={1} icon={<UploadCloud className="h-4 w-4" />} title="Subir archivos de AFIP" subtitle="Compras y ventas exportados de Mis Comprobantes (.csv). El sistema detecta automáticamente cuál es cuál." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
-            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploading ? 'cursor-wait opacity-60' : ''}`}>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || deletingDocuments} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
+            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDocuments) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploading ? 'Importando…' : 'Seleccionar CSV (compras y ventas)'}
             </label>
-            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
+            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || deletingDocuments} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Actualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => void deleteLoadedDocuments()}
+              disabled={documents.length === 0 || deletingDocuments || uploading}
+              className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" /> {deletingDocuments ? 'Eliminando…' : 'Eliminar comprobantes cargados'}
             </button>
           </div>
         </section>
@@ -836,8 +878,8 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
           </label>
         </div>
       </div>
-      <div className="max-h-72 overflow-y-auto">
-        <table className="w-full text-left text-[11px]">
+      <div className="max-h-72 overflow-auto">
+        <table className="min-w-[980px] w-full text-left text-[11px]">
           <thead className="sticky top-0 bg-zinc-950/90 text-[10px] uppercase tracking-wider text-zinc-500">
             <tr>
               <th className="px-3 py-1.5 w-8"></th>
@@ -847,6 +889,7 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
               <th className="px-2 py-1.5">Contraparte</th>
               <th className="px-2 py-1.5 text-right">Neto</th>
               <th className="px-2 py-1.5 text-right">IVA</th>
+              <th className="px-2 py-1.5 text-right">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -859,6 +902,7 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
                 <td className="px-2 py-1.5 text-zinc-300">{r.counterpartyName || r.counterpartyCuit || '—'}</td>
                 <td className="px-2 py-1.5 text-right font-mono text-zinc-400">{fmt(r.netAmount)}</td>
                 <td className="px-2 py-1.5 text-right font-mono text-zinc-200">{fmt(r.vatAmount)}</td>
+                <td className="px-2 py-1.5 text-right font-mono font-semibold text-teal-200">{fmt(r.totalAmount)}</td>
               </tr>
             ))}
           </tbody>

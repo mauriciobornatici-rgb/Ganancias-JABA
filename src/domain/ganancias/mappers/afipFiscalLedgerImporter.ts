@@ -67,22 +67,37 @@ function invoiceNumber(row: AfipSheetCell[], pointOfSaleIndex: number, numberInd
 }
 
 function directionFromHeaders(headers: string[]): FiscalDocumentDirection | null {
+  // Formato "Libro IVA Digital" (columnas Comprador / Vendedor).
   if (headers.some(header => header.includes('comprador') || header.includes('doc. co'))) return 'SALE';
   if (headers.some(header => header.includes('vendedor') || header.includes('doc. ve') || header.includes('credito fiscal'))) return 'PURCHASE';
+  // Formato "Mis Comprobantes" (columnas Emisor / Receptor): los recibidos (compras) traen
+  // datos del Emisor; los emitidos (ventas) traen solo Receptor.
+  if (headers.some(header => header.includes('emisor'))) return 'PURCHASE';
+  if (headers.some(header => header.includes('receptor'))) return 'SALE';
   return null;
 }
 
-function rateIndex(headers: string[], prefix: 'neto gravado iva' | 'importe iva', label: string): number {
+function netRateIndex(headers: string[], label: string): number {
   const ratePattern = new RegExp(`(?:^|\\s)${label.replace('.', '[,.]')}(?:%|\\s|$)`);
-  return headers.findIndex(header => header.includes(prefix) && ratePattern.test(header));
+  // El neto gravado por alícuota se llama igual en ambos formatos ("Neto Gravado IVA 21%").
+  return headers.findIndex(header => header.includes('neto gravado iva') && ratePattern.test(header));
+}
+
+function vatAmountRateIndex(headers: string[], label: string): number {
+  const ratePattern = new RegExp(`(?:^|\\s)${label.replace('.', '[,.]')}(?:%|\\s|$)`);
+  // Importe de IVA por alícuota. Libro IVA Digital: "Importe IVA 21%". Mis Comprobantes: "IVA 21%".
+  // Se excluye "neto" para no confundir con la columna de base gravada.
+  return headers.findIndex(header => (
+    ratePattern.test(header)
+    && !header.includes('neto')
+    && (header.includes('importe iva') || header.startsWith('iva'))
+  ));
 }
 
 function otherAmountIndex(headers: string[], kind: FiscalVatLineKind): number {
-  if (kind === 'EXEMPT') return headerIndex(headers, ['importe exento', 'importe ex']);
-  return headers.findIndex(header => (
-    header.includes('importe no gravado')
-    || (header.includes('importe no') && !header.includes('importe neto'))
-  ));
+  if (kind === 'EXEMPT') return headerIndex(headers, ['importe exento', 'importe ex', 'op. exenta', 'exenta']);
+  // No gravado. Libro IVA Digital: "Importe No Gravado". Mis Comprobantes: "Imp. Neto No Gravado".
+  return headerIndex(headers, ['importe no gravado', 'neto no gravado', 'no gravado']);
 }
 
 function vatLinesFromRow(
@@ -95,8 +110,8 @@ function vatLinesFromRow(
   const lines: FiscalVatLineDraft[] = [];
 
   for (const vatRate of VAT_RATES) {
-    const taxableBase = moneyCell(row, rateIndex(headers, 'neto gravado iva', vatRate.label));
-    const vatAmount = moneyCell(row, rateIndex(headers, 'importe iva', vatRate.label));
+    const taxableBase = moneyCell(row, netRateIndex(headers, vatRate.label));
+    const vatAmount = moneyCell(row, vatAmountRateIndex(headers, vatRate.label));
 
     if (!taxableBase.isZero() || !vatAmount.isZero()) {
       lines.push({
@@ -153,11 +168,13 @@ export function parseAfipFiscalLedgerDocuments(
   const dateIndex = headerIndex(headers, ['fecha de emision', 'fecha']);
   const voucherTypeIndex = headerIndex(headers, ['tipo de comprobante', 'tipo de com']);
   const pointOfSaleIndex = headerIndex(headers, ['punto de venta', 'punto de ve', 'pto. vta']);
-  const voucherNumberIndex = headerIndex(headers, ['numero de comprobante', 'nro. comprobante']);
+  // "Número de Comprobante" (Libro IVA Digital) o "Número Desde" (Mis Comprobantes).
+  const voucherNumberIndex = headerIndex(headers, ['numero de comprobante', 'nro. comprobante', 'numero desde']);
   const totalIndex = headerIndex(headers, ['importe total', 'importe tota']);
+  // Contraparte: en ventas es Comprador/Receptor; en compras es Vendedor/Emisor.
   const counterpartyCuitIndex = direction === 'SALE'
-    ? headerIndex(headers, ['nro. doc. comprador', 'doc. co'])
-    : headerIndex(headers, ['nro. doc. vendedor', 'doc. ve']);
+    ? headerIndex(headers, ['nro. doc. comprador', 'doc. co', 'nro. doc. receptor', 'doc. receptor'])
+    : headerIndex(headers, ['nro. doc. vendedor', 'doc. ve', 'nro. doc. emisor', 'doc. emisor']);
   const counterpartyNameIndex = headerIndex(headers, ['denominacion', 'razon social']);
 
   if (dateIndex === -1 || voucherTypeIndex === -1 || voucherNumberIndex === -1) {

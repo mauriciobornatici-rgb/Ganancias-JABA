@@ -4,6 +4,14 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-20 - IIBB: múltiples alícuotas por jurisdicción (reparto por monto de base)
+
+- Necesidad del usuario: un cliente puede tener dos actividades con distinta alícuota en la misma jurisdicción (antes limitado a una alícuota por jurisdicción por el unique [taxProfileId, jurisdictionCode]).
+- Decisión fiscal del usuario (2026-07-20): "reparto por MONTO de base": en la liquidación mensual se ingresa la base imponible de cada actividad en pesos; deben sumar la base gravada del mes.
+- Implementación por fases: (1) modelo `ClientTaxJurisdiction` gana `activityCode`+`activityLabel`, unique pasa a [taxProfileId, jurisdictionCode, activityCode] (índice nombrado `ctj_profile_jur_activity_uk` por límite de 64 chars; migración crea el índice nuevo ANTES de dropear el viejo porque respalda la FK). (2) Cálculo `calculateGrossIncomeSettlement` acepta `assignedBaseOverride` por línea; avisa si las bases no suman la base gravada. (3) `buildPeriodGrossIncome` reparte por actividad y NO duplica créditos/saldo-a-favor previo entre actividades de una misma jurisdicción (se aplican una vez por jurisdicción). (4) API iibb-config guarda/lee actividad; valida (jur,actividad) único. (5) UI config: columna Actividad, permite varias filas por jurisdicción. (6) Liquidación: preview sugiere reparto equitativo editable; workspace muestra bases editables por actividad con validación de suma; save recibe `activityBases` y recalcula/coteja del lado servidor.
+- Migración `20260720210000_iibb_actividades_por_jurisdiccion` APLICADA a la base real (aditiva; segura para el código viejo que usa activityCode=''). Verificado: 369 tests (incl. dos actividades $600k×3,5% + $400k×5% = $41.000, y créditos no duplicados = saldo $33.000), typecheck, lint, build.
+- Nota: caso soportado a fondo = local con varias actividades. Convenio + varias actividades por jurisdicción funciona pero es un caso avanzado (coef CM por jurisdicción × base por actividad).
+
 ### 2026-07-20 - Importacion IVA: soporte del formato "Mis Comprobantes" (consulta web ARCA) - resuelto
 
 - Sintoma: "No se pudo compilar ningun comprobante" al subir los CSV de compras/ventas. Los archivos eran validos de ARCA.

@@ -56,7 +56,7 @@ type GrossIncomeView = {
   totalCreditsApplied: string;
   totalBalanceDue: string;
   totalFavorCarryForward: string;
-  jurisdictionLines: Array<{ jurisdictionCode: string; assignedBase: string; taxRate: string; determinedTax: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
+  jurisdictionLines: Array<{ jurisdictionCode: string; activityCode: string; assignedBase: string; taxRate: string; determinedTax: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
   warnings: string[];
 };
 
@@ -104,6 +104,8 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [iibbRef, setIibbRef] = useState('');
   const [savingIibb, setSavingIibb] = useState(false);
   const [savedIibbStatus, setSavedIibbStatus] = useState<{ status: string; version: number } | null>(null);
+  // Reparto por monto: base editable de cada actividad (key = "jurisdiccion|actividad").
+  const [activityBases, setActivityBases] = useState<Record<string, string>>({});
 
   // Liquidación ya guardada (al volver a un mes cerrado) + modo "reliquidar".
   const [savedSettlement, setSavedSettlement] = useState<SavedSettlement | null>(null);
@@ -182,8 +184,13 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     setError(null);
     try {
       const official = (iibbOfficial || iibbRef) ? { amount: iibbOfficial || null, reference: iibbRef || null } : null;
+      const bases = Object.entries(activityBases).map(([key, base]) => {
+        const [jurisdictionCode, activityCode] = key.split('|');
+        return { jurisdictionCode, activityCode, base };
+      });
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/iibb/save`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ official, forceSave: force }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ official, forceSave: force, activityBases: bases.length > 0 ? bases : undefined }),
       });
       const payload = await res.json();
       if (res.status === 409) { setError(payload.error || 'El saldo de IIBB no coincide con el oficial.'); return; }
@@ -328,8 +335,22 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo calcular la liquidación.');
       setSettlement(payload.data.vat);
-      setGrossIncome(payload.data.grossIncome ?? null);
+      const gi: GrossIncomeView | null = payload.data.grossIncome ?? null;
+      setGrossIncome(gi);
       setGrossIncomeNotice(payload.data.grossIncomeNotice ?? null);
+      // Precarga las bases editables por actividad con lo que sugiere el servidor (reparto equitativo).
+      if (gi) {
+        const perJur = new Map<string, number>();
+        for (const l of gi.jurisdictionLines) perJur.set(l.jurisdictionCode, (perJur.get(l.jurisdictionCode) ?? 0) + 1);
+        const hasMulti = [...perJur.values()].some(n => n > 1);
+        if (hasMulti) {
+          const initial: Record<string, string> = {};
+          for (const l of gi.jurisdictionLines) initial[`${l.jurisdictionCode}|${l.activityCode}`] = l.assignedBase;
+          setActivityBases(initial);
+        } else {
+          setActivityBases({});
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo calcular la liquidación.');
     } finally {
@@ -590,6 +611,8 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             saving={savingIibb}
             savedStatus={savedIibbStatus}
             onSave={saveIibb}
+            activityBases={activityBases}
+            onActivityBase={(key, v) => setActivityBases(prev => ({ ...prev, [key]: v }))}
           />
         ) : null}
       </div>
@@ -597,7 +620,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   );
 }
 
-function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave }: {
+function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave, activityBases, onActivityBase }: {
   view: GrossIncomeView | null;
   notice: string | null;
   official: string;
@@ -607,8 +630,30 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
   saving: boolean;
   savedStatus: { status: string; version: number } | null;
   onSave: (force: boolean) => void;
+  activityBases: Record<string, string>;
+  onActivityBase: (key: string, v: string) => void;
 }) {
-  const liveMatch = view && official.trim() !== '' && Math.abs(Number(view.totalBalanceDue) - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
+  // Multi-actividad: alguna jurisdicción con más de una línea (dos actividades con distinta alícuota).
+  const perJur = new Map<string, number>();
+  for (const l of view?.jurisdictionLines ?? []) perJur.set(l.jurisdictionCode, (perJur.get(l.jurisdictionCode) ?? 0) + 1);
+  const isMulti = [...perJur.values()].some(n => n > 1);
+
+  // En modo multi, la base de cada actividad es editable y el determinado se recalcula en vivo.
+  const baseOf = (l: { jurisdictionCode: string; activityCode: string; assignedBase: string }) =>
+    isMulti ? (activityBases[`${l.jurisdictionCode}|${l.activityCode}`] ?? l.assignedBase) : l.assignedBase;
+  const numBase = (v: string) => Number(parseMoneyToPlain(v) ?? 0);
+  const localDetermined = (l: { jurisdictionCode: string; activityCode: string; assignedBase: string; taxRate: string }) =>
+    numBase(baseOf(l)) * Number(l.taxRate);
+  const localTotalDetermined = (view?.jurisdictionLines ?? []).reduce((s, l) => s + localDetermined(l), 0);
+  const localBasesSum = (view?.jurisdictionLines ?? []).reduce((s, l) => s + numBase(baseOf(l)), 0);
+  const grossBase = Number(view?.taxableBase ?? 0);
+  const basesMatch = Math.abs(localBasesSum - grossBase) <= 0.01;
+
+  // Cotejo en vivo: en modo simple contra el saldo del servidor; en multi contra el determinado local
+  // (el saldo definitivo con percepciones/retenciones lo calcula el servidor al guardar).
+  const liveTarget = isMulti ? localTotalDetermined : Number(view?.totalBalanceDue ?? NaN);
+  const liveMatch = view && official.trim() !== '' && Math.abs(liveTarget - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
+
   return (
     <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
       <div className="flex items-start justify-between gap-3">
@@ -621,29 +666,57 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
       {view ? (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-teal-400">Por jurisdicción</p>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-teal-400">Por jurisdicción{isMulti ? ' y actividad' : ''}</p>
+            {isMulti ? (
+              <p className="mb-2 text-[10px] text-zinc-500">Ingresá la base imponible de cada actividad. Deben sumar la base gravada del mes ({fmt(view.taxableBase)}).</p>
+            ) : null}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[11px]">
                 <thead className="text-[10px] uppercase tracking-wider text-zinc-500">
-                  <tr><th className="px-2 py-1">Juris.</th><th className="px-2 py-1 text-right">Base asig.</th><th className="px-2 py-1 text-right">Alíc.</th><th className="px-2 py-1 text-right">Determinado</th><th className="px-2 py-1 text-right">Saldo</th></tr>
+                  <tr>
+                    <th className="px-2 py-1">Juris.</th>
+                    {isMulti ? <th className="px-2 py-1">Actividad</th> : null}
+                    <th className="px-2 py-1 text-right">Base{isMulti ? ' (editar)' : ' asig.'}</th>
+                    <th className="px-2 py-1 text-right">Alíc.</th>
+                    <th className="px-2 py-1 text-right">Determinado</th>
+                    {isMulti ? null : <th className="px-2 py-1 text-right">Saldo</th>}
+                  </tr>
                 </thead>
                 <tbody>
-                  {view.jurisdictionLines.map(l => (
-                    <tr key={l.jurisdictionCode} className="border-t border-zinc-900">
-                      <td className="px-2 py-1 font-mono text-zinc-300">{l.jurisdictionCode}</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-400">{fmt(l.assignedBase)}</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-500">{(Number(l.taxRate) * 100).toFixed(2)}%</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-300">{fmt(l.determinedTax)}</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(l.balanceDue)}</td>
-                    </tr>
-                  ))}
+                  {view.jurisdictionLines.map(l => {
+                    const key = `${l.jurisdictionCode}|${l.activityCode}`;
+                    return (
+                      <tr key={key} className="border-t border-zinc-900">
+                        <td className="px-2 py-1 font-mono text-zinc-300">{l.jurisdictionCode}</td>
+                        {isMulti ? <td className="px-2 py-1 text-zinc-300">{l.activityCode || '—'}</td> : null}
+                        <td className="px-2 py-1 text-right">
+                          {isMulti ? (
+                            <input inputMode="decimal" value={activityBases[key] ?? l.assignedBase} onChange={e => onActivityBase(key, e.target.value)} className="h-7 w-28 rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-zinc-200 outline-none focus:border-teal-400" />
+                          ) : (
+                            <span className="font-mono text-zinc-400">{fmt(l.assignedBase)}</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-1 text-right font-mono text-zinc-500">{(Number(l.taxRate) * 100).toFixed(2)}%</td>
+                        <td className="px-2 py-1 text-right font-mono text-zinc-300">{isMulti ? fmt(localDetermined(l).toFixed(2)) : fmt(l.determinedTax)}</td>
+                        {isMulti ? null : <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(l.balanceDue)}</td>}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
+            {isMulti ? (
+              <p className={`mt-2 flex items-center gap-1.5 text-[11px] font-semibold ${basesMatch ? 'text-emerald-300' : 'text-amber-300'}`}>
+                {basesMatch ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                Suma de bases: {fmt(localBasesSum.toFixed(2))} {basesMatch ? '— coincide con la base gravada' : `— debe ser ${fmt(view.taxableBase)}`}
+              </p>
+            ) : null}
             <div className="mt-3 border-t border-zinc-800 pt-2">
-              <Row label="Impuesto determinado total" value={view.totalDeterminedTax} strong />
+              <Row label="Impuesto determinado total" value={isMulti ? localTotalDetermined.toFixed(2) : view.totalDeterminedTax} strong />
               {Number(view.totalCreditsApplied) > 0 ? <Row label="Percep./retenc. IIBB aplicadas" value={view.totalCreditsApplied} muted /> : null}
-              <Row label="Saldo a pagar IIBB" value={view.totalBalanceDue} highlight />
+              {isMulti
+                ? <p className="mt-1 text-[10px] text-zinc-500">El saldo a pagar (con percepciones/retenciones) se calcula al guardar.</p>
+                : <Row label="Saldo a pagar IIBB" value={view.totalBalanceDue} highlight />}
             </div>
           </div>
 
@@ -656,7 +729,8 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
             {official.trim() !== '' ? (
               <p className={`mt-3 flex items-center gap-2 text-xs font-bold ${liveMatch ? 'text-emerald-300' : 'text-amber-300'}`}>{liveMatch ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}{liveMatch ? 'Coincide — listo para cerrar' : 'No coincide con el cálculo'}</p>
             ) : null}
-            <button type="button" onClick={() => onSave(false)} disabled={saving} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
+            <button type="button" onClick={() => onSave(false)} disabled={saving || (isMulti && !basesMatch)} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
+            {isMulti && !basesMatch ? <p className="mt-2 text-[10px] text-amber-300">Ajustá las bases para que sumen la base gravada antes de guardar.</p> : null}
           </div>
         </div>
       ) : null}

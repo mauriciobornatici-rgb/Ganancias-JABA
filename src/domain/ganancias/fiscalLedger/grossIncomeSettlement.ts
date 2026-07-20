@@ -37,6 +37,12 @@ export type GrossIncomeJurisdictionInput = {
   credits?: Array<{ amount: Decimal }>;
   /** Saldo a favor de IIBB arrastrado del mes anterior en esa jurisdicción. */
   previousFavorBalance?: Decimal;
+  /**
+   * Base imponible asignada explícitamente a esta línea (criterio 2026-07-20 "reparto por monto"):
+   * cuando una jurisdicción tiene varias actividades con distinta alícuota, el usuario indica la base
+   * de cada una. Si está presente, se usa tal cual (no se aplica base total × coeficiente).
+   */
+  assignedBaseOverride?: Decimal;
 };
 
 export type GrossIncomeSettlementInput = {
@@ -103,15 +109,36 @@ export function calculateGrossIncomeSettlement(
         'Verifique el CM05 cargado.',
       );
     }
-  } else if (input.jurisdictions.length > 1) {
+  }
+
+  // "Reparto por monto": si alguna línea trae base asignada explícita, se respeta esa base por actividad
+  // en vez de aplicar la base total. En local con una sola actividad no hay override (base total × 1).
+  const usesBaseOverride = input.jurisdictions.some(j => j.assignedBaseOverride !== undefined);
+  const distinctJurisdictions = new Set(input.jurisdictions.map(j => j.jurisdictionCode));
+
+  if (!isConvenio && !usesBaseOverride && distinctJurisdictions.size > 1) {
     warnings.push(
       'Régimen local con más de una jurisdicción: en régimen local toda la base tributa en una sola jurisdicción.',
     );
   }
+  if (usesBaseOverride) {
+    const assignedSum = input.jurisdictions.reduce(
+      (sum, j) => sum.add(j.assignedBaseOverride ?? new Decimal(0)),
+      new Decimal(0),
+    );
+    if (assignedSum.sub(input.taxableBase).abs().gt('0.01')) {
+      warnings.push(
+        `La suma de las bases por actividad (${assignedSum.toFixed(2)}) no coincide con la base gravada del mes ` +
+        `(${input.taxableBase.toFixed(2)}). Verifique el reparto entre actividades.`,
+      );
+    }
+  }
 
   const jurisdictionLines: GrossIncomeJurisdictionResult[] = input.jurisdictions.map(j => {
     const coefficient = isConvenio ? (j.coefficient ?? new Decimal(0)) : new Decimal(1);
-    const assignedBase = input.taxableBase.mul(coefficient).toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP);
+    const assignedBase = j.assignedBaseOverride !== undefined
+      ? j.assignedBaseOverride.toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP)
+      : input.taxableBase.mul(coefficient).toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP);
     const determinedTax = assignedBase.mul(j.taxRate).toDecimalPlaces(TWO.dp, Decimal.ROUND_HALF_UP);
 
     const creditsAvailable = (j.credits ?? []).reduce(

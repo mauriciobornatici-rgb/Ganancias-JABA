@@ -8,7 +8,7 @@ import {
   buildGrossIncomeSettlement,
   type SettlementDocument,
 } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
-import { buildPeriodGrossIncome } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
+import { buildPeriodGrossIncome, giLineKey } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
 
 /** Carga el mapa de coeficientes unificados CM (CM05) del año, solo si el régimen es Convenio. */
@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         taxProfile: {
           select: {
             grossIncomeRegime: true,
-            jurisdictions: { select: { jurisdictionCode: true, isActive: true, taxRate: true } },
+            jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, isActive: true, taxRate: true } },
           },
         },
         documents: {
@@ -122,16 +122,33 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       .filter(c => String(c.tax) === 'GROSS_INCOME')
       .map(c => ({ jurisdictionCode: c.jurisdictionCode, amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) }));
 
+    // Reparto por monto: cuando una jurisdicción tiene varias actividades, se sugiere en el preview
+    // un reparto equitativo de la base gravada como punto de partida editable (el usuario ajusta y guarda).
+    const grossTaxableBase = documents
+      .filter(d => d.direction === 'SALE')
+      .flatMap(d => d.vatLines)
+      .filter(l => String(l.kind) === 'TAXED')
+      .reduce((sum, l) => sum.add(l.taxableBase), new Decimal(0));
+    const activitiesPerJur = new Map<string, number>();
+    for (const j of activeJurisdictions) activitiesPerJur.set(j.jurisdictionCode, (activitiesPerJur.get(j.jurisdictionCode) ?? 0) + 1);
+    const suggestedBases = new Map<string, Decimal>();
+    for (const j of activeJurisdictions) {
+      const n = activitiesPerJur.get(j.jurisdictionCode) ?? 1;
+      if (n > 1) suggestedBases.set(giLineKey(j.jurisdictionCode, j.activityCode), grossTaxableBase.div(n).toDecimalPlaces(2));
+    }
+
     const { view: grossIncome, notice: grossIncomeNotice } = buildPeriodGrossIncome({
       regime,
       jurisdictions: activeJurisdictions.map(j => ({
         jurisdictionCode: j.jurisdictionCode,
+        activityCode: j.activityCode,
         taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : null,
       })),
       documents,
       coefficientMap,
       credits: giCredits,
       previousFavorBalances: previousGrossIncomeBalances,
+      assignedBases: suggestedBases.size > 0 ? suggestedBases : undefined,
       year: period.year,
     });
 
@@ -230,6 +247,7 @@ function serializeGrossIncome(view: ReturnType<typeof buildGrossIncomeSettlement
     totalFavorCarryForward: s.totalFavorCarryForward.toFixed(2),
     jurisdictionLines: s.jurisdictionLines.map(l => ({
       jurisdictionCode: l.jurisdictionCode,
+      activityCode: l.activityCode ?? '',
       assignedBase: l.assignedBase.toFixed(2),
       taxRate: l.taxRate.toFixed(6),
       determinedTax: l.determinedTax.toFixed(2),

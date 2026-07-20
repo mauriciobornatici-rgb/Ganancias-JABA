@@ -20,6 +20,38 @@ describe('calculateGrossIncomeSettlement — liquidación mensual de IIBB', () =
     expect(r.warnings).toHaveLength(0);
   });
 
+  it('local con dos actividades: reparte la base por monto y aplica cada alícuota (criterio 2026-07-20)', () => {
+    // $1.000.000 gravado: $600.000 de actividad A (3,5%) + $400.000 de actividad B (5%).
+    const r = calculateGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      taxableBase: D('1000000'),
+      jurisdictions: [
+        { jurisdictionCode: '902', activityCode: 'A', taxRate: D('0.035'), assignedBaseOverride: D('600000') },
+        { jurisdictionCode: '902', activityCode: 'B', taxRate: D('0.05'), assignedBaseOverride: D('400000') },
+      ],
+    });
+    expect(r.jurisdictionLines).toHaveLength(2);
+    expect(r.jurisdictionLines[0].assignedBase.toString()).toBe('600000');
+    expect(r.jurisdictionLines[0].determinedTax.toString()).toBe('21000'); // 600.000 × 3,5%
+    expect(r.jurisdictionLines[1].assignedBase.toString()).toBe('400000');
+    expect(r.jurisdictionLines[1].determinedTax.toString()).toBe('20000'); // 400.000 × 5%
+    expect(r.totalDeterminedTax.toString()).toBe('41000');
+    // No debe aparecer el aviso de "más de una jurisdicción" (es la misma con dos actividades)
+    expect(r.warnings).toHaveLength(0);
+  });
+
+  it('avisa si las bases por actividad no suman la base gravada del mes', () => {
+    const r = calculateGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      taxableBase: D('1000000'),
+      jurisdictions: [
+        { jurisdictionCode: '902', activityCode: 'A', taxRate: D('0.035'), assignedBaseOverride: D('600000') },
+        { jurisdictionCode: '902', activityCode: 'B', taxRate: D('0.05'), assignedBaseOverride: D('300000') }, // falta 100.000
+      ],
+    });
+    expect(r.warnings.some(w => w.includes('no coincide'))).toBe(true);
+  });
+
   it('régimen local: percepciones/retenciones reducen el saldo a pagar', () => {
     const r = calculateGrossIncomeSettlement({
       regime: 'ARBA_LOCAL',

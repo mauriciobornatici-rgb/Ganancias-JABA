@@ -5,7 +5,7 @@ import { Decimal } from 'decimal.js';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
 import { logAuditEvent } from '@/domain/ganancias/auditHelper';
-import { buildPeriodGrossIncome } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
+import { buildPeriodGrossIncome, giLineKey } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import { persistGrossIncomeSettlement } from '@/domain/ganancias/persistence/fiscalSettlementPersistence';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 import type { SettlementDocument } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
@@ -19,6 +19,12 @@ const saveSchema = z.object({
   official: z.object({ amount: decimalString, reference: z.string().max(200).optional().nullable() }).optional().nullable(),
   forceSave: z.boolean().optional().default(false),
   notes: z.string().max(2000).optional().nullable(),
+  // Reparto por monto: base imponible de cada actividad (solo cuando una jurisdicción tiene varias).
+  activityBases: z.array(z.object({
+    jurisdictionCode: z.string(),
+    activityCode: z.string().optional().default(''),
+    base: z.union([z.string(), z.number()]),
+  })).optional(),
 });
 
 const norm = (v: string | number | null | undefined): string | null => parseMoneyToPlain(v);
@@ -41,7 +47,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       select: {
         clientId: true, year: true, month: true,
         client: { select: { cuit: true, name: true } },
-        taxProfile: { select: { grossIncomeRegime: true, jurisdictions: { select: { jurisdictionCode: true, isActive: true, taxRate: true } } } },
+        taxProfile: { select: { grossIncomeRegime: true, jurisdictions: { select: { jurisdictionCode: true, activityCode: true, isActive: true, taxRate: true } } } },
         documents: { where: { includedInSettlement: true }, select: { direction: true, voucherType: true, vatLines: { select: { kind: true, taxableBase: true, rate: true, vatAmount: true, creditComputable: true } } } },
         taxCredits: { where: { includedInSettlement: true }, select: { tax: true, jurisdictionCode: true, originalAmount: true, appliedAmount: true } },
       },
@@ -94,13 +100,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
         .map(line => [line.jurisdictionCode, new Decimal(line.favorCarryForward.toString())] as const),
     );
 
+    const assignedBases = new Map<string, Decimal>();
+    for (const ab of parsed.data.activityBases ?? []) {
+      const plain = norm(ab.base);
+      if (plain != null) assignedBases.set(giLineKey(ab.jurisdictionCode, ab.activityCode), new Decimal(plain));
+    }
+
     const { view, notice } = buildPeriodGrossIncome({
       regime,
-      jurisdictions: activeJurisdictions.map(j => ({ jurisdictionCode: j.jurisdictionCode, taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : null })),
+      jurisdictions: activeJurisdictions.map(j => ({ jurisdictionCode: j.jurisdictionCode, activityCode: j.activityCode, taxRate: j.taxRate != null ? new Decimal(j.taxRate.toString()) : null })),
       documents,
       coefficientMap,
       credits: giCredits,
       previousFavorBalances,
+      assignedBases: assignedBases.size > 0 ? assignedBases : undefined,
       year: period.year,
     });
 

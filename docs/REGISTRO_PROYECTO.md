@@ -4033,5 +4033,7 @@ Aplicar la columna en la base con `npx prisma migrate deploy` (las DOS migracion
 - La interfaz muestra una franja amarilla permanente `ENTORNO DE PRUEBA` cuando usa Docker.
 - `.env.example` y la documentaciÃ³n quedaron orientados a Docker; se agregÃ³ una sobrescritura local
   ignorada por Git para proteger tambiÃ©n invocaciones directas de Next en esta mÃ¡quina.
-- ValidaciÃ³n: 389 tests unitarios, 3 tests de integraciÃ³n MariaDB, ESLint, TypeScript, Prisma, build
+- Los comandos Prisma directos tambiÃ©n validan el destino antes de ejecutarse y se detienen si el
+  `.env` local apunta a la base productiva.
+- ValidaciÃ³n: 393 tests unitarios, 3 tests de integraciÃ³n MariaDB, ESLint, TypeScript, Prisma, build
   Next.js y smoke HTTP real de `npm run dev` con la franja de aislamiento en verde.

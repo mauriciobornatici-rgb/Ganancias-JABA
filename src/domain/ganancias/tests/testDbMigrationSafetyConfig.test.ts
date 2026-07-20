@@ -20,6 +20,7 @@ describe('Docker migration shadow database configuration', () => {
     expect(runner).toContain('resolveTestShadowDatabaseUrl');
     expect(runner).toContain('SHADOW_DATABASE_URL: TEST_SHADOW_DATABASE_URL');
     expect(prismaConfig).toContain('shadowDatabaseUrl: process.env["SHADOW_DATABASE_URL"]');
+    expect(prismaConfig).toContain('assertPrismaDatabaseSafety()');
     expect(compose).toContain('./docker/mysql-test-init:/docker-entrypoint-initdb.d:ro');
     expect(initSql).toContain('CREATE DATABASE IF NOT EXISTS ganancias_jaba_test_shadow');
     expect(initSql).toContain("GRANT ALL PRIVILEGES ON ganancias_jaba_test_shadow.* TO 'jaba_test'@'%'");

@@ -4,6 +4,13 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-20 - Importacion IVA: soporte del formato "Mis Comprobantes" (consulta web ARCA) - resuelto
+
+- Sintoma: "No se pudo compilar ningun comprobante" al subir los CSV de compras/ventas. Los archivos eran validos de ARCA.
+- Causa: el parser `afipFiscalLedgerImporter` solo entendia el formato "Libro IVA Digital" (columnas Comprador/Vendedor, "Numero de Comprobante", "Importe IVA 21%", Latin-1). Los archivos del usuario son de la **consulta web de "Mis Comprobantes"**, otro formato: columnas Emisor/Receptor, "Numero Desde", importe de IVA como "IVA 21%" (sin "Importe"), exento como "Imp. Op. Exentas", no gravado como "Imp. Neto No Gravado", y codificados en **UTF-8 sin BOM** (el parser forzaba Latin-1 y corrompia "Numero" -> no matcheaba).
+- Fix en dos frentes: (1) deteccion de encoding en `decodeAfipCsv` (intenta UTF-8; si aparece el caracter de reemplazo, relee Latin-1); (2) el parser ahora reconoce ambos formatos: direccion por Emisor/Receptor, numero por "Numero Desde", contraparte Emisor(compra)/Receptor(venta), importe IVA "IVA X%", exento/no gravado de Mis Comprobantes.
+- Verificado con los CSV reales del usuario: 113 compras (neto 11.485.645,39 / IVA 2.234.616,66) y 973 ventas (neto 14.573.698,38 / IVA 3.060.454,72), 0 errores, comprobantes multi-alicuota OK. Tests nuevos en `afipFiscalLedgerImporter.test.ts` para el formato Mis Comprobantes; el formato viejo sigue pasando.
+
 ### 2026-07-20 - INCIDENTE: importacion de comprobantes IVA fallaba en produccion (FK violada) - resuelto
 
 - Sintoma: POST de comprobantes al libro fiscal mensual devolvia 500 "Foreign key constraint violated (fiscalDocumentId)" SOLO en produccion (desde local el mismo insert funcionaba).

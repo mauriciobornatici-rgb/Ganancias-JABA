@@ -44,9 +44,20 @@ function splitCsvLine(line: string, separator: string): string[] {
   return cells.map(c => c.trim());
 }
 
+/**
+ * Decodifica el CSV detectando el encoding. El export tradicional de AFIP viene en Latin-1
+ * (Windows-1252); la consulta web de "Mis Comprobantes" viene en UTF-8 (sin BOM). Se intenta
+ * UTF-8 estricto: si el buffer es UTF-8 válido se usa esa lectura; si aparece el carácter de
+ * reemplazo (secuencias inválidas -> típico de un archivo Latin-1), se relee como Latin-1.
+ */
+function decodeAfipCsv(fileBuffer: Buffer): string {
+  const asUtf8 = new TextDecoder('utf-8', { fatal: false }).decode(fileBuffer);
+  const text = asUtf8.includes('�') ? fileBuffer.toString('latin1') : asUtf8;
+  return text.replace(/^﻿/, '');
+}
+
 function parseCsvRows(fileBuffer: Buffer): AfipSheetRow[] {
-  // Decodificar como Latin-1 (Windows-1252), codificacion habitual de los export AFIP.
-  const text = fileBuffer.toString('latin1').replace(/^﻿/, '');
+  const text = decodeAfipCsv(fileBuffer);
   const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
   if (lines.length === 0) return [];
 

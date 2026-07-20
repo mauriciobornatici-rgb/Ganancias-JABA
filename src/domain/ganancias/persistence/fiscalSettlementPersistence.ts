@@ -213,6 +213,7 @@ export async function persistGrossIncomeSettlement(
     jurisdictionLines: {
       create: s.jurisdictionLines.map(l => ({
         jurisdictionCode: l.jurisdictionCode,
+        activityCode: l.activityCode ?? null,
         coefficient: l.coefficient ? new Decimal(l.coefficient.toString()).toFixed(10) : null,
         assignedBase: l.assignedBase.toFixed(2),
         taxRate: l.taxRate.toFixed(6),

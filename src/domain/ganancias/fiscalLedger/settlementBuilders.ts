@@ -134,6 +134,8 @@ export type GrossIncomeJurisdictionConfig = {
   coefficient?: Decimal;
   credits?: Array<{ amount: Decimal }>;
   previousFavorBalance?: Decimal;
+  /** Base imponible asignada a esta actividad (reparto por monto entre actividades de una jurisdicción). */
+  assignedBaseOverride?: Decimal;
 };
 
 export type GrossIncomeSettlementView = {

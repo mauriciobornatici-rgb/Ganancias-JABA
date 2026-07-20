@@ -17,6 +17,8 @@ const putSchema = z.object({
   year: z.number().int().min(2000).max(2100),
   jurisdictions: z.array(z.object({
     jurisdictionCode: z.string().min(1).max(20),
+    activityCode: z.string().max(40).optional().default(''),
+    activityLabel: z.string().max(120).nullable().optional(),
     taxRate: rate.nullable().optional(),
     registrationNumber: z.string().max(50).nullable().optional(),
     isActive: z.boolean().optional(),
@@ -33,7 +35,7 @@ async function latestProfile(clientId: string) {
     orderBy: { validFrom: 'desc' },
     select: {
       id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
-      jurisdictions: { select: { jurisdictionCode: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: { jurisdictionCode: 'asc' } },
+      jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: [{ jurisdictionCode: 'asc' }, { activityCode: 'asc' }] },
     },
   });
 }
@@ -64,6 +66,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
         hasProfile: Boolean(profile),
         jurisdictions: (profile?.jurisdictions ?? []).map(j => ({
           jurisdictionCode: j.jurisdictionCode,
+          activityCode: j.activityCode,
+          activityLabel: j.activityLabel,
           registrationNumber: j.registrationNumber,
           taxRate: j.taxRate != null ? j.taxRate.toString() : null,
           isActive: j.isActive,
@@ -90,6 +94,20 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' }, { status: 400 });
     }
     const { year, jurisdictions, coefficients } = parsed.data;
+
+    // Cada (jurisdicción, actividad) debe ser único: dos alícuotas en la misma jurisdicción necesitan
+    // códigos de actividad distintos, si no chocan con el índice único de la base.
+    const combos = new Set<string>();
+    for (const j of jurisdictions) {
+      const key = `${j.jurisdictionCode}|${j.activityCode ?? ''}`;
+      if (combos.has(key)) {
+        return NextResponse.json(
+          { success: false, error: `Hay dos filas con la jurisdicción ${j.jurisdictionCode} y el mismo código de actividad. Asigná un código de actividad distinto a cada alícuota de una misma jurisdicción.` },
+          { status: 400 },
+        );
+      }
+      combos.add(key);
+    }
 
     const profile = await prisma.clientTaxProfileVersion.findFirst({
       where: { clientId },
@@ -143,6 +161,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           notes: profile.notes,
           jurisdictions: { create: jurisdictions.map(j => ({
             jurisdictionCode: j.jurisdictionCode,
+            activityCode: j.activityCode ?? '',
+            activityLabel: j.activityLabel ?? null,
             taxRate: j.taxRate ?? null,
             registrationNumber: j.registrationNumber ?? null,
             isActive: j.isActive ?? true,

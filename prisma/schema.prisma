@@ -390,8 +390,12 @@ model ClientTaxJurisdiction {
   id                  String                  @id @default(uuid())
   taxProfileId        String
   jurisdictionCode    String
+  // Actividad dentro de la jurisdicción (criterio 2026-07-20): una jurisdicción puede tener varias
+  // actividades, cada una con su alícuota. "" = actividad única/principal (caso más común).
+  activityCode        String                  @default("")
+  activityLabel       String?
   registrationNumber  String?
-  // Alícuota de IIBB de la jurisdicción (fracción, ej. 0.050000 = 5%). Null = sin cargar (se trata como 0).
+  // Alícuota de IIBB (fracción, ej. 0.050000 = 5%). Null = sin cargar (se trata como 0).
   taxRate             Decimal?                @db.Decimal(8, 6)
   isActive            Boolean                 @default(true)
   createdAt           DateTime                @default(now())
@@ -399,7 +403,7 @@ model ClientTaxJurisdiction {
 
   taxProfile          ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Cascade)
 
-  @@unique([taxProfileId, jurisdictionCode])
+  @@unique([taxProfileId, jurisdictionCode, activityCode], map: "ctj_profile_jur_activity_uk")
   @@index([jurisdictionCode])
 }
 

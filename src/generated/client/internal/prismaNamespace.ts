@@ -4139,6 +4139,8 @@ export const ClientTaxJurisdictionScalarFieldEnum = {
   id: 'id',
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
+  activityCode: 'activityCode',
+  activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber',
   taxRate: 'taxRate',
   isActive: 'isActive',
@@ -4951,6 +4953,8 @@ export const ClientTaxJurisdictionOrderByRelevanceFieldEnum = {
   id: 'id',
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
+  activityCode: 'activityCode',
+  activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber'
 } as const
 

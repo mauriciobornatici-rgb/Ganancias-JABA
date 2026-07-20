@@ -134,7 +134,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         details: `Importación ret/perc IVA ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevas, ${persisted.duplicates} duplicadas, ${outOfPeriod.length} fuera de período, ${ignoredOtherTax} de otros impuestos.`,
       } });
       return persisted;
-    });
+    }, { timeout: 60000, maxWait: 10000 }); // importaciones grandes sobre base remota: nunca el default de 5 s
 
     return NextResponse.json({
       success: true,

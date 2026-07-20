@@ -4,6 +4,14 @@ Ultima actualizacion: 2026-07-18
 
 ## Entrada reciente
 
+### 2026-07-20 - INCIDENTE: importacion de comprobantes IVA fallaba en produccion (FK violada) - resuelto
+
+- Sintoma: POST de comprobantes al libro fiscal mensual devolvia 500 "Foreign key constraint violated (fiscalDocumentId)" SOLO en produccion (desde local el mismo insert funcionaba).
+- Causa raiz: mismo patron que el hallazgo A2 de la auditoria, en otra ruta. La importacion corria dentro de prisma.$transaction interactiva con timeout DEFAULT de 5 s, insertando comprobante por comprobante (2 round-trips c/u) contra la base remota. Desde Vercel (mas latencia por viaje) un archivo mensual real supera los 5 s: Prisma aborta la transaccion a mitad de camino y el insert de la linea de IVA queda sin su documento -> FK violada.
+- Fix doble: (1) persistFiscalDocuments y persistTaxCredits reescritos EN LOTE (createMany de documentos con ids generados en cliente + createMany de lineas): 2-3 viajes totales sin importar el tamanio del archivo; (2) timeout explicito { timeout: 60000, maxWait: 10000 } en las transacciones de ambas rutas de importacion. Verificado contra la base real: lote insertado y vinculado correctamente, idempotencia intacta, tests nuevos en fiscalLedgerPersistence.test.ts.
+- REGLA DE ORO derivada (2da vez que muerde): NINGUNA prisma.$transaction interactiva sin timeout explicito, y NUNCA insertar en loop dentro de una transaccion contra la base remota: siempre createMany.
+- Pendiente reportado por el usuario (segundo error, a investigar): 422 "No se pudo compilar ningun comprobante de los archivos subidos" en algunos intentos.
+
 ### 2026-07-19 - Backup automatico configurable desde la app (arquitectura A) + monitor activado
 
 - **PR #19 mergeado**: monitor de salud ACTIVO y verificado en verde (el primer intento fallo por un \r de PowerShell al setear el token via pipe; se recargo por argumento/archivo sin newline en GitHub y Vercel + redeploy). El monitor corre cada 15 min y avisa por mail.

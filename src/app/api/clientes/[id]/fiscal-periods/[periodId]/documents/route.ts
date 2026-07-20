@@ -170,7 +170,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevos, ${persisted.duplicates} duplicados omitidos, ${files.length} archivo(s).`,
       } });
       return persisted;
-    });
+    }, { timeout: 60000, maxWait: 10000 }); // importaciones grandes sobre base remota: nunca el default de 5 s
 
     return NextResponse.json({
       success: true,

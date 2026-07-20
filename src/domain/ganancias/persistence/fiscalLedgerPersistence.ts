@@ -1,12 +1,27 @@
+import { randomUUID } from 'node:crypto';
 import type { FiscalDocumentDraft } from '../fiscalLedger/types';
 
 type FiscalDocumentStore = {
   fiscalDocument: {
     findMany(args: unknown): Promise<Array<{ documentKey: string }>>;
-    create(args: { data: Record<string, unknown> }): Promise<unknown>;
+    createMany(args: unknown): Promise<unknown>;
+  };
+  fiscalDocumentVatLine: {
+    createMany(args: unknown): Promise<unknown>;
   };
 };
 
+/**
+ * Persistencia idempotente de comprobantes del libro fiscal mensual.
+ *
+ * Inserta EN LOTE (createMany de documentos + createMany de sus líneas de IVA con
+ * ids generados en el cliente): 2 viajes a la base en total, sin importar cuántos
+ * comprobantes traiga el archivo. La versión anterior insertaba fila por fila con
+ * creates anidados y, desde Vercel (mayor latencia), superaba el timeout de 5 s de
+ * la transacción interactiva: Prisma la abortaba a mitad de camino y el insert de
+ * la línea quedaba sin su documento ("FK violada en fiscalDocumentId",
+ * incidente 2026-07-19).
+ */
 export async function persistFiscalDocuments(
   db: FiscalDocumentStore,
   fiscalPeriodId: string,
@@ -18,7 +33,9 @@ export async function persistFiscalDocuments(
     select: { documentKey: true },
   });
   const knownKeys = new Set(existing.map(document => document.documentKey));
-  let inserted = 0;
+
+  const documentRows: Array<Record<string, unknown>> = [];
+  const vatLineRows: Array<Record<string, unknown>> = [];
   let duplicates = 0;
 
   for (const document of documents) {
@@ -26,26 +43,34 @@ export async function persistFiscalDocuments(
       duplicates += 1;
       continue;
     }
-
-    await db.fiscalDocument.create({
-      data: {
-        fiscalPeriodId,
-        documentKey: document.documentKey,
-        direction: document.direction,
-        issueDate: document.issueDate,
-        voucherType: document.voucherType,
-        voucherNumber: document.voucherNumber,
-        counterpartyName: document.counterpartyName,
-        counterpartyCuit: document.counterpartyCuit,
-        netAmount: document.netAmount,
-        totalAmount: document.totalAmount,
-        sourceFileName: document.sourceFileName,
-        vatLines: { create: document.vatLines },
-      },
-    });
     knownKeys.add(document.documentKey);
-    inserted += 1;
+
+    const fiscalDocumentId = randomUUID();
+    documentRows.push({
+      id: fiscalDocumentId,
+      fiscalPeriodId,
+      documentKey: document.documentKey,
+      direction: document.direction,
+      issueDate: document.issueDate,
+      voucherType: document.voucherType,
+      voucherNumber: document.voucherNumber,
+      counterpartyName: document.counterpartyName,
+      counterpartyCuit: document.counterpartyCuit,
+      netAmount: document.netAmount,
+      totalAmount: document.totalAmount,
+      sourceFileName: document.sourceFileName,
+    });
+    for (const line of document.vatLines) {
+      vatLineRows.push({ ...line, fiscalDocumentId });
+    }
   }
 
-  return { inserted, duplicates };
+  if (documentRows.length > 0) {
+    await db.fiscalDocument.createMany({ data: documentRows });
+  }
+  if (vatLineRows.length > 0) {
+    await db.fiscalDocumentVatLine.createMany({ data: vatLineRows });
+  }
+
+  return { inserted: documentRows.length, duplicates };
 }

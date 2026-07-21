@@ -59,6 +59,8 @@ export type GrossIncomeJurisdictionResult = {
   assignedBase: Decimal;
   taxRate: Decimal;
   determinedTax: Decimal;
+  /** Saldo a favor anterior aplicado a la jurisdicción (se informa una vez por jurisdicción). */
+  previousFavorBalance: Decimal;
   creditsApplied: Decimal;
   /** Saldo a pagar de la jurisdicción (>= 0). */
   balanceDue: Decimal;
@@ -149,6 +151,7 @@ export function calculateGrossIncomeSettlement(
       assignedBase,
       taxRate: j.taxRate,
       determinedTax,
+      previousFavorBalance: j.previousFavorBalance ?? new Decimal(0),
       creditsApplied: new Decimal(0),
       balanceDue: determinedTax,
       favorCarryForward: new Decimal(0),

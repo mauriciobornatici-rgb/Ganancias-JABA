@@ -1,6 +1,11 @@
 import { Decimal } from 'decimal.js';
 import { describe, expect, it } from 'vitest';
-import { persistFiscalDocuments } from '../persistence/fiscalLedgerPersistence';
+import {
+  analyzeFiscalDocuments,
+  FiscalDocumentImportConflictError,
+  persistFiscalDocuments,
+  persistFiscalDocumentsInsertOnly,
+} from '../persistence/fiscalLedgerPersistence';
 
 type Row = Record<string, unknown>;
 
@@ -108,5 +113,38 @@ describe('fiscal ledger persistence (insercion en lote, incidente 2026-07-19)', 
     expect(store.documents[0]).toMatchObject({ id: originalId, netAmount: corrected.netAmount, totalAmount: corrected.totalAmount });
     expect(store.vatLines).toHaveLength(1);
     expect(store.vatLines[0]).toMatchObject({ fiscalDocumentId: originalId, vatAmount: corrected.vatLines[0].vatAmount });
+  });
+
+  it('clasifica diferencias como conflicto sin modificar el comprobante existente', async () => {
+    const store = makeStore();
+    await persistFiscalDocuments(store.db, 'period-1', [draft('K1')]);
+    const corrected = { ...draft('K1'), totalAmount: new Decimal('9999') };
+
+    const analysis = await analyzeFiscalDocuments(store.db, 'period-1', [draft('K1'), corrected, draft('K2')]);
+
+    expect(analysis).toEqual({ newDocuments: 1, duplicates: 1, conflictKeys: ['K1'] });
+    expect(store.documents).toHaveLength(1);
+    expect(store.documents[0].totalAmount).toEqual(new Decimal('1210'));
+  });
+
+  it('INSERT_ONLY omite identicos e inserta nuevos sin actualizar historicos', async () => {
+    const store = makeStore();
+    await persistFiscalDocuments(store.db, 'period-1', [draft('K1')]);
+
+    const result = await persistFiscalDocumentsInsertOnly(store.db, 'period-1', [draft('K1'), draft('K2')]);
+
+    expect(result).toEqual({ inserted: 1, duplicates: 1, conflicts: 0 });
+    expect(store.documents).toHaveLength(2);
+  });
+
+  it('INSERT_ONLY aborta ante un existente diferente y no escribe el resto del lote', async () => {
+    const store = makeStore();
+    await persistFiscalDocuments(store.db, 'period-1', [draft('K1')]);
+    const corrected = { ...draft('K1'), totalAmount: new Decimal('9999') };
+
+    await expect(persistFiscalDocumentsInsertOnly(store.db, 'period-1', [corrected, draft('K2')]))
+      .rejects.toBeInstanceOf(FiscalDocumentImportConflictError);
+    expect(store.documents).toHaveLength(1);
+    expect(store.documents[0].totalAmount).toEqual(new Decimal('1210'));
   });
 });

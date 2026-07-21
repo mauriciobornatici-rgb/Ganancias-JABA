@@ -1,6 +1,6 @@
 import { Decimal } from 'decimal.js';
 import { describe, expect, it } from 'vitest';
-import { calculateVatSettlement } from '../fiscalLedger/vatSettlement';
+import { calculateVatSettlement, smallTaxpayerBenefitRateForYear } from '../fiscalLedger/vatSettlement';
 
 const D = (v: string | number) => new Decimal(v);
 const sale = (vatAmount: string | number) => ({ vatAmount: D(vatAmount), creditComputable: false });
@@ -137,5 +137,29 @@ describe('calculateVatSettlement — liquidación mensual de IVA (Art. 24 Ley 23
     expect(r.amountDue.toString()).toBe('0');
     expect(r.technicalCarryForward.toString()).toBe('0');
     expect(r.freeAvailabilityBalance.toString()).toBe('0');
+  });
+
+  it.each([
+    { year: 2026, rate: '0.5', reduction: '630', due: '630' },
+    { year: 2027, rate: '0.3', reduction: '378', due: '882' },
+    { year: 2028, rate: '0.1', reduction: '126', due: '1134' },
+  ])('aplica la escala 50/30/10 del beneficio en $year', ({ year, rate, reduction, due }) => {
+    const benefitRate = smallTaxpayerBenefitRateForYear({ enabled: true, startYear: 2026, periodYear: year });
+    const r = calculateVatSettlement({
+      sales: [sale('2100')],
+      purchases: [purchase('840')],
+      previousTechnicalBalance: D(0),
+      smallTaxpayerBenefitRate: benefitRate,
+      taxCredits: [],
+    });
+    expect(benefitRate.toString()).toBe(rate);
+    expect(r.technicalDueBeforeBenefit.toString()).toBe('1260');
+    expect(r.smallTaxpayerBenefitReduction.toString()).toBe(reduction);
+    expect(r.amountDue.toString()).toBe(due);
+  });
+
+  it('fuera de los tres años no aplica reducción', () => {
+    expect(smallTaxpayerBenefitRateForYear({ enabled: true, startYear: 2026, periodYear: 2029 }).toString()).toBe('0');
+    expect(smallTaxpayerBenefitRateForYear({ enabled: false, startYear: 2026, periodYear: 2026 }).toString()).toBe('0');
   });
 });

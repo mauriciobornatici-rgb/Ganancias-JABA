@@ -137,6 +137,7 @@ describe('calculateGrossIncomeSettlement — liquidación mensual de IIBB', () =
     });
     // impuesto 50.000 - (20.000 + 15.000) = 15.000 a pagar
     expect(r.totalBalanceDue.toString()).toBe('15000');
+    expect(r.jurisdictionLines[0].previousFavorBalance.toString()).toBe('15000');
   });
 
   it('Convenio Multilateral: reparte la base por coeficiente y aplica alícuota por jurisdicción', () => {

@@ -19,6 +19,8 @@ type ConfigData = {
   vatCondition: string;
   regime: string;
   conventionRegime: string;
+  smallTaxpayerBenefitEnabled: boolean;
+  smallTaxpayerBenefitStartYear: number | null;
   hasProfile: boolean;
   jurisdictions: Array<{ jurisdictionCode: string; activityCode: string; activityLabel: string | null; registrationNumber: string | null; taxRate: string | null; isActive: boolean }>;
   coefficients: Array<{ jurisdictionCode: string; unifiedCoefficient: string }>;
@@ -37,7 +39,7 @@ const REGIME_LABEL: Record<string, string> = {
 };
 
 export default function IibbConfigEditor({ clientId }: { clientId: string }) {
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [rows, setRows] = useState<JurRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,6 +51,8 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   const [pVat, setPVat] = useState('RESPONSABLE_INSCRIPTO');
   const [pRegime, setPRegime] = useState('NONE');
   const [pConvention, setPConvention] = useState('NONE');
+  const [pBenefitEnabled, setPBenefitEnabled] = useState(false);
+  const [pBenefitStartYear, setPBenefitStartYear] = useState(() => new Date().getFullYear());
   const [savingProfile, setSavingProfile] = useState(false);
 
   const isConvenio = config?.regime === 'CM_REGIMEN_GENERAL' || config?.regime === 'CM_REGIMEN_ESPECIAL';
@@ -65,6 +69,8 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       setPVat(data.vatCondition);
       setPRegime(data.regime);
       setPConvention(data.conventionRegime);
+      setPBenefitEnabled(data.smallTaxpayerBenefitEnabled);
+      setPBenefitStartYear(data.smallTaxpayerBenefitStartYear ?? new Date().getFullYear());
       const coefMap = new Map(data.coefficients.map(c => [c.jurisdictionCode, c.unifiedCoefficient]));
       setRows(
         data.jurisdictions.map(j => ({
@@ -103,7 +109,13 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       const res = await fetch(`/api/clientes/${clientId}/tax-profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vatCondition: pVat, grossIncomeRegime: pRegime, conventionRegime: pConvention }),
+        body: JSON.stringify({
+          vatCondition: pVat,
+          grossIncomeRegime: pRegime,
+          conventionRegime: pConvention,
+          smallTaxpayerBenefitEnabled: pBenefitEnabled,
+          smallTaxpayerBenefitStartYear: pBenefitEnabled ? pBenefitStartYear : null,
+        }),
       });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar el perfil.');
@@ -208,7 +220,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-[#121216] p-3 shadow-xl">
             <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500" htmlFor="year">Año coef. CM</label>
-            <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || 2025)} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
+            <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || new Date().getFullYear())} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
           </div>
         </div>
 
@@ -246,6 +258,21 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
                 {CONVENTION_REGIMES.map(v => <option key={v} value={v}>{v}</option>)}
               </select>
             </div>
+          </div>
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-200">
+              <input type="checkbox" checked={pBenefitEnabled} onChange={e => setPBenefitEnabled(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal-400" />
+              <span>
+                <strong className="block text-xs text-white">Beneficio para pequeños contribuyentes cumplidores</strong>
+                <span className="mt-1 block text-[11px] leading-5 text-zinc-500">Reducción del saldo deudor de IVA: 50% el primer año, 30% el segundo y 10% el tercero (Ley 27.618 / RG 5003).</span>
+              </span>
+            </label>
+            {pBenefitEnabled ? (
+              <div className="mt-3 max-w-xs">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Primer año calendario del beneficio</label>
+                <input type="number" min="2021" max="2100" value={pBenefitStartYear} onChange={e => setPBenefitStartYear(Number(e.target.value) || new Date().getFullYear())} className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 font-mono text-sm text-zinc-200 outline-none focus:border-teal-400" />
+              </div>
+            ) : null}
           </div>
           <button type="button" onClick={() => void saveProfile()} disabled={savingProfile} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50">
             <Save className="h-4 w-4" /> {savingProfile ? 'Guardando…' : 'Guardar perfil'}

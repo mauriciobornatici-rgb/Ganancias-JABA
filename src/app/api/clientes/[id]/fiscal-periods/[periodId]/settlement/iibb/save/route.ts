@@ -15,6 +15,11 @@ import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 import type { SettlementDocument } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
+import {
+  mergeOpeningBalances,
+  OpeningBalanceInputError,
+  parseOptionalOpeningBalance,
+} from '@/domain/ganancias/fiscalLedger/openingBalanceInput';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -29,6 +34,10 @@ const saveSchema = z.object({
     activityCode: z.string().trim().max(191).optional().default(''),
     base: z.union([z.string(), z.number()]),
   })).optional(),
+  previousFavorBalances: z.array(z.object({
+    jurisdictionCode: z.string().trim().min(1).max(20),
+    amount: z.union([z.string(), z.number()]),
+  })).max(50).optional(),
 });
 
 const norm = (v: string | number | null | undefined): string | null => parseMoneyToPlain(v);
@@ -54,14 +63,26 @@ export async function POST(request: NextRequest, context: RouteContext) {
         taxProfile: { select: { grossIncomeRegime: true, jurisdictions: { select: { jurisdictionCode: true, activityCode: true, isActive: true, taxRate: true } } } },
         documents: { where: { includedInSettlement: true }, select: { direction: true, voucherType: true, vatLines: { select: { kind: true, taxableBase: true, rate: true, vatAmount: true, creditComputable: true } } } },
         taxCredits: { where: { includedInSettlement: true }, select: { tax: true, jurisdictionCode: true, originalAmount: true, appliedAmount: true } },
+        grossIncomeSettlements: { where: { status: 'CLOSED' }, take: 1, select: { id: true } },
       },
     });
     if (!period || period.clientId !== clientId) {
       return NextResponse.json({ success: false, error: 'El período no existe o no pertenece a este contribuyente.' }, { status: 404 });
     }
 
-    const regime = (period.taxProfile?.grossIncomeRegime ?? 'NONE') as GrossIncomeRegime;
-    const activeJurisdictions = (period.taxProfile?.jurisdictions ?? []).filter(j => j.isActive);
+    const latestTaxProfile = period.grossIncomeSettlements.length > 0
+      ? null
+      : await prisma.clientTaxProfileVersion.findFirst({
+          where: { clientId },
+          orderBy: { validFrom: 'desc' },
+          select: {
+            grossIncomeRegime: true,
+            jurisdictions: { select: { jurisdictionCode: true, activityCode: true, isActive: true, taxRate: true } },
+          },
+        });
+    const grossIncomeProfile = latestTaxProfile ?? period.taxProfile;
+    const regime = (grossIncomeProfile?.grossIncomeRegime ?? 'NONE') as GrossIncomeRegime;
+    const activeJurisdictions = (grossIncomeProfile?.jurisdictions ?? []).filter(j => j.isActive);
 
     const documents: SettlementDocument[] = period.documents.map(doc => ({
       direction: doc.direction as 'SALE' | 'PURCHASE',
@@ -99,8 +120,24 @@ export async function POST(request: NextRequest, context: RouteContext) {
         },
       },
     });
-    const previousFavorBalances = aggregateFavorBalancesByJurisdiction(
+    const automaticPreviousFavorBalances = aggregateFavorBalancesByJurisdiction(
       previousPeriod?.grossIncomeSettlements[0]?.jurisdictionLines ?? [],
+    );
+    const manualPreviousFavorBalances = new Map<string, Decimal>();
+    const configuredJurisdictions = new Set(activeJurisdictions.map(j => j.jurisdictionCode));
+    for (const row of parsed.data.previousFavorBalances ?? []) {
+      if (!configuredJurisdictions.has(row.jurisdictionCode)) {
+        return NextResponse.json({ success: false, error: `La jurisdicción ${row.jurisdictionCode} no pertenece a la configuración activa de IIBB.` }, { status: 400 });
+      }
+      if (manualPreviousFavorBalances.has(row.jurisdictionCode)) {
+        return NextResponse.json({ success: false, error: `El saldo anterior de la jurisdicción ${row.jurisdictionCode} está repetido.` }, { status: 400 });
+      }
+      const amount = parseOptionalOpeningBalance(row.amount, `Saldo anterior IIBB ${row.jurisdictionCode}`);
+      if (amount !== undefined) manualPreviousFavorBalances.set(row.jurisdictionCode, amount);
+    }
+    const previousFavorBalances = mergeOpeningBalances(
+      automaticPreviousFavorBalances,
+      manualPreviousFavorBalances,
     );
 
     const assignedBases = new Map<string, Decimal>();
@@ -213,11 +250,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
       clientCuit: period.client?.cuit,
       clientName: period.client?.name,
       fiscalYear: period.year,
-      details: JSON.stringify({ period: `${period.year}-${String(period.month).padStart(2, '0')}`, version: saved.version, status, determined: view.settlement.totalDeterminedTax.toFixed(2), balanceDue: balanceDue.toFixed(2), favorCarryForward: view.settlement.totalFavorCarryForward.toFixed(2) }),
+      details: JSON.stringify({
+        period: `${period.year}-${String(period.month).padStart(2, '0')}`,
+        version: saved.version,
+        status,
+        determined: view.settlement.totalDeterminedTax.toFixed(2),
+        balanceDue: balanceDue.toFixed(2),
+        favorCarryForward: view.settlement.totalFavorCarryForward.toFixed(2),
+        previousFavorBalances: Object.fromEntries([...previousFavorBalances].map(([code, amount]) => [code, amount.toFixed(2)])),
+      }),
     });
 
     return NextResponse.json({ success: true, data: { id: saved.id, version: saved.version, status: saved.status, totalBalanceDue: balanceDue.toFixed(2), totalFavorCarryForward: view.settlement.totalFavorCarryForward.toFixed(2) } });
   } catch (error) {
+    if (error instanceof OpeningBalanceInputError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     return NextResponse.json({ success: false, error: `No se pudo guardar la liquidación de IIBB: ${error instanceof Error ? error.message : String(error)}` }, { status: 500 });
   }
 }

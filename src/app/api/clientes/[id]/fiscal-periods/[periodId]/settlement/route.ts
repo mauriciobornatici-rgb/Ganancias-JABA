@@ -14,6 +14,13 @@ import {
   suggestActivityBases,
 } from '@/domain/ganancias/fiscalLedger/grossIncomeFromProfile';
 import type { GrossIncomeRegime } from '@/domain/ganancias/fiscalLedger/grossIncomeSettlement';
+import { smallTaxpayerBenefitRateForYear } from '@/domain/ganancias/fiscalLedger/vatSettlement';
+import {
+  mergeOpeningBalances,
+  OpeningBalanceInputError,
+  parseGrossIncomeOpeningBalancesJson,
+  parseOptionalOpeningBalance,
+} from '@/domain/ganancias/fiscalLedger/openingBalanceInput';
 
 /** Carga el mapa de coeficientes unificados CM (CM05) del año, solo si el régimen es Convenio. */
 async function loadConventionCoefficients(clientId: string, year: number, regime: GrossIncomeRegime): Promise<Map<string, Decimal>> {
@@ -37,10 +44,22 @@ type RouteContext = { params: Promise<{ id: string; periodId: string }> };
  * comprobantes cargados, las percepciones/retenciones sufridas, el saldo técnico arrastrado del
  * mes anterior y el perfil fiscal vigente. Devuelve los números para la pantalla de liquidación.
  */
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
   const { id: clientId, periodId } = await context.params;
 
   try {
+    const manualPreviousTechnical = parseOptionalOpeningBalance(
+      request.nextUrl.searchParams.get('previousTechnical'),
+      'Saldo técnico anterior de IVA',
+    );
+    const manualPreviousFree = parseOptionalOpeningBalance(
+      request.nextUrl.searchParams.get('previousFree'),
+      'Saldo de libre disponibilidad anterior de IVA',
+    );
+    const manualGrossIncomeBalances = parseGrossIncomeOpeningBalancesJson(
+      request.nextUrl.searchParams.get('iibbPrevious'),
+    );
+
     const period = await prisma.fiscalPeriod.findUnique({
       where: { id: periodId },
       include: {
@@ -48,6 +67,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         taxProfile: {
           select: {
             grossIncomeRegime: true,
+            smallTaxpayerBenefitEnabled: true,
+            smallTaxpayerBenefitStartYear: true,
             jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, isActive: true, taxRate: true } },
           },
         },
@@ -65,6 +86,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
           where: { includedInSettlement: true },
           select: { tax: true, kind: true, jurisdictionCode: true, originalAmount: true, appliedAmount: true },
         },
+        vatSettlements: { where: { status: 'CLOSED' }, take: 1, select: { id: true } },
+        grossIncomeSettlements: { where: { status: 'CLOSED' }, take: 1, select: { id: true } },
       },
     });
 
@@ -74,6 +97,25 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         { status: 404 },
       );
     }
+
+    // Los períodos abiertos trabajan con la última configuración. Los cerrados conservan la foto
+    // histórica vinculada al período, por lo que una edición posterior no altera lo ya presentado.
+    const latestTaxProfile = await prisma.clientTaxProfileVersion.findFirst({
+      where: { clientId },
+      orderBy: { validFrom: 'desc' },
+      select: {
+        grossIncomeRegime: true,
+        smallTaxpayerBenefitEnabled: true,
+        smallTaxpayerBenefitStartYear: true,
+        jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, isActive: true, taxRate: true } },
+      },
+    });
+    const vatProfile = period.vatSettlements.length > 0
+      ? period.taxProfile
+      : (latestTaxProfile ?? period.taxProfile);
+    const grossIncomeProfile = period.grossIncomeSettlements.length > 0
+      ? period.taxProfile
+      : (latestTaxProfile ?? period.taxProfile);
 
     const documents: SettlementDocument[] = period.documents.map(doc => ({
       direction: doc.direction as 'SALE' | 'PURCHASE',
@@ -89,8 +131,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 
     // Saldos de IVA arrastrados del mes anterior (técnico y libre disponibilidad). Deben coincidir
     // con lo que aplica el guardado (POST .../settlement/save) para que el preview no difiera.
-    const previousVat = await findPreviousVatTechnicalBalance(clientId, period.year, period.month);
-    const previousFreeAvailability = await findPreviousVatFreeAvailability(clientId, period.year, period.month);
+    const automaticPreviousVat = await findPreviousVatTechnicalBalance(clientId, period.year, period.month);
+    const automaticPreviousFree = await findPreviousVatFreeAvailability(clientId, period.year, period.month);
+    const previousVat = manualPreviousTechnical ?? automaticPreviousVat;
+    const previousFreeAvailability = manualPreviousFree ?? automaticPreviousFree;
 
     const vatCreditRecords = period.taxCredits.filter(c => String(c.tax) === 'VAT');
     const vatCredits = vatCreditRecords.map(c => ({
@@ -114,14 +158,26 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       vatCredits,
       previousTechnicalBalance: previousVat,
       previousFreeAvailability,
+      smallTaxpayerBenefitRate: smallTaxpayerBenefitRateForYear({
+        enabled: vatProfile?.smallTaxpayerBenefitEnabled ?? false,
+        startYear: vatProfile?.smallTaxpayerBenefitStartYear,
+        periodYear: period.year,
+      }),
     });
 
     // IIBB: se arma con el helper compartido (mismo cálculo que el guardado). Alícuotas y coeficientes
     // CM vienen del perfil; si faltan, el helper avisa.
-    const regime = (period.taxProfile?.grossIncomeRegime ?? 'NONE') as GrossIncomeRegime;
-    const activeJurisdictions = (period.taxProfile?.jurisdictions ?? []).filter(j => j.isActive);
+    const regime = (grossIncomeProfile?.grossIncomeRegime ?? 'NONE') as GrossIncomeRegime;
+    const activeJurisdictions = (grossIncomeProfile?.jurisdictions ?? []).filter(j => j.isActive);
+    const configuredJurisdictionCodes = new Set(activeJurisdictions.map(j => j.jurisdictionCode));
+    for (const code of manualGrossIncomeBalances.keys()) {
+      if (!configuredJurisdictionCodes.has(code)) {
+        return NextResponse.json({ success: false, error: `La jurisdicción ${code} no pertenece a la configuración activa de IIBB.` }, { status: 400 });
+      }
+    }
     const coefficientMap = await loadConventionCoefficients(clientId, period.year, regime);
-    const previousGrossIncomeBalances = await findPreviousGrossIncomeFavorBalances(clientId, period.year, period.month);
+    const automaticGrossIncomeBalances = await findPreviousGrossIncomeFavorBalances(clientId, period.year, period.month);
+    const previousGrossIncomeBalances = mergeOpeningBalances(automaticGrossIncomeBalances, manualGrossIncomeBalances);
     const giCredits = period.taxCredits
       .filter(c => String(c.tax) === 'GROSS_INCOME')
       .map(c => ({ jurisdictionCode: c.jurisdictionCode, amount: new Decimal(c.originalAmount.toString()).sub(c.appliedAmount.toString()) }));
@@ -163,9 +219,34 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         vatCredits: vatCreditsBreakdown,
         grossIncome: grossIncome ? serializeGrossIncome(grossIncome) : null,
         grossIncomeNotice,
+        openingBalances: {
+          vat: {
+            previousTechnical: previousVat.toFixed(2),
+            automaticPreviousTechnical: automaticPreviousVat.toFixed(2),
+            previousTechnicalSource: manualPreviousTechnical === undefined ? 'AUTO' : 'MANUAL',
+            previousFree: previousFreeAvailability.toFixed(2),
+            automaticPreviousFree: automaticPreviousFree.toFixed(2),
+            previousFreeSource: manualPreviousFree === undefined ? 'AUTO' : 'MANUAL',
+          },
+          grossIncome: Object.fromEntries(
+            [...configuredJurisdictionCodes].map(code => [code, {
+              value: (previousGrossIncomeBalances.get(code) ?? new Decimal(0)).toFixed(2),
+              automaticValue: (automaticGrossIncomeBalances.get(code) ?? new Decimal(0)).toFixed(2),
+              source: manualGrossIncomeBalances.has(code) ? 'MANUAL' : 'AUTO',
+            }]),
+          ),
+        },
+        smallTaxpayerBenefit: {
+          enabled: vatProfile?.smallTaxpayerBenefitEnabled ?? false,
+          startYear: vatProfile?.smallTaxpayerBenefitStartYear ?? null,
+          rate: vat.settlement.smallTaxpayerBenefitRate.toFixed(6),
+        },
       },
     });
   } catch (error) {
+    if (error instanceof OpeningBalanceInputError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { success: false, error: `No se pudo calcular la liquidación: ${messageOf(error)}` },
       { status: 500 },
@@ -228,6 +309,9 @@ function serializeVat(view: ReturnType<typeof buildVatSettlement>) {
     debitFiscal: s.debitFiscal.toFixed(2),
     creditFiscal: s.creditFiscal.toFixed(2),
     technicalBalance: s.technicalBalance.toFixed(2),
+    technicalDueBeforeBenefit: s.technicalDueBeforeBenefit.toFixed(2),
+    smallTaxpayerBenefitRate: s.smallTaxpayerBenefitRate.toFixed(6),
+    smallTaxpayerBenefitReduction: s.smallTaxpayerBenefitReduction.toFixed(2),
     technicalDue: s.technicalDue.toFixed(2),
     technicalCarryForward: s.technicalCarryForward.toFixed(2),
     creditsApplied: s.creditsApplied.toFixed(2),
@@ -253,6 +337,7 @@ function serializeGrossIncome(view: ReturnType<typeof buildGrossIncomeSettlement
       assignedBase: l.assignedBase.toFixed(2),
       taxRate: l.taxRate.toFixed(6),
       determinedTax: l.determinedTax.toFixed(2),
+      previousFavorBalance: l.previousFavorBalance.toFixed(2),
       creditsApplied: l.creditsApplied.toFixed(2),
       balanceDue: l.balanceDue.toFixed(2),
       favorCarryForward: l.favorCarryForward.toFixed(2),

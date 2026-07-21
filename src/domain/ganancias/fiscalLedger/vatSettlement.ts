@@ -32,6 +32,8 @@ export type VatSettlementInput = {
    * AFIP lo aplica en la posición mensual, separado del saldo técnico. Default 0.
    */
   previousFreeAvailability?: Decimal;
+  /** Porcentaje de reducción del saldo deudor (0.50, 0.30 o 0.10). */
+  smallTaxpayerBenefitRate?: Decimal;
   /** Percepciones, retenciones y pagos a cuenta de IVA sufridos en el período. */
   taxCredits: Array<{ amount: Decimal }>;
 };
@@ -41,6 +43,12 @@ export type VatSettlementResult = {
   creditFiscal: Decimal;
   /** débito − crédito − saldo técnico anterior, CON signo (negativo = a favor). */
   technicalBalance: Decimal;
+  /** Saldo técnico deudor antes del beneficio Ley 27.618. */
+  technicalDueBeforeBenefit: Decimal;
+  /** Porcentaje del beneficio aplicado al período. */
+  smallTaxpayerBenefitRate: Decimal;
+  /** Reducción monetaria del saldo deudor por el beneficio. */
+  smallTaxpayerBenefitReduction: Decimal;
   /** Impuesto técnico a ingresar antes de aplicar percepciones/retenciones. */
   technicalDue: Decimal;
   /** Saldo técnico a favor que se arrastra al mes siguiente (Art. 24, 1º párr.). */
@@ -69,8 +77,20 @@ export function calculateVatSettlement(input: VatSettlementInput): VatSettlement
   const technicalBalance = debitFiscal.sub(creditFiscal).sub(input.previousTechnicalBalance);
 
   // Si es positivo, hay impuesto técnico a ingresar; si es negativo, queda a favor y se arrastra.
-  const technicalDue = Decimal.max(technicalBalance, new Decimal(0));
+  const technicalDueBeforeBenefit = Decimal.max(technicalBalance, new Decimal(0));
   const technicalCarryForward = Decimal.max(technicalBalance.negated(), new Decimal(0));
+
+  const requestedBenefitRate = input.smallTaxpayerBenefitRate ?? new Decimal(0);
+  if (requestedBenefitRate.isNegative() || requestedBenefitRate.greaterThan(1)) {
+    throw new Error('La tasa del beneficio de IVA debe estar entre 0 y 1.');
+  }
+  const smallTaxpayerBenefitRate = technicalDueBeforeBenefit.isPositive()
+    ? requestedBenefitRate
+    : new Decimal(0);
+  const smallTaxpayerBenefitReduction = technicalDueBeforeBenefit
+    .mul(smallTaxpayerBenefitRate)
+    .toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
+  const technicalDue = technicalDueBeforeBenefit.sub(smallTaxpayerBenefitReduction);
 
   // Posición mensual (Art. 24, 2º párr.): contra el impuesto técnico se aplican, juntos,
   // el saldo de libre disponibilidad del período anterior y las percepciones/retenciones/pagos
@@ -91,6 +111,9 @@ export function calculateVatSettlement(input: VatSettlementInput): VatSettlement
     debitFiscal,
     creditFiscal,
     technicalBalance,
+    technicalDueBeforeBenefit,
+    smallTaxpayerBenefitRate,
+    smallTaxpayerBenefitReduction,
     technicalDue,
     technicalCarryForward,
     creditsAvailable,
@@ -98,4 +121,21 @@ export function calculateVatSettlement(input: VatSettlementInput): VatSettlement
     amountDue,
     freeAvailabilityBalance,
   };
+}
+
+/**
+ * Escala anual del beneficio para pequeños contribuyentes cumplidores.
+ * El año inicial es el primer año calendario en el que se aplica la reducción.
+ */
+export function smallTaxpayerBenefitRateForYear(params: {
+  enabled: boolean;
+  startYear: number | null | undefined;
+  periodYear: number;
+}): Decimal {
+  if (!params.enabled || params.startYear == null) return new Decimal(0);
+  const yearIndex = params.periodYear - params.startYear;
+  if (yearIndex === 0) return new Decimal('0.50');
+  if (yearIndex === 1) return new Decimal('0.30');
+  if (yearIndex === 2) return new Decimal('0.10');
+  return new Decimal(0);
 }

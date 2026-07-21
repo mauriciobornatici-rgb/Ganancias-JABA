@@ -11,8 +11,14 @@ const profileSchema = z.object({
   vatCondition: z.enum(['RESPONSABLE_INSCRIPTO', 'EXENTO', 'MONOTRIBUTO', 'OTRO']),
   grossIncomeRegime: z.enum(['NONE', 'ARBA_LOCAL', 'ARBA_SIMPLIFICADO', 'CM_REGIMEN_GENERAL', 'CM_REGIMEN_ESPECIAL']),
   conventionRegime: z.enum(['NONE', 'GENERAL', 'ESPECIAL']).optional().default('NONE'),
+  smallTaxpayerBenefitEnabled: z.boolean().optional().default(false),
+  smallTaxpayerBenefitStartYear: z.number().int().min(2021).max(2100).nullable().optional(),
   // validFrom opcional; por defecto cubre cualquier período soportado.
   validFrom: z.string().optional(),
+}).superRefine((value, ctx) => {
+  if (value.smallTaxpayerBenefitEnabled && value.smallTaxpayerBenefitStartYear == null) {
+    ctx.addIssue({ code: 'custom', path: ['smallTaxpayerBenefitStartYear'], message: 'Indicá el primer año del beneficio de IVA.' });
+  }
 });
 
 /** Devuelve el perfil fiscal vigente (última versión) del contribuyente. */
@@ -22,7 +28,11 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const profile = await prisma.clientTaxProfileVersion.findFirst({
       where: { clientId },
       orderBy: { validFrom: 'desc' },
-      select: { id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true, validFrom: true, validTo: true },
+      select: {
+        id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
+        smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true,
+        validFrom: true, validTo: true,
+      },
     });
     return NextResponse.json({
       success: true,
@@ -33,6 +43,8 @@ export async function GET(_request: NextRequest, context: RouteContext) {
               vatCondition: profile.vatCondition,
               grossIncomeRegime: profile.grossIncomeRegime,
               conventionRegime: profile.conventionRegime,
+              smallTaxpayerBenefitEnabled: profile.smallTaxpayerBenefitEnabled,
+              smallTaxpayerBenefitStartYear: profile.smallTaxpayerBenefitStartYear,
               validFrom: profile.validFrom.toISOString().slice(0, 10),
               validTo: profile.validTo ? profile.validTo.toISOString().slice(0, 10) : null,
             }
@@ -57,7 +69,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     if (!parsed.success) {
       return NextResponse.json({ success: false, error: parsed.error.issues[0]?.message ?? 'Datos de perfil inválidos.' }, { status: 400 });
     }
-    const { vatCondition, grossIncomeRegime, conventionRegime } = parsed.data;
+    const {
+      vatCondition, grossIncomeRegime, conventionRegime,
+      smallTaxpayerBenefitEnabled, smallTaxpayerBenefitStartYear,
+    } = parsed.data;
 
     const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true, cuit: true, name: true } });
     if (!client) return NextResponse.json({ success: false, error: 'El contribuyente no existe.' }, { status: 404 });
@@ -69,7 +84,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         id: true,
         validFrom: true,
         jurisdictions: {
-          select: { jurisdictionCode: true, registrationNumber: true, taxRate: true, isActive: true },
+          select: {
+            jurisdictionCode: true, activityCode: true, activityLabel: true,
+            registrationNumber: true, taxRate: true, isActive: true,
+          },
         },
       },
     });
@@ -99,9 +117,13 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           vatCondition,
           grossIncomeRegime,
           conventionRegime,
+          smallTaxpayerBenefitEnabled,
+          smallTaxpayerBenefitStartYear: smallTaxpayerBenefitEnabled ? smallTaxpayerBenefitStartYear : null,
           jurisdictions: existing?.jurisdictions.length
             ? { create: existing.jurisdictions.map(j => ({
                 jurisdictionCode: j.jurisdictionCode,
+                activityCode: j.activityCode,
+                activityLabel: j.activityLabel,
                 registrationNumber: j.registrationNumber,
                 taxRate: j.taxRate,
                 isActive: j.isActive,
@@ -116,7 +138,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         entityId: created.id,
         clientCuit: client.cuit,
         clientName: client.name,
-        details: `Perfil fiscal: IVA ${vatCondition}, IIBB ${grossIncomeRegime}, Convenio ${conventionRegime}.`,
+        details: `Perfil fiscal: IVA ${vatCondition}, IIBB ${grossIncomeRegime}, Convenio ${conventionRegime}. Beneficio IVA: ${smallTaxpayerBenefitEnabled ? `desde ${smallTaxpayerBenefitStartYear}` : 'no aplica'}.`,
       } });
       return created.id;
     });

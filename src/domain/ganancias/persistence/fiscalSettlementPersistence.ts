@@ -115,6 +115,7 @@ export type PersistVatSettlementInput = {
   fiscalPeriodId: string;
   view: VatSettlementView;
   previousTechnicalBalance: DecimalLike;
+  previousFreeAvailabilityBalance?: DecimalLike;
   /** Valores oficiales con los que se cotejó (opcional). */
   official?: OfficialCotejo | null;
   /** Estado a guardar. Si se omite se decide por el cotejo: CLOSED si coincide, IN_REVIEW si no. */
@@ -138,8 +139,12 @@ export async function persistVatSettlement(store: VatSettlementStore, input: Per
     version,
     status,
     previousTechnicalBalance: toStr(input.previousTechnicalBalance) ?? '0',
+    previousFreeAvailabilityBalance: toStr(input.previousFreeAvailabilityBalance) ?? '0',
     debitFiscal: s.debitFiscal.toFixed(2),
     creditFiscal: s.creditFiscal.toFixed(2),
+    technicalDueBeforeBenefit: s.technicalDueBeforeBenefit.toFixed(2),
+    smallTaxpayerBenefitRate: s.smallTaxpayerBenefitRate.toFixed(6),
+    smallTaxpayerBenefitReduction: s.smallTaxpayerBenefitReduction.toFixed(2),
     technicalCarryForward: s.technicalCarryForward.toFixed(2),
     freeAvailabilityBalance: s.freeAvailabilityBalance.toFixed(2),
     amountDue: s.amountDue.toFixed(2),
@@ -218,6 +223,7 @@ export async function persistGrossIncomeSettlement(
         assignedBase: l.assignedBase.toFixed(2),
         taxRate: l.taxRate.toFixed(6),
         determinedTax: l.determinedTax.toFixed(2),
+        previousFavorBalance: l.previousFavorBalance.toFixed(2),
         creditsApplied: l.creditsApplied.toFixed(2),
         balance: l.balanceDue.toFixed(2),
         favorCarryForward: l.favorCarryForward.toFixed(2),

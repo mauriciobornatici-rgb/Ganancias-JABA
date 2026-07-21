@@ -36,6 +36,143 @@ type FiscalDocumentStore = {
   };
 };
 
+export type FiscalDocumentImportAnalysis = {
+  newDocuments: number;
+  duplicates: number;
+  conflictKeys: string[];
+};
+
+export class FiscalDocumentImportConflictError extends Error {
+  constructor(readonly conflictKeys: string[]) {
+    super(`Hay ${conflictKeys.length} comprobante(s) existentes con contenido diferente.`);
+    this.name = 'FiscalDocumentImportConflictError';
+  }
+}
+
+/**
+ * Clasifica un lote sin escribir. La integracion externa usa este resultado como
+ * barrera INSERT_ONLY: cualquier diferencia sobre una clave existente se trata
+ * como conflicto y nunca llega a persistFiscalDocuments.
+ */
+export async function analyzeFiscalDocuments(
+  db: unknown,
+  fiscalPeriodId: string,
+  documents: FiscalDocumentDraft[],
+): Promise<FiscalDocumentImportAnalysis> {
+  const store = db as FiscalDocumentStore;
+  const keys = [...new Set(documents.map(document => document.documentKey))];
+  const existing = await store.fiscalDocument.findMany({
+    where: { fiscalPeriodId, documentKey: { in: keys } },
+    select: {
+      id: true,
+      documentKey: true,
+      direction: true,
+      issueDate: true,
+      voucherType: true,
+      voucherNumber: true,
+      counterpartyName: true,
+      counterpartyCuit: true,
+      netAmount: true,
+      totalAmount: true,
+      vatLines: {
+        select: {
+          kind: true,
+          taxableBase: true,
+          rate: true,
+          vatAmount: true,
+          creditComputable: true,
+        },
+      },
+    },
+  });
+  const existingByKey = new Map(existing.map(document => [document.documentKey, document]));
+  const processedKeys = new Set<string>();
+  const firstDraftByKey = new Map<string, FiscalDocumentDraft>();
+  const conflictKeys: string[] = [];
+  let newDocuments = 0;
+  let duplicates = 0;
+
+  for (const document of documents) {
+    if (processedKeys.has(document.documentKey)) {
+      const firstDraft = firstDraftByKey.get(document.documentKey);
+      if (firstDraft && sameDraftDocument(firstDraft, document)) {
+        duplicates += 1;
+      } else if (!conflictKeys.includes(document.documentKey)) {
+        conflictKeys.push(document.documentKey);
+      }
+      continue;
+    }
+    processedKeys.add(document.documentKey);
+    firstDraftByKey.set(document.documentKey, document);
+    const stored = existingByKey.get(document.documentKey);
+    if (!stored) {
+      newDocuments += 1;
+      continue;
+    }
+    if (sameDocument(stored, document) && sameVatLines(stored.vatLines, document.vatLines)) {
+      duplicates += 1;
+    } else {
+      conflictKeys.push(document.documentKey);
+    }
+  }
+
+  return { newDocuments, duplicates, conflictKeys };
+}
+
+/**
+ * Variante de persistencia reservada para integraciones externas. Nunca llama a
+ * update: los existentes iguales se omiten y los diferentes abortan el lote.
+ */
+export async function persistFiscalDocumentsInsertOnly(
+  db: unknown,
+  fiscalPeriodId: string,
+  documents: FiscalDocumentDraft[],
+): Promise<{ inserted: number; duplicates: number; conflicts: number }> {
+  const analysis = await analyzeFiscalDocuments(db, fiscalPeriodId, documents);
+  if (analysis.conflictKeys.length > 0) {
+    throw new FiscalDocumentImportConflictError(analysis.conflictKeys);
+  }
+
+  const store = db as FiscalDocumentStore;
+  const keys = [...new Set(documents.map(document => document.documentKey))];
+  const existing = await store.fiscalDocument.findMany({
+    where: { fiscalPeriodId, documentKey: { in: keys } },
+    select: { documentKey: true },
+  });
+  const existingKeys = new Set(existing.map(document => document.documentKey));
+  const selectedKeys = new Set<string>();
+  const newDocuments = documents.filter(document => {
+    if (existingKeys.has(document.documentKey) || selectedKeys.has(document.documentKey)) return false;
+    selectedKeys.add(document.documentKey);
+    return true;
+  });
+
+  if (newDocuments.length > 0) {
+    const persisted = await persistFiscalDocuments(db, fiscalPeriodId, newDocuments);
+    if (persisted.updated !== 0) {
+      throw new Error('La importacion INSERT_ONLY intento actualizar un comprobante existente.');
+    }
+  }
+
+  return {
+    inserted: newDocuments.length,
+    duplicates: analysis.duplicates,
+    conflicts: 0,
+  };
+}
+
+function sameDraftDocument(left: FiscalDocumentDraft, right: FiscalDocumentDraft): boolean {
+  return left.direction === right.direction
+    && left.issueDate.getTime() === right.issueDate.getTime()
+    && left.voucherType === right.voucherType
+    && left.voucherNumber === right.voucherNumber
+    && normalizeOptional(left.counterpartyName) === normalizeOptional(right.counterpartyName)
+    && normalizeOptional(left.counterpartyCuit) === normalizeOptional(right.counterpartyCuit)
+    && decimalEquals(left.netAmount, right.netAmount)
+    && decimalEquals(left.totalAmount, right.totalAmount)
+    && sameVatLines(left.vatLines, right.vatLines);
+}
+
 /**
  * Persistencia idempotente de comprobantes del libro fiscal mensual.
  *

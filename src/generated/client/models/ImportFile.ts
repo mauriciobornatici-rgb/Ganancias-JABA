@@ -666,14 +666,6 @@ export type ImportFileUncheckedUpdateManyWithoutImportBatchNestedInput = {
   deleteMany?: Prisma.ImportFileScalarWhereInput | Prisma.ImportFileScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type ImportFileCreateWithoutImportBatchInput = {
   id?: string
   fileName: string

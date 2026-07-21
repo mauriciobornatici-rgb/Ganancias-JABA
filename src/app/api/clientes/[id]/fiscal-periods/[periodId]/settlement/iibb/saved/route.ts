@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         id: true, version: true, status: true, regime: true,
         totalDeterminedTax: true, totalCredits: true, totalBalance: true, totalFavorCarryForward: true,
         officialAmount: true, officialReference: true, filedAt: true, updatedAt: true,
-        jurisdictionLines: { select: { jurisdictionCode: true, coefficient: true, assignedBase: true, taxRate: true, determinedTax: true, creditsApplied: true, balance: true, favorCarryForward: true } },
+        jurisdictionLines: { select: { jurisdictionCode: true, coefficient: true, assignedBase: true, taxRate: true, determinedTax: true, previousFavorBalance: true, creditsApplied: true, balance: true, favorCarryForward: true } },
       },
     });
 
@@ -49,6 +49,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             assignedBase: l.assignedBase.toFixed(2),
             taxRate: l.taxRate.toFixed(6),
             determinedTax: l.determinedTax.toFixed(2),
+            previousFavorBalance: l.previousFavorBalance.toFixed(2),
             creditsApplied: l.creditsApplied.toFixed(2),
             balance: l.balance.toFixed(2),
             favorCarryForward: l.favorCarryForward.toFixed(2),

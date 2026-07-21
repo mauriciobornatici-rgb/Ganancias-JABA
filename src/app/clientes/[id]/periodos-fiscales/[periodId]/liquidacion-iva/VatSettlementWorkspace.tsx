@@ -31,6 +31,9 @@ type VatView = {
   debitFiscal: string;
   creditFiscal: string;
   technicalBalance: string;
+  technicalDueBeforeBenefit: string;
+  smallTaxpayerBenefitRate: string;
+  smallTaxpayerBenefitReduction: string;
   technicalDue: string;
   technicalCarryForward: string;
   creditsApplied: string;
@@ -57,7 +60,7 @@ type GrossIncomeView = {
   totalCreditsApplied: string;
   totalBalanceDue: string;
   totalFavorCarryForward: string;
-  jurisdictionLines: Array<{ jurisdictionCode: string; activityCode: string; assignedBase: string; taxRate: string; determinedTax: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
+  jurisdictionLines: Array<{ jurisdictionCode: string; activityCode: string; assignedBase: string; taxRate: string; determinedTax: string; previousFavorBalance: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
   warnings: string[];
 };
 
@@ -67,6 +70,11 @@ type SavedSettlement = {
   status: string;
   debitFiscal: string;
   creditFiscal: string;
+  previousTechnicalBalance: string;
+  previousFreeAvailabilityBalance: string;
+  technicalDueBeforeBenefit: string;
+  smallTaxpayerBenefitRate: string;
+  smallTaxpayerBenefitReduction: string;
   technicalCarryForward: string;
   freeAvailabilityBalance: string;
   amountDue: string;
@@ -75,6 +83,20 @@ type SavedSettlement = {
   officialReference: string | null;
   updatedAt: string;
 };
+
+type OpeningBalancesView = {
+  vat: {
+    previousTechnical: string;
+    automaticPreviousTechnical: string;
+    previousTechnicalSource: 'AUTO' | 'MANUAL';
+    previousFree: string;
+    automaticPreviousFree: string;
+    previousFreeSource: 'AUTO' | 'MANUAL';
+  };
+  grossIncome: Record<string, { value: string; automaticValue: string; source: 'AUTO' | 'MANUAL' }>;
+};
+
+type BenefitInfo = { enabled: boolean; startYear: number | null; rate: string };
 
 const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
@@ -98,6 +120,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
 
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
+  // Vacío = arrastre automático del último mes cerrado. "0" permite reemplazarlo explícitamente.
+  const [previousTechnical, setPreviousTechnical] = useState('');
+  const [previousFree, setPreviousFree] = useState('');
+  const [openingBalances, setOpeningBalances] = useState<OpeningBalancesView | null>(null);
+  const [benefitInfo, setBenefitInfo] = useState<BenefitInfo | null>(null);
 
   // IIBB calculado del período + cotejo/guardado
   const [grossIncome, setGrossIncome] = useState<GrossIncomeView | null>(null);
@@ -108,6 +135,8 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [savedIibbStatus, setSavedIibbStatus] = useState<{ status: string; version: number } | null>(null);
   // Reparto por monto: base editable de cada actividad (key = "jurisdiccion|actividad").
   const [activityBases, setActivityBases] = useState<Record<string, string>>({});
+  const [iibbPreviousBalances, setIibbPreviousBalances] = useState<Record<string, string>>({});
+  const [iibbBalancesDirty, setIibbBalancesDirty] = useState(false);
 
   // Liquidación ya guardada (al volver a un mes cerrado) + modo "reliquidar".
   const [savedSettlement, setSavedSettlement] = useState<SavedSettlement | null>(null);
@@ -182,6 +211,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   }, [loadDocuments, loadTaxCredits, loadSaved, loadSavedIibb]);
 
   const saveIibb = async (force: boolean) => {
+    if (iibbBalancesDirty) {
+      setError('Recalculá IIBB después de modificar los saldos anteriores antes de guardar.');
+      return;
+    }
     setSavingIibb(true);
     setError(null);
     try {
@@ -190,9 +223,17 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         const [jurisdictionCode, activityCode] = key.split('|');
         return { jurisdictionCode, activityCode, base };
       });
+      const previousFavorBalances = Object.entries(iibbPreviousBalances)
+        .filter(([, amount]) => amount.trim() !== '')
+        .map(([jurisdictionCode, amount]) => ({ jurisdictionCode, amount }));
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/iibb/save`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ official, forceSave: force, activityBases: bases.length > 0 ? bases : undefined }),
+        body: JSON.stringify({
+          official,
+          forceSave: force,
+          activityBases: bases.length > 0 ? bases : undefined,
+          previousFavorBalances: previousFavorBalances.length > 0 ? previousFavorBalances : undefined,
+        }),
       });
       const payload = await res.json();
       if (res.status === 409) { setError(payload.error || 'El saldo de IIBB no coincide con el oficial.'); return; }
@@ -366,13 +407,24 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     setSaveResult(null);
     setCotejoDiffs(null);
     try {
-      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement`, { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (previousTechnical.trim() !== '') params.set('previousTechnical', previousTechnical);
+      if (previousFree.trim() !== '') params.set('previousFree', previousFree);
+      const manualIibb = Object.fromEntries(
+        Object.entries(iibbPreviousBalances).filter(([, amount]) => amount.trim() !== ''),
+      );
+      if (Object.keys(manualIibb).length > 0) params.set('iibbPrevious', JSON.stringify(manualIibb));
+      const query = params.size > 0 ? `?${params.toString()}` : '';
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement${query}`, { cache: 'no-store' });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo calcular la liquidación.');
       setSettlement(payload.data.vat);
       const gi: GrossIncomeView | null = payload.data.grossIncome ?? null;
       setGrossIncome(gi);
       setGrossIncomeNotice(payload.data.grossIncomeNotice ?? null);
+      setOpeningBalances(payload.data.openingBalances ?? null);
+      setBenefitInfo(payload.data.smallTaxpayerBenefit ?? null);
+      setIibbBalancesDirty(false);
       // Precarga las bases editables por actividad con lo que sugiere el servidor (reparto equitativo).
       if (gi) {
         const perJur = new Map<string, number>();
@@ -424,7 +476,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ official, forceSave: force }),
+        body: JSON.stringify({
+          official,
+          forceSave: force,
+          openingBalances: {
+            previousTechnical: previousTechnical.trim() === '' ? undefined : previousTechnical,
+            previousFree: previousFree.trim() === '' ? undefined : previousFree,
+          },
+        }),
       });
       const payload = await res.json();
       if (res.status === 409) {
@@ -558,6 +617,33 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             <p className="mt-4 rounded border border-dashed border-zinc-700 px-4 py-4 text-center text-[11px] text-zinc-500">Sin retenciones/percepciones cargadas (opcional).</p>
           )}
 
+          <div className="mt-5 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="text-xs font-extrabold text-zinc-200">Saldos de IVA del período anterior</p>
+            <p className="mt-1 text-[11px] leading-5 text-zinc-500">Dejá el campo vacío para usar el arrastre automático del último mes cerrado. Podés ingresar 0 o un importe para reemplazarlo en esta liquidación.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <OpeningBalanceInput
+                label="Saldo técnico a favor anterior"
+                value={previousTechnical}
+                automaticValue={openingBalances?.vat.automaticPreviousTechnical}
+                onChange={value => {
+                  setPreviousTechnical(value);
+                  setSettlement(null);
+                  setGrossIncome(null);
+                }}
+              />
+              <OpeningBalanceInput
+                label="Saldo de libre disponibilidad anterior"
+                value={previousFree}
+                automaticValue={openingBalances?.vat.automaticPreviousFree}
+                onChange={value => {
+                  setPreviousFree(value);
+                  setSettlement(null);
+                  setGrossIncome(null);
+                }}
+              />
+            </div>
+          </div>
+
           <div className="mt-5">
             <button type="button" onClick={() => void calculate()} disabled={calculating || documents.length === 0} className="inline-flex h-10 items-center gap-2 rounded bg-zinc-100 px-4 text-xs font-extrabold text-zinc-900 transition-colors hover:bg-white disabled:opacity-40">
               <Calculator className="h-4 w-4" /> {calculating ? 'Calculando…' : 'Calcular liquidación'}
@@ -578,12 +664,23 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
                 <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-400">Calculado por la app</p>
                 <Row label="Débito fiscal" value={settlement.debitFiscal} strong />
                 <Row label="Crédito fiscal" value={settlement.creditFiscal} strong />
-                <Row label="Saldo técnico del período" value={settlement.technicalDue} />
+                {Number(openingBalances?.vat.previousTechnical ?? 0) > 0 ? <Row label="Saldo técnico a favor anterior aplicado" value={openingBalances?.vat.previousTechnical ?? '0'} muted /> : null}
+                {Number(settlement.smallTaxpayerBenefitReduction) > 0 ? (
+                  <>
+                    <Row label="Saldo técnico antes del beneficio" value={settlement.technicalDueBeforeBenefit} />
+                    <Row label={`Reducción pequeños contribuyentes (${(Number(settlement.smallTaxpayerBenefitRate) * 100).toFixed(0)}%)`} value={settlement.smallTaxpayerBenefitReduction} muted />
+                    <Row label="Saldo técnico luego del beneficio" value={settlement.technicalDue} />
+                  </>
+                ) : <Row label="Saldo técnico del período" value={settlement.technicalDue} />}
                 {Number(settlement.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={settlement.technicalCarryForward} muted /> : null}
+                {Number(openingBalances?.vat.previousFree ?? 0) > 0 ? <Row label="Libre disponibilidad anterior aplicada" value={openingBalances?.vat.previousFree ?? '0'} muted /> : null}
                 {Number(settlement.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={settlement.creditsApplied} muted /> : null}
                 <div className="my-2 border-t border-zinc-800" />
                 <Row label="Saldo a pagar" value={settlement.amountDue} highlight />
                 {Number(settlement.freeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad (arrastra)" value={settlement.freeAvailabilityBalance} muted /> : null}
+                {benefitInfo?.enabled && Number(benefitInfo.rate) === 0 ? (
+                  <p className="mt-3 rounded border border-zinc-800 px-3 py-2 text-[10px] leading-4 text-zinc-500">El beneficio está configurado desde {benefitInfo.startYear}, pero este período queda fuera de sus tres años de reducción.</p>
+                ) : null}
 
                 <p className="mt-4 mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Desglose por alícuota</p>
                 <div className="space-y-1">
@@ -656,6 +753,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             onSave={saveIibb}
             activityBases={activityBases}
             onActivityBase={(key, v) => setActivityBases(prev => ({ ...prev, [key]: v }))}
+            automaticPreviousBalances={openingBalances?.grossIncome ?? {}}
+            previousBalances={iibbPreviousBalances}
+            balancesDirty={iibbBalancesDirty}
+            onPreviousBalance={(jurisdictionCode, value) => {
+              setIibbPreviousBalances(prev => ({ ...prev, [jurisdictionCode]: value }));
+              setIibbBalancesDirty(true);
+            }}
+            onRecalculate={() => void calculate()}
           />
         ) : null}
       </div>
@@ -663,7 +768,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   );
 }
 
-function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave, activityBases, onActivityBase }: {
+function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave, activityBases, onActivityBase, automaticPreviousBalances, previousBalances, balancesDirty, onPreviousBalance, onRecalculate }: {
   view: GrossIncomeView | null;
   notice: string | null;
   official: string;
@@ -675,6 +780,11 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
   onSave: (force: boolean) => void;
   activityBases: Record<string, string>;
   onActivityBase: (key: string, v: string) => void;
+  automaticPreviousBalances: OpeningBalancesView['grossIncome'];
+  previousBalances: Record<string, string>;
+  balancesDirty: boolean;
+  onPreviousBalance: (jurisdictionCode: string, value: string) => void;
+  onRecalculate: () => void;
 }) {
   // Multi-actividad: alguna jurisdicción con más de una línea (dos actividades con distinta alícuota).
   const perJur = new Map<string, number>();
@@ -710,6 +820,32 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
 
       {view ? (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4 lg:col-span-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold text-zinc-200">Saldos a favor anteriores de IIBB</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Se cargan por jurisdicción. Vacío usa el arrastre automático del último mes cerrado; ingresá 0 para reemplazarlo.</p>
+              </div>
+              {balancesDirty ? (
+                <button type="button" onClick={onRecalculate} className="inline-flex h-9 items-center gap-2 rounded border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-bold text-amber-200 hover:bg-amber-500/20">
+                  <RefreshCw className="h-3.5 w-3.5" /> Recalcular saldos
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[...perJur.keys()].map(jurisdictionCode => (
+                <OpeningBalanceInput
+                  key={jurisdictionCode}
+                  label={`Jurisdicción ${jurisdictionCode}`}
+                  value={previousBalances[jurisdictionCode] ?? ''}
+                  automaticValue={automaticPreviousBalances[jurisdictionCode]?.automaticValue}
+                  onChange={value => onPreviousBalance(jurisdictionCode, value)}
+                />
+              ))}
+            </div>
+            {balancesDirty ? <p className="mt-2 text-[10px] text-amber-300">Recalculá para aplicar los nuevos saldos antes de cotejar o guardar.</p> : null}
+          </div>
+
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
             <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-teal-400">Por jurisdicción{isMulti ? ' y actividad' : ''}</p>
             {isMulti ? (
@@ -758,6 +894,9 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
             ) : null}
             <div className="mt-3 border-t border-zinc-800 pt-2">
               <Row label="Impuesto determinado total" value={isMulti ? live.totalDeterminedTax.toFixed(2) : view.totalDeterminedTax} strong />
+              {view.jurisdictionLines.reduce((sum, line) => sum + Number(line.previousFavorBalance), 0) > 0
+                ? <Row label="Saldo a favor anterior aplicado" value={view.jurisdictionLines.reduce((sum, line) => sum + Number(line.previousFavorBalance), 0).toFixed(2)} muted />
+                : null}
               {(isMulti ? live.totalCreditsApplied : Number(view.totalCreditsApplied)) > 0
                 ? <Row label="Percep./retenc. IIBB aplicadas" value={isMulti ? live.totalCreditsApplied.toFixed(2) : view.totalCreditsApplied} muted />
                 : null}
@@ -777,7 +916,7 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
             {official.trim() !== '' ? (
               <p className={`mt-3 flex items-center gap-2 text-xs font-bold ${liveMatch ? 'text-emerald-300' : 'text-amber-300'}`}>{liveMatch ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}{liveMatch ? 'Coincide — listo para cerrar' : 'No coincide con el cálculo'}</p>
             ) : null}
-            <button type="button" onClick={() => onSave(false)} disabled={saving || (isMulti && !basesMatch)} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
+            <button type="button" onClick={() => onSave(false)} disabled={saving || balancesDirty || (isMulti && !basesMatch)} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
             {isMulti && !basesMatch ? (
               <p className="mt-2 text-[10px] text-amber-300">
                 {!live.basesValid
@@ -825,6 +964,14 @@ function SavedSettlementPanel({ saved, onReliquidar }: { saved: SavedSettlement;
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
           <Row label="Débito fiscal" value={saved.debitFiscal} strong />
           <Row label="Crédito fiscal" value={saved.creditFiscal} strong />
+          {Number(saved.previousTechnicalBalance) > 0 ? <Row label="Saldo técnico anterior aplicado" value={saved.previousTechnicalBalance} muted /> : null}
+          {Number(saved.smallTaxpayerBenefitReduction) > 0 ? (
+            <>
+              <Row label="Saldo técnico antes del beneficio" value={saved.technicalDueBeforeBenefit} />
+              <Row label={`Reducción beneficio (${(Number(saved.smallTaxpayerBenefitRate) * 100).toFixed(0)}%)`} value={saved.smallTaxpayerBenefitReduction} muted />
+            </>
+          ) : null}
+          {Number(saved.previousFreeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad anterior aplicada" value={saved.previousFreeAvailabilityBalance} muted /> : null}
           {Number(saved.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={saved.creditsApplied} muted /> : null}
           {Number(saved.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={saved.technicalCarryForward} muted /> : null}
           <div className="my-2 border-t border-zinc-800" />
@@ -985,6 +1132,26 @@ function CotejoInput({ label, value, onChange }: { label: string; value: string;
     <div className="mb-2">
       <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</label>
       <input inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder="0,00" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+    </div>
+  );
+}
+
+function OpeningBalanceInput({ label, value, automaticValue, onChange }: {
+  label: string;
+  value: string;
+  automaticValue?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</label>
+      <input
+        inputMode="decimal"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={automaticValue == null ? 'Automático' : `Automático: ${fmt(automaticValue)}`}
+        className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-teal-400"
+      />
     </div>
   );
 }

@@ -91,47 +91,47 @@ enum GainsAllocationKind {
 // ==========================================
 
 model User {
-  id            String             @id @default(uuid())
-  email         String             @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  isActive      Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
-  
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   // Relaciones
-  roleId        String
-  role          Role               @relation(fields: [roleId], references: [id])
-  clientAccess  ClientUserAccess[]
-  auditLogs     AuditLog[]
+  roleId       String
+  role         Role               @relation(fields: [roleId], references: [id])
+  clientAccess ClientUserAccess[]
+  auditLogs    AuditLog[]
 }
 
 model Role {
-  id          String       @id @default(uuid())
-  name        String       @unique // owner, admin, contador, revisor, carga_datos, solo_lectura
+  id          String  @id @default(uuid())
+  name        String  @unique // owner, admin, contador, revisor, carga_datos, solo_lectura
   description String?
-  
+
   // Relaciones
   users       User[]
   permissions RolePermission[]
 }
 
 model Permission {
-  id          String           @id @default(uuid())
-  code        String           @unique // e.g., "CLIENT_CREATE", "RETURN_CLOSE", "PARAM_EDIT"
+  id          String  @id @default(uuid())
+  code        String  @unique // e.g., "CLIENT_CREATE", "RETURN_CLOSE", "PARAM_EDIT"
   description String?
-  
+
   // Relaciones
-  roles       RolePermission[]
+  roles RolePermission[]
 }
 
 model RolePermission {
   roleId       String
   permissionId String
 
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
 }
@@ -142,8 +142,8 @@ model ClientUserAccess {
   canEdit   Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([clientId, userId])
 }
@@ -153,23 +153,23 @@ model ClientUserAccess {
 // ==========================================
 
 model Client {
-  id             String             @id @default(uuid())
-  cuit           String             @unique // Formato: XX-XXXXXXXX-X
-  name           String             // RazÃ³n Social / Nombre
-  type           String             // Persona Humana, SucesiÃ³n Indivisa, Sociedad
-  fiscalCondition String            // Responsable Inscripto, etc.
-  mainActivity   String             // CABA, Buenos Aires, Convenio Multilateral
-  responsibleName String?           // Responsable interno asignado
-  status         String             @default("Activo") // Activo, Suspendido, Inactivo
-  notes          String?            @db.Text
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id              String   @id @default(uuid())
+  cuit            String   @unique // Formato: XX-XXXXXXXX-X
+  name            String // RazÃ³n Social / Nombre
+  type            String // Persona Humana, SucesiÃ³n Indivisa, Sociedad
+  fiscalCondition String // Responsable Inscripto, etc.
+  mainActivity    String // CABA, Buenos Aires, Convenio Multilateral
+  responsibleName String? // Responsable interno asignado
+  status          String   @default("Activo") // Activo, Suspendido, Inactivo
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // Relaciones
-  userAccess     ClientUserAccess[]
-  taxReturns     TaxReturn[]
-  taxProfiles    ClientTaxProfileVersion[]
-  fiscalPeriods  FiscalPeriod[]
+  userAccess             ClientUserAccess[]
+  taxReturns             TaxReturn[]
+  taxProfiles            ClientTaxProfileVersion[]
+  fiscalPeriods          FiscalPeriod[]
   conventionCoefficients ConventionCoefficientVersion[]
 }
 
@@ -178,84 +178,84 @@ model Client {
 // ==========================================
 
 model FiscalYear {
-  id            String             @id @default(uuid())
-  year          Int                @unique // e.g., 2024, 2025, 2026
-  isEnabled     Boolean            @default(true)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id        String   @id @default(uuid())
+  year      Int      @unique // e.g., 2024, 2025, 2026
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relaciones
-  taxReturns       TaxReturn[]
-  parameterSets    TaxParameterSet[]
-  indices          UpdateIndex[]
-  art94Brackets    TaxArt94Bracket[]
+  taxReturns    TaxReturn[]
+  parameterSets TaxParameterSet[]
+  indices       UpdateIndex[]
+  art94Brackets TaxArt94Bracket[]
 }
 
 model TaxParameterSet {
-  id                  String     @id @default(uuid())
-  fiscalYearId        String
-  fiscalYear          FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
-  
+  id           String     @id @default(uuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+
   // Deducciones Art 30
-  minimoNoImponible   Decimal    @db.Decimal(18, 4)
-  conyuge             Decimal    @db.Decimal(18, 4)
-  hijo                Decimal    @db.Decimal(18, 4)
-  hijoIncapacitado    Decimal    @db.Decimal(18, 4)
-  
+  minimoNoImponible Decimal @db.Decimal(18, 4)
+  conyuge           Decimal @db.Decimal(18, 4)
+  hijo              Decimal @db.Decimal(18, 4)
+  hijoIncapacitado  Decimal @db.Decimal(18, 4)
+
   // Deducciones Especiales Art 30 Inc C
-  especialAutonomo    Decimal    @db.Decimal(18, 4)
-  especialEmprendedor Decimal    @db.Decimal(18, 4)
-  especialDependiente Decimal    @db.Decimal(18, 4)
-  
+  especialAutonomo    Decimal @db.Decimal(18, 4)
+  especialEmprendedor Decimal @db.Decimal(18, 4)
+  especialDependiente Decimal @db.Decimal(18, 4)
+
   // Topes Deducciones Generales
-  topeServicioDomestico Decimal  @db.Decimal(18, 4)
-  topeSeguroVida        Decimal  @db.Decimal(18, 4)
-  topeSeguroRetiro      Decimal  @db.Decimal(18, 4)
-  topeGastosSepelio     Decimal  @db.Decimal(18, 4)
-  topeInteresHipoteca   Decimal  @db.Decimal(18, 4)
-  topeGastosEducativos  Decimal  @db.Decimal(18, 4)
+  topeServicioDomestico Decimal @db.Decimal(18, 4)
+  topeSeguroVida        Decimal @db.Decimal(18, 4)
+  topeSeguroRetiro      Decimal @db.Decimal(18, 4)
+  topeGastosSepelio     Decimal @db.Decimal(18, 4)
+  topeInteresHipoteca   Decimal @db.Decimal(18, 4)
+  topeGastosEducativos  Decimal @db.Decimal(18, 4)
 
-  status              String     @default("borrador") // borrador, validado, reemplazado
-  sourceLaw           String?    // Fuente legal de referencia
-  version             Int        @default(1)
-  createdAt           DateTime   @default(now())
-  updatedAt           DateTime   @updatedAt
+  status    String   @default("borrador") // borrador, validado, reemplazado
+  sourceLaw String? // Fuente legal de referencia
+  version   Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  art94Brackets       TaxArt94Bracket[]
-  taxReturns          TaxReturn[]
+  art94Brackets TaxArt94Bracket[]
+  taxReturns    TaxReturn[]
 
   @@unique([fiscalYearId, version])
 }
 
 model TaxArt94Bracket {
-  id                String           @id @default(uuid())
-  fiscalYearId      String
-  fiscalYear        FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
-  
+  id           String     @id @default(uuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+
   taxParameterSetId String?
   taxParameterSet   TaxParameterSet? @relation(fields: [taxParameterSetId], references: [id], onDelete: Cascade)
-  
-  fromAmount        Decimal          @db.Decimal(18, 4)
-  toAmount          Decimal?         @db.Decimal(18, 4) // nulo si es el tramo "en adelante"
-  fixedAmount       Decimal          @db.Decimal(18, 4)
-  percentage        Decimal          @db.Decimal(6, 4)  // e.g., 0.05 a 0.35
-  excessOf          Decimal          @db.Decimal(18, 4)
+
+  fromAmount  Decimal  @db.Decimal(18, 4)
+  toAmount    Decimal? @db.Decimal(18, 4) // nulo si es el tramo "en adelante"
+  fixedAmount Decimal  @db.Decimal(18, 4)
+  percentage  Decimal  @db.Decimal(6, 4) // e.g., 0.05 a 0.35
+  excessOf    Decimal  @db.Decimal(18, 4)
 
   @@index([fiscalYearId])
   @@index([taxParameterSetId])
 }
 
 model UpdateIndex {
-  id            String     @id @default(uuid())
-  fiscalYearId  String
-  fiscalYear    FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
-  
-  monthIndex    Int        // 1 to 12
-  monthName     String     // Enero, Febrero...
-  ipcValue      Decimal    @db.Decimal(18, 6)
-  
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  id           String     @id @default(uuid())
+  fiscalYearId String
+  fiscalYear   FiscalYear @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+
+  monthIndex Int // 1 to 12
+  monthName  String // Enero, Febrero...
+  ipcValue   Decimal @db.Decimal(18, 6)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([fiscalYearId, monthIndex])
 }
@@ -265,44 +265,44 @@ model UpdateIndex {
 // ==========================================
 
 model TaxReturn {
-  id                String           @id @default(uuid())
+  id                String   @id @default(uuid())
   clientId          String
   fiscalYearId      String
   taxParameterSetId String?
-  status            String           @default("Borrador") // Borrador, En_Revision, Observada, Lista_Presentar, Presentada, Cerrada, Rectificada
-  version           Int              @default(0)          // 0 = Original, 1 = Rectificativa 1...
-  notes             String?          @db.Text
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  status            String   @default("Borrador") // Borrador, En_Revision, Observada, Lista_Presentar, Presentada, Cerrada, Rectificada
+  version           Int      @default(0) // 0 = Original, 1 = Rectificativa 1...
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  client            Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  fiscalYear        FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
-  taxParameterSet   TaxParameterSet? @relation(fields: [taxParameterSetId], references: [id])
+  client          Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  fiscalYear      FiscalYear       @relation(fields: [fiscalYearId], references: [id], onDelete: Cascade)
+  taxParameterSet TaxParameterSet? @relation(fields: [taxParameterSetId], references: [id])
 
   // Relaciones transaccionales de la liquidaciÃ³n
-  sales         SalesInvoice[]
-  purchases     PurchaseInvoice[]
-  fixedAssets   FixedAsset[]
-  inventory     InventoryValue[]
-  bankAccounts  BankAccountBalance[]
-  cashHoldings  CashHolding[]
-  receivables   ReceivableDebt[]
-  liabilities   PayableDebt[]
-  withholdings  TaxWithholding[]
-  personalAssets PersonalAsset[]
-  personalLiabilities PersonalLiability[]
-  justifications  PatrimonialJustification[]
-  generalDeduction GeneralDeduction?
-  personalDeduction PersonalDeduction?
-  axiStaticItems  AxiStaticItem[]
-  axiDynamicItems AxiDynamicItem[]
-  calculations   CalculationRun[]
-  attachments    Attachment[]
-  importBatches  ImportBatch[]
-  annualFiscalConsolidations AnnualFiscalConsolidationSnapshot[]
-  fixedAssetImportCandidates FixedAssetImportCandidate[]
-  rectificationLinksAsOriginal RectificationLink[] @relation("OriginalReturn")
-  rectificationLinksAsRectified RectificationLink[] @relation("RectifiedReturn")
+  sales                         SalesInvoice[]
+  purchases                     PurchaseInvoice[]
+  fixedAssets                   FixedAsset[]
+  inventory                     InventoryValue[]
+  bankAccounts                  BankAccountBalance[]
+  cashHoldings                  CashHolding[]
+  receivables                   ReceivableDebt[]
+  liabilities                   PayableDebt[]
+  withholdings                  TaxWithholding[]
+  personalAssets                PersonalAsset[]
+  personalLiabilities           PersonalLiability[]
+  justifications                PatrimonialJustification[]
+  generalDeduction              GeneralDeduction?
+  personalDeduction             PersonalDeduction?
+  axiStaticItems                AxiStaticItem[]
+  axiDynamicItems               AxiDynamicItem[]
+  calculations                  CalculationRun[]
+  attachments                   Attachment[]
+  importBatches                 ImportBatch[]
+  annualFiscalConsolidations    AnnualFiscalConsolidationSnapshot[]
+  fixedAssetImportCandidates    FixedAssetImportCandidate[]
+  rectificationLinksAsOriginal  RectificationLink[]                 @relation("OriginalReturn")
+  rectificationLinksAsRectified RectificationLink[]                 @relation("RectifiedReturn")
 
   @@unique([clientId, fiscalYearId, version])
   @@index([clientId])
@@ -310,33 +310,33 @@ model TaxReturn {
 }
 
 model FixedAssetImportCandidate {
-  id                      String    @id @default(uuid())
-  taxReturnId             String
-  sourceFiscalDocumentId  String
-  sourceMonth             Int
-  description             String
-  counterpartyName        String?
-  purchaseDate            DateTime
-  originalCost            Decimal   @db.Decimal(18, 2)
-  status                  String    @default("PENDING")
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
+  id                     String   @id @default(uuid())
+  taxReturnId            String
+  sourceFiscalDocumentId String
+  sourceMonth            Int
+  description            String
+  counterpartyName       String?
+  purchaseDate           DateTime
+  originalCost           Decimal  @db.Decimal(18, 2)
+  status                 String   @default("PENDING")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
-  taxReturn               TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  taxReturn TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
   @@unique([taxReturnId, sourceFiscalDocumentId])
   @@index([taxReturnId, status])
 }
 
 model RectificationLink {
-  id               String    @id @default(uuid())
-  originalId       String
-  rectifiedId      String
-  reason           String?   @db.Text
-  createdAt        DateTime  @default(now())
+  id          String   @id @default(uuid())
+  originalId  String
+  rectifiedId String
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now())
 
-  originalReturn   TaxReturn @relation("OriginalReturn", fields: [originalId], references: [id], onDelete: Cascade)
-  rectifiedReturn  TaxReturn @relation("RectifiedReturn", fields: [rectifiedId], references: [id], onDelete: Cascade)
+  originalReturn  TaxReturn @relation("OriginalReturn", fields: [originalId], references: [id], onDelete: Cascade)
+  rectifiedReturn TaxReturn @relation("RectifiedReturn", fields: [rectifiedId], references: [id], onDelete: Cascade)
 
   @@unique([originalId, rectifiedId])
 }
@@ -346,83 +346,86 @@ model RectificationLink {
 // ==========================================
 
 model ClientTaxProfileVersion {
-  id                    String             @id @default(uuid())
-  clientId              String
-  validFrom             DateTime
-  validTo               DateTime?
-  vatCondition          VatCondition
-  grossIncomeRegime     GrossIncomeRegime
-  conventionRegime      ConventionRegime   @default(NONE)
+  id                     String            @id @default(uuid())
+  clientId               String
+  validFrom              DateTime
+  validTo                DateTime?
+  vatCondition           VatCondition
+  grossIncomeRegime      GrossIncomeRegime
+  conventionRegime       ConventionRegime  @default(NONE)
+  // Beneficio Ley 27.618 / RG 5003: reducción del saldo deudor de IVA durante tres años.
+  smallTaxpayerBenefitEnabled   Boolean @default(false)
+  smallTaxpayerBenefitStartYear Int?
   arbaRegistrationNumber String?
-  cmRegistrationNumber  String?
-  sourceReference       String?
-  approvedBy            String?
-  approvedAt            DateTime?
-  notes                 String?            @db.Text
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  cmRegistrationNumber   String?
+  sourceReference        String?
+  approvedBy             String?
+  approvedAt             DateTime?
+  notes                  String?           @db.Text
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
-  client                Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  activities            ClientTaxActivity[]
-  jurisdictions         ClientTaxJurisdiction[]
-  fiscalPeriods         FiscalPeriod[]
+  client        Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  activities    ClientTaxActivity[]
+  jurisdictions ClientTaxJurisdiction[]
+  fiscalPeriods FiscalPeriod[]
 
   @@unique([clientId, validFrom])
   @@index([clientId, validTo])
 }
 
 model ClientTaxActivity {
-  id                String                  @id @default(uuid())
-  taxProfileId      String
-  activityCode      String
-  description       String
-  isPrimary         Boolean                 @default(false)
-  createdAt         DateTime                @default(now())
-  updatedAt         DateTime                @updatedAt
+  id           String   @id @default(uuid())
+  taxProfileId String
+  activityCode String
+  description  String
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  taxProfile        ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Cascade)
+  taxProfile ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Cascade)
 
   @@unique([taxProfileId, activityCode])
   @@index([taxProfileId, isPrimary])
 }
 
 model ClientTaxJurisdiction {
-  id                  String                  @id @default(uuid())
-  taxProfileId        String
-  jurisdictionCode    String
+  id                 String   @id @default(uuid())
+  taxProfileId       String
+  jurisdictionCode   String
   // Actividad dentro de la jurisdicción (criterio 2026-07-20): una jurisdicción puede tener varias
   // actividades, cada una con su alícuota. "" = actividad única/principal (caso más común).
-  activityCode        String                  @default("")
-  activityLabel       String?
-  registrationNumber  String?
+  activityCode       String   @default("")
+  activityLabel      String?
+  registrationNumber String?
   // Alícuota de IIBB (fracción, ej. 0.050000 = 5%). Null = sin cargar (se trata como 0).
-  taxRate             Decimal?                @db.Decimal(8, 6)
-  isActive            Boolean                 @default(true)
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
+  taxRate            Decimal? @db.Decimal(8, 6)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  taxProfile          ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Cascade)
+  taxProfile ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Cascade)
 
   @@unique([taxProfileId, jurisdictionCode, activityCode], map: "ctj_profile_jur_activity_uk")
   @@index([jurisdictionCode])
 }
 
 model FiscalPeriod {
-  id                  String                  @id @default(uuid())
-  clientId            String
-  taxProfileId        String
-  year                Int
-  month               Int
-  notes               String?                 @db.Text
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
+  id           String   @id @default(uuid())
+  clientId     String
+  taxProfileId String
+  year         Int
+  month        Int
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  client              Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  taxProfile          ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Restrict)
-  documents           FiscalDocument[]
-  taxCredits          TaxCreditRecord[]
-  vatSettlements      VatSettlement[]
-  grossIncomeSettlements GrossIncomeSettlement[]
+  client                     Client                            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  taxProfile                 ClientTaxProfileVersion           @relation(fields: [taxProfileId], references: [id], onDelete: Restrict)
+  documents                  FiscalDocument[]
+  taxCredits                 TaxCreditRecord[]
+  vatSettlements             VatSettlement[]
+  grossIncomeSettlements     GrossIncomeSettlement[]
   annualConsolidationPeriods AnnualFiscalConsolidationPeriod[]
 
   @@unique([clientId, year, month])
@@ -431,95 +434,121 @@ model FiscalPeriod {
 }
 
 model FiscalDocument {
-  id                  String                  @id @default(uuid())
-  fiscalPeriodId      String
-  documentKey         String
-  direction           FiscalDocumentDirection
-  issueDate           DateTime
-  voucherType         String
-  voucherNumber       String
-  counterpartyName    String?
-  counterpartyCuit    String?
-  netAmount           Decimal                 @db.Decimal(18, 2)
-  totalAmount         Decimal                 @db.Decimal(18, 2)
-  source              String                  @default("ARCA")
-  sourceFileName      String?
-  sourceFileHash      String?
+  id                   String                  @id @default(uuid())
+  fiscalPeriodId       String
+  documentKey          String
+  direction            FiscalDocumentDirection
+  issueDate            DateTime
+  voucherType          String
+  voucherNumber        String
+  counterpartyName     String?
+  counterpartyCuit     String?
+  netAmount            Decimal                 @db.Decimal(18, 2)
+  totalAmount          Decimal                 @db.Decimal(18, 2)
+  source               String                  @default("ARCA")
+  sourceFileName       String?
+  sourceFileHash       String?
   // Revisión del usuario antes de liquidar: si se desmarca, el comprobante NO entra en la
   // liquidación de IVA/IIBB (queda en el libro para trazabilidad, pero excluido del cálculo).
-  includedInSettlement Boolean                @default(true)
-  notes               String?                 @db.Text
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
+  includedInSettlement Boolean                 @default(true)
+  notes                String?                 @db.Text
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
 
-  fiscalPeriod        FiscalPeriod            @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
-  vatLines            FiscalDocumentVatLine[]
-  allocations         FiscalDocumentAllocation[]
-  taxCredits          TaxCreditRecord[]
+  fiscalPeriod FiscalPeriod               @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
+  vatLines     FiscalDocumentVatLine[]
+  allocations  FiscalDocumentAllocation[]
+  taxCredits   TaxCreditRecord[]
 
   @@unique([fiscalPeriodId, documentKey])
   @@index([fiscalPeriodId, issueDate])
   @@index([counterpartyCuit])
 }
 
-model FiscalDocumentVatLine {
-  id                  String          @id @default(uuid())
-  fiscalDocumentId    String
-  kind                VatLineKind
-  taxableBase         Decimal         @db.Decimal(18, 2)
-  rate                Decimal         @db.Decimal(8, 6)
-  vatAmount           Decimal         @db.Decimal(18, 2)
-  creditComputable    Boolean         @default(false)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+// Recibo durable de una importacion externa. No reemplaza ni modifica comprobantes
+// existentes: permite responder idempotentemente a UiPath y reconciliar cada entrega.
+model ExternalImportReceipt {
+  id             String   @id @default(uuid())
+  source         String   @default("UIPATH")
+  idempotencyKey String   @unique
+  clientId       String
+  fiscalPeriodId String
+  ownerCuit      String
+  year           Int
+  month          Int
+  status         String
+  fileManifest   Json
+  inserted       Int      @default(0)
+  duplicates     Int      @default(0)
+  conflicts      Int      @default(0)
+  totalDocuments Int      @default(0)
+  warnings       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  fiscalDocument      FiscalDocument  @relation(fields: [fiscalDocumentId], references: [id], onDelete: Cascade)
+  @@index([clientId, year, month])
+  @@index([fiscalPeriodId])
+  @@index([createdAt])
+}
+
+model FiscalDocumentVatLine {
+  id               String      @id @default(uuid())
+  fiscalDocumentId String
+  kind             VatLineKind
+  taxableBase      Decimal     @db.Decimal(18, 2)
+  rate             Decimal     @db.Decimal(8, 6)
+  vatAmount        Decimal     @db.Decimal(18, 2)
+  creditComputable Boolean     @default(false)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  fiscalDocument FiscalDocument @relation(fields: [fiscalDocumentId], references: [id], onDelete: Cascade)
 
   @@index([fiscalDocumentId])
   @@index([kind, rate])
 }
 
 model FiscalDocumentAllocation {
-  id                  String          @id @default(uuid())
-  fiscalDocumentId    String
-  gainsKind           GainsAllocationKind
-  allocatedNetAmount  Decimal         @db.Decimal(18, 2)
-  isDeductible        Boolean         @default(false)
-  isGrossIncomeTaxable Boolean        @default(true)
-  needsReview         Boolean         @default(true)
-  notes               String?         @db.Text
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  id                   String              @id @default(uuid())
+  fiscalDocumentId     String
+  gainsKind            GainsAllocationKind
+  allocatedNetAmount   Decimal             @db.Decimal(18, 2)
+  isDeductible         Boolean             @default(false)
+  isGrossIncomeTaxable Boolean             @default(true)
+  needsReview          Boolean             @default(true)
+  notes                String?             @db.Text
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
-  fiscalDocument      FiscalDocument  @relation(fields: [fiscalDocumentId], references: [id], onDelete: Cascade)
+  fiscalDocument FiscalDocument @relation(fields: [fiscalDocumentId], references: [id], onDelete: Cascade)
 
   @@index([fiscalDocumentId])
   @@index([gainsKind, needsReview])
 }
 
 model TaxCreditRecord {
-  id                  String          @id @default(uuid())
-  fiscalPeriodId      String
-  fiscalDocumentId    String?
-  creditKey           String
-  tax                 TaxCreditTax
-  kind                TaxCreditKind
-  jurisdictionCode    String?
-  issueDate           DateTime
-  agentCuit           String?
-  agentName           String?
-  certificateNumber   String?
-  originalAmount      Decimal         @db.Decimal(18, 2)
-  appliedAmount       Decimal         @default(0) @db.Decimal(18, 2)
-  source              String          @default("MANUAL")
+  id                   String        @id @default(uuid())
+  fiscalPeriodId       String
+  fiscalDocumentId     String?
+  creditKey            String
+  tax                  TaxCreditTax
+  kind                 TaxCreditKind
+  jurisdictionCode     String?
+  issueDate            DateTime
+  agentCuit            String?
+  agentName            String?
+  certificateNumber    String?
+  originalAmount       Decimal       @db.Decimal(18, 2)
+  appliedAmount        Decimal       @default(0) @db.Decimal(18, 2)
+  source               String        @default("MANUAL")
   // Revisión del usuario: si se desmarca, la ret/perc NO entra en la liquidación (queda registrada).
-  includedInSettlement Boolean        @default(true)
-  notes               String?         @db.Text
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  includedInSettlement Boolean       @default(true)
+  notes                String?       @db.Text
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
-  fiscalPeriod        FiscalPeriod    @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
-  fiscalDocument      FiscalDocument? @relation(fields: [fiscalDocumentId], references: [id], onDelete: SetNull)
+  fiscalPeriod   FiscalPeriod    @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
+  fiscalDocument FiscalDocument? @relation(fields: [fiscalDocumentId], references: [id], onDelete: SetNull)
 
   @@unique([fiscalPeriodId, creditKey])
   @@index([tax, jurisdictionCode])
@@ -527,107 +556,112 @@ model TaxCreditRecord {
 }
 
 model VatSettlement {
-  id                    String              @id @default(uuid())
-  fiscalPeriodId        String
-  originalSettlementId  String?
-  version               Int                 @default(0)
-  status                VatSettlementStatus @default(DRAFT)
-  previousTechnicalBalance Decimal           @default(0) @db.Decimal(18, 2)
-  debitFiscal           Decimal             @default(0) @db.Decimal(18, 2)
-  creditFiscal          Decimal             @default(0) @db.Decimal(18, 2)
-  technicalCarryForward Decimal             @default(0) @db.Decimal(18, 2)
-  freeAvailabilityBalance Decimal           @default(0) @db.Decimal(18, 2)
-  amountDue             Decimal             @default(0) @db.Decimal(18, 2)
-  officialAmount        Decimal?            @db.Decimal(18, 2)
-  officialReference     String?
-  filedAt               DateTime?
-  notes                 String?             @db.Text
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  id                       String              @id @default(uuid())
+  fiscalPeriodId           String
+  originalSettlementId     String?
+  version                  Int                 @default(0)
+  status                   VatSettlementStatus @default(DRAFT)
+  previousTechnicalBalance Decimal             @default(0) @db.Decimal(18, 2)
+  previousFreeAvailabilityBalance Decimal       @default(0) @db.Decimal(18, 2)
+  debitFiscal              Decimal             @default(0) @db.Decimal(18, 2)
+  creditFiscal             Decimal             @default(0) @db.Decimal(18, 2)
+  technicalDueBeforeBenefit Decimal            @default(0) @db.Decimal(18, 2)
+  smallTaxpayerBenefitRate Decimal              @default(0) @db.Decimal(8, 6)
+  smallTaxpayerBenefitReduction Decimal         @default(0) @db.Decimal(18, 2)
+  technicalCarryForward    Decimal             @default(0) @db.Decimal(18, 2)
+  freeAvailabilityBalance  Decimal             @default(0) @db.Decimal(18, 2)
+  amountDue                Decimal             @default(0) @db.Decimal(18, 2)
+  officialAmount           Decimal?            @db.Decimal(18, 2)
+  officialReference        String?
+  filedAt                  DateTime?
+  notes                    String?             @db.Text
+  createdAt                DateTime            @default(now())
+  updatedAt                DateTime            @updatedAt
 
-  fiscalPeriod          FiscalPeriod        @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
-  originalSettlement    VatSettlement?      @relation("VatSettlementRectifications", fields: [originalSettlementId], references: [id], onDelete: Restrict)
-  rectifications        VatSettlement[]     @relation("VatSettlementRectifications")
-  lines                 VatSettlementLine[]
+  fiscalPeriod       FiscalPeriod        @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
+  originalSettlement VatSettlement?      @relation("VatSettlementRectifications", fields: [originalSettlementId], references: [id], onDelete: Restrict)
+  rectifications     VatSettlement[]     @relation("VatSettlementRectifications")
+  lines              VatSettlementLine[]
 
   @@unique([fiscalPeriodId, version])
   @@index([status])
 }
 
 model VatSettlementLine {
-  id                  String        @id @default(uuid())
-  vatSettlementId     String
-  concept             String
-  rate                Decimal?      @db.Decimal(8, 6)
-  amount              Decimal       @db.Decimal(18, 2)
-  sourceReference     String?
-  createdAt           DateTime      @default(now())
+  id              String   @id @default(uuid())
+  vatSettlementId String
+  concept         String
+  rate            Decimal? @db.Decimal(8, 6)
+  amount          Decimal  @db.Decimal(18, 2)
+  sourceReference String?
+  createdAt       DateTime @default(now())
 
-  vatSettlement       VatSettlement @relation(fields: [vatSettlementId], references: [id], onDelete: Cascade)
+  vatSettlement VatSettlement @relation(fields: [vatSettlementId], references: [id], onDelete: Cascade)
 
   @@index([vatSettlementId])
 }
 
 model GrossIncomeSettlement {
-  id                    String                       @id @default(uuid())
-  fiscalPeriodId        String
-  originalSettlementId  String?
-  version               Int                          @default(0)
-  regime                GrossIncomeRegime
-  status                GrossIncomeSettlementStatus  @default(DRAFT)
-  totalDeterminedTax    Decimal                      @default(0) @db.Decimal(18, 2)
-  totalCredits          Decimal                      @default(0) @db.Decimal(18, 2)
-  totalBalance          Decimal                      @default(0) @db.Decimal(18, 2)
+  id                     String                      @id @default(uuid())
+  fiscalPeriodId         String
+  originalSettlementId   String?
+  version                Int                         @default(0)
+  regime                 GrossIncomeRegime
+  status                 GrossIncomeSettlementStatus @default(DRAFT)
+  totalDeterminedTax     Decimal                     @default(0) @db.Decimal(18, 2)
+  totalCredits           Decimal                     @default(0) @db.Decimal(18, 2)
+  totalBalance           Decimal                     @default(0) @db.Decimal(18, 2)
   totalFavorCarryForward Decimal                     @default(0) @db.Decimal(18, 2)
-  officialAmount        Decimal?                     @db.Decimal(18, 2)
-  officialReference     String?
-  filedAt               DateTime?
-  notes                 String?                      @db.Text
-  createdAt             DateTime                     @default(now())
-  updatedAt             DateTime                     @updatedAt
+  officialAmount         Decimal?                    @db.Decimal(18, 2)
+  officialReference      String?
+  filedAt                DateTime?
+  notes                  String?                     @db.Text
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
 
-  fiscalPeriod          FiscalPeriod                 @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
-  originalSettlement    GrossIncomeSettlement?       @relation("GrossIncomeSettlementRectifications", fields: [originalSettlementId], references: [id], onDelete: Restrict)
-  rectifications        GrossIncomeSettlement[]      @relation("GrossIncomeSettlementRectifications")
-  jurisdictionLines     GrossIncomeJurisdictionLine[]
+  fiscalPeriod       FiscalPeriod                  @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
+  originalSettlement GrossIncomeSettlement?        @relation("GrossIncomeSettlementRectifications", fields: [originalSettlementId], references: [id], onDelete: Restrict)
+  rectifications     GrossIncomeSettlement[]       @relation("GrossIncomeSettlementRectifications")
+  jurisdictionLines  GrossIncomeJurisdictionLine[]
 
   @@unique([fiscalPeriodId, version])
   @@index([regime, status])
 }
 
 model GrossIncomeJurisdictionLine {
-  id                    String                  @id @default(uuid())
+  id                      String   @id @default(uuid())
   grossIncomeSettlementId String
-  jurisdictionCode      String
-  activityCode          String?
-  coefficient           Decimal?                @db.Decimal(12, 10)
-  assignedBase          Decimal                 @db.Decimal(18, 2)
-  taxRate               Decimal                 @db.Decimal(8, 6)
-  determinedTax         Decimal                 @db.Decimal(18, 2)
-  creditsApplied        Decimal                 @default(0) @db.Decimal(18, 2)
-  balance               Decimal                 @db.Decimal(18, 2)
-  favorCarryForward     Decimal                 @default(0) @db.Decimal(18, 2)
-  createdAt             DateTime                @default(now())
+  jurisdictionCode        String
+  activityCode            String?
+  coefficient             Decimal? @db.Decimal(12, 10)
+  assignedBase            Decimal  @db.Decimal(18, 2)
+  taxRate                 Decimal  @db.Decimal(8, 6)
+  determinedTax           Decimal  @db.Decimal(18, 2)
+  creditsApplied          Decimal  @default(0) @db.Decimal(18, 2)
+  previousFavorBalance    Decimal  @default(0) @db.Decimal(18, 2)
+  balance                 Decimal  @db.Decimal(18, 2)
+  favorCarryForward       Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt               DateTime @default(now())
 
-  grossIncomeSettlement GrossIncomeSettlement   @relation(fields: [grossIncomeSettlementId], references: [id], onDelete: Cascade)
+  grossIncomeSettlement GrossIncomeSettlement @relation(fields: [grossIncomeSettlementId], references: [id], onDelete: Cascade)
 
   @@index([grossIncomeSettlementId, jurisdictionCode])
 }
 
 model ConventionCoefficientVersion {
-  id                  String                      @id @default(uuid())
-  clientId            String
-  year                Int
-  version             Int                         @default(1)
-  sourceReference     String?
-  approvedBy          String?
-  approvedAt          DateTime?
-  notes               String?                     @db.Text
-  createdAt           DateTime                    @default(now())
-  updatedAt           DateTime                    @updatedAt
+  id              String    @id @default(uuid())
+  clientId        String
+  year            Int
+  version         Int       @default(1)
+  sourceReference String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  notes           String?   @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  client              Client                      @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  coefficientLines    ConventionCoefficientLine[]
+  client           Client                      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  coefficientLines ConventionCoefficientLine[]
 
   @@unique([clientId, year, version])
   @@index([clientId, year])
@@ -635,58 +669,58 @@ model ConventionCoefficientVersion {
 }
 
 model ConventionCoefficientLine {
-  id                    String                        @id @default(uuid())
-  coefficientVersionId  String
-  jurisdictionCode      String
-  incomeCoefficient     Decimal                       @db.Decimal(12, 10)
-  expenseCoefficient    Decimal                       @db.Decimal(12, 10)
-  unifiedCoefficient    Decimal                       @db.Decimal(12, 10)
-  createdAt             DateTime                      @default(now())
-  updatedAt             DateTime                      @updatedAt
+  id                   String   @id @default(uuid())
+  coefficientVersionId String
+  jurisdictionCode     String
+  incomeCoefficient    Decimal  @db.Decimal(12, 10)
+  expenseCoefficient   Decimal  @db.Decimal(12, 10)
+  unifiedCoefficient   Decimal  @db.Decimal(12, 10)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
-  coefficientVersion    ConventionCoefficientVersion  @relation(fields: [coefficientVersionId], references: [id], onDelete: Cascade)
+  coefficientVersion ConventionCoefficientVersion @relation(fields: [coefficientVersionId], references: [id], onDelete: Cascade)
 
   @@unique([coefficientVersionId, jurisdictionCode])
   @@index([jurisdictionCode])
 }
 
 model AnnualFiscalConsolidationSnapshot {
-  id                    String                           @id @default(uuid())
+  id                    String    @id @default(uuid())
   taxReturnId           String
   sourceHash            String
-  salesNet              Decimal                          @default(0) @db.Decimal(18, 2)
-  inventoryPurchases    Decimal                          @default(0) @db.Decimal(18, 2)
-  deductibleExpenses    Decimal                          @default(0) @db.Decimal(18, 2)
-  fixedAssetPurchases   Decimal                          @default(0) @db.Decimal(18, 2)
-  nonDeductibleExpenses Decimal                          @default(0) @db.Decimal(18, 2)
-  vatNonComputable      Decimal                          @default(0) @db.Decimal(18, 2)
-  grossIncomeTax        Decimal                          @default(0) @db.Decimal(18, 2)
-  createdAt             DateTime                         @default(now())
+  salesNet              Decimal   @default(0) @db.Decimal(18, 2)
+  inventoryPurchases    Decimal   @default(0) @db.Decimal(18, 2)
+  deductibleExpenses    Decimal   @default(0) @db.Decimal(18, 2)
+  fixedAssetPurchases   Decimal   @default(0) @db.Decimal(18, 2)
+  nonDeductibleExpenses Decimal   @default(0) @db.Decimal(18, 2)
+  vatNonComputable      Decimal   @default(0) @db.Decimal(18, 2)
+  grossIncomeTax        Decimal   @default(0) @db.Decimal(18, 2)
+  createdAt             DateTime  @default(now())
   confirmedAt           DateTime?
 
-  taxReturn             TaxReturn                        @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
-  periods               AnnualFiscalConsolidationPeriod[]
+  taxReturn TaxReturn                         @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  periods   AnnualFiscalConsolidationPeriod[]
 
   @@index([taxReturnId, confirmedAt])
   @@index([sourceHash])
 }
 
 model AnnualFiscalConsolidationPeriod {
-  id                    String                           @id @default(uuid())
+  id                      String   @id @default(uuid())
   consolidationSnapshotId String
-  fiscalPeriodId        String
-  month                 Int
-  salesNet              Decimal                          @default(0) @db.Decimal(18, 2)
-  inventoryPurchases    Decimal                          @default(0) @db.Decimal(18, 2)
-  deductibleExpenses    Decimal                          @default(0) @db.Decimal(18, 2)
-  fixedAssetPurchases   Decimal                          @default(0) @db.Decimal(18, 2)
-  nonDeductibleExpenses Decimal                          @default(0) @db.Decimal(18, 2)
-  vatNonComputable      Decimal                          @default(0) @db.Decimal(18, 2)
-  grossIncomeTax        Decimal                          @default(0) @db.Decimal(18, 2)
-  createdAt             DateTime                         @default(now())
+  fiscalPeriodId          String
+  month                   Int
+  salesNet                Decimal  @default(0) @db.Decimal(18, 2)
+  inventoryPurchases      Decimal  @default(0) @db.Decimal(18, 2)
+  deductibleExpenses      Decimal  @default(0) @db.Decimal(18, 2)
+  fixedAssetPurchases     Decimal  @default(0) @db.Decimal(18, 2)
+  nonDeductibleExpenses   Decimal  @default(0) @db.Decimal(18, 2)
+  vatNonComputable        Decimal  @default(0) @db.Decimal(18, 2)
+  grossIncomeTax          Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt               DateTime @default(now())
 
   consolidationSnapshot AnnualFiscalConsolidationSnapshot @relation(fields: [consolidationSnapshotId], references: [id], onDelete: Cascade)
-  fiscalPeriod          FiscalPeriod                     @relation(fields: [fiscalPeriodId], references: [id], onDelete: Restrict)
+  fiscalPeriod          FiscalPeriod                      @relation(fields: [fiscalPeriodId], references: [id], onDelete: Restrict)
 
   @@unique([consolidationSnapshotId, fiscalPeriodId])
   @@index([fiscalPeriodId])
@@ -697,28 +731,28 @@ model AnnualFiscalConsolidationPeriod {
 // ==========================================
 
 model SalesInvoice {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  date          DateTime
-  invoiceType   String    // Factura A, Factura B, Factura C...
-  invoiceNumber String
-  customerName  String
-  counterpartyCuit String?
-  netAmount     Decimal   @db.Decimal(18, 2)
-  ivaAmount     Decimal   @db.Decimal(18, 2)
-  totalAmount   Decimal   @db.Decimal(18, 2)
-  isExempt      Boolean   @default(false) // Soporte para Ingresos Exentos (Monotributo/Exenciones)
+  date                   DateTime
+  invoiceType            String // Factura A, Factura B, Factura C...
+  invoiceNumber          String
+  customerName           String
+  counterpartyCuit       String?
+  netAmount              Decimal  @db.Decimal(18, 2)
+  ivaAmount              Decimal  @db.Decimal(18, 2)
+  totalAmount            Decimal  @db.Decimal(18, 2)
+  isExempt               Boolean  @default(false) // Soporte para Ingresos Exentos (Monotributo/Exenciones)
   // Criterio 2026-07-16: categoría de la venta (Bienes / Servicios / MueblesYUtiles) y si computa
   // en los ingresos de Ganancias (No computable = excluida del cálculo de la DDJJ).
-  saleCategory  String    @default("Bienes")
-  isComputable  Boolean   @default(true)
+  saleCategory           String   @default("Bienes")
+  isComputable           Boolean  @default(true)
   // Trazabilidad de la importación desde el libro fiscal mensual (módulo IVA). Nulos = carga manual.
-  importSource         String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
+  importSource           String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
   sourceFiscalDocumentId String? // Comprobante mensual de origen, para auditar registro anual ↔ mensual.
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   @@index([taxReturnId])
   @@index([taxReturnId, invoiceNumber])
@@ -727,26 +761,26 @@ model SalesInvoice {
 }
 
 model PurchaseInvoice {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  date          DateTime
-  invoiceType   String
-  invoiceNumber String
-  vendorName    String
-  counterpartyCuit String?
-  netAmount     Decimal   @db.Decimal(18, 2)
-  ivaAmount     Decimal   @db.Decimal(18, 2)
-  totalAmount   Decimal   @db.Decimal(18, 2)
-  isDeductible  Boolean   @default(true)  // Indica si es deducible en ganancias
-  isExempt      Boolean   @default(false) // Gastos exentos / no gravados
-  expenseType   String?   // Combustibles, Alquileres, PapelerÃ­a, etc.
+  date                   DateTime
+  invoiceType            String
+  invoiceNumber          String
+  vendorName             String
+  counterpartyCuit       String?
+  netAmount              Decimal  @db.Decimal(18, 2)
+  ivaAmount              Decimal  @db.Decimal(18, 2)
+  totalAmount            Decimal  @db.Decimal(18, 2)
+  isDeductible           Boolean  @default(true) // Indica si es deducible en ganancias
+  isExempt               Boolean  @default(false) // Gastos exentos / no gravados
+  expenseType            String? // Combustibles, Alquileres, PapelerÃ­a, etc.
   // Trazabilidad de la importación desde el libro fiscal mensual (módulo IVA). Nulos = carga manual.
-  importSource         String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
+  importSource           String? // 'MONTHLY_LEDGER' si vino del módulo mensual; null si se cargó a mano.
   sourceFiscalDocumentId String? // Comprobante mensual de origen, para auditar registro anual ↔ mensual.
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   @@index([taxReturnId])
   @@index([taxReturnId, invoiceNumber])
@@ -755,27 +789,27 @@ model PurchaseInvoice {
 }
 
 model FixedAsset {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  name          String    // e.g., "Automotor 1", "Inmueble Calle X"
-  type          String    // Rodado, Inmueble, Equipamiento, etc.
-  purchaseDate  DateTime
-  originalCost  Decimal   @db.Decimal(18, 2)
-  usefulLife    Int       // Vida Ãºtil total en aÃ±os (e.g., 5, 50)
-  yearsElapsed  Int       // AÃ±os transcurridos al cierre actual
-  originalIva   Decimal   @db.Decimal(18, 2) @default(0)
-  customReexpIndex Decimal @db.Decimal(12, 6) @default(1.0) // Coeficiente IPC correspondiente
-  isRetired     Boolean   @default(false)
+  name             String // e.g., "Automotor 1", "Inmueble Calle X"
+  type             String // Rodado, Inmueble, Equipamiento, etc.
+  purchaseDate     DateTime
+  originalCost     Decimal  @db.Decimal(18, 2)
+  usefulLife       Int // Vida Ãºtil total en aÃ±os (e.g., 5, 50)
+  yearsElapsed     Int // AÃ±os transcurridos al cierre actual
+  originalIva      Decimal  @default(0) @db.Decimal(18, 2)
+  customReexpIndex Decimal  @default(1.0) @db.Decimal(12, 6) // Coeficiente IPC correspondiente
+  isRetired        Boolean  @default(false)
 
   // Datos de AmortizaciÃ³n Calculada (se almacenan para auditorÃ­a y persistencia)
-  annualDepreciationHist Decimal @db.Decimal(18, 2)
-  annualDepreciationAdj  Decimal @db.Decimal(18, 2)
-  residualValueHist      Decimal @db.Decimal(18, 2)
-  residualValueAdj       Decimal @db.Decimal(18, 2)
-  bajaLossHist           Decimal @default(0) @db.Decimal(18, 2)
-  bajaLossAdj            Decimal @default(0) @db.Decimal(18, 2)
+  annualDepreciationHist Decimal  @db.Decimal(18, 2)
+  annualDepreciationAdj  Decimal  @db.Decimal(18, 2)
+  residualValueHist      Decimal  @db.Decimal(18, 2)
+  residualValueAdj       Decimal  @db.Decimal(18, 2)
+  bajaLossHist           Decimal  @default(0) @db.Decimal(18, 2)
+  bajaLossAdj            Decimal  @default(0) @db.Decimal(18, 2)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
 
@@ -784,47 +818,47 @@ model FixedAsset {
 }
 
 model InventoryValue {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  concept       String    // Bienes de Cambio, Materia Prima, etc.
-  initialStock  Decimal   @db.Decimal(18, 2) // ValuaciÃ³n al inicio (PerÃ­odo anterior)
-  finalStock    Decimal   @db.Decimal(18, 2) // ValuaciÃ³n impositiva al cierre
-  
+  concept      String // Bienes de Cambio, Materia Prima, etc.
+  initialStock Decimal @db.Decimal(18, 2) // ValuaciÃ³n al inicio (PerÃ­odo anterior)
+  finalStock   Decimal @db.Decimal(18, 2) // ValuaciÃ³n impositiva al cierre
+
   @@index([taxReturnId])
 }
 
 model BankAccountBalance {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  bankName      String
-  cuitBank      String?
-  accountNumber String
-  accountType   String    // Caja de Ahorro, Cuenta Corriente, etc.
-  currency      String    @default("ARS") // ARS, USD, EUR
+  bankName              String
+  cuitBank              String?
+  accountNumber         String
+  accountType           String // Caja de Ahorro, Cuenta Corriente, etc.
+  currency              String  @default("ARS") // ARS, USD, EUR
   nominalBalanceInitial Decimal @db.Decimal(18, 2)
   nominalBalanceFinal   Decimal @db.Decimal(18, 2)
-  tcInitial     Decimal   @db.Decimal(12, 4) @default(1.0) // Tipo de Cambio compra BNA al inicio
-  tcFinal       Decimal   @db.Decimal(12, 4) @default(1.0) // Tipo de Cambio compra BNA al cierre
+  tcInitial             Decimal @default(1.0) @db.Decimal(12, 4) // Tipo de Cambio compra BNA al inicio
+  tcFinal               Decimal @default(1.0) @db.Decimal(12, 4) // Tipo de Cambio compra BNA al cierre
   balanceInitialArs     Decimal @db.Decimal(18, 2)
   balanceFinalArs       Decimal @db.Decimal(18, 2)
-  interests     Decimal   @db.Decimal(18, 2) @default(0) // Intereses devengados
+  interests             Decimal @default(0) @db.Decimal(18, 2) // Intereses devengados
 
   @@index([taxReturnId])
 }
 
 model CashHolding {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  currency      String    @default("ARS")
-  nominalInitial Decimal  @db.Decimal(18, 2)
-  nominalFinal   Decimal  @db.Decimal(18, 2)
-  tcFinal        Decimal  @db.Decimal(12, 4) @default(1.0)
+  currency        String  @default("ARS")
+  nominalInitial  Decimal @db.Decimal(18, 2)
+  nominalFinal    Decimal @db.Decimal(18, 2)
+  tcFinal         Decimal @default(1.0) @db.Decimal(12, 4)
   totalInitialArs Decimal @db.Decimal(18, 2)
   totalFinalArs   Decimal @db.Decimal(18, 2)
 
@@ -832,12 +866,12 @@ model CashHolding {
 }
 
 model ReceivableDebt {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  type          String    // Comercial (Clientes), Fiscal (Saldos TÃ©cnicos), Financiero (PrÃ©stamos)
-  description   String    // e.g., "Clientes de GestiÃ³n", "IVA Saldo TÃ©cnico", "RetenciÃ³n Impuesto"
+  type           String // Comercial (Clientes), Fiscal (Saldos TÃ©cnicos), Financiero (PrÃ©stamos)
+  description    String // e.g., "Clientes de GestiÃ³n", "IVA Saldo TÃ©cnico", "RetenciÃ³n Impuesto"
   balanceInitial Decimal @db.Decimal(18, 2)
   balanceFinal   Decimal @db.Decimal(18, 2)
 
@@ -845,12 +879,12 @@ model ReceivableDebt {
 }
 
 model PayableDebt {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  type          String    // Proveedores, Acreedores Varios, PrÃ©stamos, Tarjetas
-  description   String
+  type           String // Proveedores, Acreedores Varios, PrÃ©stamos, Tarjetas
+  description    String
   balanceInitial Decimal @db.Decimal(18, 2)
   balanceFinal   Decimal @db.Decimal(18, 2)
 
@@ -858,20 +892,20 @@ model PayableDebt {
 }
 
 model TaxWithholding {
-  id             String    @id @default(uuid())
-  taxReturnId    String
-  taxReturn      TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  cuitAgent      String?
-  agentName      String
-  taxCode        String    // Ganancias, IVA, Bienes Personales...
-  taxDescription String
-  regimeCode     String?
-  regimeDescription String?
-  date           DateTime
-  certificateNumber String
+  cuitAgent            String?
+  agentName            String
+  taxCode              String // Ganancias, IVA, Bienes Personales...
+  taxDescription       String
+  regimeCode           String?
+  regimeDescription    String?
+  date                 DateTime
+  certificateNumber    String
   operationDescription String?
-  amount         Decimal   @db.Decimal(18, 2)
+  amount               Decimal  @db.Decimal(18, 2)
 
   @@index([taxReturnId])
 }
@@ -881,75 +915,75 @@ model TaxWithholding {
 // ==========================================
 
 model PersonalAsset {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  description   String    // e.g., "Inmueble 1", "Rodado Automotor", "Dinero en Efectivo Personal"
-  type          String    // Inmueble, Rodado, DepÃ³sitos, Efectivo, Acciones
-  valueInitial  Decimal   @db.Decimal(18, 2)
-  valueFinal    Decimal   @db.Decimal(18, 2)
+  description  String // e.g., "Inmueble 1", "Rodado Automotor", "Dinero en Efectivo Personal"
+  type         String // Inmueble, Rodado, DepÃ³sitos, Efectivo, Acciones
+  valueInitial Decimal @db.Decimal(18, 2)
+  valueFinal   Decimal @db.Decimal(18, 2)
 
   @@index([taxReturnId])
 }
 
 model PersonalLiability {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  description   String    // e.g., "PrÃ©stamo Hipotecario Personal", "Tarjetas de CrÃ©dito"
-  valueInitial  Decimal   @db.Decimal(18, 2)
-  valueFinal    Decimal   @db.Decimal(18, 2)
+  description  String // e.g., "PrÃ©stamo Hipotecario Personal", "Tarjetas de CrÃ©dito"
+  valueInitial Decimal @db.Decimal(18, 2)
+  valueFinal   Decimal @db.Decimal(18, 2)
 
   @@index([taxReturnId])
 }
 
 model PatrimonialJustification {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  concept       String    // e.g., "Ganancia exenta", "AmortizaciÃ³n de bienes de uso", "Herencia"
-  column        Int       // 1 = Columna I (Erogaciones/PN final), 2 = Columna II (PN inicial/Justifica)
-  amount        Decimal   @db.Decimal(18, 2)
+  concept String // e.g., "Ganancia exenta", "AmortizaciÃ³n de bienes de uso", "Herencia"
+  column  Int // 1 = Columna I (Erogaciones/PN final), 2 = Columna II (PN inicial/Justifica)
+  amount  Decimal @db.Decimal(18, 2)
 
   @@index([taxReturnId])
 }
 
 model GeneralDeduction {
-  id                       String    @id @default(uuid())
-  taxReturnId              String    @unique
-  taxReturn                TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String    @unique
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  autonomos                Decimal   @default(0) @db.Decimal(18, 2)
-  servicioDomestico        Decimal   @default(0) @db.Decimal(18, 2)
-  seguroVida               Decimal   @default(0) @db.Decimal(18, 2)
-  seguroRetiro             Decimal   @default(0) @db.Decimal(18, 2)
-  gastosSepelio            Decimal   @default(0) @db.Decimal(18, 2)
-  interesesHipoteca        Decimal   @default(0) @db.Decimal(18, 2)
-  gastosEducativos         Decimal   @default(0) @db.Decimal(18, 2)
-  alquilerCasaHabitacion   Decimal   @default(0) @db.Decimal(18, 2)
+  autonomos                 Decimal  @default(0) @db.Decimal(18, 2)
+  servicioDomestico         Decimal  @default(0) @db.Decimal(18, 2)
+  seguroVida                Decimal  @default(0) @db.Decimal(18, 2)
+  seguroRetiro              Decimal  @default(0) @db.Decimal(18, 2)
+  gastosSepelio             Decimal  @default(0) @db.Decimal(18, 2)
+  interesesHipoteca         Decimal  @default(0) @db.Decimal(18, 2)
+  gastosEducativos          Decimal  @default(0) @db.Decimal(18, 2)
+  alquilerCasaHabitacion    Decimal  @default(0) @db.Decimal(18, 2)
   deduccionLocadorLocatario Decimal  @default(0) @db.Decimal(18, 2)
-  donaciones               Decimal   @default(0) @db.Decimal(18, 2)
-  medicosAsistencial       Decimal   @default(0) @db.Decimal(18, 2)
-  honorariosMedicos        Decimal   @default(0) @db.Decimal(18, 2)
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
+  donaciones                Decimal  @default(0) @db.Decimal(18, 2)
+  medicosAsistencial        Decimal  @default(0) @db.Decimal(18, 2)
+  honorariosMedicos         Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 }
 
 model PersonalDeduction {
-  id                         String    @id @default(uuid())
-  taxReturnId                String    @unique
-  taxReturn                  TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String    @unique
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  tieneConyuge               Boolean   @default(false)
-  cantidadHijos              Int       @default(0)
-  cantidadHijosIncapacitados Int       @default(0)
-  tipoDeduccionEspecial      String    @default("Ninguna")
-  esJubiladoOchoHaberes      Boolean   @default(false)
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  tieneConyuge               Boolean  @default(false)
+  cantidadHijos              Int      @default(0)
+  cantidadHijosIncapacitados Int      @default(0)
+  tipoDeduccionEspecial      String   @default("Ninguna")
+  esJubiladoOchoHaberes      Boolean  @default(false)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
 
 // ==========================================
@@ -957,37 +991,37 @@ model PersonalDeduction {
 // ==========================================
 
 model AxiStaticItem {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  concept       String    // e.g., "Activo Total de Inicio", "Inmuebles y Obras en Curso", "Retenciones y Anticipos"
-  section       String    // ACTIVO_TOTAL, BIEN_NO_COMPUTABLE, AJUSTE_ACTIVO, PASIVO_TOTAL
-  categoryKey   String?
-  amount        Decimal   @db.Decimal(18, 2)
-  totalAmount   Decimal   @default(0) @db.Decimal(18, 2)
-  computableAmount Decimal @default(0) @db.Decimal(18, 2)
-  isComputable  Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
+  concept          String // e.g., "Activo Total de Inicio", "Inmuebles y Obras en Curso", "Retenciones y Anticipos"
+  section          String // ACTIVO_TOTAL, BIEN_NO_COMPUTABLE, AJUSTE_ACTIVO, PASIVO_TOTAL
+  categoryKey      String?
+  amount           Decimal  @db.Decimal(18, 2)
+  totalAmount      Decimal  @default(0) @db.Decimal(18, 2)
+  computableAmount Decimal  @default(0) @db.Decimal(18, 2)
+  isComputable     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   @@index([taxReturnId])
   @@index([taxReturnId, section])
   @@index([taxReturnId, categoryKey])
 }
 
 model AxiDynamicItem {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  concept       String    // e.g., "Retiro de socios", "Dividendos", "Aumentos de capital"
-  type          String    // AJUSTE_POSITIVO, AJUSTE_NEGATIVO
-  date          DateTime?
-  amount        Decimal   @db.Decimal(18, 2)
-  coef          Decimal   @db.Decimal(12, 6)
-  factor        Decimal   @db.Decimal(6, 4) // e.g., -1 o 1 para la fÃ³rmula
-  computedAxi   Decimal   @db.Decimal(18, 2)
+  concept     String // e.g., "Retiro de socios", "Dividendos", "Aumentos de capital"
+  type        String // AJUSTE_POSITIVO, AJUSTE_NEGATIVO
+  date        DateTime?
+  amount      Decimal   @db.Decimal(18, 2)
+  coef        Decimal   @db.Decimal(12, 6)
+  factor      Decimal   @db.Decimal(6, 4) // e.g., -1 o 1 para la fÃ³rmula
+  computedAxi Decimal   @db.Decimal(18, 2)
 
   @@index([taxReturnId])
 }
@@ -997,58 +1031,58 @@ model AxiDynamicItem {
 // ==========================================
 
 model CalculationRun {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
-  
-  runDate       DateTime  @default(now())
-  executorId    String?
-  
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  runDate    DateTime @default(now())
+  executorId String?
+
   // Resultados Consolidados de LiquidaciÃ³n
-  resultThirdCategory   Decimal   @db.Decimal(18, 2) // Resultado de Tercera CategorÃ­a
-  resultTotalNet        Decimal   @db.Decimal(18, 2) // Total Ganancia Bruta (todas las cat)
-  totalGeneralDeductions Decimal @db.Decimal(18, 2)
+  resultThirdCategory              Decimal @db.Decimal(18, 2) // Resultado de Tercera CategorÃ­a
+  resultTotalNet                   Decimal @db.Decimal(18, 2) // Total Ganancia Bruta (todas las cat)
+  totalGeneralDeductions           Decimal @db.Decimal(18, 2)
   impositiveResultBeforeQuebrantos Decimal @db.Decimal(18, 2)
-  quebrantosApplied     Decimal   @db.Decimal(18, 2)
-  impositiveResultNet   Decimal   @db.Decimal(18, 2)
-  totalPersonalDeductions Decimal @db.Decimal(18, 2)
-  taxableIncome         Decimal   @db.Decimal(18, 2) // Ganancia Neta Sujeta a Impuesto
-  taxDetermined         Decimal   @db.Decimal(18, 2) // Impuesto Determinado (Art 94)
-  totalPaymentsOnAccount Decimal  @db.Decimal(18, 2) // Retenciones + Percepciones + Anticipos
-  finalBalance          Decimal   @db.Decimal(18, 2) // Impuesto a pagar o saldo a favor
-  
+  quebrantosApplied                Decimal @db.Decimal(18, 2)
+  impositiveResultNet              Decimal @db.Decimal(18, 2)
+  totalPersonalDeductions          Decimal @db.Decimal(18, 2)
+  taxableIncome                    Decimal @db.Decimal(18, 2) // Ganancia Neta Sujeta a Impuesto
+  taxDetermined                    Decimal @db.Decimal(18, 2) // Impuesto Determinado (Art 94)
+  totalPaymentsOnAccount           Decimal @db.Decimal(18, 2) // Retenciones + Percepciones + Anticipos
+  finalBalance                     Decimal @db.Decimal(18, 2) // Impuesto a pagar o saldo a favor
+
   // JustificaciÃ³n Patrimonial (ConciliaciÃ³n)
-  computedConsumo       Decimal   @db.Decimal(18, 2) // Consumo obtenido por diferencia
-  justificationDiff     Decimal   @db.Decimal(18, 2) @default(0) // Diferencia de cuadre (debe ser 0)
-  
+  computedConsumo   Decimal @db.Decimal(18, 2) // Consumo obtenido por diferencia
+  justificationDiff Decimal @default(0) @db.Decimal(18, 2) // Diferencia de cuadre (debe ser 0)
+
   // Ajuste por InflaciÃ³n
-  axiStaticResult       Decimal   @db.Decimal(18, 2)
-  axiDynamicResult      Decimal   @db.Decimal(18, 2)
-  axiNetAdjustment      Decimal   @db.Decimal(18, 2) // Sumatoria AXI neto imputado en el ejercicio
-  
+  axiStaticResult  Decimal @db.Decimal(18, 2)
+  axiDynamicResult Decimal @db.Decimal(18, 2)
+  axiNetAdjustment Decimal @db.Decimal(18, 2) // Sumatoria AXI neto imputado en el ejercicio
+
   // Datos TÃ©cnicos / AuditorÃ­a
-  variablesSnapshot     String?   @db.LongText // Almacenamiento JSON con las variables intermedias
-  hasErrors             Boolean   @default(false)
-  errorMessages         String?   @db.Text
+  variablesSnapshot String? @db.LongText // Almacenamiento JSON con las variables intermedias
+  hasErrors         Boolean @default(false)
+  errorMessages     String? @db.Text
 
   @@index([taxReturnId])
 }
 
 model Attachment {
-  id            String    @id @default(uuid())
-  taxReturnId   String
-  taxReturn     TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
-  
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
   fileName      String
   fileSize      Int
   fileExtension String
   mimeType      String
-  storageType   String    @default("DB") // DB, EXTERNAL
-  securePath    String?   // Ruta lÃ³gica protegida si se usa almacenamiento externo
-  fileHash      String    // MD5/SHA256 para validaciÃ³n de integridad
+  storageType   String          @default("DB") // DB, EXTERNAL
+  securePath    String? // Ruta lÃ³gica protegida si se usa almacenamiento externo
+  fileHash      String // MD5/SHA256 para validaciÃ³n de integridad
   uploadedById  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
   blob          AttachmentBlob?
 
   @@index([taxReturnId])
@@ -1056,33 +1090,33 @@ model Attachment {
 }
 
 model AttachmentBlob {
-  id            String     @id @default(uuid())
-  attachmentId  String     @unique
-  attachment    Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
-  content       Bytes      @db.LongBlob
-  createdAt     DateTime   @default(now())
+  id           String     @id @default(uuid())
+  attachmentId String     @unique
+  attachment   Attachment @relation(fields: [attachmentId], references: [id], onDelete: Cascade)
+  content      Bytes      @db.LongBlob
+  createdAt    DateTime   @default(now())
 }
 
 model ImportBatch {
-  id               String     @id @default(uuid())
-  taxReturnId      String
-  taxReturn        TaxReturn  @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
 
-  kind             String     // sales, purchases, withholdings
-  source           String     @default("AFIP")
+  kind             String // sales, purchases, withholdings
+  source           String    @default("AFIP")
   periodFrom       DateTime?
   periodTo         DateTime?
-  totalFiles       Int        @default(0)
-  totalRecords     Int        @default(0)
-  acceptedRecords  Int        @default(0)
-  duplicateRecords Int        @default(0)
-  rejectedRecords  Int        @default(0)
-  status           String     @default("Procesado")
-  notes            String?    @db.Text
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  totalFiles       Int       @default(0)
+  totalRecords     Int       @default(0)
+  acceptedRecords  Int       @default(0)
+  duplicateRecords Int       @default(0)
+  rejectedRecords  Int       @default(0)
+  status           String    @default("Procesado")
+  notes            String?   @db.Text
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  files            ImportFile[]
+  files ImportFile[]
 
   @@index([taxReturnId])
   @@index([kind])
@@ -1090,23 +1124,23 @@ model ImportBatch {
 }
 
 model ImportFile {
-  id               String      @id @default(uuid())
-  importBatchId    String
-  importBatch      ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  id            String      @id @default(uuid())
+  importBatchId String
+  importBatch   ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
 
   fileName         String
   fileHash         String
-  fileSize         Int         @default(0)
+  fileSize         Int      @default(0)
   mimeType         String?
   periodMonth      Int?
   periodYear       Int?
-  totalRecords     Int         @default(0)
-  acceptedRecords  Int         @default(0)
-  duplicateRecords Int         @default(0)
-  rejectedRecords  Int         @default(0)
-  status           String      @default("Procesado")
-  errors           String?     @db.Text
-  createdAt        DateTime    @default(now())
+  totalRecords     Int      @default(0)
+  acceptedRecords  Int      @default(0)
+  duplicateRecords Int      @default(0)
+  rejectedRecords  Int      @default(0)
+  status           String   @default("Procesado")
+  errors           String?  @db.Text
+  createdAt        DateTime @default(now())
 
   @@index([importBatchId])
   @@index([fileHash])
@@ -1114,18 +1148,18 @@ model ImportFile {
 }
 
 model AuditLog {
-  id            String    @id @default(uuid())
-  userId        String?
-  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
-  action        String    // CREATE, UPDATE, DELETE, CLOSE, REOPEN, RECTIFY
-  entityType    String    // TaxReturn, SalesInvoice, FixedAsset, etc.
-  entityId      String?
-  clientCuit    String?
-  clientName    String?
-  fiscalYear    Int?
-  details       String?   @db.Text
-  createdAt     DateTime  @default(now())
+  id     String  @id @default(uuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action     String // CREATE, UPDATE, DELETE, CLOSE, REOPEN, RECTIFY
+  entityType String // TaxReturn, SalesInvoice, FixedAsset, etc.
+  entityId   String?
+  clientCuit String?
+  clientName String?
+  fiscalYear Int?
+  details    String?  @db.Text
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([createdAt])
@@ -1137,13 +1171,13 @@ model AuditLog {
 model BackupConfig {
   id              String    @id @default(uuid())
   enabled         Boolean   @default(false)
-  destinationPath String    // Carpeta de destino (ej. G:\Mi unidad\Backups JABA)
+  destinationPath String // Carpeta de destino (ej. G:\Mi unidad\Backups JABA)
   frequency       String    @default("DAILY") // DAILY | WEEKLY
-  hour            Int       @default(21)      // 0-23, hora local de la PC
-  weekday         Int       @default(6)       // 0=domingo..6=sabado (solo WEEKLY)
+  hour            Int       @default(21) // 0-23, hora local de la PC
+  weekday         Int       @default(6) // 0=domingo..6=sabado (solo WEEKLY)
   retentionDays   Int       @default(30)
   lastRunAt       DateTime?
-  lastRunStatus   String?   // OK | ERROR: detalle
+  lastRunStatus   String? // OK | ERROR: detalle
   lastRunFile     String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

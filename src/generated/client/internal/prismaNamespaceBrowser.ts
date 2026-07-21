@@ -69,6 +69,7 @@ export const ModelName = {
   ClientTaxJurisdiction: 'ClientTaxJurisdiction',
   FiscalPeriod: 'FiscalPeriod',
   FiscalDocument: 'FiscalDocument',
+  ExternalImportReceipt: 'ExternalImportReceipt',
   FiscalDocumentVatLine: 'FiscalDocumentVatLine',
   FiscalDocumentAllocation: 'FiscalDocumentAllocation',
   TaxCreditRecord: 'TaxCreditRecord',
@@ -304,6 +305,8 @@ export const ClientTaxProfileVersionScalarFieldEnum = {
   vatCondition: 'vatCondition',
   grossIncomeRegime: 'grossIncomeRegime',
   conventionRegime: 'conventionRegime',
+  smallTaxpayerBenefitEnabled: 'smallTaxpayerBenefitEnabled',
+  smallTaxpayerBenefitStartYear: 'smallTaxpayerBenefitStartYear',
   arbaRegistrationNumber: 'arbaRegistrationNumber',
   cmRegistrationNumber: 'cmRegistrationNumber',
   sourceReference: 'sourceReference',
@@ -384,6 +387,29 @@ export const FiscalDocumentScalarFieldEnum = {
 export type FiscalDocumentScalarFieldEnum = (typeof FiscalDocumentScalarFieldEnum)[keyof typeof FiscalDocumentScalarFieldEnum]
 
 
+export const ExternalImportReceiptScalarFieldEnum = {
+  id: 'id',
+  source: 'source',
+  idempotencyKey: 'idempotencyKey',
+  clientId: 'clientId',
+  fiscalPeriodId: 'fiscalPeriodId',
+  ownerCuit: 'ownerCuit',
+  year: 'year',
+  month: 'month',
+  status: 'status',
+  fileManifest: 'fileManifest',
+  inserted: 'inserted',
+  duplicates: 'duplicates',
+  conflicts: 'conflicts',
+  totalDocuments: 'totalDocuments',
+  warnings: 'warnings',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ExternalImportReceiptScalarFieldEnum = (typeof ExternalImportReceiptScalarFieldEnum)[keyof typeof ExternalImportReceiptScalarFieldEnum]
+
+
 export const FiscalDocumentVatLineScalarFieldEnum = {
   id: 'id',
   fiscalDocumentId: 'fiscalDocumentId',
@@ -446,8 +472,12 @@ export const VatSettlementScalarFieldEnum = {
   version: 'version',
   status: 'status',
   previousTechnicalBalance: 'previousTechnicalBalance',
+  previousFreeAvailabilityBalance: 'previousFreeAvailabilityBalance',
   debitFiscal: 'debitFiscal',
   creditFiscal: 'creditFiscal',
+  technicalDueBeforeBenefit: 'technicalDueBeforeBenefit',
+  smallTaxpayerBenefitRate: 'smallTaxpayerBenefitRate',
+  smallTaxpayerBenefitReduction: 'smallTaxpayerBenefitReduction',
   technicalCarryForward: 'technicalCarryForward',
   freeAvailabilityBalance: 'freeAvailabilityBalance',
   amountDue: 'amountDue',
@@ -507,6 +537,7 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
   taxRate: 'taxRate',
   determinedTax: 'determinedTax',
   creditsApplied: 'creditsApplied',
+  previousFavorBalance: 'previousFavorBalance',
   balance: 'balance',
   favorCarryForward: 'favorCarryForward',
   createdAt: 'createdAt'
@@ -983,6 +1014,21 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const UserOrderByRelevanceFieldEnum = {
   id: 'id',
   email: 'email',
@@ -1181,6 +1227,36 @@ export const FiscalDocumentOrderByRelevanceFieldEnum = {
 } as const
 
 export type FiscalDocumentOrderByRelevanceFieldEnum = (typeof FiscalDocumentOrderByRelevanceFieldEnum)[keyof typeof FiscalDocumentOrderByRelevanceFieldEnum]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const ExternalImportReceiptOrderByRelevanceFieldEnum = {
+  id: 'id',
+  source: 'source',
+  idempotencyKey: 'idempotencyKey',
+  clientId: 'clientId',
+  fiscalPeriodId: 'fiscalPeriodId',
+  ownerCuit: 'ownerCuit',
+  status: 'status'
+} as const
+
+export type ExternalImportReceiptOrderByRelevanceFieldEnum = (typeof ExternalImportReceiptOrderByRelevanceFieldEnum)[keyof typeof ExternalImportReceiptOrderByRelevanceFieldEnum]
 
 
 export const FiscalDocumentVatLineOrderByRelevanceFieldEnum = {

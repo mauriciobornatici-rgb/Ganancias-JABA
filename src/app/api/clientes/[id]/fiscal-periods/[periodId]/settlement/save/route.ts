@@ -14,6 +14,8 @@ import {
   checkVatCotejo,
 } from '@/domain/ganancias/persistence/fiscalSettlementPersistence';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
+import { smallTaxpayerBenefitRateForYear } from '@/domain/ganancias/fiscalLedger/vatSettlement';
+import { OpeningBalanceInputError, parseOptionalOpeningBalance } from '@/domain/ganancias/fiscalLedger/openingBalanceInput';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -39,6 +41,10 @@ const saveSchema = z.object({
   // Si el usuario confirma guardar aun cuando el cotejo no coincide (queda IN_REVIEW).
   forceSave: z.boolean().optional().default(false),
   notes: z.string().max(2000).optional().nullable(),
+  openingBalances: z.object({
+    previousTechnical: decimalString,
+    previousFree: decimalString,
+  }).optional().nullable(),
 });
 
 // Normaliza un importe en formato AR ("9.090.888,61") o plano a string Decimal ("9090888.61").
@@ -77,6 +83,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
           where: { includedInSettlement: true },
           select: { tax: true, originalAmount: true, appliedAmount: true },
         },
+        taxProfile: {
+          select: { smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true },
+        },
+        vatSettlements: { where: { status: 'CLOSED' }, take: 1, select: { id: true } },
       },
     });
 
@@ -106,8 +116,27 @@ export async function POST(request: NextRequest, context: RouteContext) {
       })),
     }));
 
-    const previousTechnicalBalance = await findPreviousVatTechnicalBalance(clientId, period.year, period.month);
-    const previousFreeAvailability = await findPreviousVatFreeAvailability(clientId, period.year, period.month);
+    const manualPreviousTechnical = parseOptionalOpeningBalance(
+      parsed.data.openingBalances?.previousTechnical,
+      'Saldo técnico anterior de IVA',
+    );
+    const manualPreviousFree = parseOptionalOpeningBalance(
+      parsed.data.openingBalances?.previousFree,
+      'Saldo de libre disponibilidad anterior de IVA',
+    );
+    const automaticPreviousTechnical = await findPreviousVatTechnicalBalance(clientId, period.year, period.month);
+    const automaticPreviousFree = await findPreviousVatFreeAvailability(clientId, period.year, period.month);
+    const previousTechnicalBalance = manualPreviousTechnical ?? automaticPreviousTechnical;
+    const previousFreeAvailability = manualPreviousFree ?? automaticPreviousFree;
+
+    const latestTaxProfile = period.vatSettlements.length > 0
+      ? null
+      : await prisma.clientTaxProfileVersion.findFirst({
+          where: { clientId },
+          orderBy: { validFrom: 'desc' },
+          select: { smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true },
+        });
+    const vatProfile = latestTaxProfile ?? period.taxProfile;
 
     const vatCredits = period.taxCredits
       .filter(c => String(c.tax) === 'VAT')
@@ -118,6 +147,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
       vatCredits,
       previousTechnicalBalance,
       previousFreeAvailability,
+      smallTaxpayerBenefitRate: smallTaxpayerBenefitRateForYear({
+        enabled: vatProfile.smallTaxpayerBenefitEnabled,
+        startYear: vatProfile.smallTaxpayerBenefitStartYear,
+        periodYear: period.year,
+      }),
     });
 
     const official = parsed.data.official
@@ -160,6 +194,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       fiscalPeriodId: periodId,
       view,
       previousTechnicalBalance,
+      previousFreeAvailabilityBalance: previousFreeAvailability,
       official,
       notes: parsed.data.notes ?? null,
     });
@@ -176,6 +211,10 @@ export async function POST(request: NextRequest, context: RouteContext) {
         version: saved.version,
         status: saved.status,
         amountDue: view.settlement.amountDue.toFixed(2),
+        previousTechnicalBalance: previousTechnicalBalance.toFixed(2),
+        previousFreeAvailability: previousFreeAvailability.toFixed(2),
+        smallTaxpayerBenefitRate: view.settlement.smallTaxpayerBenefitRate.toFixed(6),
+        smallTaxpayerBenefitReduction: view.settlement.smallTaxpayerBenefitReduction.toFixed(2),
         cotejoMatches: cotejo.matches,
         diffs: saved.cotejo.diffs,
       }),
@@ -192,6 +231,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
       },
     });
   } catch (error) {
+    if (error instanceof OpeningBalanceInputError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+    }
     return NextResponse.json(
       { success: false, error: `No se pudo guardar la liquidación: ${messageOf(error)}` },
       { status: 500 },

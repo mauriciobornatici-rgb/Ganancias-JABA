@@ -35,6 +35,7 @@ async function latestProfile(clientId: string) {
     orderBy: { validFrom: 'desc' },
     select: {
       id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
+      smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true,
       jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: [{ jurisdictionCode: 'asc' }, { activityCode: 'asc' }] },
     },
   });
@@ -63,6 +64,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
         vatCondition: profile?.vatCondition ?? 'RESPONSABLE_INSCRIPTO',
         regime: profile?.grossIncomeRegime ?? 'NONE',
         conventionRegime: profile?.conventionRegime ?? 'NONE',
+        smallTaxpayerBenefitEnabled: profile?.smallTaxpayerBenefitEnabled ?? false,
+        smallTaxpayerBenefitStartYear: profile?.smallTaxpayerBenefitStartYear ?? null,
         hasProfile: Boolean(profile),
         jurisdictions: (profile?.jurisdictions ?? []).map(j => ({
           jurisdictionCode: j.jurisdictionCode,
@@ -117,6 +120,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         vatCondition: true,
         grossIncomeRegime: true,
         conventionRegime: true,
+        smallTaxpayerBenefitEnabled: true,
+        smallTaxpayerBenefitStartYear: true,
         arbaRegistrationNumber: true,
         cmRegistrationNumber: true,
         sourceReference: true,
@@ -153,6 +158,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           vatCondition: profile.vatCondition,
           grossIncomeRegime: profile.grossIncomeRegime,
           conventionRegime: profile.conventionRegime,
+          smallTaxpayerBenefitEnabled: profile.smallTaxpayerBenefitEnabled,
+          smallTaxpayerBenefitStartYear: profile.smallTaxpayerBenefitStartYear,
           arbaRegistrationNumber: profile.arbaRegistrationNumber,
           cmRegistrationNumber: profile.cmRegistrationNumber,
           sourceReference: profile.sourceReference,

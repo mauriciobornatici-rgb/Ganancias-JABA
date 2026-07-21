@@ -71,6 +71,8 @@ export type VatSettlementBuildInput = {
   previousTechnicalBalance: Decimal;
   /** Saldo de libre disponibilidad del período anterior neto de usos. */
   previousFreeAvailability?: Decimal;
+  /** Reduccion del saldo deudor para pequenos contribuyentes cumplidores. */
+  smallTaxpayerBenefitRate?: Decimal;
 };
 
 function groupByRate(lines: SettlementVatLine[]): Map<string, { taxableBase: Decimal; vatAmount: Decimal }> {
@@ -110,6 +112,7 @@ export function buildVatSettlement(input: VatSettlementBuildInput): VatSettlemen
     purchases: creditLines.map(l => ({ vatAmount: l.vatAmount, creditComputable: true })),
     previousTechnicalBalance: input.previousTechnicalBalance,
     previousFreeAvailability: input.previousFreeAvailability,
+    smallTaxpayerBenefitRate: input.smallTaxpayerBenefitRate,
     taxCredits: input.vatCredits,
   });
 

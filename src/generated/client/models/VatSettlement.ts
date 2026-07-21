@@ -29,8 +29,12 @@ export type AggregateVatSettlement = {
 export type VatSettlementAvgAggregateOutputType = {
   version: number | null
   previousTechnicalBalance: runtime.Decimal | null
+  previousFreeAvailabilityBalance: runtime.Decimal | null
   debitFiscal: runtime.Decimal | null
   creditFiscal: runtime.Decimal | null
+  technicalDueBeforeBenefit: runtime.Decimal | null
+  smallTaxpayerBenefitRate: runtime.Decimal | null
+  smallTaxpayerBenefitReduction: runtime.Decimal | null
   technicalCarryForward: runtime.Decimal | null
   freeAvailabilityBalance: runtime.Decimal | null
   amountDue: runtime.Decimal | null
@@ -40,8 +44,12 @@ export type VatSettlementAvgAggregateOutputType = {
 export type VatSettlementSumAggregateOutputType = {
   version: number | null
   previousTechnicalBalance: runtime.Decimal | null
+  previousFreeAvailabilityBalance: runtime.Decimal | null
   debitFiscal: runtime.Decimal | null
   creditFiscal: runtime.Decimal | null
+  technicalDueBeforeBenefit: runtime.Decimal | null
+  smallTaxpayerBenefitRate: runtime.Decimal | null
+  smallTaxpayerBenefitReduction: runtime.Decimal | null
   technicalCarryForward: runtime.Decimal | null
   freeAvailabilityBalance: runtime.Decimal | null
   amountDue: runtime.Decimal | null
@@ -55,8 +63,12 @@ export type VatSettlementMinAggregateOutputType = {
   version: number | null
   status: $Enums.VatSettlementStatus | null
   previousTechnicalBalance: runtime.Decimal | null
+  previousFreeAvailabilityBalance: runtime.Decimal | null
   debitFiscal: runtime.Decimal | null
   creditFiscal: runtime.Decimal | null
+  technicalDueBeforeBenefit: runtime.Decimal | null
+  smallTaxpayerBenefitRate: runtime.Decimal | null
+  smallTaxpayerBenefitReduction: runtime.Decimal | null
   technicalCarryForward: runtime.Decimal | null
   freeAvailabilityBalance: runtime.Decimal | null
   amountDue: runtime.Decimal | null
@@ -75,8 +87,12 @@ export type VatSettlementMaxAggregateOutputType = {
   version: number | null
   status: $Enums.VatSettlementStatus | null
   previousTechnicalBalance: runtime.Decimal | null
+  previousFreeAvailabilityBalance: runtime.Decimal | null
   debitFiscal: runtime.Decimal | null
   creditFiscal: runtime.Decimal | null
+  technicalDueBeforeBenefit: runtime.Decimal | null
+  smallTaxpayerBenefitRate: runtime.Decimal | null
+  smallTaxpayerBenefitReduction: runtime.Decimal | null
   technicalCarryForward: runtime.Decimal | null
   freeAvailabilityBalance: runtime.Decimal | null
   amountDue: runtime.Decimal | null
@@ -95,8 +111,12 @@ export type VatSettlementCountAggregateOutputType = {
   version: number
   status: number
   previousTechnicalBalance: number
+  previousFreeAvailabilityBalance: number
   debitFiscal: number
   creditFiscal: number
+  technicalDueBeforeBenefit: number
+  smallTaxpayerBenefitRate: number
+  smallTaxpayerBenefitReduction: number
   technicalCarryForward: number
   freeAvailabilityBalance: number
   amountDue: number
@@ -113,8 +133,12 @@ export type VatSettlementCountAggregateOutputType = {
 export type VatSettlementAvgAggregateInputType = {
   version?: true
   previousTechnicalBalance?: true
+  previousFreeAvailabilityBalance?: true
   debitFiscal?: true
   creditFiscal?: true
+  technicalDueBeforeBenefit?: true
+  smallTaxpayerBenefitRate?: true
+  smallTaxpayerBenefitReduction?: true
   technicalCarryForward?: true
   freeAvailabilityBalance?: true
   amountDue?: true
@@ -124,8 +148,12 @@ export type VatSettlementAvgAggregateInputType = {
 export type VatSettlementSumAggregateInputType = {
   version?: true
   previousTechnicalBalance?: true
+  previousFreeAvailabilityBalance?: true
   debitFiscal?: true
   creditFiscal?: true
+  technicalDueBeforeBenefit?: true
+  smallTaxpayerBenefitRate?: true
+  smallTaxpayerBenefitReduction?: true
   technicalCarryForward?: true
   freeAvailabilityBalance?: true
   amountDue?: true
@@ -139,8 +167,12 @@ export type VatSettlementMinAggregateInputType = {
   version?: true
   status?: true
   previousTechnicalBalance?: true
+  previousFreeAvailabilityBalance?: true
   debitFiscal?: true
   creditFiscal?: true
+  technicalDueBeforeBenefit?: true
+  smallTaxpayerBenefitRate?: true
+  smallTaxpayerBenefitReduction?: true
   technicalCarryForward?: true
   freeAvailabilityBalance?: true
   amountDue?: true
@@ -159,8 +191,12 @@ export type VatSettlementMaxAggregateInputType = {
   version?: true
   status?: true
   previousTechnicalBalance?: true
+  previousFreeAvailabilityBalance?: true
   debitFiscal?: true
   creditFiscal?: true
+  technicalDueBeforeBenefit?: true
+  smallTaxpayerBenefitRate?: true
+  smallTaxpayerBenefitReduction?: true
   technicalCarryForward?: true
   freeAvailabilityBalance?: true
   amountDue?: true
@@ -179,8 +215,12 @@ export type VatSettlementCountAggregateInputType = {
   version?: true
   status?: true
   previousTechnicalBalance?: true
+  previousFreeAvailabilityBalance?: true
   debitFiscal?: true
   creditFiscal?: true
+  technicalDueBeforeBenefit?: true
+  smallTaxpayerBenefitRate?: true
+  smallTaxpayerBenefitReduction?: true
   technicalCarryForward?: true
   freeAvailabilityBalance?: true
   amountDue?: true
@@ -286,8 +326,12 @@ export type VatSettlementGroupByOutputType = {
   version: number
   status: $Enums.VatSettlementStatus
   previousTechnicalBalance: runtime.Decimal
+  previousFreeAvailabilityBalance: runtime.Decimal
   debitFiscal: runtime.Decimal
   creditFiscal: runtime.Decimal
+  technicalDueBeforeBenefit: runtime.Decimal
+  smallTaxpayerBenefitRate: runtime.Decimal
+  smallTaxpayerBenefitReduction: runtime.Decimal
   technicalCarryForward: runtime.Decimal
   freeAvailabilityBalance: runtime.Decimal
   amountDue: runtime.Decimal
@@ -329,8 +373,12 @@ export type VatSettlementWhereInput = {
   version?: Prisma.IntFilter<"VatSettlement"> | number
   status?: Prisma.EnumVatSettlementStatusFilter<"VatSettlement"> | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -353,8 +401,12 @@ export type VatSettlementOrderByWithRelationInput = {
   version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -382,8 +434,12 @@ export type VatSettlementWhereUniqueInput = Prisma.AtLeast<{
   version?: Prisma.IntFilter<"VatSettlement"> | number
   status?: Prisma.EnumVatSettlementStatusFilter<"VatSettlement"> | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -406,8 +462,12 @@ export type VatSettlementOrderByWithAggregationInput = {
   version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -434,8 +494,12 @@ export type VatSettlementScalarWhereWithAggregatesInput = {
   version?: Prisma.IntWithAggregatesFilter<"VatSettlement"> | number
   status?: Prisma.EnumVatSettlementStatusWithAggregatesFilter<"VatSettlement"> | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalWithAggregatesFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -452,8 +516,12 @@ export type VatSettlementCreateInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -476,8 +544,12 @@ export type VatSettlementUncheckedCreateInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -496,8 +568,12 @@ export type VatSettlementUpdateInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -520,8 +596,12 @@ export type VatSettlementUncheckedUpdateInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -542,8 +622,12 @@ export type VatSettlementCreateManyInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -560,8 +644,12 @@ export type VatSettlementUpdateManyMutationInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -580,8 +668,12 @@ export type VatSettlementUncheckedUpdateManyInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -626,8 +718,12 @@ export type VatSettlementCountOrderByAggregateInput = {
   version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -642,8 +738,12 @@ export type VatSettlementCountOrderByAggregateInput = {
 export type VatSettlementAvgOrderByAggregateInput = {
   version?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -657,8 +757,12 @@ export type VatSettlementMaxOrderByAggregateInput = {
   version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -677,8 +781,12 @@ export type VatSettlementMinOrderByAggregateInput = {
   version?: Prisma.SortOrder
   status?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -693,8 +801,12 @@ export type VatSettlementMinOrderByAggregateInput = {
 export type VatSettlementSumOrderByAggregateInput = {
   version?: Prisma.SortOrder
   previousTechnicalBalance?: Prisma.SortOrder
+  previousFreeAvailabilityBalance?: Prisma.SortOrder
   debitFiscal?: Prisma.SortOrder
   creditFiscal?: Prisma.SortOrder
+  technicalDueBeforeBenefit?: Prisma.SortOrder
+  smallTaxpayerBenefitRate?: Prisma.SortOrder
+  smallTaxpayerBenefitReduction?: Prisma.SortOrder
   technicalCarryForward?: Prisma.SortOrder
   freeAvailabilityBalance?: Prisma.SortOrder
   amountDue?: Prisma.SortOrder
@@ -829,8 +941,12 @@ export type VatSettlementCreateWithoutFiscalPeriodInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -851,8 +967,12 @@ export type VatSettlementUncheckedCreateWithoutFiscalPeriodInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -902,8 +1022,12 @@ export type VatSettlementScalarWhereInput = {
   version?: Prisma.IntFilter<"VatSettlement"> | number
   status?: Prisma.EnumVatSettlementStatusFilter<"VatSettlement"> | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFilter<"VatSettlement"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -920,8 +1044,12 @@ export type VatSettlementCreateWithoutRectificationsInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -943,8 +1071,12 @@ export type VatSettlementUncheckedCreateWithoutRectificationsInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -967,8 +1099,12 @@ export type VatSettlementCreateWithoutOriginalSettlementInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -989,8 +1125,12 @@ export type VatSettlementUncheckedCreateWithoutOriginalSettlementInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1030,8 +1170,12 @@ export type VatSettlementUpdateWithoutRectificationsInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1053,8 +1197,12 @@ export type VatSettlementUncheckedUpdateWithoutRectificationsInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1088,8 +1236,12 @@ export type VatSettlementCreateWithoutLinesInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1111,8 +1263,12 @@ export type VatSettlementUncheckedCreateWithoutLinesInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1146,8 +1302,12 @@ export type VatSettlementUpdateWithoutLinesInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1169,8 +1329,12 @@ export type VatSettlementUncheckedUpdateWithoutLinesInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1189,8 +1353,12 @@ export type VatSettlementCreateManyFiscalPeriodInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1207,8 +1375,12 @@ export type VatSettlementUpdateWithoutFiscalPeriodInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1229,8 +1401,12 @@ export type VatSettlementUncheckedUpdateWithoutFiscalPeriodInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1250,8 +1426,12 @@ export type VatSettlementUncheckedUpdateManyWithoutFiscalPeriodInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1269,8 +1449,12 @@ export type VatSettlementCreateManyOriginalSettlementInput = {
   version?: number
   status?: $Enums.VatSettlementStatus
   previousTechnicalBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1287,8 +1471,12 @@ export type VatSettlementUpdateWithoutOriginalSettlementInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1309,8 +1497,12 @@ export type VatSettlementUncheckedUpdateWithoutOriginalSettlementInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1330,8 +1522,12 @@ export type VatSettlementUncheckedUpdateManyWithoutOriginalSettlementInput = {
   version?: Prisma.IntFieldUpdateOperationsInput | number
   status?: Prisma.EnumVatSettlementStatusFieldUpdateOperationsInput | $Enums.VatSettlementStatus
   previousTechnicalBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  previousFreeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   debitFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   creditFiscal?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  technicalDueBeforeBenefit?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  smallTaxpayerBenefitReduction?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   technicalCarryForward?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   freeAvailabilityBalance?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   amountDue?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1390,8 +1586,12 @@ export type VatSettlementSelect<ExtArgs extends runtime.Types.Extensions.Interna
   version?: boolean
   status?: boolean
   previousTechnicalBalance?: boolean
+  previousFreeAvailabilityBalance?: boolean
   debitFiscal?: boolean
   creditFiscal?: boolean
+  technicalDueBeforeBenefit?: boolean
+  smallTaxpayerBenefitRate?: boolean
+  smallTaxpayerBenefitReduction?: boolean
   technicalCarryForward?: boolean
   freeAvailabilityBalance?: boolean
   amountDue?: boolean
@@ -1417,8 +1617,12 @@ export type VatSettlementSelectScalar = {
   version?: boolean
   status?: boolean
   previousTechnicalBalance?: boolean
+  previousFreeAvailabilityBalance?: boolean
   debitFiscal?: boolean
   creditFiscal?: boolean
+  technicalDueBeforeBenefit?: boolean
+  smallTaxpayerBenefitRate?: boolean
+  smallTaxpayerBenefitReduction?: boolean
   technicalCarryForward?: boolean
   freeAvailabilityBalance?: boolean
   amountDue?: boolean
@@ -1430,7 +1634,7 @@ export type VatSettlementSelectScalar = {
   updatedAt?: boolean
 }
 
-export type VatSettlementOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "originalSettlementId" | "version" | "status" | "previousTechnicalBalance" | "debitFiscal" | "creditFiscal" | "technicalCarryForward" | "freeAvailabilityBalance" | "amountDue" | "officialAmount" | "officialReference" | "filedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["vatSettlement"]>
+export type VatSettlementOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "fiscalPeriodId" | "originalSettlementId" | "version" | "status" | "previousTechnicalBalance" | "previousFreeAvailabilityBalance" | "debitFiscal" | "creditFiscal" | "technicalDueBeforeBenefit" | "smallTaxpayerBenefitRate" | "smallTaxpayerBenefitReduction" | "technicalCarryForward" | "freeAvailabilityBalance" | "amountDue" | "officialAmount" | "officialReference" | "filedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["vatSettlement"]>
 export type VatSettlementInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   fiscalPeriod?: boolean | Prisma.FiscalPeriodDefaultArgs<ExtArgs>
   originalSettlement?: boolean | Prisma.VatSettlement$originalSettlementArgs<ExtArgs>
@@ -1454,8 +1658,12 @@ export type $VatSettlementPayload<ExtArgs extends runtime.Types.Extensions.Inter
     version: number
     status: $Enums.VatSettlementStatus
     previousTechnicalBalance: runtime.Decimal
+    previousFreeAvailabilityBalance: runtime.Decimal
     debitFiscal: runtime.Decimal
     creditFiscal: runtime.Decimal
+    technicalDueBeforeBenefit: runtime.Decimal
+    smallTaxpayerBenefitRate: runtime.Decimal
+    smallTaxpayerBenefitReduction: runtime.Decimal
     technicalCarryForward: runtime.Decimal
     freeAvailabilityBalance: runtime.Decimal
     amountDue: runtime.Decimal
@@ -1844,8 +2052,12 @@ export interface VatSettlementFieldRefs {
   readonly version: Prisma.FieldRef<"VatSettlement", 'Int'>
   readonly status: Prisma.FieldRef<"VatSettlement", 'VatSettlementStatus'>
   readonly previousTechnicalBalance: Prisma.FieldRef<"VatSettlement", 'Decimal'>
+  readonly previousFreeAvailabilityBalance: Prisma.FieldRef<"VatSettlement", 'Decimal'>
   readonly debitFiscal: Prisma.FieldRef<"VatSettlement", 'Decimal'>
   readonly creditFiscal: Prisma.FieldRef<"VatSettlement", 'Decimal'>
+  readonly technicalDueBeforeBenefit: Prisma.FieldRef<"VatSettlement", 'Decimal'>
+  readonly smallTaxpayerBenefitRate: Prisma.FieldRef<"VatSettlement", 'Decimal'>
+  readonly smallTaxpayerBenefitReduction: Prisma.FieldRef<"VatSettlement", 'Decimal'>
   readonly technicalCarryForward: Prisma.FieldRef<"VatSettlement", 'Decimal'>
   readonly freeAvailabilityBalance: Prisma.FieldRef<"VatSettlement", 'Decimal'>
   readonly amountDue: Prisma.FieldRef<"VatSettlement", 'Decimal'>

@@ -51,7 +51,13 @@ type TaxCreditRow = {
   issueDate: string;
   amount: string;
   includedInSettlement: boolean;
+  notes?: string | null;
 };
+
+// Deducciones ARBA: el régimen viaja en notes ("Deducción bancaria ARBA (SIRCREB)..." / "Retención tarjetas ARBA").
+const isArbaBankRow = (r: TaxCreditRow) => (r.notes ?? '').includes('bancaria');
+const arbaRowKindLabel = (r: TaxCreditRow) =>
+  (isArbaBankRow(r) ? 'Bancaria' : (r.notes ?? '').includes('tarjetas') ? 'Tarjetas' : 'Retención');
 
 type GrossIncomeView = {
   regime: string;
@@ -118,6 +124,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [uploadingCredits, setUploadingCredits] = useState(false);
   const creditsFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Deducciones de IIBB (ARBA: bancarias SIRCREB y tarjetas)
+  const [iibbCredits, setIibbCredits] = useState<TaxCreditRow[]>([]);
+  const [uploadingIibbCredits, setUploadingIibbCredits] = useState(false);
+  const iibbCreditsFileInputRef = useRef<HTMLInputElement>(null);
+
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
   // Vacío = arrastre automático del último mes cerrado. "0" permite reemplazarlo explícitamente.
@@ -178,6 +189,16 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
+  const loadIibbCredits = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits?tax=GROSS_INCOME`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) setIibbCredits(payload.data.credits);
+    } catch {
+      // si falla la carga de deducciones no bloquea la pantalla
+    }
+  }, [clientId, periodId]);
+
   const loadSaved = useCallback(async () => {
     try {
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/saved`, { cache: 'no-store' });
@@ -205,10 +226,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     queueMicrotask(() => {
       void loadDocuments();
       void loadTaxCredits();
+      void loadIibbCredits();
       void loadSaved();
       void loadSavedIibb();
     });
-  }, [loadDocuments, loadTaxCredits, loadSaved, loadSavedIibb]);
+  }, [loadDocuments, loadTaxCredits, loadIibbCredits, loadSaved, loadSavedIibb]);
 
   const saveIibb = async (force: boolean) => {
     if (iibbBalancesDirty) {
@@ -306,6 +328,56 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     setTaxCredits(prev => prev.map(c => ({ ...c, includedInSettlement: included })));
     setSettlement(null);
     void persistCreditSelection(taxCredits.map(c => ({ creditId: c.id, included })));
+  };
+
+  const includedIibbBank = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaBankRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+  const includedIibbCards = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && !isArbaBankRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+
+  const uploadIibbCreditsFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingIibbCredits(true);
+    setError(null);
+    setNotice(null);
+    setSettlement(null);
+    setGrossIncome(null);
+    try {
+      const form = new FormData();
+      Array.from(files).forEach(f => form.append('files', f));
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits/arba`, { method: 'POST', body: form });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de deducciones de ARBA.');
+      const d = payload.data;
+      let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)}.`;
+      if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
+      if (d.unsupportedFiles?.length) msg += ` Régimen aún sin soporte: ${d.unsupportedFiles.join(', ')}.`;
+      setNotice(msg);
+      await loadIibbCredits();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de deducciones de ARBA.');
+    } finally {
+      setUploadingIibbCredits(false);
+      if (iibbCreditsFileInputRef.current) iibbCreditsFileInputRef.current.value = '';
+    }
+  };
+
+  const toggleIibbCreditRow = (id: string, included: boolean) => {
+    setIibbCredits(prev => prev.map(c => (c.id === id ? { ...c, includedInSettlement: included } : c)));
+    setSettlement(null);
+    setGrossIncome(null);
+    void persistCreditSelection([{ creditId: id, included }]);
+  };
+
+  const toggleAllIibbCredits = (included: boolean) => {
+    setIibbCredits(prev => prev.map(c => ({ ...c, includedInSettlement: included })));
+    setSettlement(null);
+    setGrossIncome(null);
+    void persistCreditSelection(iibbCredits.map(c => ({ creditId: c.id, included })));
   };
 
   const sales = useMemo(() => documents.filter(d => d.direction === 'SALE'), [documents]);
@@ -643,6 +715,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
               />
             </div>
           </div>
+
+        </section>
+
+        {/* Paso 2c — Deducciones de IIBB (ARBA) */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <StepTitle n="2c" icon={<MapPin className="h-4 w-4" />} title="Deducciones de IIBB (ARBA)" subtitle="Subí el ZIP de 'Mis Deducciones' de ARBA tal como se descarga (IB-CUIT-PERIODO.zip) o los TXT que contiene. Las deducciones bancarias (SIRCREB) y de tarjetas se descuentan del saldo a pagar de Ingresos Brutos." />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <input ref={iibbCreditsFileInputRef} type="file" accept=".zip,.txt,application/zip,text/plain" multiple onChange={e => void uploadIibbCreditsFiles(e.target.files)} className="hidden" id="arba-deducciones-files" />
+            <label htmlFor="arba-deducciones-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploadingIibbCredits ? 'cursor-wait opacity-60' : ''}`}>
+              <UploadCloud className="h-4 w-4" /> {uploadingIibbCredits ? 'Importando…' : 'Subir deducciones ARBA (zip o txt)'}
+            </label>
+            <span className="text-[11px] text-zinc-400">
+              Bancarias (SIRCREB): <strong className="font-mono text-teal-300">{fmt(includedIibbBank)}</strong> · Tarjetas: <strong className="font-mono text-teal-300">{fmt(includedIibbCards)}</strong>
+            </span>
+          </div>
+          {iibbCredits.length > 0 ? (
+            <div className="mt-4">
+              <CreditTable rows={iibbCredits} onToggle={toggleIibbCreditRow} onToggleAll={toggleAllIibbCredits} title="Deducciones IIBB (ARBA)" rowKindLabel={arbaRowKindLabel} />
+            </div>
+          ) : (
+            <p className="mt-4 rounded border border-dashed border-zinc-700 px-4 py-4 text-center text-[11px] text-zinc-500">Sin deducciones de IIBB cargadas (opcional).</p>
+          )}
 
           <div className="mt-5">
             <button type="button" onClick={() => void calculate()} disabled={calculating || documents.length === 0} className="inline-flex h-10 items-center gap-2 rounded bg-zinc-100 px-4 text-xs font-extrabold text-zinc-900 transition-colors hover:bg-white disabled:opacity-40">
@@ -1059,19 +1153,23 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
   );
 }
 
-function CreditTable({ rows, onToggle, onToggleAll }: {
+function CreditTable({ rows, onToggle, onToggleAll, title = 'Retenciones y percepciones', rowKindLabel }: {
   rows: TaxCreditRow[];
   onToggle: (id: string, included: boolean) => void;
   onToggleAll: (included: boolean) => void;
+  title?: string;
+  /** Etiqueta de la columna Tipo por fila (default: Retención/Percepción según kind). */
+  rowKindLabel?: (r: TaxCreditRow) => string;
 }) {
   const allOn = rows.length > 0 && rows.every(r => r.includedInSettlement);
   const includedCount = rows.filter(r => r.includedInSettlement).length;
-  const kindLabel = (k: string) => (k === 'WITHHOLDING' ? 'Retención' : k === 'PERCEPTION' ? 'Percepción' : k);
+  const kindLabel = (r: TaxCreditRow) =>
+    rowKindLabel ? rowKindLabel(r) : (r.kind === 'WITHHOLDING' ? 'Retención' : r.kind === 'PERCEPTION' ? 'Percepción' : r.kind);
   const includedTotal = rows.filter(r => r.includedInSettlement).reduce((s, r) => s + Number(r.amount), 0);
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800">
       <div className="flex items-center justify-between gap-3 bg-zinc-900/60 px-3 py-2">
-        <p className="text-xs font-bold text-zinc-200">Retenciones y percepciones <span className="font-mono text-zinc-500">· {includedCount}/{rows.length}</span></p>
+        <p className="text-xs font-bold text-zinc-200">{title} <span className="font-mono text-zinc-500">· {includedCount}/{rows.length}</span></p>
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-zinc-400">Total a aplicar: <strong className="font-mono text-teal-300">{fmt(includedTotal)}</strong></span>
           <label className="flex cursor-pointer items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
@@ -1095,7 +1193,7 @@ function CreditTable({ rows, onToggle, onToggleAll }: {
             {rows.map(r => (
               <tr key={r.id} className={`border-t border-zinc-900 ${r.includedInSettlement ? '' : 'opacity-40'}`}>
                 <td className="px-3 py-1.5"><input type="checkbox" checked={r.includedInSettlement} onChange={e => onToggle(r.id, e.target.checked)} className="h-3.5 w-3.5 accent-teal-400" /></td>
-                <td className={`px-2 py-1.5 font-semibold ${r.kind === 'WITHHOLDING' ? 'text-sky-300' : 'text-violet-300'}`}>{kindLabel(r.kind)}</td>
+                <td className={`px-2 py-1.5 font-semibold ${r.kind === 'WITHHOLDING' ? 'text-sky-300' : 'text-violet-300'}`}>{kindLabel(r)}</td>
                 <td className="px-2 py-1.5 font-mono text-zinc-400">{r.issueDate}</td>
                 <td className="px-2 py-1.5 font-mono text-zinc-400">{r.agentCuit || '—'}</td>
                 <td className="px-2 py-1.5 font-mono text-zinc-500">{r.certificateNumber || '—'}</td>

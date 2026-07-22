@@ -20,14 +20,16 @@ const IVA_TAX_CODE = '767';
 
 export type TaxCreditDraft = {
   creditKey: string;
-  tax: 'VAT';
+  tax: 'VAT' | 'GROSS_INCOME';
   kind: 'WITHHOLDING' | 'PERCEPTION';
+  /** Solo créditos de IIBB: jurisdicción a la que aplican (p. ej. 902 = ARBA). */
+  jurisdictionCode?: string;
   agentCuit: string;
   certificateNumber: string;
   issueDate: Date;
   originalAmount: Decimal;
   regime: string;
-  source: 'ARCA';
+  source: 'ARCA' | 'ARBA';
   notes: string;
 };
 

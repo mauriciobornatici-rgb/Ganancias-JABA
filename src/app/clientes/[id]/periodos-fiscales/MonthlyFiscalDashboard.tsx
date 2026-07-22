@@ -59,7 +59,7 @@ function humanizeStatus(status: string | null): string {
 
 export default function MonthlyFiscalDashboard({ clientId }: { clientId: string }) {
   const [data, setData] = useState<FiscalLedgerResponse['data']>();
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, startCreating] = useTransition();
@@ -149,7 +149,7 @@ export default function MonthlyFiscalDashboard({ clientId }: { clientId: string 
               min="2020"
               max="2100"
               value={year}
-              onChange={event => setYear(Number(event.target.value) || 2025)}
+              onChange={event => setYear(Number(event.target.value) || new Date().getFullYear())}
               className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none transition-colors focus:border-teal-400"
             />
             <button

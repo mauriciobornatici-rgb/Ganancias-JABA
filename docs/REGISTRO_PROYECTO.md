@@ -4,6 +4,12 @@ Ultima actualizacion: 2026-07-21
 
 ## Entrada reciente
 
+### 2026-07-21 - Reapertura real al "Reliquidar / Modificar" + año actual por defecto
+
+- Problema 1 (reportado por el usuario): con el período CERRADO, entrar a "Reliquidar / Modificar" era solo visual (estado del navegador); el servidor seguia viendo CLOSED y rechazaba la carga de comprobantes/retenciones/deducciones con 409. Fix: el boton ahora llama a POST `settlement/reopen`, que pasa las liquidaciones CERRADAS del período (IVA y/o IIBB) a IN_REVIEW con nota "[Reabierta para rectificación el ...]" y AuditLog action=REOPEN. El guard de mutación destraba y al re-guardar se crea versión+1 (no se pisa historia; filedAt original queda como evidencia del cierre previo). Idempotente si no hay nada cerrado. Helper puro `buildSettlementReopenPlan` con tests.
+- Nota operativa: mientras el período esté reabierto (IN_REVIEW) no alimenta la consolidación anual ni el arrastre automático del mes siguiente hasta que se vuelva a cerrar cotejado.
+- Problema 2: el selector de año del libro mensual (MonthlyFiscalDashboard) y de la consolidación anual (AnnualProgressReport) arrancaba clavado en 2025. Ahora `new Date().getFullYear()`. El wizard de la DDJJ anual queda en 2025 a propósito (la DDJJ que se carga en 2026 es del período fiscal 2025).
+
 ### 2026-07-21 - IIBB: importacion de deducciones ARBA (retenciones/percepciones que descuentan el saldo)
 
 - Pedido del usuario (urgente): en la liquidacion IIBB el saldo a pagar salia completo porque no habia forma de cargar las deducciones sufridas. ARBA entrega un ZIP por periodo (IB-CUIT-AAAAMM M.zip) con TXT de ancho fijo por regimen.

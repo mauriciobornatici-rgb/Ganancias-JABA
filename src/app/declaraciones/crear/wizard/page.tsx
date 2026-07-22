@@ -37,6 +37,7 @@ import { sumDeductibleCostPurchases } from '@/domain/ganancias/presentation/purc
 import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '@/domain/ganancias/purchaseExpenseType';
 import {
   buildPurchaseMonthlySummary,
+  listExpenseBreakdown,
   matchesPurchaseMonthFilter,
   type PurchaseMonthFilter,
 } from '@/domain/ganancias/presentation/purchaseMonthlySummary';
@@ -2901,6 +2902,17 @@ export default function WizardPage() {
                         <span className="block font-semibold">Deducible: <span className="font-mono text-zinc-200">${purchases.filter(p => p.isDeductible).reduce((sum, p) => sum.add(new Decimal(p.netAmount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                         <span className="block font-semibold">Exento/No Ded: <span className="font-mono text-zinc-200">${purchases.filter(p => !p.isDeductible).reduce((sum, p) => sum.add(new Decimal(p.netAmount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                       </div>
+                      {/* Totales por tipo de gasto (solo deducibles, categorías con movimiento): Mat. Prima, G. Grales., etc. */}
+                      {listExpenseBreakdown(purchaseMonthlySummary.totalByExpenseType).length > 0 && (
+                        <>
+                          <div className="h-6 w-[1px] bg-teal-500/20"></div>
+                          <div className="text-left text-[10px] text-zinc-400">
+                            {listExpenseBreakdown(purchaseMonthlySummary.totalByExpenseType).map(item => (
+                              <span key={item.key} className="block font-semibold">{item.shortLabel}: <span className="font-mono text-zinc-200">${item.amount.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 

@@ -10,8 +10,8 @@ import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
-/** Lista las retenciones/percepciones cargadas en el período, para la grilla de revisión. */
-export async function GET(_request: NextRequest, context: RouteContext) {
+/** Lista las retenciones/percepciones cargadas en el período, para la grilla de revisión. ?tax=GROSS_INCOME lista las de IIBB (default: IVA). */
+export async function GET(request: NextRequest, context: RouteContext) {
   const { id: clientId, periodId } = await context.params;
   try {
     const period = await prisma.fiscalPeriod.findUnique({ where: { id: periodId }, select: { id: true, clientId: true } });
@@ -19,8 +19,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: 'El período no existe o no pertenece a este contribuyente.' }, { status: 404 });
     }
 
+    const tax = new URL(request.url).searchParams.get('tax') === 'GROSS_INCOME' ? 'GROSS_INCOME' as const : 'VAT' as const;
     const records = await prisma.taxCreditRecord.findMany({
-      where: { fiscalPeriodId: periodId, tax: 'VAT' },
+      where: { fiscalPeriodId: periodId, tax },
       orderBy: [{ kind: 'asc' }, { issueDate: 'asc' }],
       select: {
         id: true, kind: true, agentCuit: true, certificateNumber: true, issueDate: true,

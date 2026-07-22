@@ -4,6 +4,11 @@ Ultima actualizacion: 2026-07-21
 
 ## Entrada reciente
 
+### 2026-07-21 - Cierre guiado de IVA/IIBB (no era un bug: faltaban pasos que la UI no señalaba)
+
+- Consulta del usuario: tras reliquidar, IVA quedó "En revisión" e IIBB "Borrador"; parecía un error del cierre. Diagnóstico contra el código: (a) IIBB queda BORRADOR si se guarda sin el "Saldo a pagar oficial (organismo)"; el placeholder "0,00" en gris parecía un valor cargado. (b) IVA cierra solo con LOS TRES importes del F2002 (débito, crédito y saldo) presentes y coincidentes; "En revisión" con oficial guardado = cotejo completo con alguna diferencia + "guardar con observación". Reglas correctas del contador: no se tocó el motor.
+- Fixes de UI: placeholder "sin cargar" en los importes oficiales (IVA e IIBB); aviso explícito bajo el campo de IIBB ("sin el saldo del organismo, IIBB se guarda como Borrador y NO cierra"); notice del guardado en Borrador ahora dice cómo cerrarlo; el botón de la tarjeta mensual refleja el estado ("Liquidar IVA e IIBB" / "Continuar liquidación" / "Ver liquidación (cerrada)").
+
 ### 2026-07-21 - Reapertura real al "Reliquidar / Modificar" + año actual por defecto
 
 - Problema 1 (reportado por el usuario): con el período CERRADO, entrar a "Reliquidar / Modificar" era solo visual (estado del navegador); el servidor seguia viendo CLOSED y rechazaba la carga de comprobantes/retenciones/deducciones con 409. Fix: el boton ahora llama a POST `settlement/reopen`, que pasa las liquidaciones CERRADAS del período (IVA y/o IIBB) a IN_REVIEW con nota "[Reabierta para rectificación el ...]" y AuditLog action=REOPEN. El guard de mutación destraba y al re-guardar se crea versión+1 (no se pisa historia; filedAt original queda como evidencia del cierre previo). Idempotente si no hay nada cerrado. Helper puro `buildSettlementReopenPlan` con tests.

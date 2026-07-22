@@ -1,8 +1,17 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-18
+Ultima actualizacion: 2026-07-21
 
 ## Entrada reciente
+
+### 2026-07-21 - IIBB: importacion de deducciones ARBA (retenciones/percepciones que descuentan el saldo)
+
+- Pedido del usuario (urgente): en la liquidacion IIBB el saldo a pagar salia completo porque no habia forma de cargar las deducciones sufridas. ARBA entrega un ZIP por periodo (IB-CUIT-AAAAMM M.zip) con TXT de ancho fijo por regimen.
+- Nuevo importador `arbaDeduccionesImporter`: acepta el ZIP tal como se baja (jszip, dependencia nueva) o los TXT sueltos. Formatos decodificados con archivos reales del usuario: `-B` bancarias SIRCREB (CBU 22 + CUIT agente 13 + fecha + 2 digitos op. + importe) y `-T` tarjetas (CUIT 13 + periodo 6 + fecha + comprobante 20 + importe). Regimenes sin muestra (-P/-R/-A) se informan como "sin soporte" en lugar de adivinar el formato. Archivos renombrados se detectan por estructura.
+- Persistencia: reutiliza TaxCreditRecord (tax=GROSS_INCOME, jurisdiccion 902, kind=WITHHOLDING, source=ARBA) via persistTaxCredits, que ahora guarda jurisdictionCode. Idempotente por creditKey: reimportar no duplica. El motor de IIBB ya descontaba estos creditos por jurisdiccion sin duplicarlos entre actividades; no se toco el calculo.
+- API: POST `/tax-credits/arba` (mismos guardas que el de IVA: periodo editable, auditoria, timeout 60s) y GET `/tax-credits?tax=GROSS_INCOME`.
+- UI: nueva seccion 2c "Deducciones de IIBB (ARBA)" en la liquidacion mensual, espejo de la 2b de IVA: subir zip/txt, totales Bancarias/Tarjetas, grilla con detalle (tipo, fecha, agente, CBU/comprobante, importe) y tildes para excluir lineas; el boton Calcular paso debajo de 2c. La seccion IIBB ya mostraba "Percep./retenc. IIBB aplicadas".
+- Verificado con los archivos reales de junio 2026: 3 bancarias ($591.515,82) + 47 tarjetas; 10 tests nuevos del parser (roundtrip ZIP incluido), 419 tests totales, typecheck, lint y build en verde.
 
 ### 2026-07-20 - IIBB: múltiples alícuotas por jurisdicción (reparto por monto de base)
 

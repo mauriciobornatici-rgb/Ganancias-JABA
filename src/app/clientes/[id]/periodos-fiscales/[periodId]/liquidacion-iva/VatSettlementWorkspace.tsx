@@ -263,7 +263,9 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       setSavedIibbStatus({ status: payload.data.status, version: payload.data.version });
       setNotice(payload.data.status === 'CLOSED'
         ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
-        : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`);
+        : payload.data.status === 'DRAFT'
+          ? `IIBB guardado como Borrador (versión ${payload.data.version}). Para cerrarlo cargá el saldo oficial del organismo (aunque sea 0) y guardá de nuevo.`
+          : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar IIBB.');
     } finally {
@@ -1022,12 +1024,14 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400">Cotejo y guardado</p>
             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Saldo a pagar oficial (organismo)</label>
-            <input inputMode="decimal" value={official} onChange={e => onOfficial(e.target.value)} placeholder="0,00" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+            <input inputMode="decimal" value={official} onChange={e => onOfficial(e.target.value)} placeholder="sin cargar" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
             <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Referencia (opcional)</label>
             <input value={reference} onChange={e => onReference(e.target.value)} placeholder="N° presentación, jurisdicción…" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-200 outline-none focus:border-teal-400" />
             {official.trim() !== '' ? (
               <p className={`mt-3 flex items-center gap-2 text-xs font-bold ${liveMatch ? 'text-emerald-300' : 'text-amber-300'}`}>{liveMatch ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}{liveMatch ? 'Coincide — listo para cerrar' : 'No coincide con el cálculo'}</p>
-            ) : null}
+            ) : (
+              <p className="mt-3 flex items-center gap-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" /> Sin el saldo del organismo (aunque sea 0), IIBB se guarda como Borrador y NO cierra.</p>
+            )}
             <button type="button" onClick={() => onSave(false)} disabled={saving || balancesDirty || (isMulti && !basesMatch)} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
             {isMulti && !basesMatch ? (
               <p className="mt-2 text-[10px] text-amber-300">
@@ -1247,7 +1251,8 @@ function CotejoInput({ label, value, onChange }: { label: string; value: string;
   return (
     <div className="mb-2">
       <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</label>
-      <input inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder="0,00" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+      {/* "sin cargar" y no "0,00": el placeholder gris parecía un valor cargado y confundía el cotejo. */}
+      <input inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder="sin cargar" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
     </div>
   );
 }

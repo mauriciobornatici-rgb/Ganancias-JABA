@@ -271,6 +271,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   };
 
+  // "Reliquidar / Modificar": reabre EN EL SERVIDOR las liquidaciones cerradas (CLOSED → IN_REVIEW)
+  // para que la carga de comprobantes y créditos vuelva a estar permitida; el nuevo cierre se
+  // guardará como versión+1. Sin esto el modo edición era solo visual y el servidor rechazaba todo.
+  const reopenForRectification = async () => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/reopen`, { method: 'POST' });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo reabrir la liquidación.');
+      if (payload.data.reopened.length > 0) {
+        setNotice(`Período reabierto para rectificación (${payload.data.reopened.join(' e ')}). Cargá los cambios, recalculá y volvé a cotejar y guardar: quedará como versión nueva.`);
+      }
+      setReliquidating(true);
+      setSettlement(null);
+      setGrossIncome(null);
+      if (savedSettlement?.officialAmount) setOffDue(savedSettlement.officialAmount);
+      await Promise.all([loadSaved(), loadSavedIibb()]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo reabrir la liquidación.');
+    }
+  };
+
   const includedWithholding = useMemo(
     () => taxCredits.filter(c => c.includedInSettlement && c.kind === 'WITHHOLDING').reduce((s, c) => s + Number(c.amount), 0),
     [taxCredits],
@@ -622,11 +644,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         {savedSettlement && !reliquidating ? (
           <SavedSettlementPanel
             saved={savedSettlement}
-            onReliquidar={() => {
-              setReliquidating(true);
-              setSettlement(null);
-              if (savedSettlement.officialAmount) setOffDue(savedSettlement.officialAmount);
-            }}
+            onReliquidar={() => void reopenForRectification()}
           />
         ) : null}
 

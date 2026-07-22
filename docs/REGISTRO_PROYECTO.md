@@ -4,6 +4,12 @@ Ultima actualizacion: 2026-07-21
 
 ## Entrada reciente
 
+### 2026-07-21 - Reapertura real al "Reliquidar / Modificar" + año actual por defecto
+
+- Problema 1 (reportado por el usuario): con el período CERRADO, entrar a "Reliquidar / Modificar" era solo visual (estado del navegador); el servidor seguia viendo CLOSED y rechazaba la carga de comprobantes/retenciones/deducciones con 409. Fix: el boton ahora llama a POST `settlement/reopen`, que pasa las liquidaciones CERRADAS del período (IVA y/o IIBB) a IN_REVIEW con nota "[Reabierta para rectificación el ...]" y AuditLog action=REOPEN. El guard de mutación destraba y al re-guardar se crea versión+1 (no se pisa historia; filedAt original queda como evidencia del cierre previo). Idempotente si no hay nada cerrado. Helper puro `buildSettlementReopenPlan` con tests.
+- Nota operativa: mientras el período esté reabierto (IN_REVIEW) no alimenta la consolidación anual ni el arrastre automático del mes siguiente hasta que se vuelva a cerrar cotejado.
+- Problema 2: el selector de año del libro mensual (MonthlyFiscalDashboard) y de la consolidación anual (AnnualProgressReport) arrancaba clavado en 2025. Ahora `new Date().getFullYear()`. El wizard de la DDJJ anual queda en 2025 a propósito (la DDJJ que se carga en 2026 es del período fiscal 2025).
+
 ### 2026-07-21 - Endurecimiento del puente UiPath antes del canary + parche de dependencias
 
 - Contexto: el usuario pidio evaluar un plan de accion UiPath→Ganancias; el analisis contra el codigo real mostro que la integracion ya estaba implementada (endpoints preflight/imports/recibo con token Bearer, INSERT_ONLY con conflicto que aborta el lote, idempotencia por sha256(CUIT|periodo|hashes ordenados), kill switch GANANCIAS_REAL_IMPORT_ENABLED apagado). Se priorizaron los huecos de seguridad/operacion previos al canary.
@@ -11,6 +17,7 @@ Ultima actualizacion: 2026-07-21
 - Lado Ganancias (PR #26, CI verde, PENDIENTE de validacion del usuario para merge): el GET del recibo resuelve por receiptId o por idempotencyKey (tras un timeout UiPath no conoce el receiptId). Aditivo y retrocompatible.
 - Parche de dependencias en el mismo PR: advisories nuevos (2026-07-21) bloqueaban el gate de npm audit en TODO CI: sharp <0.35.0 (high, CVEs libvips) y postcss <8.5.10 (moderate, XSS). Overrides a sharp ^0.35.0 y postcss ^8.5.10; npm audit en 0 vulnerabilidades, 409 tests + build verdes.
 - Pendientes priorizados antes de encender GANANCIAS_REAL_IMPORT_ENABLED: evidencia de no alteracion liviana (conteos + totales por CUIT/periodo antes y despues del canary), confirmar migraciones aplicadas en la base productiva, y del Frente B: busqueda server-side paginada y estado de cuenta exportable.
+
 ### 2026-07-21 - IIBB: importacion de deducciones ARBA (retenciones/percepciones que descuentan el saldo)
 
 - Pedido del usuario (urgente): en la liquidacion IIBB el saldo a pagar salia completo porque no habia forma de cargar las deducciones sufridas. ARBA entrega un ZIP por periodo (IB-CUIT-AAAAMM M.zip) con TXT de ancho fijo por regimen.

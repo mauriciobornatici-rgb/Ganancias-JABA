@@ -29,7 +29,7 @@ const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFr
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
 
 export default function AnnualProgressReport({ clientId }: { clientId: string }) {
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [data, setData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +80,7 @@ export default function AnnualProgressReport({ clientId }: { clientId: string })
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-[#121216] p-3 shadow-xl">
             <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500" htmlFor="year">Ejercicio</label>
-            <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || 2025)} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
+            <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || new Date().getFullYear())} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
             <button type="button" onClick={() => void load()} disabled={isLoading} className="inline-flex h-9 w-9 items-center justify-center rounded border border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50" aria-label="Actualizar">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>

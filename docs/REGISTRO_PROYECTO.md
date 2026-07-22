@@ -4,6 +4,11 @@ Ultima actualizacion: 2026-07-21
 
 ## Entrada reciente
 
+### 2026-07-22 - Wizard Paso 3: totales por tipo de gasto en la cabecera
+
+- Pedido del usuario: en el recuadro "Total Compras" del Paso 3 (junto a Deducible y Exento/No Ded), mostrar tambien los totales de Materia Prima y Gastos Generales, como ya se ven abajo en "Ver todos los meses".
+- Se agrego una columna al recuadro con `listExpenseBreakdown(totalByExpenseType)`: muestra las categorias CON movimiento (Mat. Prima, G. Grales., Servicios, Alquileres, Sin clasif.), solo importes deducibles, mismo criterio que el resto del resumen. Sin calculo nuevo: reusa el summary existente.
+
 ### 2026-07-21 - Cierre guiado de IVA/IIBB (no era un bug: faltaban pasos que la UI no señalaba)
 
 - Consulta del usuario: tras reliquidar, IVA quedó "En revisión" e IIBB "Borrador"; parecía un error del cierre. Diagnóstico contra el código: (a) IIBB queda BORRADOR si se guarda sin el "Saldo a pagar oficial (organismo)"; el placeholder "0,00" en gris parecía un valor cargado. (b) IVA cierra solo con LOS TRES importes del F2002 (débito, crédito y saldo) presentes y coincidentes; "En revisión" con oficial guardado = cotejo completo con alguna diferencia + "guardar con observación". Reglas correctas del contador: no se tocó el motor.

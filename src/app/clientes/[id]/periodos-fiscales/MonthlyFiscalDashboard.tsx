@@ -245,7 +245,10 @@ export default function MonthlyFiscalDashboard({ clientId }: { clientId: string 
                     href={`/clientes/${clientId}/periodos-fiscales/${period.id}/liquidacion-iva`}
                     className="mt-5 inline-flex h-9 w-full items-center justify-center gap-2 rounded bg-teal-400 px-3 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300"
                   >
-                    <ScanLine className="h-4 w-4" /> Liquidar IVA
+                    <ScanLine className="h-4 w-4" />
+                    {vat?.status === 'CLOSED' && grossIncome?.status === 'CLOSED'
+                      ? 'Ver liquidación (cerrada)'
+                      : (vat || grossIncome) ? 'Continuar liquidación' : 'Liquidar IVA e IIBB'}
                   </Link>
                 )}
               </article>

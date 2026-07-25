@@ -356,6 +356,9 @@ model ClientTaxProfileVersion {
   // Beneficio Ley 27.618 / RG 5003: reducción del saldo deudor de IVA durante tres años.
   smallTaxpayerBenefitEnabled   Boolean @default(false)
   smallTaxpayerBenefitStartYear Int?
+  // Impuesto sobre débitos y créditos bancarios (impuesto al cheque) computable como pago a cuenta
+  // de Ganancias: 33 = régimen general; 100 = micro y pequeña empresa. Solo esos dos valores.
+  idcbComputablePercent         Int     @default(33)
   arbaRegistrationNumber String?
   cmRegistrationNumber   String?
   sourceReference        String?

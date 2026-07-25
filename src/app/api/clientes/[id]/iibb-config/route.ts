@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
+import { normalizeIdcbComputablePercent } from '@/domain/ganancias/fiscalLedger/bankTaxCredit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -36,6 +37,7 @@ async function latestProfile(clientId: string) {
     select: {
       id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
       smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true,
+      idcbComputablePercent: true,
       jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: [{ jurisdictionCode: 'asc' }, { activityCode: 'asc' }] },
     },
   });
@@ -66,6 +68,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         conventionRegime: profile?.conventionRegime ?? 'NONE',
         smallTaxpayerBenefitEnabled: profile?.smallTaxpayerBenefitEnabled ?? false,
         smallTaxpayerBenefitStartYear: profile?.smallTaxpayerBenefitStartYear ?? null,
+        idcbComputablePercent: normalizeIdcbComputablePercent(profile?.idcbComputablePercent),
         hasProfile: Boolean(profile),
         jurisdictions: (profile?.jurisdictions ?? []).map(j => ({
           jurisdictionCode: j.jurisdictionCode,
@@ -122,6 +125,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         conventionRegime: true,
         smallTaxpayerBenefitEnabled: true,
         smallTaxpayerBenefitStartYear: true,
+        idcbComputablePercent: true,
         arbaRegistrationNumber: true,
         cmRegistrationNumber: true,
         sourceReference: true,
@@ -160,6 +164,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           conventionRegime: profile.conventionRegime,
           smallTaxpayerBenefitEnabled: profile.smallTaxpayerBenefitEnabled,
           smallTaxpayerBenefitStartYear: profile.smallTaxpayerBenefitStartYear,
+          // Se arrastra a la versión nueva: si no, guardar IIBB resetearía el % del impuesto al cheque.
+          idcbComputablePercent: profile.idcbComputablePercent,
           arbaRegistrationNumber: profile.arbaRegistrationNumber,
           cmRegistrationNumber: profile.cmRegistrationNumber,
           sourceReference: profile.sourceReference,

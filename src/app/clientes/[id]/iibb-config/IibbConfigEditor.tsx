@@ -21,6 +21,7 @@ type ConfigData = {
   conventionRegime: string;
   smallTaxpayerBenefitEnabled: boolean;
   smallTaxpayerBenefitStartYear: number | null;
+  idcbComputablePercent: number;
   hasProfile: boolean;
   jurisdictions: Array<{ jurisdictionCode: string; activityCode: string; activityLabel: string | null; registrationNumber: string | null; taxRate: string | null; isActive: boolean }>;
   coefficients: Array<{ jurisdictionCode: string; unifiedCoefficient: string }>;
@@ -53,6 +54,8 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   const [pConvention, setPConvention] = useState('NONE');
   const [pBenefitEnabled, setPBenefitEnabled] = useState(false);
   const [pBenefitStartYear, setPBenefitStartYear] = useState(() => new Date().getFullYear());
+  // Impuesto al cheque computable como pago a cuenta de Ganancias: 33% general, 100% micro y pequeña empresa.
+  const [pIdcbPercent, setPIdcbPercent] = useState<33 | 100>(33);
   const [savingProfile, setSavingProfile] = useState(false);
 
   const isConvenio = config?.regime === 'CM_REGIMEN_GENERAL' || config?.regime === 'CM_REGIMEN_ESPECIAL';
@@ -71,6 +74,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       setPConvention(data.conventionRegime);
       setPBenefitEnabled(data.smallTaxpayerBenefitEnabled);
       setPBenefitStartYear(data.smallTaxpayerBenefitStartYear ?? new Date().getFullYear());
+      setPIdcbPercent(data.idcbComputablePercent === 100 ? 100 : 33);
       const coefMap = new Map(data.coefficients.map(c => [c.jurisdictionCode, c.unifiedCoefficient]));
       setRows(
         data.jurisdictions.map(j => ({
@@ -115,6 +119,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
           conventionRegime: pConvention,
           smallTaxpayerBenefitEnabled: pBenefitEnabled,
           smallTaxpayerBenefitStartYear: pBenefitEnabled ? pBenefitStartYear : null,
+          idcbComputablePercent: pIdcbPercent,
         }),
       });
       const payload = await res.json();
@@ -274,6 +279,30 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
               </div>
             ) : null}
           </div>
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="text-xs font-extrabold text-white">Impuesto sobre débitos y créditos bancarios (impuesto al cheque)</p>
+            <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+              Porcentaje del impuesto al cheque que se computa como pago a cuenta de Ganancias. El importe total de cada mes se carga en la liquidación mensual; la app aplica este porcentaje y lo lleva a la DDJJ anual.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {([33, 100] as const).map(pct => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setPIdcbPercent(pct)}
+                  aria-pressed={pIdcbPercent === pct}
+                  className={`inline-flex h-9 items-center rounded border px-3 text-xs font-bold transition-colors ${
+                    pIdcbPercent === pct
+                      ? 'border-teal-400 bg-teal-400/10 text-teal-200'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-teal-500/50 hover:text-teal-300'
+                  }`}
+                >
+                  {pct === 33 ? '33% — régimen general' : '100% — micro y pequeña empresa'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button type="button" onClick={() => void saveProfile()} disabled={savingProfile} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50">
             <Save className="h-4 w-4" /> {savingProfile ? 'Guardando…' : 'Guardar perfil'}
           </button>

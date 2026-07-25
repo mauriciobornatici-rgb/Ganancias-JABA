@@ -307,6 +307,7 @@ export const ClientTaxProfileVersionScalarFieldEnum = {
   conventionRegime: 'conventionRegime',
   smallTaxpayerBenefitEnabled: 'smallTaxpayerBenefitEnabled',
   smallTaxpayerBenefitStartYear: 'smallTaxpayerBenefitStartYear',
+  idcbComputablePercent: 'idcbComputablePercent',
   arbaRegistrationNumber: 'arbaRegistrationNumber',
   cmRegistrationNumber: 'cmRegistrationNumber',
   sourceReference: 'sourceReference',

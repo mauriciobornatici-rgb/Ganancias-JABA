@@ -40,6 +40,19 @@ Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae 
 
 Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
 
+### 2026-07-24 - Punto 5: impuesto al cheque (IDCB) como pago a cuenta de Ganancias
+
+- El motor anual ya sabía computar el IDCB (IG 25!F65, limitado al impuesto determinado, excedente a F70 desde P29). Lo que faltaba era la carga y el cómputo: hasta ahora había que escribir la fila a mano en la grilla de retenciones del wizard.
+- Configuración por contribuyente: `ClientTaxProfileVersion.idcbComputablePercent` (migración aditiva `20260724230000_add_idcb_computable_percent`, default 33). Solo admite **33** (régimen general, art. 13 dec. 380/2001) o **100** (micro y pequeña empresa); el dominio normaliza cualquier otro valor a 33 para que un dato viejo o corrupto nunca habilite un cómputo mayor al general. Selector en el bloque "Perfil fiscal" de la pantalla de configuración de IIBB.
+- Los DOS endpoints que versionan el perfil (`tax-profile` PUT y `iibb-config` PUT) arrastran el porcentaje a la versión nueva; si no, guardar IIBB lo reseteaba a 33 en silencio.
+- Carga mensual: bloque "2d — Impuesto al cheque" en la liquidación mensual, con el importe TOTAL del mes. Se guarda como un único `TaxCreditRecord` por período (`tax=GANANCIAS`, `kind=PAYMENT_ON_ACCOUNT`, `creditKey='IDCB-MENSUAL'`), sin modelo nuevo. Nueva ruta `PUT/GET /api/clientes/[id]/fiscal-periods/[periodId]/idcb`, con auditoría de cada cambio; vacío o 0 borra el registro en vez de dejar un cero que parece cargado.
+- Decisión de diseño: el porcentaje **no** se persiste junto al importe mensual. Se guarda el total y el cómputo se deriva del perfil del período, así que corregir el porcentaje recalcula todos los meses sin reeditarlos.
+- Decisión de diseño: el bloque queda visible y editable **aunque el mes esté cerrado en IVA/IIBB**, y la importación anual toma **todos** los meses con importe cargado, no solo los cotejados en IVA. Cerrar IVA no es evidencia del impuesto al cheque, y dejar afuera un mes cargado computaría de menos un pago a cuenta real. Es una desviación intencional de la regla "solo meses CLOSED alimentan la anual".
+- Imputación anual: `importar-mensual` crea una fila por mes en `TaxWithholding` con `taxCode='IDCB'`, fechada el último día del mes y con certificado `IDCB-AAAA-MM`. Ese certificado hace la reimportación idempotente (se borran y recrean solo esas filas; las retenciones manuales no se tocan). Cada mes usa el porcentaje de **su propio** período, por el versionado del perfil.
+- Dominio puro nuevo: `src/domain/ganancias/fiscalLedger/bankTaxCredit.ts` (normalización del porcentaje, cómputo con redondeo a 2 decimales medio hacia arriba, armado de las filas anuales y aviso de importación). 13 tests nuevos.
+- Verificado: 447 tests unitarios, typecheck, lint y build Next en verde; migración aplicada en Docker. Los otros 2 tests de integración pasan; `fiscalLedgerSeedDocker` falla solo en local por seeds acumulados (espera 2 perfiles y hay 3), no es regresión.
+- Pendiente detectado (no de este punto, quedó anotado como tarea aparte): al crear una versión nueva del perfil fiscal se copian las jurisdicciones pero **no** las `ClientTaxActivity`, que se pierden en silencio.
+
 ### 2026-07-22 - Wizard Paso 3: totales por tipo de gasto en la cabecera
 
 - Pedido del usuario: en el recuadro "Total Compras" del Paso 3 (junto a Deducible y Exento/No Ded), mostrar tambien los totales de Materia Prima y Gastos Generales, como ya se ven abajo en "Ver todos los meses".

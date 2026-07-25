@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
+import { normalizeIdcbComputablePercent } from '@/domain/ganancias/fiscalLedger/bankTaxCredit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -13,6 +14,9 @@ const profileSchema = z.object({
   conventionRegime: z.enum(['NONE', 'GENERAL', 'ESPECIAL']).optional().default('NONE'),
   smallTaxpayerBenefitEnabled: z.boolean().optional().default(false),
   smallTaxpayerBenefitStartYear: z.number().int().min(2021).max(2100).nullable().optional(),
+  // Impuesto al cheque computable como pago a cuenta de Ganancias: 33% general, 100% micro y
+  // pequeña empresa. Solo esos dos valores (decisión del usuario 2026-07-24).
+  idcbComputablePercent: z.union([z.literal(33), z.literal(100)]).optional().default(33),
   // validFrom opcional; por defecto cubre cualquier período soportado.
   validFrom: z.string().optional(),
 }).superRefine((value, ctx) => {
@@ -31,6 +35,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       select: {
         id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
         smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true,
+        idcbComputablePercent: true,
         validFrom: true, validTo: true,
       },
     });
@@ -45,6 +50,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
               conventionRegime: profile.conventionRegime,
               smallTaxpayerBenefitEnabled: profile.smallTaxpayerBenefitEnabled,
               smallTaxpayerBenefitStartYear: profile.smallTaxpayerBenefitStartYear,
+              idcbComputablePercent: normalizeIdcbComputablePercent(profile.idcbComputablePercent),
               validFrom: profile.validFrom.toISOString().slice(0, 10),
               validTo: profile.validTo ? profile.validTo.toISOString().slice(0, 10) : null,
             }
@@ -72,6 +78,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     const {
       vatCondition, grossIncomeRegime, conventionRegime,
       smallTaxpayerBenefitEnabled, smallTaxpayerBenefitStartYear,
+      idcbComputablePercent,
     } = parsed.data;
 
     const client = await prisma.client.findUnique({ where: { id: clientId }, select: { id: true, cuit: true, name: true } });
@@ -119,6 +126,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           conventionRegime,
           smallTaxpayerBenefitEnabled,
           smallTaxpayerBenefitStartYear: smallTaxpayerBenefitEnabled ? smallTaxpayerBenefitStartYear : null,
+          idcbComputablePercent,
           jurisdictions: existing?.jurisdictions.length
             ? { create: existing.jurisdictions.map(j => ({
                 jurisdictionCode: j.jurisdictionCode,
@@ -138,7 +146,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         entityId: created.id,
         clientCuit: client.cuit,
         clientName: client.name,
-        details: `Perfil fiscal: IVA ${vatCondition}, IIBB ${grossIncomeRegime}, Convenio ${conventionRegime}. Beneficio IVA: ${smallTaxpayerBenefitEnabled ? `desde ${smallTaxpayerBenefitStartYear}` : 'no aplica'}.`,
+        details: `Perfil fiscal: IVA ${vatCondition}, IIBB ${grossIncomeRegime}, Convenio ${conventionRegime}. Beneficio IVA: ${smallTaxpayerBenefitEnabled ? `desde ${smallTaxpayerBenefitStartYear}` : 'no aplica'}. Impuesto al cheque computable: ${idcbComputablePercent}%.`,
       } });
       return created.id;
     });

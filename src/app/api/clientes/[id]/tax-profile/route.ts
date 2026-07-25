@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         jurisdictions: {
           select: {
             jurisdictionCode: true, activityCode: true, activityLabel: true,
-            registrationNumber: true, taxRate: true, isActive: true,
+            registrationNumber: true, taxRate: true, computesTish: true, isActive: true,
           },
         },
       },
@@ -134,6 +134,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
                 activityLabel: j.activityLabel,
                 registrationNumber: j.registrationNumber,
                 taxRate: j.taxRate,
+                computesTish: j.computesTish,
                 isActive: j.isActive,
               })) }
             : undefined,

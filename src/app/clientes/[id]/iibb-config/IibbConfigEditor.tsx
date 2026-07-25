@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Plus, Trash2, Save, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react';
+import TishPanel from './TishPanel';
 
 type JurRow = {
   jurisdictionCode: string;
@@ -10,6 +11,7 @@ type JurRow = {
   registrationNumber: string;
   taxRatePct: string; // alícuota como % (lo que ve el usuario)
   unifiedCoefficient: string; // para CM
+  computesTish: boolean; // tilde explícito de TISH (nunca por coincidencia de texto)
   isActive: boolean;
 };
 
@@ -23,7 +25,7 @@ type ConfigData = {
   smallTaxpayerBenefitStartYear: number | null;
   idcbComputablePercent: number;
   hasProfile: boolean;
-  jurisdictions: Array<{ jurisdictionCode: string; activityCode: string; activityLabel: string | null; registrationNumber: string | null; taxRate: string | null; isActive: boolean }>;
+  jurisdictions: Array<{ jurisdictionCode: string; activityCode: string; activityLabel: string | null; registrationNumber: string | null; taxRate: string | null; computesTish: boolean; isActive: boolean }>;
   coefficients: Array<{ jurisdictionCode: string; unifiedCoefficient: string }>;
 };
 
@@ -47,6 +49,8 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Se incrementa al guardar jurisdicciones: TISH depende de los tildes y de las bases del año.
+  const [tishRefreshKey, setTishRefreshKey] = useState(0);
 
   // Formulario de perfil fiscal (condición IVA + régimen IIBB + Convenio)
   const [pVat, setPVat] = useState('RESPONSABLE_INSCRIPTO');
@@ -83,6 +87,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
           registrationNumber: j.registrationNumber ?? '',
           taxRatePct: j.taxRate != null ? (Number(j.taxRate) * 100).toString() : '',
           unifiedCoefficient: coefMap.get(j.jurisdictionCode) ?? '',
+          computesTish: j.computesTish,
           isActive: j.isActive,
         })),
       );
@@ -101,7 +106,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   );
   const coefOk = Math.abs(coefSum - 1) <= 0.0001;
 
-  const addRow = () => setRows(prev => [...prev, { jurisdictionCode: '', activity: '', registrationNumber: '', taxRatePct: '', unifiedCoefficient: '', isActive: true }]);
+  const addRow = () => setRows(prev => [...prev, { jurisdictionCode: '', activity: '', registrationNumber: '', taxRatePct: '', unifiedCoefficient: '', computesTish: false, isActive: true }]);
   const removeRow = (i: number) => setRows(prev => prev.filter((_, idx) => idx !== i));
   const update = (i: number, patch: Partial<JurRow>) => setRows(prev => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
@@ -175,6 +180,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
         activityLabel: r.activity.trim() || null,
         taxRate: r.taxRatePct.trim() === '' ? null : Number(r.taxRatePct.replace(',', '.')) / 100,
         registrationNumber: r.registrationNumber.trim() || null,
+        computesTish: r.computesTish,
         isActive: r.isActive,
       }));
       // El coeficiente CM es por jurisdicción (no por actividad): se deduplica.
@@ -198,6 +204,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar.');
       setNotice(`Configuración guardada: ${payload.data?.updated ?? jurisdictions.length} jurisdicción(es)${payload.data?.coefficients ? ` y ${payload.data.coefficients} coeficiente(s) CM` : ''}. Quedan cargadas abajo.`);
+      setTishRefreshKey(prev => prev + 1);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar.');
@@ -224,7 +231,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-[#121216] p-3 shadow-xl">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500" htmlFor="year">Año coef. CM</label>
+            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500" htmlFor="year">Año (coef. CM y TISH)</label>
             <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || new Date().getFullYear())} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
           </div>
         </div>
@@ -332,6 +339,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
                     <th className="px-2 py-1.5">N° inscripción</th>
                     <th className="px-2 py-1.5 text-right">Alícuota (%)</th>
                     {isConvenio ? <th className="px-2 py-1.5 text-right">Coef. unificado</th> : null}
+                    <th className="px-2 py-1.5 text-center">Computa TISH</th>
                     <th className="px-2 py-1.5"></th>
                   </tr>
                 </thead>
@@ -344,11 +352,12 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
                       <td className="px-2 py-1.5"><input value={r.registrationNumber} onChange={e => update(i, { registrationNumber: e.target.value })} placeholder="opcional" className="h-8 w-32 rounded border border-zinc-700 bg-zinc-950 px-2 font-mono text-zinc-300 outline-none focus:border-teal-400" /></td>
                       <td className="px-2 py-1.5 text-right"><input inputMode="decimal" value={r.taxRatePct} onChange={e => update(i, { taxRatePct: e.target.value })} placeholder="5" className="h-8 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-zinc-200 outline-none focus:border-teal-400" /></td>
                       {isConvenio ? <td className="px-2 py-1.5 text-right"><input inputMode="decimal" value={r.unifiedCoefficient} onChange={e => update(i, { unifiedCoefficient: e.target.value })} placeholder="0.6500" className="h-8 w-24 rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-zinc-200 outline-none focus:border-teal-400" /></td> : null}
+                      <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={r.computesTish} onChange={e => update(i, { computesTish: e.target.checked })} className="h-3.5 w-3.5 accent-teal-400" aria-label="Computa TISH" /></td>
                       <td className="px-2 py-1.5 text-right"><button type="button" onClick={() => removeRow(i)} className="text-zinc-500 hover:text-red-400" aria-label="Quitar"><Trash2 className="h-4 w-4" /></button></td>
                     </tr>
                   ))}
                   {rows.length === 0 ? (
-                    <tr><td colSpan={isConvenio ? 7 : 6} className="px-2 py-6 text-center text-[11px] text-zinc-400">{isLoading ? 'Cargando…' : 'Sin jurisdicciones. Agregá una.'}</td></tr>
+                    <tr><td colSpan={isConvenio ? 8 : 7} className="px-2 py-6 text-center text-[11px] text-zinc-400">{isLoading ? 'Cargando…' : 'Sin jurisdicciones. Agregá una.'}</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -368,6 +377,9 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
             </div>
           </section>
         )}
+
+        {/* TISH: bloque propio al lado de la config de IIBB (pedido expreso del usuario) */}
+        <TishPanel clientId={clientId} year={year} refreshKey={tishRefreshKey} />
       </div>
     </main>
   );

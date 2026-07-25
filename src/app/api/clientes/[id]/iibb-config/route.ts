@@ -23,6 +23,8 @@ const putSchema = z.object({
     taxRate: rate.nullable().optional(),
     registrationNumber: z.string().max(50).nullable().optional(),
     isActive: z.boolean().optional(),
+    // Tilde explícito de TISH por línea de actividad (punto 2, 2026-07-24).
+    computesTish: z.boolean().optional(),
   })).max(50),
   coefficients: z.array(z.object({
     jurisdictionCode: z.string().min(1).max(20),
@@ -38,7 +40,7 @@ async function latestProfile(clientId: string) {
       id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
       smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true,
       idcbComputablePercent: true,
-      jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: [{ jurisdictionCode: 'asc' }, { activityCode: 'asc' }] },
+      jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, registrationNumber: true, taxRate: true, computesTish: true, isActive: true }, orderBy: [{ jurisdictionCode: 'asc' }, { activityCode: 'asc' }] },
     },
   });
 }
@@ -76,6 +78,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
           activityLabel: j.activityLabel,
           registrationNumber: j.registrationNumber,
           taxRate: j.taxRate != null ? j.taxRate.toString() : null,
+          computesTish: j.computesTish,
           isActive: j.isActive,
         })),
         coefficients: (coefVersion?.coefficientLines ?? []).map(l => ({
@@ -178,6 +181,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             activityLabel: j.activityLabel ?? null,
             taxRate: j.taxRate ?? null,
             registrationNumber: j.registrationNumber ?? null,
+            computesTish: j.computesTish ?? false,
             isActive: j.isActive ?? true,
           })) },
         },

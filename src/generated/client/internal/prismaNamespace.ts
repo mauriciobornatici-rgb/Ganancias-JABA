@@ -423,6 +423,7 @@ export const ModelName = {
   VatSettlementLine: 'VatSettlementLine',
   GrossIncomeSettlement: 'GrossIncomeSettlement',
   GrossIncomeJurisdictionLine: 'GrossIncomeJurisdictionLine',
+  TishSetting: 'TishSetting',
   ConventionCoefficientVersion: 'ConventionCoefficientVersion',
   ConventionCoefficientLine: 'ConventionCoefficientLine',
   AnnualFiscalConsolidationSnapshot: 'AnnualFiscalConsolidationSnapshot',
@@ -466,7 +467,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "societyParticipation" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
+    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "tishSetting" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "societyParticipation" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2183,6 +2184,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.GrossIncomeJurisdictionLineCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.GrossIncomeJurisdictionLineCountAggregateOutputType> | number
+        }
+      }
+    }
+    TishSetting: {
+      payload: Prisma.$TishSettingPayload<ExtArgs>
+      fields: Prisma.TishSettingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TishSettingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TishSettingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        findFirst: {
+          args: Prisma.TishSettingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TishSettingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        findMany: {
+          args: Prisma.TishSettingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>[]
+        }
+        create: {
+          args: Prisma.TishSettingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        createMany: {
+          args: Prisma.TishSettingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.TishSettingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        update: {
+          args: Prisma.TishSettingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        deleteMany: {
+          args: Prisma.TishSettingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TishSettingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.TishSettingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        aggregate: {
+          args: Prisma.TishSettingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTishSetting>
+        }
+        groupBy: {
+          args: Prisma.TishSettingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TishSettingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettingCountAggregateOutputType> | number
         }
       }
     }
@@ -4293,6 +4360,7 @@ export const ClientTaxJurisdictionScalarFieldEnum = {
   activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber',
   taxRate: 'taxRate',
+  computesTish: 'computesTish',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -4496,6 +4564,28 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
 } as const
 
 export type GrossIncomeJurisdictionLineScalarFieldEnum = (typeof GrossIncomeJurisdictionLineScalarFieldEnum)[keyof typeof GrossIncomeJurisdictionLineScalarFieldEnum]
+
+
+export const TishSettingScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  year: 'year',
+  category: 'category',
+  taxRate: 'taxRate',
+  minimumQuota: 'minimumQuota',
+  categoryAQuota: 'categoryAQuota',
+  healthRate: 'healthRate',
+  firefightersRate: 'firefightersRate',
+  wasteRateCategoryL: 'wasteRateCategoryL',
+  wasteRateCategoryM: 'wasteRateCategoryM',
+  wasteRateCategoryN: 'wasteRateCategoryN',
+  dueDates: 'dueDates',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TishSettingScalarFieldEnum = (typeof TishSettingScalarFieldEnum)[keyof typeof TishSettingScalarFieldEnum]
 
 
 export const ConventionCoefficientVersionScalarFieldEnum = {
@@ -5302,6 +5392,17 @@ export const GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = {
 export type GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = (typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum)[keyof typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum]
 
 
+export const TishSettingOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  category: 'category',
+  dueDates: 'dueDates',
+  notes: 'notes'
+} as const
+
+export type TishSettingOrderByRelevanceFieldEnum = (typeof TishSettingOrderByRelevanceFieldEnum)[keyof typeof TishSettingOrderByRelevanceFieldEnum]
+
+
 export const ConventionCoefficientVersionOrderByRelevanceFieldEnum = {
   id: 'id',
   clientId: 'clientId',
@@ -5923,6 +6024,7 @@ export type GlobalOmitConfig = {
   vatSettlementLine?: Prisma.VatSettlementLineOmit
   grossIncomeSettlement?: Prisma.GrossIncomeSettlementOmit
   grossIncomeJurisdictionLine?: Prisma.GrossIncomeJurisdictionLineOmit
+  tishSetting?: Prisma.TishSettingOmit
   conventionCoefficientVersion?: Prisma.ConventionCoefficientVersionOmit
   conventionCoefficientLine?: Prisma.ConventionCoefficientLineOmit
   annualFiscalConsolidationSnapshot?: Prisma.AnnualFiscalConsolidationSnapshotOmit

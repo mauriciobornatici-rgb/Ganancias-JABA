@@ -77,6 +77,7 @@ export const ModelName = {
   VatSettlementLine: 'VatSettlementLine',
   GrossIncomeSettlement: 'GrossIncomeSettlement',
   GrossIncomeJurisdictionLine: 'GrossIncomeJurisdictionLine',
+  TishSetting: 'TishSetting',
   ConventionCoefficientVersion: 'ConventionCoefficientVersion',
   ConventionCoefficientLine: 'ConventionCoefficientLine',
   AnnualFiscalConsolidationSnapshot: 'AnnualFiscalConsolidationSnapshot',
@@ -343,6 +344,7 @@ export const ClientTaxJurisdictionScalarFieldEnum = {
   activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber',
   taxRate: 'taxRate',
+  computesTish: 'computesTish',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -546,6 +548,28 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
 } as const
 
 export type GrossIncomeJurisdictionLineScalarFieldEnum = (typeof GrossIncomeJurisdictionLineScalarFieldEnum)[keyof typeof GrossIncomeJurisdictionLineScalarFieldEnum]
+
+
+export const TishSettingScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  year: 'year',
+  category: 'category',
+  taxRate: 'taxRate',
+  minimumQuota: 'minimumQuota',
+  categoryAQuota: 'categoryAQuota',
+  healthRate: 'healthRate',
+  firefightersRate: 'firefightersRate',
+  wasteRateCategoryL: 'wasteRateCategoryL',
+  wasteRateCategoryM: 'wasteRateCategoryM',
+  wasteRateCategoryN: 'wasteRateCategoryN',
+  dueDates: 'dueDates',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TishSettingScalarFieldEnum = (typeof TishSettingScalarFieldEnum)[keyof typeof TishSettingScalarFieldEnum]
 
 
 export const ConventionCoefficientVersionScalarFieldEnum = {
@@ -1350,6 +1374,17 @@ export const GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = {
 } as const
 
 export type GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = (typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum)[keyof typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum]
+
+
+export const TishSettingOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  category: 'category',
+  dueDates: 'dueDates',
+  notes: 'notes'
+} as const
+
+export type TishSettingOrderByRelevanceFieldEnum = (typeof TishSettingOrderByRelevanceFieldEnum)[keyof typeof TishSettingOrderByRelevanceFieldEnum]
 
 
 export const ConventionCoefficientVersionOrderByRelevanceFieldEnum = {

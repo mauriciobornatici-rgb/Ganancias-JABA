@@ -40,6 +40,19 @@ Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae 
 
 Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
 
+### 2026-07-24 - Punto 2: módulo TISH (Tasa de Seguridad e Higiene)
+
+- Alcance acordado: **solo Régimen General (responsable inscripto)**. El régimen simplificado (cuota fija por categoría de monotributo) y el de Convenio Multilateral (art. 208 de la Ordenanza Fiscal) quedan fuera de este corte; si el perfil no es responsable inscripto, la pantalla lo avisa en vez de calcular algo que no corresponde.
+- Base: base imponible de IIBB de las líneas de actividad con el tilde **"computa TISH"**, acumulada **por bimestre** (6 cuotas). Campo nuevo `ClientTaxJurisdiction.computesTish` con una columna de tilde en la tabla de jurisdicciones. **Nunca** se identifica la actividad por coincidencia de texto: decisión explícita del usuario. Los tres endpoints que leen o versionan las jurisdicciones arrastran el tilde.
+- Alícuota del art. 23 y categoría **L/M/N: manuales por cliente y por año** (la ordenanza 2026 está escaneada sin capa de texto y el art. 23 no es legible). Modelo nuevo `TishSetting` con unique [clientId, year] (migración `20260724235000_add_tish`), que además guarda los importes de la ordenanza como parámetros editables, por cliente: cada contribuyente puede estar en otro municipio.
+- Estructura del cálculo, calcada del formulario "DDJJ MONTOS IMPONIBLES (RÉGIMEN GENERAL)": una fila por actividad (monto imponible × alícuota = tasa) → Subtotal → Contribución para la Salud → Bomberos Voluntarios → Residuos no Domiciliarios → TOTAL A ABONAR.
+- Reglas de la ordenanza 2026 (leídas del instructivo con `pdf-parse`), todas parametrizadas: **el subtotal nunca puede ser inferior a la cuota bimestral de la categoría K ($40.000)**; Salud = 12% del subtotal; Bomberos = 10% de la cuota de la categoría A ($8.000 → $800 fijos); Residuos = 25% / 40% / 60% del importe de la categoría K según L / M / N. Vencimientos de presentación 2026: 26/03, 28/05, 23/07, 24/09, 26/11 y 19/01/2027, editables.
+- Dominio puro nuevo: `src/domain/ganancias/fiscalLedger/tish.ts` (bimestre de cada mes, acumulación de bases, liquidación del bimestre y del año, vencimientos). Avisa cuando falta la alícuota, cuando ninguna actividad tiene el tilde y cuando el mínimo desplaza a la tasa calculada. 17 tests nuevos.
+- API nueva `GET/PUT /api/clientes/[id]/tish?year=`: devuelve configuración, actividades tildadas y los 6 bimestres liquidados; el PUT guarda con auditoría. Las bases salen de la última versión de la liquidación de IIBB de cada mes, y si algún mes todavía no está cerrado se avisa que los importes pueden cambiar.
+- UI: bloque propio **"Tasa de Seguridad e Higiene (TISH)"** en `/clientes/[id]/iibb-config`, al lado de la configuración de IIBB (pedido expreso: que no haya que buscarlo), con la configuración manual, los parámetros del año, los vencimientos y la tabla de las 6 cuotas. El selector de año de esa pantalla ahora manda para coeficientes CM y para TISH; el botón del libro mensual dice "Config. IIBB y TISH".
+- Decisión documentada: **no** se calcula el encuadre L/M/N a partir de la facturación de los últimos 12 meses (la columna existe en el formulario). La categoría es del contador; automatizarla exigiría acumular ingresos gravados, no gravados y exentos de todos los puntos de facturación, que hoy la app no consolida con esa definición.
+- Verificado: 479 tests unitarios, typecheck, lint, build y migración aplicada en Docker.
+
 ### 2026-07-24 - Punto 3: participación en sociedades atribuida al contribuyente
 
 - Criterio del usuario: **"ambos con verificación cruzada"**. Se cargan el **% de participación** y el **resultado total de la sociedad**; la app calcula el resultado atribuido y lo deja **editable**. Si el importe editado difiere del calculado, se computa el del contador y la diferencia se avisa (nunca se corrige ni se descarta en silencio).

@@ -171,6 +171,7 @@ model Client {
   taxProfiles            ClientTaxProfileVersion[]
   fiscalPeriods          FiscalPeriod[]
   conventionCoefficients ConventionCoefficientVersion[]
+  tishSettings           TishSetting[]
 }
 
 // ==========================================
@@ -404,6 +405,9 @@ model ClientTaxJurisdiction {
   registrationNumber String?
   // Alícuota de IIBB (fracción, ej. 0.050000 = 5%). Null = sin cargar (se trata como 0).
   taxRate            Decimal? @db.Decimal(8, 6)
+  // TISH (punto 2, 2026-07-24): tilde EXPLÍCITO de la línea de actividad que computa la Tasa de
+  // Seguridad e Higiene. Decisión del usuario: nunca por coincidencia de texto en la descripción.
+  computesTish       Boolean  @default(false)
   isActive           Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -650,6 +654,50 @@ model GrossIncomeJurisdictionLine {
   grossIncomeSettlement GrossIncomeSettlement @relation(fields: [grossIncomeSettlementId], references: [id], onDelete: Cascade)
 
   @@index([grossIncomeSettlementId, jurisdictionCode])
+}
+
+/**
+ * Tasa por Inspección de Seguridad e Higiene (TISH) - punto 2 del PDF (2026-07-24).
+ *
+ * Alcance decidido con el usuario: solo RÉGIMEN GENERAL (responsable inscripto). La alícuota y la
+ * categoría L/M/N son MANUALES por cliente y por año (la ordenanza 2026 está escaneada y el art. 23
+ * con las alícuotas no es legible). Los importes de la ordenanza se guardan como parámetros
+ * editables del año y por cliente, porque cada contribuyente puede estar en otro municipio.
+ *
+ * Los valores por defecto son los de la ordenanza 2026 de ARBAL (instructivo TISH 2026).
+ */
+model TishSetting {
+  id       String @id @default(uuid())
+  clientId String
+  year     Int
+
+  /** Categoría del Régimen General por tramo de facturación: L, M o N. */
+  category String  @default("L")
+  /** Alícuota del art. 23 de la Ordenanza Impositiva (fracción, ej. 0.006 = 0,6%). */
+  taxRate  Decimal @db.Decimal(8, 6) @default(0)
+
+  /** Cuota bimestral de la categoría K del Régimen Simplificado: piso de la tasa. */
+  minimumQuota            Decimal @db.Decimal(18, 2) @default(40000)
+  /** Cuota bimestral de la categoría A: base de la contribución a Bomberos. */
+  categoryAQuota          Decimal @db.Decimal(18, 2) @default(8000)
+  /** Contribución para la Salud sobre la tasa (fracción). */
+  healthRate              Decimal @db.Decimal(8, 6) @default(0.12)
+  /** Bomberos Voluntarios: fracción del valor de la categoría A. */
+  firefightersRate        Decimal @db.Decimal(8, 6) @default(0.10)
+  /** Residuos no domiciliarios: fracción del importe de la categoría K, según categoría. */
+  wasteRateCategoryL      Decimal @db.Decimal(8, 6) @default(0.25)
+  wasteRateCategoryM      Decimal @db.Decimal(8, 6) @default(0.40)
+  wasteRateCategoryN      Decimal @db.Decimal(8, 6) @default(0.60)
+  /** Vencimientos de presentación de las 6 cuotas (AAAA-MM-DD separados por coma). */
+  dueDates                String? @db.Text
+  notes                   String? @db.Text
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, year])
+  @@index([year])
 }
 
 model ConventionCoefficientVersion {

@@ -9,8 +9,9 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 - Rama de trabajo activa: `fix/fiabilidad-carga-y-retenciones`, PR #31 abierta y mergeable.
 - Contenido de la PR: puntos 1, 4 y 6 del PDF (commit `d9a985b`) + Next 16.2.6 -> 16.2.11 y gate de audit acotado a produccion (commit `b0686bb`).
 - CI: el **gate de audit** quedo resuelto con `overrides` de `find-my-way` 9.7.0 y `valibot` 1.4.2 (sin tocar Prisma ni usar prereleases). 434 tests, typecheck, lint, build e integracion ya pasaban.
-- Estado de los 6 puntos: 1 RESUELTO, 4 RESUELTO, 6 RESUELTO, 5 / 3 / 2-TISH **con la decision fiscal ya tomada y pendientes de implementar**.
-- Orden acordado con el usuario: gate de audit -> punto 5 (IDCB) -> punto 3 (participacion en sociedades) -> punto 2 (TISH).
+- Estado de los 6 puntos: **los 6 resueltos** (1, 4 y 6 en el commit `d9a985b`; 5 IDCB, 3 sociedades y 2 TISH en commits posteriores de la misma rama).
+- Pendiente antes del merge: validacion funcional en la app (carga real de un caso) y revision visual de los tres modulos nuevos.
+- Alcance NO cubierto de TISH: regimen simplificado, Convenio Multilateral y encuadre automatico L/M/N por facturacion de 12 meses.
 - Las decisiones fiscales de los tres puntos pendientes estan escritas completas en la entrada `2026-07-24` de `docs/REGISTRO_PROYECTO.md`. **No volver a preguntarlas**: leer esa entrada antes de codear.
 - Fuente del pedido: `tmp/pdfs/correcciones-app/` (no versionado). PDFs de TISH en `C:\Users\mauri\Downloads` (tampoco versionados).
 - Entorno: no hay `pdftoppm` en esta maquina; para leer PDFs extraer texto con `pdf-parse` desde el scratchpad. `fiscalLedgerSeedDocker` falla en local por seeds acumulados (no es regresion). No correr `db:test:reset` sin revisar `docker-compose.yml` (hace `down -v`).

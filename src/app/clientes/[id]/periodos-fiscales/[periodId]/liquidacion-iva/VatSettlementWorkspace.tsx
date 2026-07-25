@@ -116,7 +116,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [notice, setNotice] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
-  const [deletingDocuments, setDeletingDocuments] = useState(false);
+  const [deletingDirection, setDeletingDirection] = useState<'SALE' | 'PURCHASE' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Retenciones y percepciones (créditos de IVA)
@@ -428,7 +428,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudieron importar los archivos.');
-      setNotice(`Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`);
+      let msg = `Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`;
+      // Control de imputación: los comprobantes de otro mes no entran y se avisan acá.
+      if (payload.data.periodWarning) msg += ` ${payload.data.periodWarning}`;
+      setNotice(msg);
       await loadDocuments();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron importar los archivos.');
@@ -438,36 +441,38 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   };
 
-  const deleteLoadedDocuments = async () => {
-    if (documents.length === 0 || deletingDocuments) return;
+  const deleteLoadedDocuments = async (direction: 'SALE' | 'PURCHASE') => {
+    const affected = documents.filter(document => document.direction === direction);
+    if (affected.length === 0 || deletingDirection) return;
     const periodLabel = period ? `${MONTHS[period.month]} ${period.year}` : 'este período';
+    const kind = direction === 'SALE' ? 'ventas' : 'compras';
     const confirmed = window.confirm(
-      `Se eliminarán los ${documents.length} comprobantes cargados en ${periodLabel}.\n\n`
+      `Se eliminarán ${affected.length} comprobantes de ${kind} cargados en ${periodLabel}.\n\n`
       + 'Las retenciones y percepciones no se eliminarán. Esta acción no se puede deshacer. ¿Desea continuar?',
     );
     if (!confirmed) return;
 
-    setDeletingDocuments(true);
+    setDeletingDirection(direction);
     setError(null);
     setNotice(null);
     setSettlement(null);
     setGrossIncome(null);
     setActivityBases({});
     try {
-      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents?direction=${direction}`, {
         method: 'DELETE',
       });
       const payload = await res.json();
       if (!res.ok || !payload.success) {
         throw new Error(payload.error || 'No se pudieron eliminar los comprobantes.');
       }
-      setDocuments([]);
-      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${periodLabel}. Ya podés cargar los archivos en el mes correcto.`);
+      setDocuments(previous => previous.filter(document => document.direction !== direction));
+      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${kind} de ${periodLabel}. Ya podés cargar el archivo correcto.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron eliminar los comprobantes.');
       await loadDocuments();
     } finally {
-      setDeletingDocuments(false);
+      setDeletingDirection(null);
     }
   };
 
@@ -656,20 +661,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
           <StepTitle n={1} icon={<UploadCloud className="h-4 w-4" />} title="Subir archivos de AFIP" subtitle="Compras y ventas exportados de Mis Comprobantes (.csv). El sistema detecta automáticamente cuál es cuál." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || deletingDocuments} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
-            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDocuments) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || Boolean(deletingDirection)} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
+            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDirection) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploading ? 'Importando…' : 'Seleccionar CSV (compras y ventas)'}
             </label>
-            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || deletingDocuments} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
+            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || Boolean(deletingDirection)} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Actualizar
             </button>
             <button
               type="button"
-              onClick={() => void deleteLoadedDocuments()}
-              disabled={documents.length === 0 || deletingDocuments || uploading}
+              onClick={() => void deleteLoadedDocuments('PURCHASE')}
+              disabled={purchases.length === 0 || Boolean(deletingDirection) || uploading}
               className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Trash2 className="h-4 w-4" /> {deletingDocuments ? 'Eliminando…' : 'Eliminar comprobantes cargados'}
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'PURCHASE' ? 'Eliminando compras…' : 'Eliminar compras'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void deleteLoadedDocuments('SALE')}
+              disabled={sales.length === 0 || Boolean(deletingDirection) || uploading}
+              className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'SALE' ? 'Eliminando ventas…' : 'Eliminar ventas'}
             </button>
           </div>
         </section>

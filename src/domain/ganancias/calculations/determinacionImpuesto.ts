@@ -434,6 +434,8 @@ export function calculateTaxReturn(
   let creditosOtrosNoComputables = new Decimal(0);    // No computan contra Ganancias
 
   input.withholdings.forEach(w => {
+    // Se conserva el SIGNO: un importe negativo es la anulación de un crédito y debe netear
+    // contra las retenciones del mismo concepto (criterio del usuario, 2026-07-24).
     const amount = new Decimal(w.amount);
     switch (w.taxCode) {
       case 'Ganancias':
@@ -615,9 +617,13 @@ export function calculateTaxReturn(
   // Anticipos!E24 / RG 5211: cuota = (Impuesto proyectado - Retenciones - ITC) / 5.
   // Si la cuota no supera $5.000, no corresponde ingresar anticipos.
   const PISO_ANTICIPO = new Decimal(5000);
+  // RG 5211 art. 3: tanto el resultado/deducciones como los conceptos deducibles del período
+  // base se actualizan por la variación IPC julio-diciembre.
+  const retencionesAnticipo = retencionesYPercepciones.mul(ipcAnticipoRate);
+  const combustiblesAnticipo = computoCombustibles.mul(ipcAnticipoRate);
   const baseAnticipos = impuestoAnticipoDeterminado
-    .sub(retencionesYPercepciones)
-    .sub(computoCombustibles);
+    .sub(retencionesAnticipo)
+    .sub(combustiblesAnticipo);
   const anticiposSiguientePeriodo: Decimal[] = [];
   if (baseAnticipos.gt(0)) {
     const cuotaAnticipo = baseAnticipos.div(5).toDecimalPlaces(0, Decimal.ROUND_HALF_UP);

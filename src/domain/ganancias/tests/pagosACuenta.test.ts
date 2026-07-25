@@ -80,6 +80,27 @@ describe('P29 - Pagos a cuenta IG 25 (F61:F67, F68, F70)', () => {
     expect(result.warnings.some(w => w.includes('"Otros"'))).toBe(true);
   });
 
+  it('una retención negativa es una ANULACION: netea contra la original, no suma crédito', () => {
+    const result = calculateTaxReturn(buildInput([
+      { amount: new Decimal(100000), taxCode: 'Ganancias' },
+      { amount: new Decimal(-40000), taxCode: 'Ganancias' }, // anulación parcial
+    ]));
+
+    // Crédito neto = 100.000 - 40.000 = 60.000 (no 140.000)
+    expect(result.retencionesYPercepciones.toNumber()).toBe(60000);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(290000); // 350.000 - 60.000
+  });
+
+  it('la anulación total de una retención deja el crédito en cero', () => {
+    const result = calculateTaxReturn(buildInput([
+      { amount: new Decimal(100000), taxCode: 'Ganancias' },
+      { amount: new Decimal(-100000), taxCode: 'Ganancias' },
+    ]));
+
+    expect(result.retencionesYPercepciones.toNumber()).toBe(0);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(350000);
+  });
+
   it('computa anticipos cancelados (F62/F63/F64) y combustibles (F66)', () => {
     const result = calculateTaxReturn(buildInput([
       { amount: new Decimal(100000), taxCode: 'Ganancias' },          // F67

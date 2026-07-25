@@ -255,6 +255,8 @@ export function buildTaxReturnCalculationInput(
       balanceFinal: decimalValue(liability.balanceFinal),
     })),
     withholdings: asRecordArray(data.withholdings).map(withholding => ({
+      // El signo se conserva tal cual se cargó: los negativos son anulaciones de créditos
+      // y deben netear en el motor (criterio del usuario, 2026-07-24).
       amount: decimalValue(withholding.amount),
       taxCode: taxCode(withholding.taxCode),
       cuitAgent: stringValue(withholding.cuitAgent) || undefined,

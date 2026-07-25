@@ -1,6 +1,8 @@
 type FiscalDocumentCleanupStore = {
   fiscalDocument: {
-    deleteMany(args: { where: { fiscalPeriodId: string } }): Promise<{ count: number }>;
+    deleteMany(args: {
+      where: { fiscalPeriodId: string; direction?: 'SALE' | 'PURCHASE' };
+    }): Promise<{ count: number }>;
   };
 };
 
@@ -8,8 +10,14 @@ type FiscalDocumentCleanupStore = {
 export async function deleteFiscalDocumentsForPeriod(
   db: unknown,
   fiscalPeriodId: string,
+  direction?: 'SALE' | 'PURCHASE',
 ): Promise<{ deleted: number }> {
   const store = db as FiscalDocumentCleanupStore;
-  const result = await store.fiscalDocument.deleteMany({ where: { fiscalPeriodId } });
+  const result = await store.fiscalDocument.deleteMany({
+    where: {
+      fiscalPeriodId,
+      ...(direction ? { direction } : {}),
+    },
+  });
   return { deleted: result.count };
 }

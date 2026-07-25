@@ -4300,13 +4300,13 @@ export default function WizardPage() {
                         <div className="text-left">
                           <span className="text-[10px] uppercase tracking-wider text-teal-400 block font-bold">Total Retenciones</span>
                           <span className="text-sm font-bold text-teal-300">
-                            ${withholdings.reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            ${withholdings.reduce((sum, w) => sum.add(new Decimal(w.amount || 0).abs()), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                         <div className="h-6 w-[1px] bg-teal-500/20"></div>
                         <div className="text-left text-[10px] text-zinc-400">
-                          <span className="block font-semibold">Computa en Ganancias: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode !== 'Otros').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
-                          <span className="block font-semibold">Otros (no computa): <span className="text-zinc-200">${withholdings.filter(w => w.taxCode === 'Otros').reduce((sum, w) => sum.add(new Decimal(w.amount || 0)), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                          <span className="block font-semibold">Computa en Ganancias: <span className="text-zinc-200">${withholdings.filter(w => w.taxCode !== 'Otros').reduce((sum, w) => sum.add(new Decimal(w.amount || 0).abs()), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                          <span className="block font-semibold">Otros (no computa): <span className="text-zinc-200">${withholdings.filter(w => w.taxCode === 'Otros').reduce((sum, w) => sum.add(new Decimal(w.amount || 0).abs()), new Decimal(0)).toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                         </div>
                       </div>
                     )}
@@ -5206,6 +5206,41 @@ export default function WizardPage() {
                             <td className="px-6 py-2.5 font-semibold">(-) Retenciones, Percepciones y Pagos a Cuenta</td>
                             <td className="px-4 py-2.5 text-zinc-500">Mis Retenciones AFIP: ${formatDecimal(calculationResult.retencionesYPercepciones)}</td>
                             <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">(-{formatDecimal(calculationResult.retencionesYPercepciones)})</td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Impuesto sobre Créditos y Débitos Bancarios</td>
+                            <td className="px-4 py-2.5 text-zinc-500">
+                              IDCB computable: ${formatDecimal(
+                                calculationResult.computoIdcb
+                                  .add(calculationResult.anticiposCanceladosIdcb)
+                                  .sub(calculationResult.saldoTrasladableIdcb),
+                              )}
+                              {calculationResult.saldoTrasladableIdcb.gt(0)
+                                ? ` · trasladable: $${formatDecimal(calculationResult.saldoTrasladableIdcb)}`
+                                : ''}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">
+                              (-{formatDecimal(
+                                calculationResult.computoIdcb
+                                  .add(calculationResult.anticiposCanceladosIdcb)
+                                  .sub(calculationResult.saldoTrasladableIdcb),
+                              )})
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-mono">-</td>
+                          </tr>
+                          <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                            <td className="px-6 py-2.5 font-semibold">(-) Otros pagos a cuenta computables</td>
+                            <td className="px-4 py-2.5 text-zinc-500">
+                              Anticipos en efectivo / Mis Facilidades y combustibles
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-zinc-400 font-mono">
+                              (-{formatDecimal(
+                                calculationResult.anticiposCanceladosEfectivo
+                                  .add(calculationResult.anticiposCanceladosMisFacilidades)
+                                  .add(calculationResult.computoCombustibles),
+                              )})
+                            </td>
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                           </tr>
                           <tr onClick={() => { changeStep(5); setActiveSubTab('deducciones'); }} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">

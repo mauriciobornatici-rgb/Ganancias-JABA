@@ -1,8 +1,42 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-21
+Ultima actualizacion: 2026-07-24
 
 ## Entrada reciente
+
+### 2026-07-24 - PDF de correcciones del usuario: puntos 1, 4 y 6 implementados + seguridad de dependencias (PR #31)
+
+Origen: PDF de correcciones entregado por el usuario con 6 puntos numerados (capturas de la app + referencias de ARCA y de la planilla). Los archivos de trabajo quedaron en `tmp/pdfs/correcciones-app/` (no versionados). Los 6 puntos son:
+
+1. Verificación de períodos de carga y eliminación (liquidación mensual de IVA).
+2. Liquidación de Tasa de Seguridad e Higiene (TISH).
+3. Clientes con participación en sociedades.
+4. Retenciones con signo negativo que no restaban.
+5. Determinación del impuesto: falta computar el impuesto sobre los débitos y créditos bancarios (IDCB).
+6. Cálculo de la proyección de anticipos.
+
+Implementado en `fix/fiabilidad-carga-y-retenciones` (PR #31), commit `d9a985b`:
+
+- **Punto 1 (RESUELTO).** La carga manual de comprobantes valida el mes; antes solo lo hacía el puente UiPath. Criterio decidido por el usuario: **tolerante con aviso** — entra lo que pertenece al período, se informa lo que quedó afuera, y si nada pertenece al período no se escribe nada. Helper puro `fiscalDocumentPeriodValidation` con tests. El "tacho" de eliminación se partió en dos eventos independientes: borrar solo compras o solo ventas (antes borraba ambos juntos).
+- **Punto 4 (RESUELTO).** Las retenciones de Ganancias se reconocen por **código 210 / 217 / 218 / 787**; antes solo 787 y todas las demás caían en "Otros (no computa)". Los importes negativos **son anulaciones y netean** contra la retención original: se conserva el signo en importador, mapper y motor. Decisión fiscal del usuario, registrada porque una sesión anterior lo había implementado con valor absoluto (`.abs()`) y era incorrecto.
+- **Punto 6 (RESUELTO).** La proyección de anticipos actualiza retenciones y combustibles por IPC (RG 5211 art. 3), como en la planilla de referencia del usuario (tabla 2025 reexpresada IPC jul→dic).
+
+Seguridad de dependencias, commit `b0686bb`:
+
+- **Next 16.2.6 → 16.2.11** por advisories high, uno de ellos bypass de middleware.
+- El gate de vulnerabilidades del workflow se acotó a dependencias de producción: `npm audit --audit-level=high --omit=dev`.
+
+Estado de CI del PR #31: **todo verde menos el gate de audit**, que es el último paso del pipeline (434 tests, typecheck, lint, build y las pruebas de integración ya pasaron en CI). El audit falla por cadena transitiva de Prisma: `@prisma/client 7.9.0` → `prisma 7.9.0` → `@prisma/dev 0.24.14` → `find-my-way 9.6.0` (high, DDoS con HTTP2) + `valibot 1.2.0` (moderate). Notas para resolverlo: 7.9.0 es la última **estable** y está dentro del rango vulnerable; `7.10.0-dev.35` sale del rango pero es pre-release y **en esta app no se instalan prereleases**. Camino elegido: probar `overrides` de `find-my-way` y `valibot` y, si rompen algo, excepción documentada hasta que salga 7.10.0 estable — el componente afectado (`@prisma/dev`, servidor local de la CLI) no corre en producción.
+
+Decisiones fiscales tomadas para los puntos que faltan (definidas por el usuario en esta sesión, listas para implementar sin volver a preguntar):
+
+- **Punto 5 - IDCB.** Se carga **mes a mes el importe total** del impuesto al cheque, con **selector 33% / 100% configurable por cliente** (100% = micro y pequeña empresa). La app calcula el importe computable y a fin de año queda todo imputado en la DDJJ anual, restando en la determinación del impuesto (Paso 6). El saldo IDCB trasladable ya existía en el mapeo del IG 25 (F70); lo que falta es la carga mensual y el cómputo.
+- **Punto 3 - Participación en sociedades.** Criterio **"ambos con verificación cruzada"**: se cargan el **% de participación** y el **resultado total de la sociedad**; la app calcula el resultado atribuido y lo deja **editable**. Referencia de presentación: bloque "Participación en empresas" de la DDJJ simplificada de ARCA (origen, CUIT de la empresa, denominación, tipo societario).
+- **Punto 2 - TISH.** Alcance: **solo Régimen General (responsable inscripto)**; el régimen simplificado de monotributistas queda fuera. Base: base imponible de IIBB de las actividades marcadas, acumulada **por bimestre** (la tasa es bimestral, 6 cuotas, mientras los períodos de IVA/IIBB son mensuales). Solo computa la actividad de comercio, y se identifica con un **tilde explícito "computa TISH" por línea de actividad** en la configuración de IIBB — **no** por coincidencia de texto en la descripción. **Alícuota manual por cliente y por año**; **categoría L/M/N manual** (la ordenanza 2026 está escaneada sin capa de texto y el art. 23 con las alícuotas no es legible, de ahí que la alícuota vaya manual). Ubicación pedida expresamente: bloque propio y bien visible "Tasa de Seguridad e Higiene (TISH)" dentro del perfil fiscal del cliente, al lado de la configuración de IIBB, para no tener que buscarlo. Parámetros de la ordenanza 2026 a cargar como parámetros editables del año: mínimo = cuota categoría K $40.000; cuota A $8.000; +12% Contribución Salud; Bomberos 10% de la cuota A; Residuos 25%/40%/60% de K según categoría L/M/N. Vencimientos 2026: 26/03, 28/05, 23/07, 24/09, 26/11 y 19/01/2027. Documentación fuente fuera del repo, en `C:\Users\mauri\Downloads`: `ordenanza impositiva 2026.pdf`, `Instructivo_TISH_2026.pdf`, `DDJJ_SEGURIDAD_HIGIENE_REGIMEN_GENERAL_2026.pdf`, `DDJJ_SEGURIDAD_HIGIENE_REGIMEN_SIMPLIFICADO_2026.pdf`.
+
+Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae el texto con `pdf-parse` desde el scratchpad. El test `fiscalLedgerSeedDocker` falla **en local** por seeds acumulados (espera 2 perfiles y hay 3): no es regresión, en CI pasa. No correr `db:test:reset` sin revisar antes `docker-compose.yml`, porque hace `down -v` y podría borrar volúmenes de la base de desarrollo.
+
+Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
 
 ### 2026-07-22 - Wizard Paso 3: totales por tipo de gasto en la cabecera
 

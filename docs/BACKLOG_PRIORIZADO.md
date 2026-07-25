@@ -43,6 +43,20 @@ Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usua
 - `Bloqueado`: requiere dato, decision o entorno.
 - `Resuelto`: cerrado con verificacion y registro.
 
+## P33 - PDF de correcciones del usuario (6 puntos) - 2026-07-24
+
+Estado: Activo. Rama `fix/fiabilidad-carga-y-retenciones`, PR #31.
+
+Decisiones fiscales completas de cada punto: entrada `2026-07-24` de `docs/REGISTRO_PROYECTO.md`. No volver a preguntarlas.
+
+- Punto 1 - Verificacion de periodo en carga y eliminacion: **Resuelto** (criterio tolerante con aviso; tacho separado compras/ventas).
+- Punto 4 - Retenciones con signo negativo: **Resuelto** (codigos 210/217/218/787; los negativos son anulaciones y netean, no se usa valor absoluto).
+- Punto 6 - Proyeccion de anticipos: **Resuelto** (retenciones y combustibles reexpresados por IPC, RG 5211 art. 3).
+- Gate de audit del PR #31: **Siguiente**. Falla por `@prisma/client` -> `prisma 7.9.0` -> `@prisma/dev 0.24.14` -> `find-my-way 9.6.0` + `valibot 1.2.0`. Probar `overrides`; no instalar prereleases de Prisma; si rompe, excepcion documentada hasta 7.10.0 estable.
+- Punto 5 - IDCB en la determinacion: **Siguiente**. Carga mensual del importe total del impuesto al cheque + selector 33%/100% por cliente; la app calcula el computable y lo imputa en la DDJJ anual.
+- Punto 3 - Participacion en sociedades: **Pendiente**. Se cargan % de participacion y resultado total; la app calcula el atribuido y queda editable (verificacion cruzada).
+- Punto 2 - TISH: **Pendiente**. Solo Regimen General; base IIBB por bimestre de las actividades con tilde "computa TISH"; alicuota y categoria L/M/N manuales por cliente y año; bloque propio en el perfil fiscal junto a la config de IIBB; parametros de la ordenanza 2026 editables.
+
 ## P0 - Continuidad y control operativo
 
 Estado: Resuelto.

@@ -213,6 +213,15 @@ export type PayableDebt = Prisma.PayableDebtModel
  */
 export type TaxWithholding = Prisma.TaxWithholdingModel
 /**
+ * Model SocietyParticipation
+ * *
+ *  * Participación en sociedades, explotaciones unipersonales y fideicomisos (excepto art. 73).
+ *  * Punto 3 del PDF de correcciones (2026-07-24): se guardan el porcentaje y el resultado total de la
+ *  * sociedad; el resultado atribuido se deriva de esos dos datos, y `attributedResultOverride` (null =
+ *  * sin editar) conserva la corrección manual del contador para poder avisar la diferencia.
+ */
+export type SocietyParticipation = Prisma.SocietyParticipationModel
+/**
  * Model PersonalAsset
  * 
  */

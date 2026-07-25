@@ -436,6 +436,7 @@ export const ModelName = {
   ReceivableDebt: 'ReceivableDebt',
   PayableDebt: 'PayableDebt',
   TaxWithholding: 'TaxWithholding',
+  SocietyParticipation: 'SocietyParticipation',
   PersonalAsset: 'PersonalAsset',
   PersonalLiability: 'PersonalLiability',
   PatrimonialJustification: 'PatrimonialJustification',
@@ -465,7 +466,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
+    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "societyParticipation" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3043,6 +3044,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    SocietyParticipation: {
+      payload: Prisma.$SocietyParticipationPayload<ExtArgs>
+      fields: Prisma.SocietyParticipationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SocietyParticipationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SocietyParticipationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        findFirst: {
+          args: Prisma.SocietyParticipationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SocietyParticipationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        findMany: {
+          args: Prisma.SocietyParticipationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>[]
+        }
+        create: {
+          args: Prisma.SocietyParticipationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        createMany: {
+          args: Prisma.SocietyParticipationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.SocietyParticipationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        update: {
+          args: Prisma.SocietyParticipationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        deleteMany: {
+          args: Prisma.SocietyParticipationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SocietyParticipationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.SocietyParticipationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        aggregate: {
+          args: Prisma.SocietyParticipationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSocietyParticipation>
+        }
+        groupBy: {
+          args: Prisma.SocietyParticipationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SocietyParticipationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SocietyParticipationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SocietyParticipationCountAggregateOutputType> | number
+        }
+      }
+    }
     PersonalAsset: {
       payload: Prisma.$PersonalAssetPayload<ExtArgs>
       fields: Prisma.PersonalAssetFieldRefs
@@ -4655,6 +4722,22 @@ export const TaxWithholdingScalarFieldEnum = {
 export type TaxWithholdingScalarFieldEnum = (typeof TaxWithholdingScalarFieldEnum)[keyof typeof TaxWithholdingScalarFieldEnum]
 
 
+export const SocietyParticipationScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType',
+  participationPercent: 'participationPercent',
+  societyResult: 'societyResult',
+  attributedResultOverride: 'attributedResultOverride',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SocietyParticipationScalarFieldEnum = (typeof SocietyParticipationScalarFieldEnum)[keyof typeof SocietyParticipationScalarFieldEnum]
+
+
 export const PersonalAssetScalarFieldEnum = {
   id: 'id',
   taxReturnId: 'taxReturnId',
@@ -5364,6 +5447,17 @@ export const TaxWithholdingOrderByRelevanceFieldEnum = {
 export type TaxWithholdingOrderByRelevanceFieldEnum = (typeof TaxWithholdingOrderByRelevanceFieldEnum)[keyof typeof TaxWithholdingOrderByRelevanceFieldEnum]
 
 
+export const SocietyParticipationOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType'
+} as const
+
+export type SocietyParticipationOrderByRelevanceFieldEnum = (typeof SocietyParticipationOrderByRelevanceFieldEnum)[keyof typeof SocietyParticipationOrderByRelevanceFieldEnum]
+
+
 export const PersonalAssetOrderByRelevanceFieldEnum = {
   id: 'id',
   taxReturnId: 'taxReturnId',
@@ -5842,6 +5936,7 @@ export type GlobalOmitConfig = {
   receivableDebt?: Prisma.ReceivableDebtOmit
   payableDebt?: Prisma.PayableDebtOmit
   taxWithholding?: Prisma.TaxWithholdingOmit
+  societyParticipation?: Prisma.SocietyParticipationOmit
   personalAsset?: Prisma.PersonalAssetOmit
   personalLiability?: Prisma.PersonalLiabilityOmit
   patrimonialJustification?: Prisma.PatrimonialJustificationOmit

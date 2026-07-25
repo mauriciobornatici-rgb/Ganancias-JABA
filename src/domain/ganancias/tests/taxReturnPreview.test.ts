@@ -189,6 +189,7 @@ describe('hydrateTaxReturnPreviewResult', () => {
       axiStaticResult: 0,
       axiDynamicResult: 0,
       resultadoComercialNeto: 1000,
+      resultadoParticipacionSociedades: 0,
       resultadoNetoTodasCategorias: 1000,
       deduccionesGenerales: {
         autonomosAdmitidos: 0,

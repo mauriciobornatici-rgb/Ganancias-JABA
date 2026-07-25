@@ -24,6 +24,10 @@ import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { calculateYearsElapsedAtClose } from '@/domain/ganancias/calculations/amortizaciones';
 import { calculateClosingCommercialPatrimony } from '@/domain/ganancias/calculations/patrimonioComercial';
+import {
+  calculateSocietyParticipations,
+  toSocietyParticipationInputs,
+} from '@/domain/ganancias/calculations/participacionSociedades';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildWizardLoadReport } from '@/domain/ganancias/presentation/wizardLoadReport';
 import {
@@ -73,6 +77,7 @@ import {
   createWizardFixedAssetId,
   buildDefaultWizardLiability,
   buildDefaultWizardOtherJustification,
+  buildDefaultWizardSocietyParticipation,
   buildDefaultWizardReceivable,
   buildWizardAxiStaticSuggestion,
   buildWizardEspAuxiliarySummary,
@@ -109,6 +114,7 @@ import {
   type WizardSale,
   type WizardTaxReturnSummary,
   type WizardWithholding,
+  type WizardSocietyParticipation,
 } from '@/domain/ganancias/presentation/wizardStateTypes';
 import Image from 'next/image';
 import { FixedAssetCandidatesPanel, type FixedAssetCandidateView } from './FixedAssetCandidatesPanel';
@@ -260,6 +266,7 @@ type WizardStateSnapshot = {
   receivables?: WizardReceivable[];
   liabilities?: WizardLiability[];
   withholdings?: WizardWithholding[];
+  societyParticipations?: WizardSocietyParticipation[];
   generalDeductions?: {
     autonomos: string;
     servicioDomestico: string;
@@ -438,7 +445,7 @@ export default function WizardPage() {
         )
       );
     }
-    if (step === 2) return sales.length > 0;
+    if (step === 2) return sales.length > 0 || societyParticipations.length > 0;
     if (step === 3) return purchases.length > 0 || (initialStock !== '0' && initialStock !== '') || (finalStock !== '0' && finalStock !== '');
     if (step === 4) {
       return fixedAssets.length > 0 ||
@@ -476,6 +483,7 @@ export default function WizardPage() {
       receivables,
       liabilities,
       withholdings,
+      societyParticipations,
       generalDeductions,
       personalDeductions,
       personalAssets,
@@ -594,6 +602,7 @@ export default function WizardPage() {
       receivables,
       liabilities,
       withholdings,
+      societyParticipations,
       generalDeductions,
       personalDeductions,
       personalAssets,
@@ -689,6 +698,8 @@ export default function WizardPage() {
 
   const [withholdings, setWithholdings] = useState<WizardWithholding[]>([]);
 
+  const [societyParticipations, setSocietyParticipations] = useState<WizardSocietyParticipation[]>([]);
+
   const [generalDeductions, setGeneralDeductions] = useState(DEFAULT_WIZARD_GENERAL_DEDUCTIONS);
 
   const [personalDeductions, setPersonalDeductions] = useState<{
@@ -760,6 +771,7 @@ export default function WizardPage() {
     if (shouldApplyWizardSnapshotField(data, 'receivables')) setReceivables(data.receivables ?? []);
     if (shouldApplyWizardSnapshotField(data, 'liabilities')) setLiabilities(data.liabilities ?? []);
     if (shouldApplyWizardSnapshotField(data, 'withholdings')) setWithholdings(data.withholdings ?? []);
+    if (shouldApplyWizardSnapshotField(data, 'societyParticipations')) setSocietyParticipations(data.societyParticipations ?? []);
     if (shouldApplyWizardSnapshotField(data, 'generalDeductions')) setGeneralDeductions(data.generalDeductions ?? DEFAULT_WIZARD_GENERAL_DEDUCTIONS);
     if (shouldApplyWizardSnapshotField(data, 'personalDeductions')) setPersonalDeductions(data.personalDeductions ?? DEFAULT_WIZARD_PERSONAL_DEDUCTIONS);
     if (shouldApplyWizardSnapshotField(data, 'personalAssets')) setPersonalAssets(data.personalAssets ?? []);
@@ -998,6 +1010,7 @@ export default function WizardPage() {
         receivables,
         liabilities,
         withholdings,
+        societyParticipations,
         generalDeductions,
         personalDeductions,
         personalAssets,
@@ -1097,7 +1110,7 @@ export default function WizardPage() {
   }, [
     activeReturnId, cuit, clientName, fiscalYear, currentStep, taxParameterSetId,
     sales, purchases, fixedAssets, initialStock, finalStock,
-    bankAccounts, cashHoldings, receivables, liabilities, withholdings, generalDeductions, personalDeductions,
+    bankAccounts, cashHoldings, receivables, liabilities, withholdings, societyParticipations, generalDeductions, personalDeductions,
     personalAssets, personalLiabilities, otherJustifications, activoTotalInicio, pasivoTotalInicio,
     bienesNoComputablesInicio, saldoAFavorAnterior, quebrantosAnteriores, axiDynamic,
     axiStaticBreakdown, applyWizardSnapshot, reportLocalDraftSave
@@ -1323,7 +1336,7 @@ export default function WizardPage() {
   // ==========================================
   // PROCEDIMIENTO DE CARGA MANUAL (ADD/DELETE ROWS)
   // ==========================================
-  const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+  const addRow = (type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'societyParticipations' | 'axiDynamic') => {
     if (type === 'sales') {
       setSales([...sales, { date: `${fiscalYear}-01-01`, netAmount: '0', isExempt: false }]);
     } else if (type === 'purchases') {
@@ -1347,12 +1360,14 @@ export default function WizardPage() {
       setPersonalLiabilities([...personalLiabilities, { description: 'Nuevo Pasivo', valueInitial: '0', valueFinal: '0' }]);
     } else if (type === 'otherJustifications') {
       setOtherJustifications([...otherJustifications, buildDefaultWizardOtherJustification()]);
+    } else if (type === 'societyParticipations') {
+      setSocietyParticipations([...societyParticipations, buildDefaultWizardSocietyParticipation()]);
     } else if (type === 'axiDynamic') {
       setAxiDynamic([...axiDynamic, { concept: 'Nuevo Ajuste', type: 'RetiroSocio', amount: '0', date: `${fiscalYear}-01-01` }]);
     }
   };
 
-  const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+  const deleteRow = (index: number, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'societyParticipations' | 'axiDynamic') => {
     if (type === 'sales') setSales(sales.filter((_, i) => i !== index));
     if (type === 'purchases') {
       setPurchases(purchases.filter((_, i) => i !== index));
@@ -1367,6 +1382,7 @@ export default function WizardPage() {
     if (type === 'liabilities') setLiabilities(liabilities.filter((_, i) => i !== index));
     if (type === 'personalLiabilities') setPersonalLiabilities(personalLiabilities.filter((_, i) => i !== index));
     if (type === 'otherJustifications') setOtherJustifications(otherJustifications.filter((_, i) => i !== index));
+    if (type === 'societyParticipations') setSocietyParticipations(societyParticipations.filter((_, i) => i !== index));
     if (type === 'axiDynamic') setAxiDynamic(axiDynamic.filter((_, i) => i !== index));
   };
 
@@ -1379,9 +1395,10 @@ export default function WizardPage() {
     'netAmount', 'ivaAmount', 'totalAmount', 'amount', 'originalCost',
     'valueInitial', 'valueFinal', 'nominalInitial', 'nominalFinal',
     'tcInitial', 'tcFinal', 'interests', 'balanceInitial', 'balanceFinal',
+    'societyResult', 'attributedResultOverride',
   ]);
 
-  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'axiDynamic') => {
+  const handleCellChange = (index: number, field: string, value: WizardCellValue, type: 'sales' | 'purchases' | 'assets' | 'withholdings' | 'personalAssets' | 'bankAccounts' | 'cashHoldings' | 'receivables' | 'liabilities' | 'personalLiabilities' | 'otherJustifications' | 'societyParticipations' | 'axiDynamic') => {
     const cellValue = typeof value === 'string' && MONETARY_CELL_FIELDS.has(field)
       ? normalizeArgentineAmountInput(value)
       : value;
@@ -1436,6 +1453,10 @@ export default function WizardPage() {
       const updated = [...otherJustifications];
       updated[index][field] = field === 'column' ? coerceWizardOtherJustificationColumn(value as string | number | null | undefined) : value;
       setOtherJustifications(updated);
+    } else if (type === 'societyParticipations') {
+      const updated = [...societyParticipations];
+      updated[index][field] = cellValue;
+      setSocietyParticipations(updated);
     } else if (type === 'axiDynamic') {
       const updated = [...axiDynamic];
       updated[index][field] = cellValue;
@@ -1679,6 +1700,7 @@ export default function WizardPage() {
     receivables,
     liabilities,
     withholdings,
+    societyParticipations,
     generalDeductions,
     personalDeductions,
     personalAssets,
@@ -1691,6 +1713,11 @@ export default function WizardPage() {
     saldoAFavorAnterior,
     quebrantosAnteriores,
   };
+
+  // Vista en pantalla del punto 3: mismo cálculo puro que usa el motor (atribuido, override y avisos).
+  const societyParticipationsSummary = calculateSocietyParticipations(
+    toSocietyParticipationInputs(societyParticipations),
+  );
 
   const espAuxiliarySummary = buildWizardEspAuxiliarySummary({
     cashHoldings,
@@ -1852,6 +1879,7 @@ export default function WizardPage() {
     receivables,
     liabilities,
     withholdings,
+    societyParticipations,
     generalDeductions,
     personalDeductions,
     personalAssets,
@@ -2876,6 +2904,137 @@ export default function WizardPage() {
                 <Plus className="h-4 w-4 stroke-[3.5]" />
                 Añadir Fila Manual
               </button>
+
+              {/* PARTICIPACION EN SOCIEDADES (punto 3 del PDF, criterio 2026-07-24):
+                  se cargan % y resultado total; la app calcula el atribuido y queda editable. */}
+              <div className="border-t border-dashed border-zinc-800 pt-6 space-y-4">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white tracking-tight">Participación en sociedades</h3>
+                    <p className="text-zinc-400 text-xs mt-1">
+                      Sociedades, explotaciones unipersonales y fideicomisos en los que participa el contribuyente (excepto art. 73).
+                      Cargue el porcentaje y el resultado total de la sociedad: la app calcula el resultado atribuido y lo suma al neto de la categoría.
+                      Si necesita otro importe, escribalo en &quot;Atribuido (editable)&quot; y la app avisa la diferencia.
+                    </p>
+                  </div>
+                  {societyParticipations.length > 0 && (
+                    <div className="px-3 py-1.5 rounded-lg bg-teal-500/10 border border-teal-500/25 shrink-0">
+                      <span className="text-[10px] uppercase tracking-wider text-teal-400 block font-bold">Resultado atribuido</span>
+                      <span className="text-sm font-bold font-mono text-teal-300">
+                        {formatCurrencyCents(societyParticipationsSummary.totalAttributedResult.toNumber())}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {societyParticipations.length > 0 && (
+                  <div className="border border-zinc-800 rounded-lg overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-zinc-850 bg-zinc-900/10 text-zinc-500 text-[10px] uppercase font-bold tracking-wider">
+                          <th className="px-4 py-3">CUIT de la empresa</th>
+                          <th className="px-4 py-3">Denominación</th>
+                          <th className="px-4 py-3">Tipo societario</th>
+                          <th className="px-4 py-3 text-right">% Participación</th>
+                          <th className="px-4 py-3 text-right">Resultado sociedad ($)</th>
+                          <th className="px-4 py-3 text-right">Atribuido calculado ($)</th>
+                          <th className="px-4 py-3 text-right">Atribuido (editable)</th>
+                          <th className="px-4 py-3 text-right">Eliminar</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-850/50">
+                        {societyParticipations.map((participation, index) => {
+                          const line = societyParticipationsSummary.lines[index];
+                          return (
+                            <tr key={index} className="hover:bg-zinc-800/10 transition-colors">
+                              <td className="px-4 py-2">
+                                <input
+                                  value={participation.cuit ?? ''}
+                                  onChange={(e) => handleCellChange(index, 'cuit', e.target.value, 'societyParticipations')}
+                                  placeholder="30-71234567-8"
+                                  className="w-36 bg-transparent border-b border-zinc-800 focus:border-teal-500 outline-none text-xs font-mono text-zinc-300 py-1"
+                                />
+                              </td>
+                              <td className="px-4 py-2">
+                                <input
+                                  value={participation.denomination ?? ''}
+                                  onChange={(e) => handleCellChange(index, 'denomination', e.target.value, 'societyParticipations')}
+                                  placeholder="Denominación de la empresa"
+                                  className="w-52 bg-transparent border-b border-zinc-800 focus:border-teal-500 outline-none text-xs text-zinc-200 py-1"
+                                />
+                              </td>
+                              <td className="px-4 py-2">
+                                <input
+                                  value={participation.societyType ?? ''}
+                                  onChange={(e) => handleCellChange(index, 'societyType', e.target.value, 'societyParticipations')}
+                                  placeholder="ej. Sociedad Cap. Secc. IV"
+                                  className="w-44 bg-transparent border-b border-zinc-800 focus:border-teal-500 outline-none text-xs text-zinc-300 py-1"
+                                />
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <input
+                                  inputMode="decimal"
+                                  value={String(participation.participationPercent ?? '')}
+                                  onChange={(e) => handleCellChange(index, 'participationPercent', e.target.value, 'societyParticipations')}
+                                  className="w-20 bg-transparent border-b border-zinc-800 focus:border-teal-500 outline-none text-xs font-mono text-right text-zinc-200 py-1"
+                                />
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <input
+                                  inputMode="decimal"
+                                  value={String(participation.societyResult ?? '')}
+                                  onChange={(e) => handleCellChange(index, 'societyResult', e.target.value, 'societyParticipations')}
+                                  className="w-32 bg-transparent border-b border-zinc-800 focus:border-teal-500 outline-none text-xs font-mono text-right text-zinc-200 py-1"
+                                />
+                              </td>
+                              <td className="px-4 py-2 text-right font-mono text-xs text-zinc-400">
+                                {line ? formatCurrencyCents(line.calculatedResult.toNumber()) : '—'}
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <input
+                                  inputMode="decimal"
+                                  value={String(participation.attributedResultOverride ?? '')}
+                                  onChange={(e) => handleCellChange(index, 'attributedResultOverride', e.target.value, 'societyParticipations')}
+                                  placeholder="usa el calculado"
+                                  className={`w-32 bg-transparent border-b outline-none text-xs font-mono text-right py-1 ${line?.isOverridden ? 'border-amber-500/60 text-amber-300' : 'border-zinc-800 focus:border-teal-500 text-zinc-200'}`}
+                                />
+                              </td>
+                              <td className="px-4 py-2 text-right">
+                                <button
+                                  onClick={() => deleteRow(index, 'societyParticipations')}
+                                  className="text-zinc-600 hover:text-red-400 transition-colors cursor-pointer"
+                                  aria-label="Eliminar participación"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {societyParticipationsSummary.warnings.length > 0 && (
+                  <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/25 space-y-1.5">
+                    {societyParticipationsSummary.warnings.map((warning, index) => (
+                      <p key={index} className="text-[11px] leading-5 text-amber-200 flex items-start gap-2">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                        <span>{warning}</span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => addRow('societyParticipations')}
+                  className="flex items-center gap-1.5 text-xs text-teal-400 hover:text-teal-300 font-bold uppercase tracking-wider"
+                >
+                  <Plus className="h-4 w-4 stroke-[3.5]" />
+                  Agregar participación
+                </button>
+              </div>
             </div>
           )}
 
@@ -5133,6 +5292,25 @@ export default function WizardPage() {
                             <td className="px-4 py-2.5 text-right font-mono">-</td>
                             <td className="px-4 py-2.5 text-right font-mono">{formatDecimal(calculationResult.resultadoComercialNeto)}</td>
                           </tr>
+                          {calculationResult.resultadoParticipacionSociedades.toNumber() !== 0 && (
+                            <>
+                              <tr onClick={() => changeStep(2)} className="hover:bg-zinc-800/15 cursor-pointer hover:text-teal-400 transition-all">
+                                <td className="px-6 py-2.5 font-semibold">(+/-) Resultado Atribuido de Sociedades</td>
+                                <td className="px-4 py-2.5 text-zinc-500">
+                                  Participación en {societyParticipations.length} sociedad(es) (excepto art. 73)
+                                </td>
+                                <td className={`px-4 py-2.5 text-right font-mono ${calculationResult.resultadoParticipacionSociedades.toNumber() >= 0 ? 'text-emerald-450' : 'text-red-450'}`}>
+                                  {formatDecimal(calculationResult.resultadoParticipacionSociedades)}
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-mono">-</td>
+                              </tr>
+                              <tr className="bg-zinc-900/30 font-bold border-t border-zinc-800 text-zinc-200">
+                                <td colSpan={2} className="px-4 py-2.5">Resultado Neto de Todas las Categorías</td>
+                                <td className="px-4 py-2.5 text-right font-mono">-</td>
+                                <td className="px-4 py-2.5 text-right font-mono">{formatDecimal(calculationResult.resultadoNetoTodasCategorias)}</td>
+                              </tr>
+                            </>
+                          )}
 
                           {/* 2. DEDUCCIONES GENERALES Y COMPENSACIONES */}
                           <tr className="bg-zinc-900/10">

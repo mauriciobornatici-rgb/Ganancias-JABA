@@ -69,6 +69,7 @@ export function serializeTaxCalculationResult(result: TaxCalculationResult) {
     axiStaticResult: decimalToNumber(result.axiStaticResult),
     axiDynamicResult: decimalToNumber(result.axiDynamicResult),
     resultadoComercialNeto: decimalToNumber(result.resultadoComercialNeto),
+    resultadoParticipacionSociedades: decimalToNumber(result.resultadoParticipacionSociedades),
     resultadoNetoTodasCategorias: decimalToNumber(result.resultadoNetoTodasCategorias),
     deduccionesGenerales: serializeGeneralDeductions(result.deduccionesGenerales),
     resultadoNetoAntesQuebrantos: decimalToNumber(result.resultadoNetoAntesQuebrantos),
@@ -188,6 +189,7 @@ export function hydrateTaxReturnPreviewResult(value: ReturnType<typeof serialize
     axiStaticResult: numberToDecimal(value.axiStaticResult),
     axiDynamicResult: numberToDecimal(value.axiDynamicResult),
     resultadoComercialNeto: numberToDecimal(value.resultadoComercialNeto),
+    resultadoParticipacionSociedades: numberToDecimal(value.resultadoParticipacionSociedades),
     resultadoNetoTodasCategorias: numberToDecimal(value.resultadoNetoTodasCategorias),
     deduccionesGenerales: {
       autonomosAdmitidos: numberToDecimal(value.deduccionesGenerales.autonomosAdmitidos),

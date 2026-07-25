@@ -268,6 +268,15 @@ export function buildTaxReturnCalculationInput(
       certificateNumber: stringValue(withholding.certificateNumber) || undefined,
       operationDescription: stringValue(withholding.operationDescription) || undefined,
     })),
+    societyParticipations: asRecordArray(data.societyParticipations).map(participation => ({
+      cuit: stringValue(participation.cuit),
+      denomination: stringValue(participation.denomination),
+      societyType: stringValue(participation.societyType) || undefined,
+      participationPercent: decimalValue(participation.participationPercent),
+      societyResult: decimalValue(participation.societyResult),
+      // Vacío = usar el calculado; cargado = criterio del contador, con aviso de la diferencia.
+      attributedResultOverride: optionalDecimalValue(participation.attributedResultOverride),
+    })),
     generalDeductions: [
       {
         autonomos: decimalValue(generalDeductions.autonomos),

@@ -11,6 +11,7 @@ import { calculateTotalDepreciation } from './amortizaciones';
 import { calculateTotalAxi } from './ajustePorInflacion';
 import { calculatePatrimonialJustification } from './justificacionPatrimonial';
 import { calculateClosingCommercialPatrimony } from './patrimonioComercial';
+import { calculateSocietyParticipations } from './participacionSociedades';
 
 /**
  * Aplica la escala progresiva del Artículo 94 para determinar el impuesto correspondiente.
@@ -170,8 +171,16 @@ export function calculateTaxReturn(
     .sub(totalBajaLossAdj)
     .add(resultadoAjustePorInflacion);
 
-  // Consolida categorías impositivas (en este MVP de 3ra Cat es equivalente)
-  const resultadoNetoTodasCategorias = resultadoComercialNeto;
+  // ==========================================
+  // 5b. PARTICIPACIÓN EN SOCIEDADES (punto 3 del PDF, criterio 2026-07-24)
+  // El resultado atribuido de cada sociedad suma (o resta, si es quebranto) al neto de la categoría.
+  // ==========================================
+  const participacionSociedades = calculateSocietyParticipations(input.societyParticipations ?? []);
+  warnings.push(...participacionSociedades.warnings);
+
+  // Consolida categorías impositivas: tercera categoría propia + resultado atribuido de sociedades.
+  const resultadoNetoTodasCategorias = resultadoComercialNeto
+    .add(participacionSociedades.totalAttributedResult);
 
   // ==========================================
   // 6. DEDUCCIONES GENERALES (CON TOPES LEGALES)
@@ -655,6 +664,7 @@ export function calculateTaxReturn(
     axiDynamicResult: axiResult.totalAxiDynamic.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     axiDynamicLines: axiResult.dynamicLines,
     resultadoComercialNeto: resultadoComercialNeto.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    resultadoParticipacionSociedades: participacionSociedades.totalAttributedResult.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     resultadoNetoTodasCategorias: resultadoNetoTodasCategorias.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     deduccionesGenerales,
     resultadoNetoAntesQuebrantos: resultadoNetoAntesQuebrantos.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),

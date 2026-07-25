@@ -289,6 +289,7 @@ model TaxReturn {
   receivables                   ReceivableDebt[]
   liabilities                   PayableDebt[]
   withholdings                  TaxWithholding[]
+  societyParticipations         SocietyParticipation[]
   personalAssets                PersonalAsset[]
   personalLiabilities           PersonalLiability[]
   justifications                PatrimonialJustification[]
@@ -909,6 +910,29 @@ model TaxWithholding {
   certificateNumber    String
   operationDescription String?
   amount               Decimal  @db.Decimal(18, 2)
+
+  @@index([taxReturnId])
+}
+
+/**
+ * Participación en sociedades, explotaciones unipersonales y fideicomisos (excepto art. 73).
+ * Punto 3 del PDF de correcciones (2026-07-24): se guardan el porcentaje y el resultado total de la
+ * sociedad; el resultado atribuido se deriva de esos dos datos, y `attributedResultOverride` (null =
+ * sin editar) conserva la corrección manual del contador para poder avisar la diferencia.
+ */
+model SocietyParticipation {
+  id          String    @id @default(uuid())
+  taxReturnId String
+  taxReturn   TaxReturn @relation(fields: [taxReturnId], references: [id], onDelete: Cascade)
+
+  cuit                     String
+  denomination             String
+  societyType              String?
+  participationPercent     Decimal  @db.Decimal(8, 4)
+  societyResult            Decimal  @db.Decimal(18, 2)
+  attributedResultOverride Decimal? @db.Decimal(18, 2)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
   @@index([taxReturnId])
 }

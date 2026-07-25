@@ -54,8 +54,8 @@ Decisiones fiscales completas de cada punto: entrada `2026-07-24` de `docs/REGIS
 - Punto 6 - Proyeccion de anticipos: **Resuelto** (retenciones y combustibles reexpresados por IPC, RG 5211 art. 3).
 - Gate de audit del PR #31: **Resuelto**. `overrides` de `find-my-way` a 9.7.0 y `valibot` a 1.4.2, sin tocar Prisma ni instalar prereleases. Revisar al salir Prisma 7.10.0 estable para quitarlos.
 - Punto 5 - IDCB en la determinacion: **Resuelto**. Carga mensual del total (bloque 2d de la liquidacion mensual) + selector 33%/100% en el perfil fiscal; la importacion anual crea una fila por mes con taxCode IDCB y el motor ya la computa contra el impuesto determinado.
-- Punto 3 - Participacion en sociedades: **Siguiente**. Se cargan % de participacion y resultado total; la app calcula el atribuido y queda editable (verificacion cruzada).
-- Punto 2 - TISH: **Pendiente**. Solo Regimen General; base IIBB por bimestre de las actividades con tilde "computa TISH"; alicuota y categoria L/M/N manuales por cliente y año; bloque propio en el perfil fiscal junto a la config de IIBB; parametros de la ordenanza 2026 editables.
+- Punto 3 - Participacion en sociedades: **Resuelto**. Grilla en el Paso 2 con % y resultado total, atribuido calculado y editable con aviso de diferencia; el motor lo suma al neto de todas las categorias.
+- Punto 2 - TISH: **Siguiente**. Solo Regimen General; base IIBB por bimestre de las actividades con tilde "computa TISH"; alicuota y categoria L/M/N manuales por cliente y año; bloque propio en el perfil fiscal junto a la config de IIBB; parametros de la ordenanza 2026 editables.
 
 ## P0 - Continuidad y control operativo
 

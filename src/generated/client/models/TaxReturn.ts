@@ -260,6 +260,7 @@ export type TaxReturnWhereInput = {
   receivables?: Prisma.ReceivableDebtListRelationFilter
   liabilities?: Prisma.PayableDebtListRelationFilter
   withholdings?: Prisma.TaxWithholdingListRelationFilter
+  societyParticipations?: Prisma.SocietyParticipationListRelationFilter
   personalAssets?: Prisma.PersonalAssetListRelationFilter
   personalLiabilities?: Prisma.PersonalLiabilityListRelationFilter
   justifications?: Prisma.PatrimonialJustificationListRelationFilter
@@ -298,6 +299,7 @@ export type TaxReturnOrderByWithRelationInput = {
   receivables?: Prisma.ReceivableDebtOrderByRelationAggregateInput
   liabilities?: Prisma.PayableDebtOrderByRelationAggregateInput
   withholdings?: Prisma.TaxWithholdingOrderByRelationAggregateInput
+  societyParticipations?: Prisma.SocietyParticipationOrderByRelationAggregateInput
   personalAssets?: Prisma.PersonalAssetOrderByRelationAggregateInput
   personalLiabilities?: Prisma.PersonalLiabilityOrderByRelationAggregateInput
   justifications?: Prisma.PatrimonialJustificationOrderByRelationAggregateInput
@@ -341,6 +343,7 @@ export type TaxReturnWhereUniqueInput = Prisma.AtLeast<{
   receivables?: Prisma.ReceivableDebtListRelationFilter
   liabilities?: Prisma.PayableDebtListRelationFilter
   withholdings?: Prisma.TaxWithholdingListRelationFilter
+  societyParticipations?: Prisma.SocietyParticipationListRelationFilter
   personalAssets?: Prisma.PersonalAssetListRelationFilter
   personalLiabilities?: Prisma.PersonalLiabilityListRelationFilter
   justifications?: Prisma.PatrimonialJustificationListRelationFilter
@@ -408,6 +411,7 @@ export type TaxReturnCreateInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -443,6 +447,7 @@ export type TaxReturnUncheckedCreateInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -478,6 +483,7 @@ export type TaxReturnUpdateInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -513,6 +519,7 @@ export type TaxReturnUncheckedUpdateInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -941,6 +948,20 @@ export type TaxReturnUpdateOneRequiredWithoutWithholdingsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TaxReturnUpdateToOneWithWhereWithoutWithholdingsInput, Prisma.TaxReturnUpdateWithoutWithholdingsInput>, Prisma.TaxReturnUncheckedUpdateWithoutWithholdingsInput>
 }
 
+export type TaxReturnCreateNestedOneWithoutSocietyParticipationsInput = {
+  create?: Prisma.XOR<Prisma.TaxReturnCreateWithoutSocietyParticipationsInput, Prisma.TaxReturnUncheckedCreateWithoutSocietyParticipationsInput>
+  connectOrCreate?: Prisma.TaxReturnCreateOrConnectWithoutSocietyParticipationsInput
+  connect?: Prisma.TaxReturnWhereUniqueInput
+}
+
+export type TaxReturnUpdateOneRequiredWithoutSocietyParticipationsNestedInput = {
+  create?: Prisma.XOR<Prisma.TaxReturnCreateWithoutSocietyParticipationsInput, Prisma.TaxReturnUncheckedCreateWithoutSocietyParticipationsInput>
+  connectOrCreate?: Prisma.TaxReturnCreateOrConnectWithoutSocietyParticipationsInput
+  upsert?: Prisma.TaxReturnUpsertWithoutSocietyParticipationsInput
+  connect?: Prisma.TaxReturnWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaxReturnUpdateToOneWithWhereWithoutSocietyParticipationsInput, Prisma.TaxReturnUpdateWithoutSocietyParticipationsInput>, Prisma.TaxReturnUncheckedUpdateWithoutSocietyParticipationsInput>
+}
+
 export type TaxReturnCreateNestedOneWithoutPersonalAssetsInput = {
   create?: Prisma.XOR<Prisma.TaxReturnCreateWithoutPersonalAssetsInput, Prisma.TaxReturnUncheckedCreateWithoutPersonalAssetsInput>
   connectOrCreate?: Prisma.TaxReturnCreateOrConnectWithoutPersonalAssetsInput
@@ -1099,6 +1120,7 @@ export type TaxReturnCreateWithoutClientInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1133,6 +1155,7 @@ export type TaxReturnUncheckedCreateWithoutClientInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1208,6 +1231,7 @@ export type TaxReturnCreateWithoutFiscalYearInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1242,6 +1266,7 @@ export type TaxReturnUncheckedCreateWithoutFiscalYearInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1302,6 +1327,7 @@ export type TaxReturnCreateWithoutTaxParameterSetInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1336,6 +1362,7 @@ export type TaxReturnUncheckedCreateWithoutTaxParameterSetInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1397,6 +1424,7 @@ export type TaxReturnCreateWithoutFixedAssetImportCandidatesInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1431,6 +1459,7 @@ export type TaxReturnUncheckedCreateWithoutFixedAssetImportCandidatesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1481,6 +1510,7 @@ export type TaxReturnUpdateWithoutFixedAssetImportCandidatesInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -1515,6 +1545,7 @@ export type TaxReturnUncheckedUpdateWithoutFixedAssetImportCandidatesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -1549,6 +1580,7 @@ export type TaxReturnCreateWithoutRectificationLinksAsOriginalInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1583,6 +1615,7 @@ export type TaxReturnUncheckedCreateWithoutRectificationLinksAsOriginalInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1622,6 +1655,7 @@ export type TaxReturnCreateWithoutRectificationLinksAsRectifiedInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1656,6 +1690,7 @@ export type TaxReturnUncheckedCreateWithoutRectificationLinksAsRectifiedInput = 
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1706,6 +1741,7 @@ export type TaxReturnUpdateWithoutRectificationLinksAsOriginalInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -1740,6 +1776,7 @@ export type TaxReturnUncheckedUpdateWithoutRectificationLinksAsOriginalInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -1785,6 +1822,7 @@ export type TaxReturnUpdateWithoutRectificationLinksAsRectifiedInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -1819,6 +1857,7 @@ export type TaxReturnUncheckedUpdateWithoutRectificationLinksAsRectifiedInput = 
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -1853,6 +1892,7 @@ export type TaxReturnCreateWithoutAnnualFiscalConsolidationsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -1887,6 +1927,7 @@ export type TaxReturnUncheckedCreateWithoutAnnualFiscalConsolidationsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -1937,6 +1978,7 @@ export type TaxReturnUpdateWithoutAnnualFiscalConsolidationsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -1971,6 +2013,7 @@ export type TaxReturnUncheckedUpdateWithoutAnnualFiscalConsolidationsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2004,6 +2047,7 @@ export type TaxReturnCreateWithoutSalesInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2038,6 +2082,7 @@ export type TaxReturnUncheckedCreateWithoutSalesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -2088,6 +2133,7 @@ export type TaxReturnUpdateWithoutSalesInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -2122,6 +2168,7 @@ export type TaxReturnUncheckedUpdateWithoutSalesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2156,6 +2203,7 @@ export type TaxReturnCreateWithoutPurchasesInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2190,6 +2238,7 @@ export type TaxReturnUncheckedCreateWithoutPurchasesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -2240,6 +2289,7 @@ export type TaxReturnUpdateWithoutPurchasesInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -2274,6 +2324,7 @@ export type TaxReturnUncheckedUpdateWithoutPurchasesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2308,6 +2359,7 @@ export type TaxReturnCreateWithoutFixedAssetsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2342,6 +2394,7 @@ export type TaxReturnUncheckedCreateWithoutFixedAssetsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -2392,6 +2445,7 @@ export type TaxReturnUpdateWithoutFixedAssetsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -2426,6 +2480,7 @@ export type TaxReturnUncheckedUpdateWithoutFixedAssetsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2460,6 +2515,7 @@ export type TaxReturnCreateWithoutInventoryInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2494,6 +2550,7 @@ export type TaxReturnUncheckedCreateWithoutInventoryInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -2544,6 +2601,7 @@ export type TaxReturnUpdateWithoutInventoryInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -2578,6 +2636,7 @@ export type TaxReturnUncheckedUpdateWithoutInventoryInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2612,6 +2671,7 @@ export type TaxReturnCreateWithoutBankAccountsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2646,6 +2706,7 @@ export type TaxReturnUncheckedCreateWithoutBankAccountsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -2696,6 +2757,7 @@ export type TaxReturnUpdateWithoutBankAccountsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -2730,6 +2792,7 @@ export type TaxReturnUncheckedUpdateWithoutBankAccountsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2764,6 +2827,7 @@ export type TaxReturnCreateWithoutCashHoldingsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2798,6 +2862,7 @@ export type TaxReturnUncheckedCreateWithoutCashHoldingsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -2848,6 +2913,7 @@ export type TaxReturnUpdateWithoutCashHoldingsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -2882,6 +2948,7 @@ export type TaxReturnUncheckedUpdateWithoutCashHoldingsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -2916,6 +2983,7 @@ export type TaxReturnCreateWithoutReceivablesInput = {
   cashHoldings?: Prisma.CashHoldingCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -2950,6 +3018,7 @@ export type TaxReturnUncheckedCreateWithoutReceivablesInput = {
   cashHoldings?: Prisma.CashHoldingUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -3000,6 +3069,7 @@ export type TaxReturnUpdateWithoutReceivablesInput = {
   cashHoldings?: Prisma.CashHoldingUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -3034,6 +3104,7 @@ export type TaxReturnUncheckedUpdateWithoutReceivablesInput = {
   cashHoldings?: Prisma.CashHoldingUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -3068,6 +3139,7 @@ export type TaxReturnCreateWithoutLiabilitiesInput = {
   cashHoldings?: Prisma.CashHoldingCreateNestedManyWithoutTaxReturnInput
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -3102,6 +3174,7 @@ export type TaxReturnUncheckedCreateWithoutLiabilitiesInput = {
   cashHoldings?: Prisma.CashHoldingUncheckedCreateNestedManyWithoutTaxReturnInput
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -3152,6 +3225,7 @@ export type TaxReturnUpdateWithoutLiabilitiesInput = {
   cashHoldings?: Prisma.CashHoldingUpdateManyWithoutTaxReturnNestedInput
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -3186,6 +3260,7 @@ export type TaxReturnUncheckedUpdateWithoutLiabilitiesInput = {
   cashHoldings?: Prisma.CashHoldingUncheckedUpdateManyWithoutTaxReturnNestedInput
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -3220,6 +3295,7 @@ export type TaxReturnCreateWithoutWithholdingsInput = {
   cashHoldings?: Prisma.CashHoldingCreateNestedManyWithoutTaxReturnInput
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -3254,6 +3330,7 @@ export type TaxReturnUncheckedCreateWithoutWithholdingsInput = {
   cashHoldings?: Prisma.CashHoldingUncheckedCreateNestedManyWithoutTaxReturnInput
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -3304,6 +3381,7 @@ export type TaxReturnUpdateWithoutWithholdingsInput = {
   cashHoldings?: Prisma.CashHoldingUpdateManyWithoutTaxReturnNestedInput
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -3338,6 +3416,163 @@ export type TaxReturnUncheckedUpdateWithoutWithholdingsInput = {
   cashHoldings?: Prisma.CashHoldingUncheckedUpdateManyWithoutTaxReturnNestedInput
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
+  personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
+  personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
+  justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
+  generalDeduction?: Prisma.GeneralDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
+  personalDeduction?: Prisma.PersonalDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
+  axiStaticItems?: Prisma.AxiStaticItemUncheckedUpdateManyWithoutTaxReturnNestedInput
+  axiDynamicItems?: Prisma.AxiDynamicItemUncheckedUpdateManyWithoutTaxReturnNestedInput
+  calculations?: Prisma.CalculationRunUncheckedUpdateManyWithoutTaxReturnNestedInput
+  attachments?: Prisma.AttachmentUncheckedUpdateManyWithoutTaxReturnNestedInput
+  importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedUpdateManyWithoutTaxReturnNestedInput
+  fixedAssetImportCandidates?: Prisma.FixedAssetImportCandidateUncheckedUpdateManyWithoutTaxReturnNestedInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedUpdateManyWithoutOriginalReturnNestedInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedUpdateManyWithoutRectifiedReturnNestedInput
+}
+
+export type TaxReturnCreateWithoutSocietyParticipationsInput = {
+  id?: string
+  status?: string
+  version?: number
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  client: Prisma.ClientCreateNestedOneWithoutTaxReturnsInput
+  fiscalYear: Prisma.FiscalYearCreateNestedOneWithoutTaxReturnsInput
+  taxParameterSet?: Prisma.TaxParameterSetCreateNestedOneWithoutTaxReturnsInput
+  sales?: Prisma.SalesInvoiceCreateNestedManyWithoutTaxReturnInput
+  purchases?: Prisma.PurchaseInvoiceCreateNestedManyWithoutTaxReturnInput
+  fixedAssets?: Prisma.FixedAssetCreateNestedManyWithoutTaxReturnInput
+  inventory?: Prisma.InventoryValueCreateNestedManyWithoutTaxReturnInput
+  bankAccounts?: Prisma.BankAccountBalanceCreateNestedManyWithoutTaxReturnInput
+  cashHoldings?: Prisma.CashHoldingCreateNestedManyWithoutTaxReturnInput
+  receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
+  liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
+  withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
+  personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
+  justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
+  generalDeduction?: Prisma.GeneralDeductionCreateNestedOneWithoutTaxReturnInput
+  personalDeduction?: Prisma.PersonalDeductionCreateNestedOneWithoutTaxReturnInput
+  axiStaticItems?: Prisma.AxiStaticItemCreateNestedManyWithoutTaxReturnInput
+  axiDynamicItems?: Prisma.AxiDynamicItemCreateNestedManyWithoutTaxReturnInput
+  calculations?: Prisma.CalculationRunCreateNestedManyWithoutTaxReturnInput
+  attachments?: Prisma.AttachmentCreateNestedManyWithoutTaxReturnInput
+  importBatches?: Prisma.ImportBatchCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotCreateNestedManyWithoutTaxReturnInput
+  fixedAssetImportCandidates?: Prisma.FixedAssetImportCandidateCreateNestedManyWithoutTaxReturnInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkCreateNestedManyWithoutOriginalReturnInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkCreateNestedManyWithoutRectifiedReturnInput
+}
+
+export type TaxReturnUncheckedCreateWithoutSocietyParticipationsInput = {
+  id?: string
+  clientId: string
+  fiscalYearId: string
+  taxParameterSetId?: string | null
+  status?: string
+  version?: number
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sales?: Prisma.SalesInvoiceUncheckedCreateNestedManyWithoutTaxReturnInput
+  purchases?: Prisma.PurchaseInvoiceUncheckedCreateNestedManyWithoutTaxReturnInput
+  fixedAssets?: Prisma.FixedAssetUncheckedCreateNestedManyWithoutTaxReturnInput
+  inventory?: Prisma.InventoryValueUncheckedCreateNestedManyWithoutTaxReturnInput
+  bankAccounts?: Prisma.BankAccountBalanceUncheckedCreateNestedManyWithoutTaxReturnInput
+  cashHoldings?: Prisma.CashHoldingUncheckedCreateNestedManyWithoutTaxReturnInput
+  receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
+  liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
+  withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
+  personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
+  justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
+  generalDeduction?: Prisma.GeneralDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
+  personalDeduction?: Prisma.PersonalDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
+  axiStaticItems?: Prisma.AxiStaticItemUncheckedCreateNestedManyWithoutTaxReturnInput
+  axiDynamicItems?: Prisma.AxiDynamicItemUncheckedCreateNestedManyWithoutTaxReturnInput
+  calculations?: Prisma.CalculationRunUncheckedCreateNestedManyWithoutTaxReturnInput
+  attachments?: Prisma.AttachmentUncheckedCreateNestedManyWithoutTaxReturnInput
+  importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutTaxReturnInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUncheckedCreateNestedManyWithoutTaxReturnInput
+  fixedAssetImportCandidates?: Prisma.FixedAssetImportCandidateUncheckedCreateNestedManyWithoutTaxReturnInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutOriginalReturnInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkUncheckedCreateNestedManyWithoutRectifiedReturnInput
+}
+
+export type TaxReturnCreateOrConnectWithoutSocietyParticipationsInput = {
+  where: Prisma.TaxReturnWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaxReturnCreateWithoutSocietyParticipationsInput, Prisma.TaxReturnUncheckedCreateWithoutSocietyParticipationsInput>
+}
+
+export type TaxReturnUpsertWithoutSocietyParticipationsInput = {
+  update: Prisma.XOR<Prisma.TaxReturnUpdateWithoutSocietyParticipationsInput, Prisma.TaxReturnUncheckedUpdateWithoutSocietyParticipationsInput>
+  create: Prisma.XOR<Prisma.TaxReturnCreateWithoutSocietyParticipationsInput, Prisma.TaxReturnUncheckedCreateWithoutSocietyParticipationsInput>
+  where?: Prisma.TaxReturnWhereInput
+}
+
+export type TaxReturnUpdateToOneWithWhereWithoutSocietyParticipationsInput = {
+  where?: Prisma.TaxReturnWhereInput
+  data: Prisma.XOR<Prisma.TaxReturnUpdateWithoutSocietyParticipationsInput, Prisma.TaxReturnUncheckedUpdateWithoutSocietyParticipationsInput>
+}
+
+export type TaxReturnUpdateWithoutSocietyParticipationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  client?: Prisma.ClientUpdateOneRequiredWithoutTaxReturnsNestedInput
+  fiscalYear?: Prisma.FiscalYearUpdateOneRequiredWithoutTaxReturnsNestedInput
+  taxParameterSet?: Prisma.TaxParameterSetUpdateOneWithoutTaxReturnsNestedInput
+  sales?: Prisma.SalesInvoiceUpdateManyWithoutTaxReturnNestedInput
+  purchases?: Prisma.PurchaseInvoiceUpdateManyWithoutTaxReturnNestedInput
+  fixedAssets?: Prisma.FixedAssetUpdateManyWithoutTaxReturnNestedInput
+  inventory?: Prisma.InventoryValueUpdateManyWithoutTaxReturnNestedInput
+  bankAccounts?: Prisma.BankAccountBalanceUpdateManyWithoutTaxReturnNestedInput
+  cashHoldings?: Prisma.CashHoldingUpdateManyWithoutTaxReturnNestedInput
+  receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
+  liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
+  withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
+  personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
+  justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
+  generalDeduction?: Prisma.GeneralDeductionUpdateOneWithoutTaxReturnNestedInput
+  personalDeduction?: Prisma.PersonalDeductionUpdateOneWithoutTaxReturnNestedInput
+  axiStaticItems?: Prisma.AxiStaticItemUpdateManyWithoutTaxReturnNestedInput
+  axiDynamicItems?: Prisma.AxiDynamicItemUpdateManyWithoutTaxReturnNestedInput
+  calculations?: Prisma.CalculationRunUpdateManyWithoutTaxReturnNestedInput
+  attachments?: Prisma.AttachmentUpdateManyWithoutTaxReturnNestedInput
+  importBatches?: Prisma.ImportBatchUpdateManyWithoutTaxReturnNestedInput
+  annualFiscalConsolidations?: Prisma.AnnualFiscalConsolidationSnapshotUpdateManyWithoutTaxReturnNestedInput
+  fixedAssetImportCandidates?: Prisma.FixedAssetImportCandidateUpdateManyWithoutTaxReturnNestedInput
+  rectificationLinksAsOriginal?: Prisma.RectificationLinkUpdateManyWithoutOriginalReturnNestedInput
+  rectificationLinksAsRectified?: Prisma.RectificationLinkUpdateManyWithoutRectifiedReturnNestedInput
+}
+
+export type TaxReturnUncheckedUpdateWithoutSocietyParticipationsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  fiscalYearId?: Prisma.StringFieldUpdateOperationsInput | string
+  taxParameterSetId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  version?: Prisma.IntFieldUpdateOperationsInput | number
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sales?: Prisma.SalesInvoiceUncheckedUpdateManyWithoutTaxReturnNestedInput
+  purchases?: Prisma.PurchaseInvoiceUncheckedUpdateManyWithoutTaxReturnNestedInput
+  fixedAssets?: Prisma.FixedAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
+  inventory?: Prisma.InventoryValueUncheckedUpdateManyWithoutTaxReturnNestedInput
+  bankAccounts?: Prisma.BankAccountBalanceUncheckedUpdateManyWithoutTaxReturnNestedInput
+  cashHoldings?: Prisma.CashHoldingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
+  liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
+  withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -3373,6 +3608,7 @@ export type TaxReturnCreateWithoutPersonalAssetsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
   generalDeduction?: Prisma.GeneralDeductionCreateNestedOneWithoutTaxReturnInput
@@ -3407,6 +3643,7 @@ export type TaxReturnUncheckedCreateWithoutPersonalAssetsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
   generalDeduction?: Prisma.GeneralDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
@@ -3457,6 +3694,7 @@ export type TaxReturnUpdateWithoutPersonalAssetsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
   generalDeduction?: Prisma.GeneralDeductionUpdateOneWithoutTaxReturnNestedInput
@@ -3491,6 +3729,7 @@ export type TaxReturnUncheckedUpdateWithoutPersonalAssetsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
   generalDeduction?: Prisma.GeneralDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
@@ -3525,6 +3764,7 @@ export type TaxReturnCreateWithoutPersonalLiabilitiesInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
   generalDeduction?: Prisma.GeneralDeductionCreateNestedOneWithoutTaxReturnInput
@@ -3559,6 +3799,7 @@ export type TaxReturnUncheckedCreateWithoutPersonalLiabilitiesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
   generalDeduction?: Prisma.GeneralDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
@@ -3609,6 +3850,7 @@ export type TaxReturnUpdateWithoutPersonalLiabilitiesInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
   generalDeduction?: Prisma.GeneralDeductionUpdateOneWithoutTaxReturnNestedInput
@@ -3643,6 +3885,7 @@ export type TaxReturnUncheckedUpdateWithoutPersonalLiabilitiesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
   generalDeduction?: Prisma.GeneralDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
@@ -3677,6 +3920,7 @@ export type TaxReturnCreateWithoutJustificationsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   generalDeduction?: Prisma.GeneralDeductionCreateNestedOneWithoutTaxReturnInput
@@ -3711,6 +3955,7 @@ export type TaxReturnUncheckedCreateWithoutJustificationsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   generalDeduction?: Prisma.GeneralDeductionUncheckedCreateNestedOneWithoutTaxReturnInput
@@ -3761,6 +4006,7 @@ export type TaxReturnUpdateWithoutJustificationsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   generalDeduction?: Prisma.GeneralDeductionUpdateOneWithoutTaxReturnNestedInput
@@ -3795,6 +4041,7 @@ export type TaxReturnUncheckedUpdateWithoutJustificationsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   generalDeduction?: Prisma.GeneralDeductionUncheckedUpdateOneWithoutTaxReturnNestedInput
@@ -3829,6 +4076,7 @@ export type TaxReturnCreateWithoutGeneralDeductionInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -3863,6 +4111,7 @@ export type TaxReturnUncheckedCreateWithoutGeneralDeductionInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -3913,6 +4162,7 @@ export type TaxReturnUpdateWithoutGeneralDeductionInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -3947,6 +4197,7 @@ export type TaxReturnUncheckedUpdateWithoutGeneralDeductionInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -3981,6 +4232,7 @@ export type TaxReturnCreateWithoutPersonalDeductionInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -4015,6 +4267,7 @@ export type TaxReturnUncheckedCreateWithoutPersonalDeductionInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -4065,6 +4318,7 @@ export type TaxReturnUpdateWithoutPersonalDeductionInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4099,6 +4353,7 @@ export type TaxReturnUncheckedUpdateWithoutPersonalDeductionInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4133,6 +4388,7 @@ export type TaxReturnCreateWithoutAxiStaticItemsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -4167,6 +4423,7 @@ export type TaxReturnUncheckedCreateWithoutAxiStaticItemsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -4217,6 +4474,7 @@ export type TaxReturnUpdateWithoutAxiStaticItemsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4251,6 +4509,7 @@ export type TaxReturnUncheckedUpdateWithoutAxiStaticItemsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4285,6 +4544,7 @@ export type TaxReturnCreateWithoutAxiDynamicItemsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -4319,6 +4579,7 @@ export type TaxReturnUncheckedCreateWithoutAxiDynamicItemsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -4369,6 +4630,7 @@ export type TaxReturnUpdateWithoutAxiDynamicItemsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4403,6 +4665,7 @@ export type TaxReturnUncheckedUpdateWithoutAxiDynamicItemsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4437,6 +4700,7 @@ export type TaxReturnCreateWithoutCalculationsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -4471,6 +4735,7 @@ export type TaxReturnUncheckedCreateWithoutCalculationsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -4521,6 +4786,7 @@ export type TaxReturnUpdateWithoutCalculationsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4555,6 +4821,7 @@ export type TaxReturnUncheckedUpdateWithoutCalculationsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4589,6 +4856,7 @@ export type TaxReturnCreateWithoutAttachmentsInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -4623,6 +4891,7 @@ export type TaxReturnUncheckedCreateWithoutAttachmentsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -4673,6 +4942,7 @@ export type TaxReturnUpdateWithoutAttachmentsInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4707,6 +4977,7 @@ export type TaxReturnUncheckedUpdateWithoutAttachmentsInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4741,6 +5012,7 @@ export type TaxReturnCreateWithoutImportBatchesInput = {
   receivables?: Prisma.ReceivableDebtCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationCreateNestedManyWithoutTaxReturnInput
@@ -4775,6 +5047,7 @@ export type TaxReturnUncheckedCreateWithoutImportBatchesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   liabilities?: Prisma.PayableDebtUncheckedCreateNestedManyWithoutTaxReturnInput
   withholdings?: Prisma.TaxWithholdingUncheckedCreateNestedManyWithoutTaxReturnInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedCreateNestedManyWithoutTaxReturnInput
   personalAssets?: Prisma.PersonalAssetUncheckedCreateNestedManyWithoutTaxReturnInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedCreateNestedManyWithoutTaxReturnInput
   justifications?: Prisma.PatrimonialJustificationUncheckedCreateNestedManyWithoutTaxReturnInput
@@ -4825,6 +5098,7 @@ export type TaxReturnUpdateWithoutImportBatchesInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4859,6 +5133,7 @@ export type TaxReturnUncheckedUpdateWithoutImportBatchesInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4903,6 +5178,7 @@ export type TaxReturnUpdateWithoutClientInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -4937,6 +5213,7 @@ export type TaxReturnUncheckedUpdateWithoutClientInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -4993,6 +5270,7 @@ export type TaxReturnUpdateWithoutFiscalYearInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -5027,6 +5305,7 @@ export type TaxReturnUncheckedUpdateWithoutFiscalYearInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -5083,6 +5362,7 @@ export type TaxReturnUpdateWithoutTaxParameterSetInput = {
   receivables?: Prisma.ReceivableDebtUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUpdateManyWithoutTaxReturnNestedInput
@@ -5117,6 +5397,7 @@ export type TaxReturnUncheckedUpdateWithoutTaxParameterSetInput = {
   receivables?: Prisma.ReceivableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   liabilities?: Prisma.PayableDebtUncheckedUpdateManyWithoutTaxReturnNestedInput
   withholdings?: Prisma.TaxWithholdingUncheckedUpdateManyWithoutTaxReturnNestedInput
+  societyParticipations?: Prisma.SocietyParticipationUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalAssets?: Prisma.PersonalAssetUncheckedUpdateManyWithoutTaxReturnNestedInput
   personalLiabilities?: Prisma.PersonalLiabilityUncheckedUpdateManyWithoutTaxReturnNestedInput
   justifications?: Prisma.PatrimonialJustificationUncheckedUpdateManyWithoutTaxReturnNestedInput
@@ -5159,6 +5440,7 @@ export type TaxReturnCountOutputType = {
   receivables: number
   liabilities: number
   withholdings: number
+  societyParticipations: number
   personalAssets: number
   personalLiabilities: number
   justifications: number
@@ -5183,6 +5465,7 @@ export type TaxReturnCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensi
   receivables?: boolean | TaxReturnCountOutputTypeCountReceivablesArgs
   liabilities?: boolean | TaxReturnCountOutputTypeCountLiabilitiesArgs
   withholdings?: boolean | TaxReturnCountOutputTypeCountWithholdingsArgs
+  societyParticipations?: boolean | TaxReturnCountOutputTypeCountSocietyParticipationsArgs
   personalAssets?: boolean | TaxReturnCountOutputTypeCountPersonalAssetsArgs
   personalLiabilities?: boolean | TaxReturnCountOutputTypeCountPersonalLiabilitiesArgs
   justifications?: boolean | TaxReturnCountOutputTypeCountJustificationsArgs
@@ -5268,6 +5551,13 @@ export type TaxReturnCountOutputTypeCountLiabilitiesArgs<ExtArgs extends runtime
  */
 export type TaxReturnCountOutputTypeCountWithholdingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.TaxWithholdingWhereInput
+}
+
+/**
+ * TaxReturnCountOutputType without action
+ */
+export type TaxReturnCountOutputTypeCountSocietyParticipationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SocietyParticipationWhereInput
 }
 
 /**
@@ -5377,6 +5667,7 @@ export type TaxReturnSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   receivables?: boolean | Prisma.TaxReturn$receivablesArgs<ExtArgs>
   liabilities?: boolean | Prisma.TaxReturn$liabilitiesArgs<ExtArgs>
   withholdings?: boolean | Prisma.TaxReturn$withholdingsArgs<ExtArgs>
+  societyParticipations?: boolean | Prisma.TaxReturn$societyParticipationsArgs<ExtArgs>
   personalAssets?: boolean | Prisma.TaxReturn$personalAssetsArgs<ExtArgs>
   personalLiabilities?: boolean | Prisma.TaxReturn$personalLiabilitiesArgs<ExtArgs>
   justifications?: boolean | Prisma.TaxReturn$justificationsArgs<ExtArgs>
@@ -5422,6 +5713,7 @@ export type TaxReturnInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   receivables?: boolean | Prisma.TaxReturn$receivablesArgs<ExtArgs>
   liabilities?: boolean | Prisma.TaxReturn$liabilitiesArgs<ExtArgs>
   withholdings?: boolean | Prisma.TaxReturn$withholdingsArgs<ExtArgs>
+  societyParticipations?: boolean | Prisma.TaxReturn$societyParticipationsArgs<ExtArgs>
   personalAssets?: boolean | Prisma.TaxReturn$personalAssetsArgs<ExtArgs>
   personalLiabilities?: boolean | Prisma.TaxReturn$personalLiabilitiesArgs<ExtArgs>
   justifications?: boolean | Prisma.TaxReturn$justificationsArgs<ExtArgs>
@@ -5454,6 +5746,7 @@ export type $TaxReturnPayload<ExtArgs extends runtime.Types.Extensions.InternalA
     receivables: Prisma.$ReceivableDebtPayload<ExtArgs>[]
     liabilities: Prisma.$PayableDebtPayload<ExtArgs>[]
     withholdings: Prisma.$TaxWithholdingPayload<ExtArgs>[]
+    societyParticipations: Prisma.$SocietyParticipationPayload<ExtArgs>[]
     personalAssets: Prisma.$PersonalAssetPayload<ExtArgs>[]
     personalLiabilities: Prisma.$PersonalLiabilityPayload<ExtArgs>[]
     justifications: Prisma.$PatrimonialJustificationPayload<ExtArgs>[]
@@ -5831,6 +6124,7 @@ export interface Prisma__TaxReturnClient<T, Null = never, ExtArgs extends runtim
   receivables<T extends Prisma.TaxReturn$receivablesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$receivablesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReceivableDebtPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   liabilities<T extends Prisma.TaxReturn$liabilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$liabilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PayableDebtPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   withholdings<T extends Prisma.TaxReturn$withholdingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$withholdingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TaxWithholdingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  societyParticipations<T extends Prisma.TaxReturn$societyParticipationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$societyParticipationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SocietyParticipationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   personalAssets<T extends Prisma.TaxReturn$personalAssetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$personalAssetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalAssetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   personalLiabilities<T extends Prisma.TaxReturn$personalLiabilitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$personalLiabilitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PersonalLiabilityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   justifications<T extends Prisma.TaxReturn$justificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaxReturn$justificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PatrimonialJustificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -6463,6 +6757,30 @@ export type TaxReturn$withholdingsArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.TaxWithholdingScalarFieldEnum | Prisma.TaxWithholdingScalarFieldEnum[]
+}
+
+/**
+ * TaxReturn.societyParticipations
+ */
+export type TaxReturn$societyParticipationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the SocietyParticipation
+   */
+  select?: Prisma.SocietyParticipationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the SocietyParticipation
+   */
+  omit?: Prisma.SocietyParticipationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SocietyParticipationInclude<ExtArgs> | null
+  where?: Prisma.SocietyParticipationWhereInput
+  orderBy?: Prisma.SocietyParticipationOrderByWithRelationInput | Prisma.SocietyParticipationOrderByWithRelationInput[]
+  cursor?: Prisma.SocietyParticipationWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SocietyParticipationScalarFieldEnum | Prisma.SocietyParticipationScalarFieldEnum[]
 }
 
 /**

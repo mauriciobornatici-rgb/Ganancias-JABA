@@ -35,6 +35,7 @@ export function buildInitialTaxReturnSnapshot(payload: unknown): RawRecord {
     'receivables',
     'liabilities',
     'withholdings',
+    'societyParticipations',
     'personalAssets',
     'personalLiabilities',
     'otherJustifications',

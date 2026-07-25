@@ -40,6 +40,18 @@ Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae 
 
 Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
 
+### 2026-07-24 - Punto 3: participación en sociedades atribuida al contribuyente
+
+- Criterio del usuario: **"ambos con verificación cruzada"**. Se cargan el **% de participación** y el **resultado total de la sociedad**; la app calcula el resultado atribuido y lo deja **editable**. Si el importe editado difiere del calculado, se computa el del contador y la diferencia se avisa (nunca se corrige ni se descarta en silencio).
+- Dominio puro nuevo: `src/domain/ganancias/calculations/participacionSociedades.ts`. Además del cálculo, avisa: porcentaje en 0 (atribuido 0), porcentaje mayor a 100 (se computa igual, se advierte), override con diferencia, y CUIT repetido (misma sociedad cargada dos veces = resultado atribuido dos veces).
+- Motor: el resultado atribuido se suma al **resultado neto de todas las categorías** (antes era igual al comercial de tercera). Un quebranto de la sociedad resta. Los avisos se propagan a las advertencias de la determinación. Campo nuevo de salida `resultadoParticipacionSociedades`.
+- Persistencia: modelo nuevo `SocietyParticipation` (migración `20260724233000_add_society_participations`). Se guardan los dos datos que carga el usuario más `attributedResultOverride`, que queda **NULL cuando no se editó**: al reabrir, la app vuelve a mostrar el calculado en vez de fijar el importe viejo. Un override en 0 sí es un override real y se distingue del vacío.
+- Wizard: grilla en el **Paso 2** (ingresos), con CUIT, denominación, tipo societario, %, resultado de la sociedad, atribuido calculado (solo lectura) y atribuido editable, más el panel de avisos. La columna editable se marca en ámbar cuando reemplaza al cálculo. Referencia de presentación: bloque "Participación en empresas" de la DDJJ simplificada de ARCA.
+- El Paso 6 muestra la línea "(+/-) Resultado Atribuido de Sociedades" y el subtotal "Resultado Neto de Todas las Categorías" solo cuando hay participaciones cargadas, para no ensuciar el caso simple. El legajo de carga suma la fila con cantidad y resultado atribuido.
+- Round-trip completo: payload del wizard → validación → persistencia → snapshot → reapertura, con la misma tolerancia de importes en formato argentino que el resto de las grillas.
+- Verificado: 462 tests unitarios (15 nuevos entre dominio puro y motor), typecheck, lint, build y migración aplicada en Docker. Integración: pasan `excelCaptureCase` y `fixedAssetIdentity`; `fiscalLedgerSeedDocker` sigue fallando solo en local por seeds acumulados.
+- Nota de entorno: mientras exista un worktree de Claude en `.claude/worktrees/`, `npm run test` levanta también los tests de ese árbol (vitest no tiene config propia en el repo). Para ver solo este árbol: `npx vitest run --dir src --exclude "**/.claude/**"`.
+
 ### 2026-07-24 - Punto 5: impuesto al cheque (IDCB) como pago a cuenta de Ganancias
 
 - El motor anual ya sabía computar el IDCB (IG 25!F65, limitado al impuesto determinado, excedente a F70 desde P29). Lo que faltaba era la carga y el cómputo: hasta ahora había que escribir la fila a mano en la grilla de retenciones del wizard.

@@ -90,6 +90,7 @@ export const ModelName = {
   ReceivableDebt: 'ReceivableDebt',
   PayableDebt: 'PayableDebt',
   TaxWithholding: 'TaxWithholding',
+  SocietyParticipation: 'SocietyParticipation',
   PersonalAsset: 'PersonalAsset',
   PersonalLiability: 'PersonalLiability',
   PatrimonialJustification: 'PatrimonialJustification',
@@ -769,6 +770,22 @@ export const TaxWithholdingScalarFieldEnum = {
 } as const
 
 export type TaxWithholdingScalarFieldEnum = (typeof TaxWithholdingScalarFieldEnum)[keyof typeof TaxWithholdingScalarFieldEnum]
+
+
+export const SocietyParticipationScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType',
+  participationPercent: 'participationPercent',
+  societyResult: 'societyResult',
+  attributedResultOverride: 'attributedResultOverride',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SocietyParticipationScalarFieldEnum = (typeof SocietyParticipationScalarFieldEnum)[keyof typeof SocietyParticipationScalarFieldEnum]
 
 
 export const PersonalAssetScalarFieldEnum = {
@@ -1478,6 +1495,17 @@ export const TaxWithholdingOrderByRelevanceFieldEnum = {
 } as const
 
 export type TaxWithholdingOrderByRelevanceFieldEnum = (typeof TaxWithholdingOrderByRelevanceFieldEnum)[keyof typeof TaxWithholdingOrderByRelevanceFieldEnum]
+
+
+export const SocietyParticipationOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType'
+} as const
+
+export type SocietyParticipationOrderByRelevanceFieldEnum = (typeof SocietyParticipationOrderByRelevanceFieldEnum)[keyof typeof SocietyParticipationOrderByRelevanceFieldEnum]
 
 
 export const PersonalAssetOrderByRelevanceFieldEnum = {

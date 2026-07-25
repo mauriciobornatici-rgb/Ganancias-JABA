@@ -101,15 +101,17 @@ Desde el 2026-07-24, `npx prisma migrate deploy` a mano contra produccion **esta
 `scripts/prismaDatabaseSafety.ts`. El unico camino habilitado es:
 
 ```powershell
-$env:DATABASE_URL="mysql://USUARIO:PASSWORD@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"
+npm run db:backup                 # volcado de solo lectura de la base del .env a ./backups
 $env:CONFIRM_PROD_MIGRATION="1"   # solo despues del backup
-npm run db:prod:migrate
-Remove-Item Env:\DATABASE_URL, Env:\CONFIRM_PROD_MIGRATION   # cerrar la ventana habilitada
+npm run db:prod:migrate           # toma el destino del .env; muestra la password enmascarada
+Remove-Item Env:\CONFIRM_PROD_MIGRATION   # cerrar la ventana habilitada
 ```
 
-El script valida el destino, nunca imprime la password y habilita la excepcion de la guarda nombrando
-la base productiva (un `1` o un `true` no sirven). El resto de los comandos Prisma locales
-(dev, studio, migrate dev) siguen bloqueados contra produccion.
+El script valida el destino (rechaza Docker y el nombre productivo contra localhost), nunca imprime la
+password y habilita la excepcion de la guarda nombrando la base productiva (un `1` o un `true` no
+sirven). Se puede forzar otro destino con `$env:DATABASE_URL`, que tiene prioridad sobre el `.env`.
+El resto de los comandos Prisma locales (dev, studio, migrate dev) siguen bloqueados contra
+produccion.
 
 Seeds:
 

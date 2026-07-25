@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
@@ -10,10 +11,12 @@ import { resolve } from 'node:path';
  * este script es el ÚNICO camino habilitado: pide intención explícita y sólo entonces habilita la
  * excepción nombrada de la guarda.
  *
- * Requisitos (los pone el operador en SU terminal, nunca en el repo ni en un `.env`):
- *   $env:DATABASE_URL="mysql://usuario:password@host:3306/u669600172_ganancias_jaba"
+ * Uso normal (la URL productiva sale del `.env` del proyecto, igual que la lee Prisma):
  *   $env:CONFIRM_PROD_MIGRATION="1"
  *   npm run db:prod:migrate
+ *
+ * Si el `.env` no apunta a producción, se puede pasar el destino a mano en la terminal:
+ *   $env:DATABASE_URL="mysql://usuario:password@host:3306/u669600172_ganancias_jaba"
  *
  * Orden obligatorio del deploy: backup de Hostinger -> esta migración -> merge a main.
  * Nunca `prisma migrate dev` contra producción: sólo `migrate deploy`.
@@ -34,17 +37,40 @@ export function maskDatabaseUrl(databaseUrl) {
 }
 
 /**
- * Validación PURA: decide si la migración puede correr y con qué entorno.
- * Devuelve `{ ok: false, error }` o `{ ok: true, databaseName, host, maskedUrl, env }`.
+ * Lee `DATABASE_URL` del `.env` del proyecto, que es de donde la toma Prisma (dotenv/config).
+ * Devuelve null si no existe o no se puede leer: el script informa el problema, no adivina.
  */
-export function buildProdMigrationPlan(env) {
-  const databaseUrl = env.DATABASE_URL?.trim();
+export function readDatabaseUrlFromEnvFile(envFilePath) {
+  try {
+    const content = readFileSync(envFilePath, 'utf8');
+    const line = content.split(/\r?\n/).find(item => item.trim().startsWith('DATABASE_URL='));
+    if (!line) return null;
+    const value = line.slice(line.indexOf('=') + 1).trim().replace(/^"|"$/g, '');
+    return value || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validación PURA: decide si la migración puede correr y con qué entorno.
+ * Devuelve `{ ok: false, error }` o `{ ok: true, databaseName, host, maskedUrl, source, env }`.
+ * `fallbackDatabaseUrl` es la URL del `.env` (la resuelve quien llama, para que esto quede puro).
+ *
+ * @param {Record<string, string | undefined>} env
+ * @param {string | null} [fallbackDatabaseUrl]
+ */
+export function buildProdMigrationPlan(env, fallbackDatabaseUrl = null) {
+  const fromEnvVar = env.DATABASE_URL?.trim();
+  const databaseUrl = fromEnvVar || fallbackDatabaseUrl?.trim();
+  const source = fromEnvVar ? 'variable de entorno DATABASE_URL' : 'archivo .env del proyecto';
   const productionDatabaseName = env.PRODUCTION_DATABASE_NAME ?? DEFAULT_PRODUCTION_DATABASE_NAME;
 
   if (!databaseUrl) {
     return {
       ok: false,
-      error: 'Falta DATABASE_URL. Setealo en esta terminal apuntando a la base productiva de Hostinger.',
+      error: 'No hay DATABASE_URL: no esta en el .env del proyecto ni en la terminal. '
+        + 'Seteala apuntando a la base productiva de Hostinger.',
     };
   }
 
@@ -85,6 +111,7 @@ export function buildProdMigrationPlan(env) {
     ok: true,
     databaseName,
     host,
+    source,
     maskedUrl: maskDatabaseUrl(databaseUrl),
     env: {
       DATABASE_URL: databaseUrl,
@@ -97,7 +124,8 @@ export function buildProdMigrationPlan(env) {
 }
 
 const run = () => {
-  const plan = buildProdMigrationPlan(process.env);
+  const envFileUrl = readDatabaseUrlFromEnvFile(resolve(process.cwd(), '.env'));
+  const plan = buildProdMigrationPlan(process.env, envFileUrl);
 
   if (!plan.ok) {
     console.error(`\nMIGRACION PRODUCTIVA ABORTADA: ${plan.error}\n`);
@@ -106,6 +134,7 @@ const run = () => {
 
   console.log('\n=== MIGRACION DE LA BASE PRODUCTIVA ===');
   console.log(`Destino: ${plan.maskedUrl}`);
+  console.log(`Origen del destino: ${plan.source}`);
   console.log('Recordatorio: el backup de Hostinger tiene que estar hecho y con restauracion probada.');
   console.log('Comando: prisma migrate deploy (nunca migrate dev)\n');
 

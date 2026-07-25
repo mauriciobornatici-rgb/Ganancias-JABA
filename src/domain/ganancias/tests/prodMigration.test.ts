@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildProdMigrationPlan, maskDatabaseUrl } from '../../../../scripts/run-prod-migration.mjs';
+import {
+  buildProdMigrationPlan,
+  maskDatabaseUrl,
+  readDatabaseUrlFromEnvFile,
+} from '../../../../scripts/run-prod-migration.mjs';
 
 /**
  * `npm run db:prod:migrate` es el único camino habilitado para migrar producción desde una terminal
@@ -10,10 +14,29 @@ const PROD_URL = 'mysql://usuario:secreta@srv1199.hstgr.io:3306/u669600172_ganan
 const TEST_URL = 'mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test';
 
 describe('buildProdMigrationPlan', () => {
-  it('exige DATABASE_URL', () => {
+  it('exige DATABASE_URL en la terminal o en el .env', () => {
     const plan = buildProdMigrationPlan({});
     expect(plan.ok).toBe(false);
-    expect(plan.error).toContain('Falta DATABASE_URL');
+    expect(plan.error).toContain('No hay DATABASE_URL');
+  });
+
+  it('usa la URL del .env cuando no hay variable de entorno', () => {
+    const plan = buildProdMigrationPlan({ CONFIRM_PROD_MIGRATION: '1' }, PROD_URL);
+    expect(plan.ok).toBe(true);
+    expect(plan.source).toContain('.env');
+  });
+
+  it('la variable de entorno tiene prioridad sobre el .env', () => {
+    const plan = buildProdMigrationPlan({ DATABASE_URL: PROD_URL, CONFIRM_PROD_MIGRATION: '1' }, TEST_URL);
+    expect(plan.ok).toBe(true);
+    expect(plan.databaseName).toBe('u669600172_ganancias_jaba');
+    expect(plan.source).toContain('variable de entorno');
+  });
+
+  it('un .env que apunta a Docker no habilita nada', () => {
+    const plan = buildProdMigrationPlan({ CONFIRM_PROD_MIGRATION: '1' }, TEST_URL);
+    expect(plan.ok).toBe(false);
+    expect(plan.error).toContain('db:test:migrate');
   });
 
   it('rechaza una DATABASE_URL invalida', () => {
@@ -65,6 +88,12 @@ describe('buildProdMigrationPlan', () => {
     expect(plan.ok).toBe(true);
     const env: Record<string, string> = plan.env ?? {};
     expect(env.PRISMA_ALLOW_PRODUCTION_MIGRATION).toBe('otra_prod');
+  });
+});
+
+describe('readDatabaseUrlFromEnvFile', () => {
+  it('devuelve null si el archivo no existe, en vez de explotar', () => {
+    expect(readDatabaseUrlFromEnvFile('no-existe-este-archivo.env')).toBeNull();
   });
 });
 

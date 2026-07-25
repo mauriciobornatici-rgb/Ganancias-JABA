@@ -109,7 +109,9 @@ Remove-Item Env:\CONFIRM_PROD_MIGRATION   # cerrar la ventana habilitada
 
 El script valida el destino (rechaza Docker y el nombre productivo contra localhost), nunca imprime la
 password y habilita la excepcion de la guarda nombrando la base productiva (un `1` o un `true` no
-sirven). Se puede forzar otro destino con `$env:DATABASE_URL`, que tiene prioridad sobre el `.env`.
+sirven). Se puede forzar otro destino con `$env:DATABASE_URL`, que tiene prioridad sobre el `.env`;
+si esa variable quedo con los valores de ejemplo de la doc, el script aborta y pide borrarla con
+`Remove-Item Env:\DATABASE_URL`.
 El resto de los comandos Prisma locales (dev, studio, migrate dev) siguen bloqueados contra
 produccion.
 

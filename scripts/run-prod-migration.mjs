@@ -24,6 +24,19 @@ import { resolve } from 'node:path';
 
 const DEFAULT_PRODUCTION_DATABASE_NAME = 'u669600172_ganancias_jaba';
 
+/**
+ * Marcadores de las plantillas de la documentación. Si quedan en la terminal, Prisma falla con un
+ * P1000 confuso ("credenciales de USUARIO no validas") en vez de decir lo que realmente pasa.
+ */
+const PLACEHOLDER_CREDENTIALS = ['usuario', 'user', 'usuario_db', 'password', 'contrasena', 'clave'];
+
+function looksLikePlaceholder(value) {
+  const decoded = decodeURIComponent(value ?? '').trim();
+  if (decoded === '') return false;
+  if (decoded.includes('<') || decoded.includes('>')) return true;
+  return PLACEHOLDER_CREDENTIALS.includes(decoded.toLowerCase());
+}
+
 /** Enmascara la password para poder mostrar el destino sin filtrar credenciales. */
 export function maskDatabaseUrl(databaseUrl) {
   try {
@@ -96,6 +109,19 @@ export function buildProdMigrationPlan(env, fallbackDatabaseUrl = null) {
     return {
       ok: false,
       error: 'DATABASE_URL usa el nombre de la base productiva contra localhost. Revise el destino antes de migrar.',
+    };
+  }
+
+  // Trampa habitual: quedó pegada en la terminal la plantilla de la doc (USUARIO/PASSWORD). Sin este
+  // control, Prisma responde un P1000 de credenciales que no explica de donde salio la URL.
+  if (looksLikePlaceholder(parsed.username) || looksLikePlaceholder(parsed.password)) {
+    const fix = fromEnvVar
+      ? 'Borre la variable de la terminal con: Remove-Item Env:\\DATABASE_URL (asi se usa la del .env del proyecto).'
+      : 'Complete el usuario y la password reales en el DATABASE_URL del .env.';
+    return {
+      ok: false,
+      error: `El DATABASE_URL tomado de la ${source} tiene las credenciales de ejemplo de la documentacion `
+        + `(usuario "${decodeURIComponent(parsed.username)}"), no las reales. ${fix}`,
     };
   }
 

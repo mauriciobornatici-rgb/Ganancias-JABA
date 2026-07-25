@@ -76,7 +76,9 @@ Remove-Item Env:\CONFIRM_PROD_MIGRATION
 
 Si el `.env` no apuntara a producción, se puede pasar el destino a mano con
 `$env:DATABASE_URL="mysql://USUARIO:PASSWORD@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"`
-(tiene prioridad sobre el `.env`).
+(tiene prioridad sobre el `.env`), **reemplazando `USUARIO` y `PASSWORD` por los reales**. Si esa
+variable queda pegada en la terminal con los valores de ejemplo, el script aborta avisando y hay que
+borrarla con `Remove-Item Env:\DATABASE_URL`.
 
 - [ ] `migrate deploy` aplicó las 5 migraciones nuevas sin error.
 - [ ] Verificar en la base que existen las tablas nuevas (ej. `FiscalPeriod`, `VatSettlement`,

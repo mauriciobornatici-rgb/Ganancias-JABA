@@ -30,4 +30,27 @@ describe('assertPrismaDatabaseSafety', () => {
     expect(() => assertPrismaDatabaseSafety({ DATABASE_URL: testUrl, APP_ENV: 'test-db' }))
       .not.toThrow();
   });
+
+  it('permite la migracion productiva deliberada que NOMBRA la base habilitada', () => {
+    expect(() => assertPrismaDatabaseSafety({
+      DATABASE_URL: productionUrl,
+      PRISMA_ALLOW_PRODUCTION_MIGRATION: 'u669600172_ganancias_jaba',
+    })).not.toThrow();
+  });
+
+  it('no alcanza con un valor genérico para habilitar produccion', () => {
+    for (const value of ['1', 'true', 'yes', '']) {
+      expect(() => assertPrismaDatabaseSafety({
+        DATABASE_URL: productionUrl,
+        PRISMA_ALLOW_PRODUCTION_MIGRATION: value,
+      })).toThrow('PRISMA BLOQUEADO');
+    }
+  });
+
+  it('nombrar otra base no habilita la productiva', () => {
+    expect(() => assertPrismaDatabaseSafety({
+      DATABASE_URL: productionUrl,
+      PRISMA_ALLOW_PRODUCTION_MIGRATION: 'ganancias_jaba_test',
+    })).toThrow('PRISMA BLOQUEADO');
+  });
 });

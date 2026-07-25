@@ -21,6 +21,7 @@
     "db:test:down": "docker compose down",
     "db:test:reset": "docker compose down -v && docker compose up -d mysql-test",
     "db:test:migrate": "node scripts/run-test-db-command.mjs migrate",
+    "db:prod:migrate": "node scripts/run-prod-migration.mjs",
     "db:test:seed": "node scripts/seed-test-db.mjs",
     "db:test:validate": "node scripts/run-test-db-command.mjs validate",
     "db:test:validate:excel": "node scripts/run-test-db-command.mjs validate-excel",

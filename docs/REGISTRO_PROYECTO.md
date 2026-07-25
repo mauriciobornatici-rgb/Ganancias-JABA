@@ -40,6 +40,14 @@ Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae 
 
 Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
 
+### 2026-07-24 - Camino habilitado para migrar producción (`npm run db:prod:migrate`)
+
+- Hallazgo al preparar el pase a producción de los 6 puntos: el Paso 2 del checklist de pre-merge y el paso 4 de `FLUJO_SEGURO_DEPLOY.md` decían `npx prisma migrate deploy` contra Hostinger, pero el endurecimiento del 2026-07-20 (`scripts/prismaDatabaseSafety.ts`) aborta **cualquier** comando Prisma local cuya base sea la productiva. La doc quedó desactualizada y no había camino habilitado para migrar producción: el riesgo real era terminar aplicando el SQL a mano.
+- Script nuevo `scripts/run-prod-migration.mjs` (`npm run db:prod:migrate`): valida el destino (rechaza Docker y el nombre productivo contra localhost), exige `CONFIRM_PROD_MIGRATION=1` como confirmación explícita de que el backup ya está hecho, imprime el destino **con la password enmascarada** y corre `prisma migrate deploy`. La URL productiva la pone el operador en su terminal; nunca va al repo ni a un `.env`.
+- La guarda ganó una única excepción local, deliberadamente incómoda: `PRISMA_ALLOW_PRODUCTION_MIGRATION` tiene que **nombrar** la base productiva (un `1` o un `true` no sirven, y nombrar otra base tampoco), así nadie la deja prendida de paso. El bypass histórico `ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION` sigue bloqueado, con su test. `dev`, `studio` y `migrate dev` siguen bloqueados contra producción.
+- 12 tests nuevos (validación del plan, enmascarado de la password y las cuatro puertas de la guarda). Se actualizaron `CHECKLIST_PRE_MERGE_PRODUCCION.md` y `FLUJO_SEGURO_DEPLOY.md`, incluido el recordatorio de cerrar la terminal habilitada.
+- Orden que queda vigente para este pase: backup de Hostinger con restauración probada → `npm run db:prod:migrate` (3 migraciones: IDCB, sociedades, TISH) → merge de la PR #31 a `main` → smoke test.
+
 ### 2026-07-24 - Punto 2: módulo TISH (Tasa de Seguridad e Higiene)
 
 - Alcance acordado: **solo Régimen General (responsable inscripto)**. El régimen simplificado (cuota fija por categoría de monotributo) y el de Convenio Multilateral (art. 208 de la Ordenanza Fiscal) quedan fuera de este corte; si el perfil no es responsable inscripto, la pantalla lo avisa en vez de calcular algo que no corresponde.

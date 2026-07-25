@@ -90,11 +90,26 @@ No usar `prisma db push` sobre produccion.
 Proceso seguro para cambios de schema productivos:
 
 1. Crear migracion versionada con Prisma.
-2. Probar local/staging.
-3. Exportar backup SQL desde Hostinger.
-4. Ejecutar `prisma migrate deploy` contra produccion.
+2. Probar local contra Docker (`npm run db:test:migrate`).
+3. Exportar backup SQL desde Hostinger y probar la restauracion.
+4. Migrar produccion con `npm run db:prod:migrate` (ver abajo). **Antes** del merge a `main`: la base
+   debe tener las columnas nuevas antes de que el codigo nuevo despliegue.
 5. Verificar tablas/datos criticos.
 6. Registrar fecha, commit y resultado en `docs/REGISTRO_PROYECTO.md`.
+
+Desde el 2026-07-24, `npx prisma migrate deploy` a mano contra produccion **esta bloqueado** por
+`scripts/prismaDatabaseSafety.ts`. El unico camino habilitado es:
+
+```powershell
+$env:DATABASE_URL="mysql://USUARIO:PASSWORD@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"
+$env:CONFIRM_PROD_MIGRATION="1"   # solo despues del backup
+npm run db:prod:migrate
+Remove-Item Env:\DATABASE_URL, Env:\CONFIRM_PROD_MIGRATION   # cerrar la ventana habilitada
+```
+
+El script valida el destino, nunca imprime la password y habilita la excepcion de la guarda nombrando
+la base productiva (un `1` o un `true` no sirven). El resto de los comandos Prisma locales
+(dev, studio, migrate dev) siguen bloqueados contra produccion.
 
 Seeds:
 

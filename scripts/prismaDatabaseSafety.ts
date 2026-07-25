@@ -15,10 +15,16 @@ export function assertPrismaDatabaseSafety(
     && env.VERCEL_ENV === 'production'
     && (!env.VERCEL_GIT_COMMIT_REF || env.VERCEL_GIT_COMMIT_REF === 'main');
 
-  if (database === productionDatabaseName && !isVercelProduction) {
+  // Única excepción local: la migración productiva deliberada de `npm run db:prod:migrate`, que
+  // exige CONFIRM_PROD_MIGRATION=1 y sólo entonces setea esta variable. No alcanza con un valor
+  // genérico ("1", "true"): hay que NOMBRAR la base productiva, para que nadie la habilite de paso
+  // ni quede prendida en un `.env`. Todo lo demás (dev, studio, migrate dev) sigue bloqueado.
+  const isExplicitProductionMigration = env.PRISMA_ALLOW_PRODUCTION_MIGRATION === productionDatabaseName;
+
+  if (database === productionDatabaseName && !isVercelProduction && !isExplicitProductionMigration) {
     throw new Error(
       'PRISMA BLOQUEADO: los comandos locales no pueden usar la base productiva. '
-      + 'Use los scripts npm db:test:* contra Docker.',
+      + 'Use los scripts npm db:test:* contra Docker, o npm run db:prod:migrate para migrar produccion.',
     );
   }
 

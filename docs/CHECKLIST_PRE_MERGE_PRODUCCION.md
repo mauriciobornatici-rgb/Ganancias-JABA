@@ -46,11 +46,24 @@ git status                                                         # limpio, pus
 
 > Esto crea las tablas/columnas nuevas. Es aditivo, pero igual hacelo después del backup.
 > **Nunca `prisma migrate dev` contra producción.** Solo `migrate deploy`.
+>
+> **Desde 2026-07-24 esto NO se hace con `npx prisma migrate deploy` a mano**: la guarda
+> `scripts/prismaDatabaseSafety.ts` (endurecimiento del 2026-07-20) aborta cualquier comando Prisma
+> local contra la base productiva. El único camino habilitado es `npm run db:prod:migrate`, que exige
+> intención explícita y sólo entonces habilita la excepción nombrada de la guarda.
 
 ```powershell
-# Con DATABASE_URL apuntando a la base de PRODUCCIÓN (Hostinger), en una terminal local:
+# En TU terminal (la password nunca va al repo ni a un .env):
 $env:DATABASE_URL="mysql://USUARIO:PASSWORD@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"
-npx prisma migrate deploy
+$env:CONFIRM_PROD_MIGRATION="1"   # confirmá SOLO después del backup del Paso 1
+npm run db:prod:migrate           # corre prisma migrate deploy y muestra el destino sin la password
+```
+
+Al terminar, cerrá esa terminal (o limpiá las dos variables) para no quedar con una sesión habilitada
+contra producción:
+
+```powershell
+Remove-Item Env:\DATABASE_URL, Env:\CONFIRM_PROD_MIGRATION
 ```
 
 - [ ] `migrate deploy` aplicó las 5 migraciones nuevas sin error.

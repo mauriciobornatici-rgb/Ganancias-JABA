@@ -1,20 +1,19 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-07-24
+Ultima actualizacion: 2026-07-25
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
-## Tramo activo al 2026-07-24 - PDF de correcciones del usuario (6 puntos)
+## Estado al 2026-07-25 - los 6 puntos del PDF estan EN PRODUCCION
 
-- Rama de trabajo activa: `fix/fiabilidad-carga-y-retenciones`, PR #31 abierta y mergeable.
-- Contenido de la PR: puntos 1, 4 y 6 del PDF (commit `d9a985b`) + Next 16.2.6 -> 16.2.11 y gate de audit acotado a produccion (commit `b0686bb`).
-- CI: el **gate de audit** quedo resuelto con `overrides` de `find-my-way` 9.7.0 y `valibot` 1.4.2 (sin tocar Prisma ni usar prereleases). 434 tests, typecheck, lint, build e integracion ya pasaban.
-- Estado de los 6 puntos: **los 6 resueltos** (1, 4 y 6 en el commit `d9a985b`; 5 IDCB, 3 sociedades y 2 TISH en commits posteriores de la misma rama).
-- Pendiente antes del merge: validacion funcional en la app (carga real de un caso) y revision visual de los tres modulos nuevos.
+- `main` = commit `b333021` (PR #31 mergeada), desplegado en Vercel produccion y con las 3 migraciones aplicadas en Hostinger. Detalle del pase: entrada `2026-07-25` de `docs/REGISTRO_PROYECTO.md`.
+- Los 6 puntos del PDF quedaron resueltos: 1 y 4 (imputacion mensual y retenciones), 6 (anticipos), 5 (IDCB / impuesto al cheque), 3 (participacion en sociedades) y 2 (TISH).
 - Alcance NO cubierto de TISH: regimen simplificado, Convenio Multilateral y encuadre automatico L/M/N por facturacion de 12 meses.
-- Las decisiones fiscales de los tres puntos pendientes estan escritas completas en la entrada `2026-07-24` de `docs/REGISTRO_PROYECTO.md`. **No volver a preguntarlas**: leer esa entrada antes de codear.
+- Las decisiones fiscales de cada punto estan escritas completas en las entradas `2026-07-24` del registro. **No volver a preguntarlas**: leer esas entradas antes de tocar esos modulos.
+- Pendientes inmediatos: (1) smoke test en produccion; (2) probar la restauracion del backup `backups/ganancias-jaba-2026-07-25-1112.sql`; (3) rotacion de credenciales del Paso 3 del checklist, que sigue abierta desde el incidente de middleware.
+- Para migrar produccion se usa `npm run db:prod:migrate` (nunca `npx prisma migrate deploy` a mano: la guarda lo bloquea). Ver `docs/FLUJO_SEGURO_DEPLOY.md`.
 - Fuente del pedido: `tmp/pdfs/correcciones-app/` (no versionado). PDFs de TISH en `C:\Users\mauri\Downloads` (tampoco versionados).
-- Entorno: no hay `pdftoppm` en esta maquina; para leer PDFs extraer texto con `pdf-parse` desde el scratchpad. `fiscalLedgerSeedDocker` falla en local por seeds acumulados (no es regresion). No correr `db:test:reset` sin revisar `docker-compose.yml` (hace `down -v`).
+- Entorno: no hay `pdftoppm` en esta maquina; para leer PDFs extraer texto con `pdf-parse` desde el scratchpad. `fiscalLedgerSeedDocker` falla en local por seeds acumulados (no es regresion). Si hay worktrees en `.claude/worktrees/`, `npm run test` tambien levanta sus tests: usar `npx vitest run --dir src --exclude "**/.claude/**"`. No correr `db:test:reset` sin revisar `docker-compose.yml` (hace `down -v`).
 
 ## Estado actual
 

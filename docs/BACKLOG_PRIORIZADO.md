@@ -45,7 +45,7 @@ Uso: trabajar de arriba hacia abajo. Si se cambia el orden por decision del usua
 
 ## P33 - PDF de correcciones del usuario (6 puntos) - 2026-07-24
 
-Estado: Activo. Rama `fix/fiabilidad-carga-y-retenciones`, PR #31.
+Estado: Resuelto y EN PRODUCCION (2026-07-25, commit `b333021`, PR #31 mergeada). Queda el smoke test y la prueba de restauracion del backup.
 
 Decisiones fiscales completas de cada punto: entrada `2026-07-24` de `docs/REGISTRO_PROYECTO.md`. No volver a preguntarlas.
 

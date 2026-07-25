@@ -1,8 +1,18 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-24
+Ultima actualizacion: 2026-07-25
 
 ## Entrada reciente
+
+### 2026-07-25 - PASE A PRODUCCION de los 6 puntos del PDF (PR #31 mergeada)
+
+- Backup previo: `backups/ganancias-jaba-2026-07-25-1112.sql`, 73.109 KB, 54 tablas, 16.411 filas (script `npm run db:backup`, solo lectura). **Queda pendiente probar la restauracion** de ese archivo en una base vacia: un backup sin restore probado no es backup.
+- Migraciones aplicadas a `u669600172_ganancias_jaba` con `npm run db:prod:migrate`, en este orden y antes del merge: `20260724230000_add_idcb_computable_percent`, `20260724233000_add_society_participations`, `20260724235000_add_tish`. Sin errores.
+- Tropiezo del primer uso, ya corregido en el script: la terminal tenia cargada la plantilla de la doc (`DATABASE_URL` con el literal `USUARIO:PASSWORD`), que tiene prioridad sobre el `.env`, y Prisma devolvia un `P1000` de credenciales que no explicaba el origen. Ahora el script detecta credenciales de ejemplo y dice exactamente que hacer.
+- Merge a `main`: commit `b333021` (PR #31, 11 commits). Deploy de produccion Vercel `dpl_CrvzfAdVP4tURRN7n4XrvWWK5jGH`: READY en 73 s, alias `ganancias-jaba.vercel.app`. El deploy anterior (`1d7e302`) queda como candidato de rollback.
+- Estado de los 6 puntos del PDF: **todos resueltos y en produccion**. Alcance no cubierto de TISH: regimen simplificado, Convenio Multilateral y encuadre automatico L/M/N por facturacion de 12 meses.
+- Pendiente inmediato: smoke test en produccion (login, `/api/health`, un periodo mensual con impuesto al cheque, una DDJJ con participacion en sociedades, un bimestre de TISH y revision de logs de Vercel).
+- Pendiente del checklist que NO se hizo en este pase: **rotacion de credenciales** (password de la DB, `AUTH_PASSWORD`, `AUTH_SECRET`) y restringir `DATABASE_URL` de Preview. Sigue abierto desde el incidente de middleware.
 
 ### 2026-07-24 - PDF de correcciones del usuario: puntos 1, 4 y 6 implementados + seguridad de dependencias (PR #31)
 

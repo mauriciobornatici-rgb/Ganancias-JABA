@@ -66,6 +66,38 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(ret2.taxCode).toBe('Ganancias');
   });
 
+  it('clasifica los códigos oficiales de impuesto (217/787 Ganancias, 147 IDCB, 767 otros)', () => {
+    const csv = [
+      'CUIT Agente Ret./Perc.,Impuesto,Regimen,Fecha Ret./Perc.,Numero Certificado,Descripcion Operacion,Importe Ret./Perc.',
+      '30701987654,217,95,09/01/2025,2025000071,RETENCION,"6484,73"',
+      '30701987654,787,12,10/01/2025,2025000072,RETENCION,"1500,00"',
+      '30701987654,147,1,10/01/2025,2025000073,PAGO A CUENTA,"2500,00"',
+      '30701987654,767,212,11/01/2025,2025000074,RETENCION,"1000,00"',
+    ].join('\n');
+
+    const summary = parseAfipExportFile(Buffer.from(csv, 'utf8'), 'mis_retenciones.csv');
+
+    expect(summary.fileType).toBe('MisRetenciones');
+    expect(summary.withholdings).toHaveLength(4);
+    expect(summary.withholdings?.map(item => item.taxCode)).toEqual(['Ganancias', 'Ganancias', 'IDCB', 'Otros']);
+    expect(summary.totalAmount.toNumber()).toBe(11484.73);
+  });
+
+  it('conserva el signo de las anulaciones para que neteen (antes se descartaban)', () => {
+    const csv = [
+      'CUIT Agente Ret./Perc.,Impuesto,Regimen,Fecha Ret./Perc.,Numero Certificado,Descripcion Operacion,Importe Ret./Perc.',
+      '30701987654,217,95,09/01/2025,2025000071,RETENCION,"6484,73"',
+      '30701987654,217,95,15/01/2025,2025000071,ANULACION,"-6484,73"',
+    ].join('\n');
+
+    const summary = parseAfipExportFile(Buffer.from(csv, 'utf8'), 'mis_retenciones.csv');
+
+    expect(summary.withholdings).toHaveLength(2);
+    expect(summary.withholdings?.map(item => item.amount.toNumber())).toEqual([6484.73, -6484.73]);
+    // La anulación netea: el crédito total del archivo queda en cero.
+    expect(summary.totalAmount.toNumber()).toBe(0);
+  });
+
   it('Debe parsear e importar correctamente un "Libro de IVA Ventas" e identificar ingresos exentos', () => {
     const headers = [
       'Fecha',

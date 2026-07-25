@@ -255,6 +255,8 @@ export function buildTaxReturnCalculationInput(
       balanceFinal: decimalValue(liability.balanceFinal),
     })),
     withholdings: asRecordArray(data.withholdings).map(withholding => ({
+      // El signo se conserva tal cual se cargó: los negativos son anulaciones de créditos
+      // y deben netear en el motor (criterio del usuario, 2026-07-24).
       amount: decimalValue(withholding.amount),
       taxCode: taxCode(withholding.taxCode),
       cuitAgent: stringValue(withholding.cuitAgent) || undefined,
@@ -265,6 +267,15 @@ export function buildTaxReturnCalculationInput(
       date: withholding.date ? dateValue(withholding.date) : undefined,
       certificateNumber: stringValue(withholding.certificateNumber) || undefined,
       operationDescription: stringValue(withholding.operationDescription) || undefined,
+    })),
+    societyParticipations: asRecordArray(data.societyParticipations).map(participation => ({
+      cuit: stringValue(participation.cuit),
+      denomination: stringValue(participation.denomination),
+      societyType: stringValue(participation.societyType) || undefined,
+      participationPercent: decimalValue(participation.participationPercent),
+      societyResult: decimalValue(participation.societyResult),
+      // Vacío = usar el calculado; cargado = criterio del contador, con aviso de la diferencia.
+      attributedResultOverride: optionalDecimalValue(participation.attributedResultOverride),
     })),
     generalDeductions: [
       {

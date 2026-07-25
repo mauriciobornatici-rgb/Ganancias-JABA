@@ -10,6 +10,15 @@ import {
   type IibbDeterminedEntry,
   type MonthlyImportDocument,
 } from '@/domain/ganancias/fiscalLedger/taxReturnMonthlyImport';
+import {
+  buildIdcbWithholdingDrafts,
+  idcbImportNotice,
+  uniqueIdcbPercent,
+  IDCB_CERTIFICATE_PREFIX,
+  IDCB_CREDIT_KEY,
+  IDCB_TAX_CODE,
+  type IdcbMonthlyEntry,
+} from '@/domain/ganancias/fiscalLedger/bankTaxCredit';
 import { readAnnualConsolidation } from '@/domain/ganancias/persistence/annualConsolidationRead';
 import { persistAnnualConsolidationSnapshot } from '@/domain/ganancias/persistence/annualConsolidationSnapshot';
 import type { GainsAllocationKind } from '@/domain/ganancias/fiscalLedger/annualConsolidation';
@@ -25,8 +34,13 @@ type RouteContext = { params: Promise<{ id: string }> };
  * PurchaseInvoice con el `expenseType` correcto (mercadería → CMV; gasto → deducible). Los bienes de
  * uso NO se crean como compra (requieren vida útil): se devuelven como candidatos a completar.
  *
- * Idempotente: borra solo los registros previamente importados (importSource='MONTHLY_LEDGER') y los
- * recrea; las cargas manuales del usuario quedan intactas. No toca la matemática de la determinación.
+ * También trae el impuesto al cheque (IDCB) cargado mes a mes en el libro mensual, como pago a cuenta
+ * con `taxCode='IDCB'` (IG 25!F65) y una fila por mes. A diferencia de los comprobantes, NO exige que
+ * el mes esté cotejado en IVA: el impuesto al cheque no depende de esa evidencia.
+ *
+ * Idempotente: borra solo los registros previamente importados (importSource='MONTHLY_LEDGER', y para
+ * el IDCB las filas con certificado 'IDCB-AAAA-MM') y los recrea; las cargas manuales del usuario
+ * quedan intactas. No toca la matemática de la determinación.
  */
 export async function POST(request: NextRequest, context: RouteContext) {
   const authError = await requireRouteAuth(request);
@@ -66,6 +80,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
         month: true,
         vatSettlements: { orderBy: { version: 'desc' }, take: 1, select: { status: true } },
         grossIncomeSettlements: { where: { status: 'CLOSED' }, orderBy: { version: 'desc' }, take: 1, select: { totalDeterminedTax: true } },
+        // Impuesto al cheque del mes + % computable vigente en el perfil de ESE período.
+        taxProfile: { select: { idcbComputablePercent: true } },
+        taxCredits: { where: { creditKey: IDCB_CREDIT_KEY }, select: { originalAmount: true } },
         documents: {
           where: { includedInSettlement: true },
           select: {
@@ -76,6 +93,20 @@ export async function POST(request: NextRequest, context: RouteContext) {
           },
         },
       },
+    });
+
+    // Impuesto al cheque (punto 5): se toma de TODOS los meses con importe cargado, no solo de los
+    // cotejados en IVA. El cierre de IVA no es evidencia del impuesto al cheque, y dejar afuera un
+    // mes cargado computaría de menos un pago a cuenta real. Cada mes usa el % de su propio perfil.
+    const idcbEntries: IdcbMonthlyEntry[] = periods.flatMap(period => {
+      const record = period.taxCredits[0];
+      if (!record) return [];
+      return [{
+        year,
+        month: period.month,
+        totalAmount: new Decimal(record.originalAmount.toString()),
+        computablePercent: period.taxProfile?.idcbComputablePercent,
+      }];
     });
 
     // Solo meses con IVA CLOSED alimentan la anual.
@@ -125,12 +156,28 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     const mapped = mapMonthlyDocumentsToTaxReturnInputs(importDocs);
     const iibbExpenseDrafts = buildIibbDeterminedExpenseDrafts(iibbEntries);
+    const idcb = buildIdcbWithholdingDrafts(idcbEntries);
 
     // Reemplazo idempotente: borra lo importado antes (no las cargas manuales) y recrea.
     await prisma.$transaction([
       prisma.salesInvoice.deleteMany({ where: { taxReturnId, importSource: MONTHLY_IMPORT_SOURCE } }),
       prisma.purchaseInvoice.deleteMany({ where: { taxReturnId, importSource: MONTHLY_IMPORT_SOURCE } }),
       prisma.fixedAssetImportCandidate.deleteMany({ where: { taxReturnId, status: 'PENDING' } }),
+      // Pagos a cuenta de impuesto al cheque creados por esta importación (certificado IDCB-AAAA-MM).
+      // Las retenciones cargadas a mano no llevan ese certificado y no se tocan.
+      prisma.taxWithholding.deleteMany({
+        where: { taxReturnId, taxCode: IDCB_TAX_CODE, certificateNumber: { startsWith: IDCB_CERTIFICATE_PREFIX } },
+      }),
+      prisma.taxWithholding.createMany({ data: idcb.drafts.map(draft => ({
+        taxReturnId,
+        agentName: draft.agentName,
+        taxCode: draft.taxCode,
+        taxDescription: draft.taxDescription,
+        date: draft.date,
+        certificateNumber: draft.certificateNumber,
+        operationDescription: draft.operationDescription,
+        amount: draft.amount,
+      })) }),
       prisma.salesInvoice.createMany({ data: mapped.sales.map(s => ({ ...s, taxReturnId })) }),
       prisma.purchaseInvoice.createMany({ data: [...mapped.purchases, ...iibbExpenseDrafts].map(p => ({ ...p, taxReturnId })) }),
       // skipDuplicates: un candidato ya procesado (status != PENDING) no se borra arriba; sin esto,
@@ -156,6 +203,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
           monthsUsed,
           ...mapped.summary,
           iibbTotal: iibbTotal.toFixed(2),
+          idcbMonths: idcb.monthsUsed,
+          idcbLoaded: idcb.totalLoaded.toFixed(2),
+          idcbComputable: idcb.totalComputable.toFixed(2),
         }),
       } }),
     ]);
@@ -175,6 +225,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const notices = buildNotices(mapped.summary, iibbTotal, iibbExpenseDrafts.length);
+    const idcbNotice = idcbImportNotice(idcb, uniqueIdcbPercent(idcbEntries));
+    if (idcbNotice) notices.push(idcbNotice);
     if (snapshotError) {
       notices.push('La importación se guardó, pero no pudo registrarse el snapshot de consolidación anual: cambios posteriores en el libro mensual no serán detectados automáticamente. Reintentá la importación para regenerarlo.');
     }
@@ -187,6 +239,11 @@ export async function POST(request: NextRequest, context: RouteContext) {
         summary: mapped.summary,
         fixedAssetCandidates: mapped.fixedAssetCandidates,
         iibbTotal: iibbTotal.toFixed(2),
+        idcb: {
+          months: idcb.monthsUsed,
+          totalLoaded: idcb.totalLoaded.toFixed(2),
+          totalComputable: idcb.totalComputable.toFixed(2),
+        },
         snapshot,
         notices,
       },

@@ -314,11 +314,15 @@ function parseMisRetenciones(
       const taxName = taxIndex !== -1 ? String(row[taxIndex]).trim() : 'Impuesto a las Ganancias';
       const rawTaxCode = textCell(row, taxCodeIndex);
 
-      if (amountVal.isPositive() && !amountVal.isZero()) {
-        const isGanancias = taxName.toLowerCase().includes('ganancias') || rawTaxCode === '787' || taxName === '787';
+      if (!amountVal.isZero()) {
+        // Criterio del usuario (2026-07-24): un importe NEGATIVO en Mis Retenciones es una
+        // ANULACIÓN del crédito, no un crédito expresado con otro signo. Por eso se conserva el
+        // signo: la anulación netea contra la retención original en lugar de sumar crédito.
+        // (Antes se descartaban por completo con isPositive(), y el crédito quedaba inflado.)
+        const mappedTaxCode = mapAfipWithholdingTaxCode(rawTaxCode, taxName);
         withholdings.push({
           amount: amountVal,
-          taxCode: isGanancias ? 'Ganancias' : 'Otros',
+          taxCode: mappedTaxCode,
           cuitAgent: textCell(row, cuitAgentIndex) || undefined,
           agentName: textCell(row, agentNameIndex) || undefined,
           taxDescription: taxName || undefined,
@@ -342,6 +346,36 @@ function parseMisRetenciones(
     totalAmount: totalAmount,
     errors
   };
+}
+
+function mapAfipWithholdingTaxCode(
+  rawTaxCode: string,
+  taxName: string,
+): TaxWithholdingInput['taxCode'] {
+  const code = rawTaxCode.trim() || taxName.trim();
+  const normalizedName = taxName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  // Tabla de impuestos SICORE/SIRE:
+  // 210/217/218/787 = Ganancias; 147 = Impuesto sobre Débitos y Créditos; 767 = IVA.
+  // El 787 se mantiene por confirmación del usuario (2026-07-24) y porque era el único código
+  // que reconocía la versión anterior: quitarlo habría hecho perder créditos ya cargados.
+  if (
+    code === '210' || code === '217' || code === '218' || code === '787'
+    || normalizedName.includes('ganancias')
+  ) {
+    return 'Ganancias';
+  }
+  if (
+    code === '147'
+    || normalizedName.includes('debitos y creditos')
+    || normalizedName.includes('creditos y debitos')
+  ) {
+    return 'IDCB';
+  }
+  return 'Otros';
 }
 
 /**

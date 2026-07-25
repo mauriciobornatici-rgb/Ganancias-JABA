@@ -740,6 +740,30 @@ export type WizardOtherJustification = WizardEditableRecord & {
   amount?: WizardMoneyValue;
 };
 
+/**
+ * Participación en sociedades (punto 3 del PDF, criterio 2026-07-24): se cargan el porcentaje y el
+ * resultado total; `attributedResultOverride` vacío significa "usar el atribuido que calcula la app".
+ */
+export type WizardSocietyParticipation = WizardEditableRecord & {
+  cuit?: string;
+  denomination?: string;
+  societyType?: string;
+  participationPercent?: WizardMoneyValue;
+  societyResult?: WizardMoneyValue;
+  attributedResultOverride?: WizardMoneyValue;
+};
+
+export function buildDefaultWizardSocietyParticipation(): WizardSocietyParticipation {
+  return {
+    cuit: '',
+    denomination: '',
+    societyType: '',
+    participationPercent: '0',
+    societyResult: '0',
+    attributedResultOverride: '',
+  };
+}
+
 export type WizardAxiDynamic = WizardEditableRecord & {
   concept?: string;
   type?: string;

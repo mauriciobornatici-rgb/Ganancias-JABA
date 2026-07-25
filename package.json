@@ -21,6 +21,7 @@
     "db:test:down": "docker compose down",
     "db:test:reset": "docker compose down -v && docker compose up -d mysql-test",
     "db:test:migrate": "node scripts/run-test-db-command.mjs migrate",
+    "db:prod:migrate": "node scripts/run-prod-migration.mjs",
     "db:test:seed": "node scripts/seed-test-db.mjs",
     "db:test:validate": "node scripts/run-test-db-command.mjs validate",
     "db:test:validate:excel": "node scripts/run-test-db-command.mjs validate-excel",
@@ -34,7 +35,7 @@
     "jszip": "^3.10.1",
     "lucide-react": "^1.16.0",
     "mariadb": "^3.5.2",
-    "next": "16.2.6",
+    "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
@@ -57,6 +58,8 @@
   },
   "overrides": {
     "sharp": "^0.35.0",
-    "postcss": "^8.5.10"
+    "postcss": "^8.5.10",
+    "find-my-way": "9.7.0",
+    "valibot": "1.4.2"
   }
 }

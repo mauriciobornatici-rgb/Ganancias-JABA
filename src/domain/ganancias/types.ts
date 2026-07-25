@@ -165,6 +165,24 @@ export interface TaxWithholdingInput {
   operationDescription?: string;
 }
 
+/**
+ * Participación en sociedades, explotaciones unipersonales y fideicomisos (excepto art. 73).
+ * Criterio del usuario (2026-07-24): se cargan el porcentaje y el resultado total de la sociedad,
+ * la app calcula el atribuido y `attributedResultOverride` permite corregirlo a mano con aviso de
+ * la diferencia (verificación cruzada).
+ */
+export interface SocietyParticipationInput {
+  cuit: string;
+  denomination: string;
+  societyType?: string;
+  /** Porcentaje de participación (0 a 100, no fracción). */
+  participationPercent: Decimal;
+  /** Resultado impositivo total de la sociedad del ejercicio (puede ser negativo). */
+  societyResult: Decimal;
+  /** Resultado atribuido cargado a mano. undefined/null = usar el calculado. */
+  attributedResultOverride?: Decimal | null;
+}
+
 export interface PersonalAssetInput {
   description: string;
   type: string;
@@ -233,7 +251,9 @@ export interface TaxReturnCalculationInput {
   receivables: ReceivableInput[];
   liabilities: PayableInput[];
   withholdings: TaxWithholdingInput[];
-  
+  /** Participación en sociedades: su resultado atribuido suma al neto de tercera categoría. */
+  societyParticipations?: SocietyParticipationInput[];
+
   // Deducciones generales y de familia
   generalDeductions: GeneralDeductionsInput[];
   personalDeductions: PersonalDeductionsInput;
@@ -336,6 +356,8 @@ export interface TaxCalculationResult {
   resultadoComercialNeto: Decimal; // Neto Tercera Categoría impositivo
   bajaBienesDeUsoLoss?: Decimal;
   axiDynamicLines?: AxiDynamicLineResult[];
+  /** Resultado atribuido por participación en sociedades (suma al neto de todas las categorías). */
+  resultadoParticipacionSociedades: Decimal;
   
   // Determinación impositiva
   resultadoNetoTodasCategorias: Decimal;

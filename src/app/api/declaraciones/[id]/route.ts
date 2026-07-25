@@ -44,6 +44,7 @@ export async function GET(
         receivables: true,
         liabilities: true,
         withholdings: true,
+        societyParticipations: true,
         personalAssets: true,
         personalLiabilities: true,
         justifications: true,
@@ -218,6 +219,15 @@ export async function GET(
         date: formatDateForWizardInput(w.date),
         certificateNumber: w.certificateNumber || '',
         operationDescription: w.operationDescription || '',
+      })),
+      societyParticipations: taxReturn.societyParticipations.map(p => ({
+        cuit: p.cuit,
+        denomination: p.denomination,
+        societyType: p.societyType || '',
+        participationPercent: p.participationPercent.toString(),
+        societyResult: p.societyResult.toString(),
+        // null (sin editar) vuelve como '' para que la app muestre el calculado.
+        attributedResultOverride: p.attributedResultOverride === null ? '' : p.attributedResultOverride.toString(),
       })),
       personalAssets: taxReturn.personalAssets.map((a, index) => ({
         description: a.description,

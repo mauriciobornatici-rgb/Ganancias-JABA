@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
-  Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2,
+  Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2, Landmark,
 } from 'lucide-react';
 import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
@@ -116,7 +116,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [notice, setNotice] = useState<string | null>(null);
 
   const [uploading, setUploading] = useState(false);
-  const [deletingDocuments, setDeletingDocuments] = useState(false);
+  const [deletingDirection, setDeletingDirection] = useState<'SALE' | 'PURCHASE' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Retenciones y percepciones (créditos de IVA)
@@ -128,6 +128,13 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [iibbCredits, setIibbCredits] = useState<TaxCreditRow[]>([]);
   const [uploadingIibbCredits, setUploadingIibbCredits] = useState(false);
   const iibbCreditsFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Impuesto al cheque del mes (pago a cuenta de GANANCIAS: no entra en IVA ni en IIBB).
+  const [idcbAmount, setIdcbAmount] = useState('');
+  const [idcbPercent, setIdcbPercent] = useState<33 | 100>(33);
+  const [idcbComputable, setIdcbComputable] = useState('0.00');
+  const [savingIdcb, setSavingIdcb] = useState(false);
+  const [idcbNotice, setIdcbNotice] = useState<string | null>(null);
 
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -199,6 +206,20 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
+  const loadIdcb = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/idcb`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) {
+        setIdcbAmount(payload.data.amount ?? '');
+        setIdcbPercent(payload.data.computablePercent === 100 ? 100 : 33);
+        setIdcbComputable(payload.data.computableAmount ?? '0.00');
+      }
+    } catch {
+      // el impuesto al cheque es de Ganancias: si falla su carga, la liquidación de IVA sigue usable
+    }
+  }, [clientId, periodId]);
+
   const loadSaved = useCallback(async () => {
     try {
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/saved`, { cache: 'no-store' });
@@ -227,10 +248,36 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       void loadDocuments();
       void loadTaxCredits();
       void loadIibbCredits();
+      void loadIdcb();
       void loadSaved();
       void loadSavedIibb();
     });
-  }, [loadDocuments, loadTaxCredits, loadIibbCredits, loadSaved, loadSavedIibb]);
+  }, [loadDocuments, loadTaxCredits, loadIibbCredits, loadIdcb, loadSaved, loadSavedIibb]);
+
+  const saveIdcb = async () => {
+    setSavingIdcb(true);
+    setError(null);
+    setIdcbNotice(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/idcb`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: idcbAmount }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar el impuesto al cheque.');
+      setIdcbAmount(payload.data.amount ?? '');
+      setIdcbPercent(payload.data.computablePercent === 100 ? 100 : 33);
+      setIdcbComputable(payload.data.computableAmount ?? '0.00');
+      setIdcbNotice(Number(payload.data.computableAmount) > 0
+        ? `Guardado. Computable como pago a cuenta de Ganancias: $${fmt(payload.data.computableAmount)} (${payload.data.computablePercent}% del total del mes).`
+        : 'Importe borrado: este mes no computa impuesto al cheque.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el impuesto al cheque.');
+    } finally {
+      setSavingIdcb(false);
+    }
+  };
 
   const saveIibb = async (force: boolean) => {
     if (iibbBalancesDirty) {
@@ -428,7 +475,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudieron importar los archivos.');
-      setNotice(`Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`);
+      let msg = `Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`;
+      // Control de imputación: los comprobantes de otro mes no entran y se avisan acá.
+      if (payload.data.periodWarning) msg += ` ${payload.data.periodWarning}`;
+      setNotice(msg);
       await loadDocuments();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron importar los archivos.');
@@ -438,36 +488,38 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   };
 
-  const deleteLoadedDocuments = async () => {
-    if (documents.length === 0 || deletingDocuments) return;
+  const deleteLoadedDocuments = async (direction: 'SALE' | 'PURCHASE') => {
+    const affected = documents.filter(document => document.direction === direction);
+    if (affected.length === 0 || deletingDirection) return;
     const periodLabel = period ? `${MONTHS[period.month]} ${period.year}` : 'este período';
+    const kind = direction === 'SALE' ? 'ventas' : 'compras';
     const confirmed = window.confirm(
-      `Se eliminarán los ${documents.length} comprobantes cargados en ${periodLabel}.\n\n`
+      `Se eliminarán ${affected.length} comprobantes de ${kind} cargados en ${periodLabel}.\n\n`
       + 'Las retenciones y percepciones no se eliminarán. Esta acción no se puede deshacer. ¿Desea continuar?',
     );
     if (!confirmed) return;
 
-    setDeletingDocuments(true);
+    setDeletingDirection(direction);
     setError(null);
     setNotice(null);
     setSettlement(null);
     setGrossIncome(null);
     setActivityBases({});
     try {
-      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents?direction=${direction}`, {
         method: 'DELETE',
       });
       const payload = await res.json();
       if (!res.ok || !payload.success) {
         throw new Error(payload.error || 'No se pudieron eliminar los comprobantes.');
       }
-      setDocuments([]);
-      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${periodLabel}. Ya podés cargar los archivos en el mes correcto.`);
+      setDocuments(previous => previous.filter(document => document.direction !== direction));
+      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${kind} de ${periodLabel}. Ya podés cargar el archivo correcto.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron eliminar los comprobantes.');
       await loadDocuments();
     } finally {
-      setDeletingDocuments(false);
+      setDeletingDirection(null);
     }
   };
 
@@ -656,20 +708,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
           <StepTitle n={1} icon={<UploadCloud className="h-4 w-4" />} title="Subir archivos de AFIP" subtitle="Compras y ventas exportados de Mis Comprobantes (.csv). El sistema detecta automáticamente cuál es cuál." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || deletingDocuments} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
-            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDocuments) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || Boolean(deletingDirection)} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
+            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDirection) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploading ? 'Importando…' : 'Seleccionar CSV (compras y ventas)'}
             </label>
-            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || deletingDocuments} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
+            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || Boolean(deletingDirection)} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Actualizar
             </button>
             <button
               type="button"
-              onClick={() => void deleteLoadedDocuments()}
-              disabled={documents.length === 0 || deletingDocuments || uploading}
+              onClick={() => void deleteLoadedDocuments('PURCHASE')}
+              disabled={purchases.length === 0 || Boolean(deletingDirection) || uploading}
               className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Trash2 className="h-4 w-4" /> {deletingDocuments ? 'Eliminando…' : 'Eliminar comprobantes cargados'}
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'PURCHASE' ? 'Eliminando compras…' : 'Eliminar compras'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void deleteLoadedDocuments('SALE')}
+              disabled={sales.length === 0 || Boolean(deletingDirection) || uploading}
+              className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'SALE' ? 'Eliminando ventas…' : 'Eliminar ventas'}
             </button>
           </div>
         </section>
@@ -766,6 +826,51 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         </section>
         </>
         ) : null}
+
+        {/* Impuesto al cheque del mes — pago a cuenta de GANANCIAS (no entra en IVA ni en IIBB).
+            Queda visible y editable aunque el mes esté cerrado: cerrar IVA no es evidencia de este
+            impuesto, y sin poder cargarlo el pago a cuenta anual quedaría corto. */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <StepTitle
+            n="2d"
+            icon={<Landmark className="h-4 w-4" />}
+            title="Impuesto al cheque (pago a cuenta de Ganancias)"
+            subtitle="Cargá el importe TOTAL del impuesto sobre débitos y créditos bancarios del mes. No afecta IVA ni IIBB: la app aplica el porcentaje computable del perfil fiscal y lo lleva a la DDJJ anual de Ganancias."
+          />
+          <div className="mt-4 flex flex-wrap items-end gap-4">
+            <div>
+              <label htmlFor="idcb-amount" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Total del mes</label>
+              <input
+                id="idcb-amount"
+                inputMode="decimal"
+                value={idcbAmount}
+                onChange={e => setIdcbAmount(e.target.value)}
+                placeholder="sin cargar"
+                className="h-10 w-44 rounded border border-zinc-700 bg-zinc-950 px-3 text-right font-mono text-sm text-zinc-100 outline-none focus:border-teal-400"
+              />
+            </div>
+            <div className="text-[11px] leading-5 text-zinc-400">
+              <p>Computable: <strong className="font-mono text-teal-300">{fmt(idcbComputable)}</strong> <span className="text-zinc-500">({idcbPercent}% configurado en el perfil fiscal)</span></p>
+              <p className="text-zinc-500">
+                {idcbPercent === 100 ? 'Micro y pequeña empresa: computa el 100%.' : 'Régimen general: computa el 33%.'}{' '}
+                <Link href={`/clientes/${clientId}/iibb-config`} className="text-teal-400 underline decoration-dotted hover:text-teal-300">Cambiar porcentaje</Link>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void saveIdcb()}
+              disabled={savingIdcb}
+              className="inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" /> {savingIdcb ? 'Guardando…' : 'Guardar impuesto al cheque'}
+            </button>
+          </div>
+          {idcbNotice ? (
+            <p className="mt-3 rounded border border-emerald-500/25 bg-emerald-950/20 px-3 py-2 text-[11px] text-emerald-200">{idcbNotice}</p>
+          ) : (
+            <p className="mt-3 text-[11px] text-zinc-500">Dejá el campo vacío (o en 0) si el mes no tuvo impuesto al cheque. Se guarda por período y se puede corregir en cualquier momento.</p>
+          )}
+        </section>
 
         {/* Paso 3 — Totales + cotejo + guardar */}
         {settlement ? (

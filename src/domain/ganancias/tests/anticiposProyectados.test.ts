@@ -6,7 +6,7 @@ import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
 /**
  * P29 - Proyeccion de anticipos segun hoja "Anticipos" del Excel y RG 5211:
  * - Coeficiente Anticipos!D5 = IPC diciembre / IPC julio (la planilla usa 10121.3715 / 8855.56813 = 1,142939).
- * - Cuota (E24) = (Impuesto proyectado - Retenciones - ITC) / 5.
+ * - Cuota (E24) = (Impuesto proyectado - Retenciones actualizadas - ITC actualizado) / 5.
  * - Si la cuota no supera $5.000, no corresponde ingresar anticipos.
  */
 function buildInput(options: {
@@ -95,7 +95,7 @@ describe('P29 - Anticipos proyectados (hoja Anticipos / RG 5211)', () => {
     expect(result.impuestoProyectadoAnticipos.toNumber()).toBe(impuestoProyectadoEsperado.toNumber());
   });
 
-  it('calcula la cuota como (impuesto proyectado - retenciones - ITC) / 5', () => {
+  it('actualiza por IPC las retenciones y el ITC antes de calcular la cuota', () => {
     const retenciones = new Decimal(100000);
     const combustibles = new Decimal(10000);
     const result = calculateTaxReturn(buildInput({
@@ -106,8 +106,8 @@ describe('P29 - Anticipos proyectados (hoja Anticipos / RG 5211)', () => {
     }));
 
     const cuotaEsperada = result.impuestoProyectadoAnticipos
-      .sub(retenciones)
-      .sub(combustibles)
+      .sub(retenciones.mul('1.142939'))
+      .sub(combustibles.mul('1.142939'))
       .div(5)
       .toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
 
@@ -115,6 +115,16 @@ describe('P29 - Anticipos proyectados (hoja Anticipos / RG 5211)', () => {
     result.anticiposSiguientePeriodo.forEach(cuota => {
       expect(cuota.toNumber()).toBe(cuotaEsperada.toNumber());
     });
+  });
+
+  it('no genera anticipos cuando las retenciones actualizadas absorben el impuesto proyectado', () => {
+    const result = calculateTaxReturn(buildInput({
+      ventas: new Decimal(1000000),
+      retenciones: new Decimal(350000),
+      indicesIPC: indicesPlanilla,
+    }));
+
+    expect(result.anticiposSiguientePeriodo).toHaveLength(0);
   });
 
   it('no proyecta anticipos si la cuota no supera $5.000 (Anticipos!E24)', () => {

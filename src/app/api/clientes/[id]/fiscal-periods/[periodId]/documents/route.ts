@@ -5,10 +5,18 @@ import { parseAfipFiscalLedgerDocuments } from '@/domain/ganancias/mappers/afipF
 import { persistFiscalDocuments } from '@/domain/ganancias/persistence/fiscalLedgerPersistence';
 import { MAX_IMPORT_TOTAL_BYTES } from '@/domain/ganancias/presentation/apiValidation';
 import { prisma } from '@/domain/ganancias/prisma';
-import type { FiscalDocumentDraft } from '@/domain/ganancias/fiscalLedger/types';
+import type {
+  FiscalDocumentDirection,
+  FiscalDocumentDraft,
+} from '@/domain/ganancias/fiscalLedger/types';
 import { buildFiscalPeriodSourceMutationDecision } from '@/domain/ganancias/workflow/fiscalPeriodWorkflow';
 import { deleteFiscalDocumentsForPeriod } from '@/domain/ganancias/persistence/fiscalDocumentCleanup';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
+import {
+  fiscalDocumentPeriodMismatchMessage,
+  fiscalDocumentPeriodRejectionMessage,
+  partitionFiscalDocumentsByPeriod,
+} from '@/domain/ganancias/fiscalLedger/fiscalDocumentPeriodValidation';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
@@ -81,6 +89,16 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   const authError = await requireRouteAuth(request);
   if (authError) return authError;
   const { id: clientId, periodId } = await context.params;
+  const rawDirection = request.nextUrl.searchParams.get('direction');
+  if (rawDirection && rawDirection !== 'SALE' && rawDirection !== 'PURCHASE') {
+    return NextResponse.json(
+      { success: false, error: 'El tipo de comprobante a eliminar no es válido.' },
+      { status: 400 },
+    );
+  }
+  const direction: FiscalDocumentDirection | undefined = rawDirection === 'SALE' || rawDirection === 'PURCHASE'
+    ? rawDirection
+    : undefined;
 
   try {
     const period = await prisma.fiscalPeriod.findUnique({
@@ -115,7 +133,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     const deleted = await prisma.$transaction(async tx => {
-      const result = await deleteFiscalDocumentsForPeriod(tx, periodId);
+      const result = await deleteFiscalDocumentsForPeriod(tx, periodId, direction);
       if (result.deleted > 0) {
         await tx.auditLog.create({
           data: {
@@ -127,6 +145,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
             fiscalYear: period.year,
             details: JSON.stringify({
               period: `${period.year}-${String(period.month).padStart(2, '0')}`,
+              direction: direction ?? 'ALL',
               deletedDocuments: result.deleted,
               reason: 'Corrección de archivos cargados en un período equivocado',
             }),
@@ -232,8 +251,30 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
+    // Control de imputación tolerante: entra lo que pertenece al mes, se informa lo que no.
+    // Si NADA pertenece al período, no se escribe nada (archivo cargado en el mes equivocado).
+    const { inPeriod, mismatches } = partitionFiscalDocumentsByPeriod(
+      documents,
+      period.year,
+      period.month,
+    );
+    if (inPeriod.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: fiscalDocumentPeriodRejectionMessage(mismatches, period.year, period.month),
+          details: mismatches,
+          fileResults,
+        },
+        { status: 422 },
+      );
+    }
+    const periodWarning = mismatches.length > 0
+      ? fiscalDocumentPeriodMismatchMessage(mismatches, period.year, period.month)
+      : null;
+
     const { inserted, updated, duplicates } = await prisma.$transaction(async tx => {
-      const persisted = await persistFiscalDocuments(tx, periodId, documents);
+      const persisted = await persistFiscalDocuments(tx, periodId, inPeriod);
       await tx.auditLog.create({ data: {
         action: 'IMPORT',
         entityType: 'FiscalPeriod',
@@ -241,7 +282,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         clientCuit: period.client?.cuit,
         clientName: period.client?.name,
         fiscalYear: period.year,
-        details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevos, ${persisted.updated} actualizados, ${persisted.duplicates} duplicados sin cambios, ${files.length} archivo(s).`,
+        details: `Importación libro fiscal ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevos, ${persisted.updated} actualizados, ${persisted.duplicates} duplicados sin cambios, ${mismatches.length} fuera de período, ${files.length} archivo(s).`,
       } });
       return persisted;
     }, { timeout: 60000, maxWait: 10000 }); // importaciones grandes sobre base remota: nunca el default de 5 s
@@ -252,10 +293,12 @@ export async function POST(request: NextRequest, context: RouteContext) {
         inserted,
         updated,
         duplicates,
-        totalDocuments: documents.length,
+        totalDocuments: inPeriod.length,
         totalFiles: files.length,
         fileResults,
-        warnings: errors,
+        outOfPeriod: mismatches,
+        periodWarning,
+        warnings: periodWarning ? [periodWarning, ...errors] : errors,
       },
     });
   } catch (error) {

@@ -15,7 +15,12 @@ import {
   type WizardReceivable,
   type WizardSale,
   type WizardWithholding,
+  type WizardSocietyParticipation,
 } from './wizardStateTypes';
+import {
+  calculateSocietyParticipations,
+  toSocietyParticipationInputs,
+} from '../calculations/participacionSociedades';
 
 export type WizardLoadReportRow = {
   label: string;
@@ -86,6 +91,7 @@ export type WizardLoadReportInput = {
   receivables?: WizardReceivable[];
   liabilities?: WizardLiability[];
   withholdings?: WizardWithholding[];
+  societyParticipations?: WizardSocietyParticipation[];
   generalDeductions?: WizardLoadReportGeneralDeductions;
   personalDeductions?: WizardLoadReportPersonalDeductions;
   personalAssets?: WizardPersonalAsset[];
@@ -208,6 +214,7 @@ function normalizeInput(input: WizardLoadReportInput): RequiredReportCollections
     receivables: input.receivables ?? [],
     liabilities: input.liabilities ?? [],
     withholdings: input.withholdings ?? [],
+    societyParticipations: input.societyParticipations ?? [],
     generalDeductions: input.generalDeductions ?? {},
     personalDeductions: input.personalDeductions ?? {},
     personalAssets: input.personalAssets ?? [],
@@ -238,6 +245,10 @@ export function buildWizardLoadReport(input: WizardLoadReportInput): WizardLoadR
   const receivablesFinal = sumRows(normalized.receivables, receivable => receivable.balanceFinal);
   const liabilitiesFinal = sumRows(normalized.liabilities, liability => liability.balanceFinal);
   const withholdingsTotal = sumRows(normalized.withholdings, withholding => withholding.amount);
+  // Resultado atribuido de sociedades con el mismo criterio del motor (override si está cargado).
+  const societyParticipationsTotal = calculateSocietyParticipations(
+    toSocietyParticipationInputs(normalized.societyParticipations),
+  ).totalAttributedResult;
   const generalDeductionsTotal = sumGeneralDeductions(normalized.generalDeductions);
   const otherJustificationsColumnI = normalized.otherJustifications
     .filter(row => Number(row.column) === 1)
@@ -269,6 +280,11 @@ export function buildWizardLoadReport(input: WizardLoadReportInput): WizardLoadR
         { label: 'Comprobantes de venta', value: formatWizardReportCount(normalized.sales.length) },
         { label: 'Ventas gravadas', value: formatWizardReportMoney(sumRows(salesTaxed, sale => sale.netAmount)) },
         { label: 'Ventas exentas/no gravadas', value: formatWizardReportMoney(sumRows(salesExempt, sale => sale.netAmount)) },
+        {
+          label: 'Participaciones en sociedades',
+          value: formatWizardReportCount(normalized.societyParticipations.length),
+          detail: `Resultado atribuido ${formatWizardReportMoney(societyParticipationsTotal)}`,
+        },
       ],
     },
     {

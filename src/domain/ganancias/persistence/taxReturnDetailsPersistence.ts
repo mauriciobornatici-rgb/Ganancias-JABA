@@ -42,6 +42,7 @@ type PersistenceDb = {
   receivableDebt?: PersistenceModel;
   payableDebt?: PersistenceModel;
   taxWithholding: PersistenceModel;
+  societyParticipation?: PersistenceModel;
   personalAsset: PersistenceModel;
   personalLiability: PersistenceModel;
   patrimonialJustification?: PersistenceModel;
@@ -146,6 +147,16 @@ type WithholdingPayload = {
   operationDescription?: string;
 };
 
+type SocietyParticipationPayload = {
+  cuit?: string;
+  denomination?: string;
+  societyType?: string;
+  participationPercent?: NumericValue;
+  societyResult?: NumericValue;
+  /** Vacío = usar el resultado calculado por la app. */
+  attributedResultOverride?: NumericValue;
+};
+
 type PersonalAssetPayload = {
   description?: string;
   type?: string;
@@ -197,6 +208,7 @@ type TaxReturnPersistencePayload = {
   receivables?: ReceivablePayload[];
   liabilities?: PayablePayload[];
   withholdings?: WithholdingPayload[];
+  societyParticipations?: SocietyParticipationPayload[];
   generalDeductions?: RawRecord;
   personalDeductions?: PersonalDeductionsPayload;
   personalAssets?: PersonalAssetPayload[];
@@ -252,6 +264,12 @@ function integerInput(value: NumericValue | undefined, fallback = 0, fieldPath =
 
 function stringInput(value: string | undefined, fallback = ''): string {
   return value ?? fallback;
+}
+
+/** Importe opcional: vacío o ausente se guarda como null (no como 0). */
+function nullableNumberInput(value: NumericValue | undefined, fieldPath = 'importe'): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  return parseNumericInput(value, 0, fieldPath);
 }
 
 function booleanInput(value: unknown, fallback = false): boolean {
@@ -372,6 +390,13 @@ function validateTaxReturnPersistencePayload(payload: TaxReturnPersistencePayloa
   payload.withholdings?.forEach((withholding, index) => {
     assertValidDateInput(withholding.date, `retenciones[${index}].date`);
     assertValidNumberInput(withholding.amount, `retenciones[${index}].amount`, true);
+  });
+
+  payload.societyParticipations?.forEach((participation, index) => {
+    assertValidNumberInput(participation.participationPercent, `participacionSociedades[${index}].participationPercent`);
+    // El resultado de la sociedad y el atribuido pueden ser negativos (quebranto).
+    assertValidNumberInput(participation.societyResult, `participacionSociedades[${index}].societyResult`, true);
+    assertValidNumberInput(participation.attributedResultOverride, `participacionSociedades[${index}].attributedResultOverride`, true);
   });
 
   if (payload.personalDeductions) {
@@ -550,6 +575,7 @@ export async function persistTaxReturnDetails({
     receivables = [],
     liabilities = [],
     withholdings = [],
+    societyParticipations = [],
     generalDeductions,
     personalDeductions,
     personalAssets = [],
@@ -627,6 +653,7 @@ export async function persistTaxReturnDetails({
     receivables,
     liabilities,
     withholdings,
+    societyParticipations,
     generalDeductions,
     personalDeductions: {
       tieneConyuge: personalDeductions?.tieneConyuge || false,
@@ -676,6 +703,7 @@ export async function persistTaxReturnDetails({
   await db.receivableDebt?.deleteMany({ where: { taxReturnId } });
   await db.payableDebt?.deleteMany({ where: { taxReturnId } });
   await db.taxWithholding.deleteMany({ where: { taxReturnId } });
+  await db.societyParticipation?.deleteMany({ where: { taxReturnId } });
   await db.personalAsset.deleteMany({ where: { taxReturnId } });
   await db.personalLiability.deleteMany({ where: { taxReturnId } });
   await db.patrimonialJustification?.deleteMany({ where: { taxReturnId } });
@@ -867,6 +895,21 @@ export async function persistTaxReturnDetails({
     });
   }
 
+  if (db.societyParticipation && societyParticipations.length > 0) {
+    await db.societyParticipation.createMany({
+      data: societyParticipations.map(participation => ({
+        taxReturnId,
+        cuit: stringInput(participation.cuit),
+        denomination: stringInput(participation.denomination),
+        societyType: stringInput(participation.societyType) || undefined,
+        participationPercent: numberInput(participation.participationPercent, 0, 'participacionSociedades.participationPercent'),
+        societyResult: numberInput(participation.societyResult, 0, 'participacionSociedades.societyResult'),
+        // null = sin editar: al reabrir la app vuelve a mostrar el calculado.
+        attributedResultOverride: nullableNumberInput(participation.attributedResultOverride, 'participacionSociedades.attributedResultOverride'),
+      })),
+    });
+  }
+
   if (personalAssets.length > 0) {
     await db.personalAsset.createMany({
       data: personalAssets.map(asset => ({
@@ -972,6 +1015,7 @@ export async function persistTaxReturnDetails({
     receivables,
     liabilities,
     withholdings,
+    societyParticipations,
     otherJustifications,
     axiDynamic,
     autoCalcInitialBalances,

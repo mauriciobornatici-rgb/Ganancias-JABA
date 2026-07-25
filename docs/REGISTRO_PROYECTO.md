@@ -48,6 +48,8 @@ Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 �
 - Apartado I suma la línea "(+/-) Resultado Atribuido por Participación en Sociedades" y el subtotal de todas las categorías, sólo cuando hay participaciones.
 - Helper puro nuevo `presentation/paymentsOnAccountBreakdown.ts`: arma el desglose (descontando del IDCB el excedente trasladable y sin informar computables negativos) y lo usan tanto la pantalla como la exportación, para que no vuelvan a divergir. 6 tests.
 - La exportación Excel tenía además tres errores propios: los anticipos abonados salían hardcodeados en 0, las cargas de familia no sumaban hijos incapacitados y la deducción especial omitía la doceava parte; el total de erogaciones se recalculaba a mano en la planilla en vez de tomarse del motor. Corregido y alineado con la pantalla.
+- El informe al cliente tenía el mismo problema: mostraba impuesto determinado menos retenciones y saltaba al saldo. Ahora incluye los pagos a cuenta (con etiquetas sin jerga de planilla) y el saldo a favor anterior, así la resta que ve el cliente cierra.
+- TISH: la tabla de cuotas mostraba sólo totales, pero la DDJJ pide el detalle por actividad. Clic en una cuota abre el detalle (período, código NAIIB 18, jurisdicción, monto imponible, alícuota y tasa) más los avisos de ese bimestre, que es exactamente lo que hay que transcribir al formulario.
 - Verificado: 501 tests unitarios, typecheck, lint y build en verde.
 
 ### 2026-07-24 - Camino habilitado para migrar producción (`npm run db:prod:migrate`)

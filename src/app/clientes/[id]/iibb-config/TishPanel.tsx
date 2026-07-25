@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle2, ShieldAlert, ShieldCheck, Save } from 'lucide-react';
 
 /**
@@ -87,6 +87,8 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
   const [wasteMPct, setWasteMPct] = useState('40');
   const [wasteNPct, setWasteNPct] = useState('60');
   const [dueDates, setDueDates] = useState<string[]>([]);
+  // Bimestre con el detalle abierto: es lo que hay que transcribir a la DDJJ.
+  const [openBimester, setOpenBimester] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -264,7 +266,9 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
 
       {/* Liquidación por bimestre, con la estructura del formulario de Régimen General */}
       <div className="mt-6">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Liquidación bimestral {year}</p>
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+          Liquidación bimestral {year} <span className="font-normal normal-case tracking-normal text-zinc-600">— clic en una cuota para ver el detalle por actividad de la DDJJ</span>
+        </p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="text-[10px] uppercase tracking-wider text-zinc-500">
@@ -284,8 +288,14 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
             <tbody>
               {(data?.bimesters ?? []).map(bimester => {
                 const base = bimester.lines.reduce((sum, line) => sum + Number(line.taxableBase), 0);
+                const isOpen = openBimester === bimester.bimester;
                 return (
-                  <tr key={bimester.bimester} className="border-t border-zinc-900">
+                  <Fragment key={bimester.bimester}>
+                  <tr
+                    className="cursor-pointer border-t border-zinc-900 hover:bg-zinc-800/20"
+                    onClick={() => setOpenBimester(isOpen ? null : bimester.bimester)}
+                    title="Ver el detalle por actividad para completar la DDJJ"
+                  >
                     <td className="px-2 py-1.5 font-bold text-zinc-200">{bimester.bimester}º</td>
                     <td className="px-2 py-1.5 text-zinc-400">{monthsLabel(bimester.months)}</td>
                     <td className="px-2 py-1.5 font-mono text-zinc-400">{bimester.dueDate ?? '—'}</td>
@@ -299,6 +309,58 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
                     <td className="px-2 py-1.5 text-right font-mono text-zinc-400">{fmt(bimester.wasteContribution)}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-bold text-teal-300">{fmt(bimester.total)}</td>
                   </tr>
+                  {isOpen ? (
+                    <tr className="border-t border-zinc-900 bg-zinc-950/60">
+                      <td colSpan={10} className="px-3 py-3">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                          Detalle para la DDJJ del {bimester.bimester}º bimestre (monto imponible por actividad)
+                        </p>
+                        {bimester.lines.length === 0 ? (
+                          <p className="text-[11px] text-zinc-400">
+                            Sin base imponible de IIBB en este bimestre para las actividades tildadas. Se abona el mínimo de la categoría K.
+                          </p>
+                        ) : (
+                          <table className="w-full text-left text-[11px]">
+                            <thead className="text-[10px] uppercase tracking-wider text-zinc-500">
+                              <tr>
+                                <th className="px-2 py-1">Período</th>
+                                <th className="px-2 py-1">Cód. actividad (NAIIB 18)</th>
+                                <th className="px-2 py-1">Jurisdicción</th>
+                                <th className="px-2 py-1 text-right">Monto imponible</th>
+                                <th className="px-2 py-1 text-right">Alícuota</th>
+                                <th className="px-2 py-1 text-right">Tasa</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bimester.lines.map((line, index) => (
+                                <tr key={`${line.activityCode}-${index}`} className="border-t border-zinc-900">
+                                  <td className="px-2 py-1 text-zinc-400">{monthsLabel(bimester.months)} {data?.year}</td>
+                                  <td className="px-2 py-1 font-mono text-zinc-200">
+                                    {line.activityCode || '—'}
+                                    {line.activityLabel && line.activityLabel !== line.activityCode ? (
+                                      <span className="ml-2 font-sans text-zinc-500">{line.activityLabel}</span>
+                                    ) : null}
+                                  </td>
+                                  <td className="px-2 py-1 font-mono text-zinc-400">{line.jurisdictionCode ?? '—'}</td>
+                                  <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(line.taxableBase)}</td>
+                                  <td className="px-2 py-1 text-right font-mono text-zinc-400">{(Number(bimester.taxRate) * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}%</td>
+                                  <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(line.tax)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                        {bimester.warnings.length > 0 ? (
+                          <ul className="mt-2 space-y-1">
+                            {bimester.warnings.map((warning, index) => (
+                              <li key={index} className="text-[11px] leading-4 text-amber-200">· {warning}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </td>
+                    </tr>
+                  ) : null}
+                  </Fragment>
                 );
               })}
               {!data && (

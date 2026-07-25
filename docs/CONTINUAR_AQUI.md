@@ -8,7 +8,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 - Rama de trabajo activa: `fix/fiabilidad-carga-y-retenciones`, PR #31 abierta y mergeable.
 - Contenido de la PR: puntos 1, 4 y 6 del PDF (commit `d9a985b`) + Next 16.2.6 -> 16.2.11 y gate de audit acotado a produccion (commit `b0686bb`).
-- CI: todo verde salvo el **gate de audit**, que es el ultimo paso. 434 tests, typecheck, lint, build e integracion ya pasaron.
+- CI: el **gate de audit** quedo resuelto con `overrides` de `find-my-way` 9.7.0 y `valibot` 1.4.2 (sin tocar Prisma ni usar prereleases). 434 tests, typecheck, lint, build e integracion ya pasaban.
 - Estado de los 6 puntos: 1 RESUELTO, 4 RESUELTO, 6 RESUELTO, 5 / 3 / 2-TISH **con la decision fiscal ya tomada y pendientes de implementar**.
 - Orden acordado con el usuario: gate de audit -> punto 5 (IDCB) -> punto 3 (participacion en sociedades) -> punto 2 (TISH).
 - Las decisiones fiscales de los tres puntos pendientes estan escritas completas en la entrada `2026-07-24` de `docs/REGISTRO_PROYECTO.md`. **No volver a preguntarlas**: leer esa entrada antes de codear.

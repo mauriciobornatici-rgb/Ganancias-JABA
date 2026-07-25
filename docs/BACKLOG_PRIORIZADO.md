@@ -52,7 +52,7 @@ Decisiones fiscales completas de cada punto: entrada `2026-07-24` de `docs/REGIS
 - Punto 1 - Verificacion de periodo en carga y eliminacion: **Resuelto** (criterio tolerante con aviso; tacho separado compras/ventas).
 - Punto 4 - Retenciones con signo negativo: **Resuelto** (codigos 210/217/218/787; los negativos son anulaciones y netean, no se usa valor absoluto).
 - Punto 6 - Proyeccion de anticipos: **Resuelto** (retenciones y combustibles reexpresados por IPC, RG 5211 art. 3).
-- Gate de audit del PR #31: **Siguiente**. Falla por `@prisma/client` -> `prisma 7.9.0` -> `@prisma/dev 0.24.14` -> `find-my-way 9.6.0` + `valibot 1.2.0`. Probar `overrides`; no instalar prereleases de Prisma; si rompe, excepcion documentada hasta 7.10.0 estable.
+- Gate de audit del PR #31: **Resuelto**. `overrides` de `find-my-way` a 9.7.0 y `valibot` a 1.4.2, sin tocar Prisma ni instalar prereleases. Revisar al salir Prisma 7.10.0 estable para quitarlos.
 - Punto 5 - IDCB en la determinacion: **Siguiente**. Carga mensual del importe total del impuesto al cheque + selector 33%/100% por cliente; la app calcula el computable y lo imputa en la DDJJ anual.
 - Punto 3 - Participacion en sociedades: **Pendiente**. Se cargan % de participacion y resultado total; la app calcula el atribuido y queda editable (verificacion cruzada).
 - Punto 2 - TISH: **Pendiente**. Solo Regimen General; base IIBB por bimestre de las actividades con tilde "computa TISH"; alicuota y categoria L/M/N manuales por cliente y año; bloque propio en el perfil fiscal junto a la config de IIBB; parametros de la ordenanza 2026 editables.

@@ -7,7 +7,7 @@ import { calculateTaxReturn } from '../calculations/determinacionImpuesto';
  * P29 - Proyeccion de anticipos segun hoja "Anticipos" del Excel y RG 5211:
  * - Coeficiente Anticipos!D5 = IPC diciembre / IPC julio (la planilla usa 10121.3715 / 8855.56813 = 1,142939).
  * - Cuota (E24) = (Impuesto proyectado - Retenciones actualizadas - ITC actualizado) / 5.
- * - Si la cuota no supera $5.000, no corresponde ingresar anticipos.
+ * - Si la cuota es menor a $5.000, no corresponde ingresar anticipos.
  */
 function buildInput(options: {
   ventas: Decimal;
@@ -136,6 +136,20 @@ describe('P29 - Anticipos proyectados (hoja Anticipos / RG 5211)', () => {
 
     expect(result.anticiposSiguientePeriodo).toHaveLength(0);
     expect(result.warnings.some(w => w.includes('No se deberan ingresar anticipos'))).toBe(true);
+  });
+
+  it('genera anticipos cuando la cuota es exactamente $5.000', () => {
+    // Impuesto determinado 25.000 -> cinco cuotas exactamente iguales al piso de 5.000.
+    const result = calculateTaxReturn(buildInput({
+      ventas: new Decimal('71428.5714286'),
+      indicesIPC: [],
+    }));
+
+    expect(result.impuestoProyectadoAnticipos.toNumber()).toBe(25000);
+    expect(result.anticiposSiguientePeriodo).toHaveLength(5);
+    result.anticiposSiguientePeriodo.forEach(cuota => {
+      expect(cuota.toNumber()).toBe(5000);
+    });
   });
 
   it('no proyecta anticipos cuando las retenciones superan el impuesto proyectado', () => {

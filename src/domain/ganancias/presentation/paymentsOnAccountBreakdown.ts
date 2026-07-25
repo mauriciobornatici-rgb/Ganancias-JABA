@@ -17,19 +17,33 @@ export interface PaymentOnAccountBreakdownItem {
   amount: Decimal;
 }
 
+export type TaxBalanceCreditSource = Partial<Pick<
+  TaxCalculationResult,
+  | 'anticiposCanceladosIdcb'
+  | 'anticiposCanceladosEfectivo'
+  | 'anticiposCanceladosMisFacilidades'
+  | 'computoIdcb'
+  | 'computoCombustibles'
+  | 'retencionesYPercepciones'
+  | 'saldoTrasladableIdcb'
+  | 'saldoAFavorAnterior'
+  | 'impuestoDeterminado'
+  | 'impuestoAPagarOARCA'
+>>;
+
+export type TaxBalanceReconciliation = {
+  creditRows: PaymentOnAccountBreakdownItem[];
+  totalCredits: Decimal;
+  calculatedBalance: Decimal;
+  reportedBalance: Decimal;
+  difference: Decimal;
+  isBalanced: boolean;
+};
+
 const ZERO = new Decimal(0);
 
 export function buildPaymentsOnAccountBreakdown(
-  result: Pick<
-    TaxCalculationResult,
-    | 'anticiposCanceladosIdcb'
-    | 'anticiposCanceladosEfectivo'
-    | 'anticiposCanceladosMisFacilidades'
-    | 'computoIdcb'
-    | 'computoCombustibles'
-    | 'retencionesYPercepciones'
-    | 'saldoTrasladableIdcb'
-  > | null | undefined,
+  result: TaxBalanceCreditSource | null | undefined,
 ): PaymentOnAccountBreakdownItem[] {
   if (!result) return [];
 
@@ -51,4 +65,53 @@ export function buildPaymentsOnAccountBreakdown(
 /** Suma de los pagos a cuenta del desglose (sin retenciones, que se muestran por separado). */
 export function sumPaymentsOnAccountBreakdown(rows: PaymentOnAccountBreakdownItem[]): Decimal {
   return rows.reduce((sum, row) => sum.add(row.amount), ZERO);
+}
+
+/**
+ * Fuente unica para las lineas que explican el saldo final en pantalla, papel y Excel.
+ * Incluye F61:F67 y usa solo el IDCB efectivamente computable, excluyendo el traslado F70.
+ */
+export function buildTaxBalanceCreditBreakdown(
+  result: TaxBalanceCreditSource | null | undefined,
+): PaymentOnAccountBreakdownItem[] {
+  if (!result) return [];
+
+  const rows: PaymentOnAccountBreakdownItem[] = [
+    {
+      label: 'Retenciones y percepciones computables',
+      reference: 'IG 25!F67',
+      amount: Decimal.max(new Decimal(result.retencionesYPercepciones ?? 0), ZERO),
+    },
+    ...buildPaymentsOnAccountBreakdown(result),
+    {
+      label: 'Saldo a favor del periodo anterior',
+      reference: 'IG 25!F61',
+      amount: Decimal.max(new Decimal(result.saldoAFavorAnterior ?? 0), ZERO),
+    },
+  ];
+
+  return rows.filter(row => !row.amount.isZero());
+}
+
+/**
+ * Verifica la ecuacion que deben exhibir todos los reportes:
+ * impuesto determinado - creditos computables = saldo informado.
+ */
+export function reconcileTaxBalance(
+  result: TaxBalanceCreditSource | null | undefined,
+): TaxBalanceReconciliation {
+  const creditRows = buildTaxBalanceCreditBreakdown(result);
+  const totalCredits = sumPaymentsOnAccountBreakdown(creditRows);
+  const calculatedBalance = new Decimal(result?.impuestoDeterminado ?? 0).sub(totalCredits);
+  const reportedBalance = new Decimal(result?.impuestoAPagarOARCA ?? 0);
+  const difference = calculatedBalance.sub(reportedBalance);
+
+  return {
+    creditRows,
+    totalCredits,
+    calculatedBalance,
+    reportedBalance,
+    difference,
+    isBalanced: difference.abs().lte('0.01'),
+  };
 }

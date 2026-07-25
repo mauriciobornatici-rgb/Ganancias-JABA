@@ -16,12 +16,10 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model TishSetting
  * *
  *  * Tasa por Inspección de Seguridad e Higiene (TISH) - punto 2 del PDF (2026-07-24).
- *  *
  *  * Alcance decidido con el usuario: solo RÉGIMEN GENERAL (responsable inscripto). La alícuota y la
  *  * categoría L/M/N son MANUALES por cliente y por año (la ordenanza 2026 está escaneada y el art. 23
  *  * con las alícuotas no es legible). Los importes de la ordenanza se guardan como parámetros
  *  * editables del año y por cliente, porque cada contribuyente puede estar en otro municipio.
- *  *
  *  * Los valores por defecto son los de la ordenanza 2026 de ARBAL (instructivo TISH 2026).
  */
 export type TishSettingModel = runtime.Types.Result.DefaultSelection<Prisma.$TishSettingPayload>
@@ -345,6 +343,7 @@ export type TishSettingWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"TishSetting"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TishSetting"> | Date | string
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
+  settlements?: Prisma.TishSettlementListRelationFilter
 }
 
 export type TishSettingOrderByWithRelationInput = {
@@ -365,6 +364,7 @@ export type TishSettingOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   client?: Prisma.ClientOrderByWithRelationInput
+  settlements?: Prisma.TishSettlementOrderByRelationAggregateInput
   _relevance?: Prisma.TishSettingOrderByRelevanceInput
 }
 
@@ -390,6 +390,7 @@ export type TishSettingWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"TishSetting"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TishSetting"> | Date | string
   client?: Prisma.XOR<Prisma.ClientScalarRelationFilter, Prisma.ClientWhereInput>
+  settlements?: Prisma.TishSettlementListRelationFilter
 }, "id" | "clientId_year">
 
 export type TishSettingOrderByWithAggregationInput = {
@@ -455,6 +456,7 @@ export type TishSettingCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   client: Prisma.ClientCreateNestedOneWithoutTishSettingsInput
+  settlements?: Prisma.TishSettlementCreateNestedManyWithoutSettingInput
 }
 
 export type TishSettingUncheckedCreateInput = {
@@ -474,6 +476,7 @@ export type TishSettingUncheckedCreateInput = {
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  settlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutSettingInput
 }
 
 export type TishSettingUpdateInput = {
@@ -493,6 +496,7 @@ export type TishSettingUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   client?: Prisma.ClientUpdateOneRequiredWithoutTishSettingsNestedInput
+  settlements?: Prisma.TishSettlementUpdateManyWithoutSettingNestedInput
 }
 
 export type TishSettingUncheckedUpdateInput = {
@@ -512,6 +516,7 @@ export type TishSettingUncheckedUpdateInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  settlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutSettingNestedInput
 }
 
 export type TishSettingCreateManyInput = {
@@ -672,6 +677,11 @@ export type TishSettingSumOrderByAggregateInput = {
   wasteRateCategoryN?: Prisma.SortOrder
 }
 
+export type TishSettingScalarRelationFilter = {
+  is?: Prisma.TishSettingWhereInput
+  isNot?: Prisma.TishSettingWhereInput
+}
+
 export type TishSettingCreateNestedManyWithoutClientInput = {
   create?: Prisma.XOR<Prisma.TishSettingCreateWithoutClientInput, Prisma.TishSettingUncheckedCreateWithoutClientInput> | Prisma.TishSettingCreateWithoutClientInput[] | Prisma.TishSettingUncheckedCreateWithoutClientInput[]
   connectOrCreate?: Prisma.TishSettingCreateOrConnectWithoutClientInput | Prisma.TishSettingCreateOrConnectWithoutClientInput[]
@@ -714,6 +724,20 @@ export type TishSettingUncheckedUpdateManyWithoutClientNestedInput = {
   deleteMany?: Prisma.TishSettingScalarWhereInput | Prisma.TishSettingScalarWhereInput[]
 }
 
+export type TishSettingCreateNestedOneWithoutSettlementsInput = {
+  create?: Prisma.XOR<Prisma.TishSettingCreateWithoutSettlementsInput, Prisma.TishSettingUncheckedCreateWithoutSettlementsInput>
+  connectOrCreate?: Prisma.TishSettingCreateOrConnectWithoutSettlementsInput
+  connect?: Prisma.TishSettingWhereUniqueInput
+}
+
+export type TishSettingUpdateOneRequiredWithoutSettlementsNestedInput = {
+  create?: Prisma.XOR<Prisma.TishSettingCreateWithoutSettlementsInput, Prisma.TishSettingUncheckedCreateWithoutSettlementsInput>
+  connectOrCreate?: Prisma.TishSettingCreateOrConnectWithoutSettlementsInput
+  upsert?: Prisma.TishSettingUpsertWithoutSettlementsInput
+  connect?: Prisma.TishSettingWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TishSettingUpdateToOneWithWhereWithoutSettlementsInput, Prisma.TishSettingUpdateWithoutSettlementsInput>, Prisma.TishSettingUncheckedUpdateWithoutSettlementsInput>
+}
+
 export type TishSettingCreateWithoutClientInput = {
   id?: string
   year: number
@@ -730,6 +754,7 @@ export type TishSettingCreateWithoutClientInput = {
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  settlements?: Prisma.TishSettlementCreateNestedManyWithoutSettingInput
 }
 
 export type TishSettingUncheckedCreateWithoutClientInput = {
@@ -748,6 +773,7 @@ export type TishSettingUncheckedCreateWithoutClientInput = {
   notes?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  settlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutSettingInput
 }
 
 export type TishSettingCreateOrConnectWithoutClientInput = {
@@ -798,6 +824,98 @@ export type TishSettingScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"TishSetting"> | Date | string
 }
 
+export type TishSettingCreateWithoutSettlementsInput = {
+  id?: string
+  year: number
+  category?: string
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  minimumQuota?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryAQuota?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  healthRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firefightersRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryL?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryM?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryN?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  dueDates?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  client: Prisma.ClientCreateNestedOneWithoutTishSettingsInput
+}
+
+export type TishSettingUncheckedCreateWithoutSettlementsInput = {
+  id?: string
+  clientId: string
+  year: number
+  category?: string
+  taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  minimumQuota?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryAQuota?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  healthRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  firefightersRate?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryL?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryM?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryN?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  dueDates?: string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type TishSettingCreateOrConnectWithoutSettlementsInput = {
+  where: Prisma.TishSettingWhereUniqueInput
+  create: Prisma.XOR<Prisma.TishSettingCreateWithoutSettlementsInput, Prisma.TishSettingUncheckedCreateWithoutSettlementsInput>
+}
+
+export type TishSettingUpsertWithoutSettlementsInput = {
+  update: Prisma.XOR<Prisma.TishSettingUpdateWithoutSettlementsInput, Prisma.TishSettingUncheckedUpdateWithoutSettlementsInput>
+  create: Prisma.XOR<Prisma.TishSettingCreateWithoutSettlementsInput, Prisma.TishSettingUncheckedCreateWithoutSettlementsInput>
+  where?: Prisma.TishSettingWhereInput
+}
+
+export type TishSettingUpdateToOneWithWhereWithoutSettlementsInput = {
+  where?: Prisma.TishSettingWhereInput
+  data: Prisma.XOR<Prisma.TishSettingUpdateWithoutSettlementsInput, Prisma.TishSettingUncheckedUpdateWithoutSettlementsInput>
+}
+
+export type TishSettingUpdateWithoutSettlementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  year?: Prisma.IntFieldUpdateOperationsInput | number
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  minimumQuota?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryAQuota?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  healthRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firefightersRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryL?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryM?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryN?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  dueDates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  client?: Prisma.ClientUpdateOneRequiredWithoutTishSettingsNestedInput
+}
+
+export type TishSettingUncheckedUpdateWithoutSettlementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  year?: Prisma.IntFieldUpdateOperationsInput | number
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  taxRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  minimumQuota?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  categoryAQuota?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  healthRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  firefightersRate?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryL?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryM?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  wasteRateCategoryN?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  dueDates?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type TishSettingCreateManyClientInput = {
   id?: string
   year: number
@@ -832,6 +950,7 @@ export type TishSettingUpdateWithoutClientInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  settlements?: Prisma.TishSettlementUpdateManyWithoutSettingNestedInput
 }
 
 export type TishSettingUncheckedUpdateWithoutClientInput = {
@@ -850,6 +969,7 @@ export type TishSettingUncheckedUpdateWithoutClientInput = {
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  settlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutSettingNestedInput
 }
 
 export type TishSettingUncheckedUpdateManyWithoutClientInput = {
@@ -871,6 +991,35 @@ export type TishSettingUncheckedUpdateManyWithoutClientInput = {
 }
 
 
+/**
+ * Count Type TishSettingCountOutputType
+ */
+
+export type TishSettingCountOutputType = {
+  settlements: number
+}
+
+export type TishSettingCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  settlements?: boolean | TishSettingCountOutputTypeCountSettlementsArgs
+}
+
+/**
+ * TishSettingCountOutputType without action
+ */
+export type TishSettingCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TishSettingCountOutputType
+   */
+  select?: Prisma.TishSettingCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * TishSettingCountOutputType without action
+ */
+export type TishSettingCountOutputTypeCountSettlementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TishSettlementWhereInput
+}
+
 
 export type TishSettingSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -890,6 +1039,8 @@ export type TishSettingSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   createdAt?: boolean
   updatedAt?: boolean
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
+  settlements?: boolean | Prisma.TishSetting$settlementsArgs<ExtArgs>
+  _count?: boolean | Prisma.TishSettingCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tishSetting"]>
 
 
@@ -916,49 +1067,60 @@ export type TishSettingSelectScalar = {
 export type TishSettingOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "year" | "category" | "taxRate" | "minimumQuota" | "categoryAQuota" | "healthRate" | "firefightersRate" | "wasteRateCategoryL" | "wasteRateCategoryM" | "wasteRateCategoryN" | "dueDates" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["tishSetting"]>
 export type TishSettingInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
+  settlements?: boolean | Prisma.TishSetting$settlementsArgs<ExtArgs>
+  _count?: boolean | Prisma.TishSettingCountOutputTypeDefaultArgs<ExtArgs>
 }
 
 export type $TishSettingPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "TishSetting"
   objects: {
     client: Prisma.$ClientPayload<ExtArgs>
+    settlements: Prisma.$TishSettlementPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     clientId: string
     year: number
     /**
-     * * Categoría del Régimen General por tramo de facturación: L, M o N.
+     * *
+     *    * Categoría del Régimen General por tramo de facturación: L, M o N.
      */
     category: string
     /**
-     * * Alícuota del art. 23 de la Ordenanza Impositiva (fracción, ej. 0.006 = 0,6%).
+     * *
+     *    * Alícuota del art. 23 de la Ordenanza Impositiva (fracción, ej. 0.006 = 0,6%).
      */
     taxRate: runtime.Decimal
     /**
-     * * Cuota bimestral de la categoría K del Régimen Simplificado: piso de la tasa.
+     * *
+     *    * Cuota bimestral de la categoría K del Régimen Simplificado: piso de la tasa.
      */
     minimumQuota: runtime.Decimal
     /**
-     * * Cuota bimestral de la categoría A: base de la contribución a Bomberos.
+     * *
+     *    * Cuota bimestral de la categoría A: base de la contribución a Bomberos.
      */
     categoryAQuota: runtime.Decimal
     /**
-     * * Contribución para la Salud sobre la tasa (fracción).
+     * *
+     *    * Contribución para la Salud sobre la tasa (fracción).
      */
     healthRate: runtime.Decimal
     /**
-     * * Bomberos Voluntarios: fracción del valor de la categoría A.
+     * *
+     *    * Bomberos Voluntarios: fracción del valor de la categoría A.
      */
     firefightersRate: runtime.Decimal
     /**
-     * * Residuos no domiciliarios: fracción del importe de la categoría K, según categoría.
+     * *
+     *    * Residuos no domiciliarios: fracción del importe de la categoría K, según categoría.
      */
     wasteRateCategoryL: runtime.Decimal
     wasteRateCategoryM: runtime.Decimal
     wasteRateCategoryN: runtime.Decimal
     /**
-     * * Vencimientos de presentación de las 6 cuotas (AAAA-MM-DD separados por coma).
+     * *
+     *    * Vencimientos de presentación de las 6 cuotas (AAAA-MM-DD separados por coma).
      */
     dueDates: string | null
     notes: string | null
@@ -1305,6 +1467,7 @@ readonly fields: TishSettingFieldRefs;
 export interface Prisma__TishSettingClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   client<T extends Prisma.ClientDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClientDefaultArgs<ExtArgs>>): Prisma.Prisma__ClientClient<runtime.Types.Result.GetResult<Prisma.$ClientPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  settlements<T extends Prisma.TishSetting$settlementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TishSetting$settlementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TishSettlementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1695,6 +1858,30 @@ export type TishSettingDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Limit how many TishSettings to delete.
    */
   limit?: number
+}
+
+/**
+ * TishSetting.settlements
+ */
+export type TishSetting$settlementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TishSettlement
+   */
+  select?: Prisma.TishSettlementSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TishSettlement
+   */
+  omit?: Prisma.TishSettlementOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TishSettlementInclude<ExtArgs> | null
+  where?: Prisma.TishSettlementWhereInput
+  orderBy?: Prisma.TishSettlementOrderByWithRelationInput | Prisma.TishSettlementOrderByWithRelationInput[]
+  cursor?: Prisma.TishSettlementWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TishSettlementScalarFieldEnum | Prisma.TishSettlementScalarFieldEnum[]
 }
 
 /**

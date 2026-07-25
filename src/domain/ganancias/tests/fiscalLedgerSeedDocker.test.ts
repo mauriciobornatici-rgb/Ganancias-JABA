@@ -34,6 +34,11 @@ describeDocker('Fiscal monthly ledger Docker seed', () => {
       FROM ClientTaxProfileVersion p
       INNER JOIN Client c ON c.id = p.clientId
       WHERE c.cuit IN ('27-95430211-3', '30-71451236-3')
+        AND p.validFrom = (
+          SELECT MIN(seedProfile.validFrom)
+          FROM ClientTaxProfileVersion seedProfile
+          WHERE seedProfile.clientId = p.clientId
+        )
       ORDER BY c.cuit
     `);
 

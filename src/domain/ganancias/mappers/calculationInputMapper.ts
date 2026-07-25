@@ -276,6 +276,7 @@ export function buildTaxReturnCalculationInput(
       societyResult: decimalValue(participation.societyResult),
       // Vacío = usar el calculado; cargado = criterio del contador, con aviso de la diferencia.
       attributedResultOverride: optionalDecimalValue(participation.attributedResultOverride),
+      overrideReason: stringValue(participation.overrideReason) || undefined,
     })),
     generalDeductions: [
       {

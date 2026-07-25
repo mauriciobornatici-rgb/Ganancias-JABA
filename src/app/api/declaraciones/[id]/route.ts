@@ -228,6 +228,7 @@ export async function GET(
         societyResult: p.societyResult.toString(),
         // null (sin editar) vuelve como '' para que la app muestre el calculado.
         attributedResultOverride: p.attributedResultOverride === null ? '' : p.attributedResultOverride.toString(),
+        overrideReason: p.overrideReason ?? '',
       })),
       personalAssets: taxReturn.personalAssets.map((a, index) => ({
         description: a.description,

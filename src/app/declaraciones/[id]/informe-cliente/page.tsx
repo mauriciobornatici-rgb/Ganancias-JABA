@@ -17,7 +17,7 @@ import { Decimal } from 'decimal.js';
 import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacionImpuesto';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { sumDeductibleNonCostPurchases } from '@/domain/ganancias/presentation/purchaseBreakdown';
-import { buildPaymentsOnAccountBreakdown } from '@/domain/ganancias/presentation/paymentsOnAccountBreakdown';
+import { buildTaxBalanceCreditBreakdown } from '@/domain/ganancias/presentation/paymentsOnAccountBreakdown';
 import {
   TaxReturnStatusBadge,
   FiscalDocumentWatermark,
@@ -134,10 +134,7 @@ export default function InformeClientePage() {
 
   const baseImponible = calculationResult ? calculationResult.gananciaNetaSujetaImpuesto : new Decimal(0);
   const impuestoDeterminado = React.useMemo(() => calculationResult ? calculationResult.impuestoDeterminado : new Decimal(0), [calculationResult]);
-  const retencionesYPercepciones = calculationResult ? calculationResult.retencionesYPercepciones : new Decimal(0);
-  // Impuesto al cheque, anticipos y combustibles (IG 25 F62:F66), con el mismo criterio que el papel de trabajo.
-  const pagosACuenta = buildPaymentsOnAccountBreakdown(calculationResult);
-  const saldoAFavorAnteriorInforme = calculationResult ? calculationResult.saldoAFavorAnterior : new Decimal(0);
+  const taxBalanceCredits = buildTaxBalanceCreditBreakdown(calculationResult);
   const saldoFinal = calculationResult ? calculationResult.impuestoAPagarOARCA : new Decimal(0);
 
   const anticipos = calculationResult ? calculationResult.anticiposSiguientePeriodo : [];
@@ -394,24 +391,13 @@ export default function InformeClientePage() {
                 <span className="text-zinc-500 print:text-zinc-750">Impuesto AFIP Determinado (Escala Art. 94)</span>
                 <span className="text-zinc-200 print:text-black">${impuestoDeterminado.toNumber().toLocaleString('es-AR')}</span>
               </div>
-              <div className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black text-emerald-400 print:text-black">
-                <span className="text-zinc-550 print:text-zinc-750">(-) Retenciones de Tarjetas y Bancos</span>
-                <span>-${retencionesYPercepciones.toNumber().toLocaleString('es-AR')}</span>
-              </div>
-              {/* Pagos a cuenta del IG 25 F62:F66 (impuesto al cheque, anticipos, combustibles):
-                  sin estas lineas el saldo de abajo no coincide con la resta que ve el cliente. */}
-              {pagosACuenta.map(item => (
+              {/* Fuente compartida F61:F67: mantiene la misma ecuacion en papel, informe y Excel. */}
+              {taxBalanceCredits.map(item => (
                 <div key={item.reference} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black text-emerald-400 print:text-black">
                   <span className="text-zinc-550 print:text-zinc-750">(-) {item.label}</span>
                   <span>-${item.amount.toNumber().toLocaleString('es-AR')}</span>
                 </div>
               ))}
-              {saldoAFavorAnteriorInforme.gt(0) && (
-                <div className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black text-emerald-400 print:text-black">
-                  <span className="text-zinc-550 print:text-zinc-750">(-) Saldo a favor del período anterior</span>
-                  <span>-${saldoAFavorAnteriorInforme.toNumber().toLocaleString('es-AR')}</span>
-                </div>
-              )}
               <div className="flex justify-between py-2.5 border-t border-zinc-800 font-black text-white print:text-black print:border-black text-sm bg-zinc-900/20 px-3 rounded">
                 <span className="font-sans">Saldo de Impuesto a Liquidar</span>
                 <span className={saldoFinal.isNegative() ? 'text-emerald-400' : 'text-white print:text-black'}>

@@ -66,7 +66,7 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
     expect(ret2.taxCode).toBe('Ganancias');
   });
 
-  it('clasifica los códigos oficiales de impuesto (217/787 Ganancias, 147 IDCB, 767 otros)', () => {
+  it('clasifica Ganancias y deja ARCA 147 pendiente de conciliacion para evitar doble IDCB', () => {
     const csv = [
       'CUIT Agente Ret./Perc.,Impuesto,Regimen,Fecha Ret./Perc.,Numero Certificado,Descripcion Operacion,Importe Ret./Perc.',
       '30701987654,217,95,09/01/2025,2025000071,RETENCION,"6484,73"',
@@ -79,8 +79,9 @@ describe('JABA AFIP Spreadsheet Importer Tests', () => {
 
     expect(summary.fileType).toBe('MisRetenciones');
     expect(summary.withholdings).toHaveLength(4);
-    expect(summary.withholdings?.map(item => item.taxCode)).toEqual(['Ganancias', 'Ganancias', 'IDCB', 'Otros']);
+    expect(summary.withholdings?.map(item => item.taxCode)).toEqual(['Ganancias', 'Ganancias', 'Otros', 'Otros']);
     expect(summary.totalAmount.toNumber()).toBe(11484.73);
+    expect(summary.errors.some(error => error.includes('ARCA 147') && error.includes('conciliacion'))).toBe(true);
   });
 
   it('conserva el signo de las anulaciones para que neteen (antes se descartaban)', () => {

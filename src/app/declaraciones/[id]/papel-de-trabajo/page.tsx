@@ -22,7 +22,7 @@ import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacio
 import { calculateClosingCommercialPatrimony } from '@/domain/ganancias/calculations/patrimonioComercial';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
-import { buildPaymentsOnAccountBreakdown } from '@/domain/ganancias/presentation/paymentsOnAccountBreakdown';
+import { buildTaxBalanceCreditBreakdown } from '@/domain/ganancias/presentation/paymentsOnAccountBreakdown';
 import {
   buildFixedAssetDepreciationForPresentation,
   isWizardFixedAssetRetired,
@@ -279,10 +279,8 @@ export default function PapelDeTrabajoPage() {
     }) || taxParams.brackets[0] || null;
   }, [taxParams, baseImponible]);
 
-  const retenciones = calculationResult ? calculationResult.retencionesYPercepciones : new Decimal(0);
-  const pagosACuentaBreakdown = buildPaymentsOnAccountBreakdown(calculationResult);
+  const taxBalanceCredits = buildTaxBalanceCreditBreakdown(calculationResult);
   const saldoTrasladableIdcb = calculationResult ? calculationResult.saldoTrasladableIdcb : new Decimal(0);
-  const saldoAFavorAnterior = calculationResult ? calculationResult.saldoAFavorAnterior : new Decimal(0);
   const saldoFinal = calculationResult ? calculationResult.impuestoAPagarOARCA : new Decimal(0);
 
   const anticipos = calculationResult ? calculationResult.anticiposSiguientePeriodo : [];
@@ -643,13 +641,8 @@ export default function PapelDeTrabajoPage() {
                   <span className="text-zinc-400 print:text-black font-semibold">Impuesto a las Ganancias Determinado Anual</span>
                   <span className="text-zinc-200 font-bold print:text-black">${impuestoDeterminado.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
-                <div onClick={() => router.push(`/declaraciones/${id}/wizard?step=5`)} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black cursor-pointer hover:bg-zinc-800/20 hover:text-teal-300 transition-all px-2 rounded">
-                  <span className="text-zinc-450 print:text-black font-semibold">(-) Retenciones y Percepciones Computables</span>
-                  <span className="text-emerald-400 print:text-black">-${retenciones.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                </div>
-                {/* Pagos a cuenta del IG 25 F62:F66. Sin estas líneas, la resta de abajo no cierra
-                    con el saldo determinado cuando hay impuesto al cheque, anticipos o combustibles. */}
-                {pagosACuentaBreakdown.map(({ label, reference, amount }) => (
+                {/* Fuente compartida F61:F67: mantiene la misma ecuacion en papel, informe y Excel. */}
+                {taxBalanceCredits.map(({ label, reference, amount }) => (
                   <div key={reference} onClick={() => router.push(`/declaraciones/${id}/wizard?step=5`)} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black cursor-pointer hover:bg-zinc-800/20 hover:text-teal-300 transition-all px-2 rounded">
                     <span className="text-zinc-450 print:text-black font-semibold">
                       (-) {label} <span className="text-zinc-600 print:text-black">({reference})</span>
@@ -657,10 +650,6 @@ export default function PapelDeTrabajoPage() {
                     <span className="text-emerald-400 print:text-black">-${amount.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                   </div>
                 ))}
-                <div onClick={() => router.push(`/declaraciones/${id}/wizard?step=5`)} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black cursor-pointer hover:bg-zinc-800/20 hover:text-teal-300 transition-all px-2 rounded">
-                  <span className="text-zinc-450 print:text-black font-semibold">(-) Saldo a Favor del Período Anterior</span>
-                  <span className="text-emerald-400 print:text-black">-${saldoAFavorAnterior.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
-                </div>
                 {saldoTrasladableIdcb.gt(0) && (
                   <p className="px-2 pt-1 text-[10px] leading-4 text-amber-300 print:text-black">
                     Impuesto al cheque no computado por exceder el impuesto determinado: $

@@ -898,6 +898,51 @@ describe('persistTaxReturnDetails', () => {
     expect(captures.deleteManyCalls).toEqual([]);
   });
 
+  it('no permite cerrar con una participacion societaria incompleta', async () => {
+    const captures: { deleteManyCalls: string[] } = { deleteManyCalls: [] };
+
+    await expect(persistTaxReturnDetails({
+      db: buildTrackedPersistenceDb(captures),
+      taxReturnId: 'return-invalid-society',
+      existingReturn: existingReturnForValidation,
+      payload: {
+        fiscalYear: 2025,
+        status: 'Cerrada',
+        societyParticipations: [{
+          cuit: '30-71234567-8',
+          denomination: '',
+          participationPercent: '150',
+          societyResult: '100000',
+        }],
+      },
+    })).rejects.toThrow('participacionSociedades[0].cuit');
+
+    expect(captures.deleteManyCalls).toEqual([]);
+  });
+
+  it('no permite cerrar con un atribuido manual sin motivo', async () => {
+    const captures: { deleteManyCalls: string[] } = { deleteManyCalls: [] };
+
+    await expect(persistTaxReturnDetails({
+      db: buildTrackedPersistenceDb(captures),
+      taxReturnId: 'return-society-override-without-reason',
+      existingReturn: existingReturnForValidation,
+      payload: {
+        fiscalYear: 2025,
+        status: 'Cerrada',
+        societyParticipations: [{
+          cuit: '30-71234567-1',
+          denomination: 'Sociedad A',
+          participationPercent: '50',
+          societyResult: '100000',
+          attributedResultOverride: '40000',
+        }],
+      },
+    })).rejects.toThrow('overrideReason');
+
+    expect(captures.deleteManyCalls).toEqual([]);
+  });
+
   it('conserva el historial de calculos y solo agrega una nueva corrida', async () => {
     const captures: { deleteManyCalls: string[]; calculationCreate?: CalculationCreateCapture } = { deleteManyCalls: [] };
 

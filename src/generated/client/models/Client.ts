@@ -236,6 +236,7 @@ export type ClientWhereInput = {
   fiscalPeriods?: Prisma.FiscalPeriodListRelationFilter
   conventionCoefficients?: Prisma.ConventionCoefficientVersionListRelationFilter
   tishSettings?: Prisma.TishSettingListRelationFilter
+  tishSettlements?: Prisma.TishSettlementListRelationFilter
 }
 
 export type ClientOrderByWithRelationInput = {
@@ -256,6 +257,7 @@ export type ClientOrderByWithRelationInput = {
   fiscalPeriods?: Prisma.FiscalPeriodOrderByRelationAggregateInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionOrderByRelationAggregateInput
   tishSettings?: Prisma.TishSettingOrderByRelationAggregateInput
+  tishSettlements?: Prisma.TishSettlementOrderByRelationAggregateInput
   _relevance?: Prisma.ClientOrderByRelevanceInput
 }
 
@@ -280,6 +282,7 @@ export type ClientWhereUniqueInput = Prisma.AtLeast<{
   fiscalPeriods?: Prisma.FiscalPeriodListRelationFilter
   conventionCoefficients?: Prisma.ConventionCoefficientVersionListRelationFilter
   tishSettings?: Prisma.TishSettingListRelationFilter
+  tishSettlements?: Prisma.TishSettlementListRelationFilter
 }, "id" | "cuit">
 
 export type ClientOrderByWithAggregationInput = {
@@ -334,6 +337,7 @@ export type ClientCreateInput = {
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateInput = {
@@ -354,6 +358,7 @@ export type ClientUncheckedCreateInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientUpdateInput = {
@@ -374,6 +379,7 @@ export type ClientUpdateInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateInput = {
@@ -394,6 +400,7 @@ export type ClientUncheckedUpdateInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
 }
 
 export type ClientCreateManyInput = {
@@ -561,6 +568,20 @@ export type ClientUpdateOneRequiredWithoutTishSettingsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ClientUpdateToOneWithWhereWithoutTishSettingsInput, Prisma.ClientUpdateWithoutTishSettingsInput>, Prisma.ClientUncheckedUpdateWithoutTishSettingsInput>
 }
 
+export type ClientCreateNestedOneWithoutTishSettlementsInput = {
+  create?: Prisma.XOR<Prisma.ClientCreateWithoutTishSettlementsInput, Prisma.ClientUncheckedCreateWithoutTishSettlementsInput>
+  connectOrCreate?: Prisma.ClientCreateOrConnectWithoutTishSettlementsInput
+  connect?: Prisma.ClientWhereUniqueInput
+}
+
+export type ClientUpdateOneRequiredWithoutTishSettlementsNestedInput = {
+  create?: Prisma.XOR<Prisma.ClientCreateWithoutTishSettlementsInput, Prisma.ClientUncheckedCreateWithoutTishSettlementsInput>
+  connectOrCreate?: Prisma.ClientCreateOrConnectWithoutTishSettlementsInput
+  upsert?: Prisma.ClientUpsertWithoutTishSettlementsInput
+  connect?: Prisma.ClientWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ClientUpdateToOneWithWhereWithoutTishSettlementsInput, Prisma.ClientUpdateWithoutTishSettlementsInput>, Prisma.ClientUncheckedUpdateWithoutTishSettlementsInput>
+}
+
 export type ClientCreateNestedOneWithoutConventionCoefficientsInput = {
   create?: Prisma.XOR<Prisma.ClientCreateWithoutConventionCoefficientsInput, Prisma.ClientUncheckedCreateWithoutConventionCoefficientsInput>
   connectOrCreate?: Prisma.ClientCreateOrConnectWithoutConventionCoefficientsInput
@@ -592,6 +613,7 @@ export type ClientCreateWithoutUserAccessInput = {
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateWithoutUserAccessInput = {
@@ -611,6 +633,7 @@ export type ClientUncheckedCreateWithoutUserAccessInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientCreateOrConnectWithoutUserAccessInput = {
@@ -646,6 +669,7 @@ export type ClientUpdateWithoutUserAccessInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateWithoutUserAccessInput = {
@@ -665,6 +689,7 @@ export type ClientUncheckedUpdateWithoutUserAccessInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
 }
 
 export type ClientCreateWithoutTaxReturnsInput = {
@@ -684,6 +709,7 @@ export type ClientCreateWithoutTaxReturnsInput = {
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateWithoutTaxReturnsInput = {
@@ -703,6 +729,7 @@ export type ClientUncheckedCreateWithoutTaxReturnsInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientCreateOrConnectWithoutTaxReturnsInput = {
@@ -738,6 +765,7 @@ export type ClientUpdateWithoutTaxReturnsInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateWithoutTaxReturnsInput = {
@@ -757,6 +785,7 @@ export type ClientUncheckedUpdateWithoutTaxReturnsInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
 }
 
 export type ClientCreateWithoutTaxProfilesInput = {
@@ -776,6 +805,7 @@ export type ClientCreateWithoutTaxProfilesInput = {
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateWithoutTaxProfilesInput = {
@@ -795,6 +825,7 @@ export type ClientUncheckedCreateWithoutTaxProfilesInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientCreateOrConnectWithoutTaxProfilesInput = {
@@ -830,6 +861,7 @@ export type ClientUpdateWithoutTaxProfilesInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateWithoutTaxProfilesInput = {
@@ -849,6 +881,7 @@ export type ClientUncheckedUpdateWithoutTaxProfilesInput = {
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
 }
 
 export type ClientCreateWithoutFiscalPeriodsInput = {
@@ -868,6 +901,7 @@ export type ClientCreateWithoutFiscalPeriodsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateWithoutFiscalPeriodsInput = {
@@ -887,6 +921,7 @@ export type ClientUncheckedCreateWithoutFiscalPeriodsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientCreateOrConnectWithoutFiscalPeriodsInput = {
@@ -922,6 +957,7 @@ export type ClientUpdateWithoutFiscalPeriodsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateWithoutFiscalPeriodsInput = {
@@ -941,6 +977,7 @@ export type ClientUncheckedUpdateWithoutFiscalPeriodsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
 }
 
 export type ClientCreateWithoutTishSettingsInput = {
@@ -960,6 +997,7 @@ export type ClientCreateWithoutTishSettingsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionCreateNestedManyWithoutClientInput
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateWithoutTishSettingsInput = {
@@ -979,6 +1017,7 @@ export type ClientUncheckedCreateWithoutTishSettingsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedCreateNestedManyWithoutClientInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientCreateOrConnectWithoutTishSettingsInput = {
@@ -1014,6 +1053,7 @@ export type ClientUpdateWithoutTishSettingsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUpdateManyWithoutClientNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateWithoutTishSettingsInput = {
@@ -1033,6 +1073,103 @@ export type ClientUncheckedUpdateWithoutTishSettingsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedUpdateManyWithoutClientNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
   conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
+}
+
+export type ClientCreateWithoutTishSettlementsInput = {
+  id?: string
+  cuit: string
+  name: string
+  type: string
+  fiscalCondition: string
+  mainActivity: string
+  responsibleName?: string | null
+  status?: string
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userAccess?: Prisma.ClientUserAccessCreateNestedManyWithoutClientInput
+  taxReturns?: Prisma.TaxReturnCreateNestedManyWithoutClientInput
+  taxProfiles?: Prisma.ClientTaxProfileVersionCreateNestedManyWithoutClientInput
+  fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
+  conventionCoefficients?: Prisma.ConventionCoefficientVersionCreateNestedManyWithoutClientInput
+  tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+}
+
+export type ClientUncheckedCreateWithoutTishSettlementsInput = {
+  id?: string
+  cuit: string
+  name: string
+  type: string
+  fiscalCondition: string
+  mainActivity: string
+  responsibleName?: string | null
+  status?: string
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  userAccess?: Prisma.ClientUserAccessUncheckedCreateNestedManyWithoutClientInput
+  taxReturns?: Prisma.TaxReturnUncheckedCreateNestedManyWithoutClientInput
+  taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedCreateNestedManyWithoutClientInput
+  fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
+  conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedCreateNestedManyWithoutClientInput
+  tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+}
+
+export type ClientCreateOrConnectWithoutTishSettlementsInput = {
+  where: Prisma.ClientWhereUniqueInput
+  create: Prisma.XOR<Prisma.ClientCreateWithoutTishSettlementsInput, Prisma.ClientUncheckedCreateWithoutTishSettlementsInput>
+}
+
+export type ClientUpsertWithoutTishSettlementsInput = {
+  update: Prisma.XOR<Prisma.ClientUpdateWithoutTishSettlementsInput, Prisma.ClientUncheckedUpdateWithoutTishSettlementsInput>
+  create: Prisma.XOR<Prisma.ClientCreateWithoutTishSettlementsInput, Prisma.ClientUncheckedCreateWithoutTishSettlementsInput>
+  where?: Prisma.ClientWhereInput
+}
+
+export type ClientUpdateToOneWithWhereWithoutTishSettlementsInput = {
+  where?: Prisma.ClientWhereInput
+  data: Prisma.XOR<Prisma.ClientUpdateWithoutTishSettlementsInput, Prisma.ClientUncheckedUpdateWithoutTishSettlementsInput>
+}
+
+export type ClientUpdateWithoutTishSettlementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  cuit?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  fiscalCondition?: Prisma.StringFieldUpdateOperationsInput | string
+  mainActivity?: Prisma.StringFieldUpdateOperationsInput | string
+  responsibleName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userAccess?: Prisma.ClientUserAccessUpdateManyWithoutClientNestedInput
+  taxReturns?: Prisma.TaxReturnUpdateManyWithoutClientNestedInput
+  taxProfiles?: Prisma.ClientTaxProfileVersionUpdateManyWithoutClientNestedInput
+  fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
+  conventionCoefficients?: Prisma.ConventionCoefficientVersionUpdateManyWithoutClientNestedInput
+  tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+}
+
+export type ClientUncheckedUpdateWithoutTishSettlementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  cuit?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  fiscalCondition?: Prisma.StringFieldUpdateOperationsInput | string
+  mainActivity?: Prisma.StringFieldUpdateOperationsInput | string
+  responsibleName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  userAccess?: Prisma.ClientUserAccessUncheckedUpdateManyWithoutClientNestedInput
+  taxReturns?: Prisma.TaxReturnUncheckedUpdateManyWithoutClientNestedInput
+  taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedUpdateManyWithoutClientNestedInput
+  fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
+  conventionCoefficients?: Prisma.ConventionCoefficientVersionUncheckedUpdateManyWithoutClientNestedInput
+  tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
 }
 
 export type ClientCreateWithoutConventionCoefficientsInput = {
@@ -1052,6 +1189,7 @@ export type ClientCreateWithoutConventionCoefficientsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionCreateNestedManyWithoutClientInput
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutClientInput
 }
 
 export type ClientUncheckedCreateWithoutConventionCoefficientsInput = {
@@ -1071,6 +1209,7 @@ export type ClientUncheckedCreateWithoutConventionCoefficientsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedCreateNestedManyWithoutClientInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutClientInput
   tishSettings?: Prisma.TishSettingUncheckedCreateNestedManyWithoutClientInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutClientInput
 }
 
 export type ClientCreateOrConnectWithoutConventionCoefficientsInput = {
@@ -1106,6 +1245,7 @@ export type ClientUpdateWithoutConventionCoefficientsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUpdateManyWithoutClientNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutClientNestedInput
 }
 
 export type ClientUncheckedUpdateWithoutConventionCoefficientsInput = {
@@ -1125,6 +1265,7 @@ export type ClientUncheckedUpdateWithoutConventionCoefficientsInput = {
   taxProfiles?: Prisma.ClientTaxProfileVersionUncheckedUpdateManyWithoutClientNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutClientNestedInput
   tishSettings?: Prisma.TishSettingUncheckedUpdateManyWithoutClientNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutClientNestedInput
 }
 
 
@@ -1139,6 +1280,7 @@ export type ClientCountOutputType = {
   fiscalPeriods: number
   conventionCoefficients: number
   tishSettings: number
+  tishSettlements: number
 }
 
 export type ClientCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1148,6 +1290,7 @@ export type ClientCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   fiscalPeriods?: boolean | ClientCountOutputTypeCountFiscalPeriodsArgs
   conventionCoefficients?: boolean | ClientCountOutputTypeCountConventionCoefficientsArgs
   tishSettings?: boolean | ClientCountOutputTypeCountTishSettingsArgs
+  tishSettlements?: boolean | ClientCountOutputTypeCountTishSettlementsArgs
 }
 
 /**
@@ -1202,6 +1345,13 @@ export type ClientCountOutputTypeCountTishSettingsArgs<ExtArgs extends runtime.T
   where?: Prisma.TishSettingWhereInput
 }
 
+/**
+ * ClientCountOutputType without action
+ */
+export type ClientCountOutputTypeCountTishSettlementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TishSettlementWhereInput
+}
+
 
 export type ClientSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1221,6 +1371,7 @@ export type ClientSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   fiscalPeriods?: boolean | Prisma.Client$fiscalPeriodsArgs<ExtArgs>
   conventionCoefficients?: boolean | Prisma.Client$conventionCoefficientsArgs<ExtArgs>
   tishSettings?: boolean | Prisma.Client$tishSettingsArgs<ExtArgs>
+  tishSettlements?: boolean | Prisma.Client$tishSettlementsArgs<ExtArgs>
   _count?: boolean | Prisma.ClientCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["client"]>
 
@@ -1248,6 +1399,7 @@ export type ClientInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   fiscalPeriods?: boolean | Prisma.Client$fiscalPeriodsArgs<ExtArgs>
   conventionCoefficients?: boolean | Prisma.Client$conventionCoefficientsArgs<ExtArgs>
   tishSettings?: boolean | Prisma.Client$tishSettingsArgs<ExtArgs>
+  tishSettlements?: boolean | Prisma.Client$tishSettlementsArgs<ExtArgs>
   _count?: boolean | Prisma.ClientCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1260,6 +1412,7 @@ export type $ClientPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     fiscalPeriods: Prisma.$FiscalPeriodPayload<ExtArgs>[]
     conventionCoefficients: Prisma.$ConventionCoefficientVersionPayload<ExtArgs>[]
     tishSettings: Prisma.$TishSettingPayload<ExtArgs>[]
+    tishSettlements: Prisma.$TishSettlementPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1619,6 +1772,7 @@ export interface Prisma__ClientClient<T, Null = never, ExtArgs extends runtime.T
   fiscalPeriods<T extends Prisma.Client$fiscalPeriodsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Client$fiscalPeriodsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FiscalPeriodPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   conventionCoefficients<T extends Prisma.Client$conventionCoefficientsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Client$conventionCoefficientsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ConventionCoefficientVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tishSettings<T extends Prisma.Client$tishSettingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Client$tishSettingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TishSettingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tishSettlements<T extends Prisma.Client$tishSettlementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Client$tishSettlementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TishSettlementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2148,6 +2302,30 @@ export type Client$tishSettingsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.TishSettingScalarFieldEnum | Prisma.TishSettingScalarFieldEnum[]
+}
+
+/**
+ * Client.tishSettlements
+ */
+export type Client$tishSettlementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TishSettlement
+   */
+  select?: Prisma.TishSettlementSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TishSettlement
+   */
+  omit?: Prisma.TishSettlementOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TishSettlementInclude<ExtArgs> | null
+  where?: Prisma.TishSettlementWhereInput
+  orderBy?: Prisma.TishSettlementOrderByWithRelationInput | Prisma.TishSettlementOrderByWithRelationInput[]
+  cursor?: Prisma.TishSettlementWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TishSettlementScalarFieldEnum | Prisma.TishSettlementScalarFieldEnum[]
 }
 
 /**

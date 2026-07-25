@@ -97,6 +97,22 @@ export function defaultTishParameters(): TishParameters {
   };
 }
 
+/** Los valores normativos conocidos son exclusivos de 2026; no se heredan a otros años. */
+export function defaultTishParametersForYear(year: number): TishParameters | null {
+  return year === 2026 ? defaultTishParameters() : null;
+}
+
+/** Formulario sin parámetros normativos: obliga a cargar la ordenanza del año solicitado. */
+export function emptyTishParameters(): TishParameters {
+  return {
+    minimumQuota: ZERO,
+    categoryAQuota: ZERO,
+    healthRate: ZERO,
+    firefightersRate: ZERO,
+    wasteRateByCategory: { L: ZERO, M: ZERO, N: ZERO },
+  };
+}
+
 /** Vencimientos de presentación de las 6 cuotas 2026 (instructivo TISH 2026). */
 export const TISH_DUE_DATES_2026 = [
   '2026-03-26',

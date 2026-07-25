@@ -424,6 +424,7 @@ export const ModelName = {
   GrossIncomeSettlement: 'GrossIncomeSettlement',
   GrossIncomeJurisdictionLine: 'GrossIncomeJurisdictionLine',
   TishSetting: 'TishSetting',
+  TishSettlement: 'TishSettlement',
   ConventionCoefficientVersion: 'ConventionCoefficientVersion',
   ConventionCoefficientLine: 'ConventionCoefficientLine',
   AnnualFiscalConsolidationSnapshot: 'AnnualFiscalConsolidationSnapshot',
@@ -467,7 +468,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "tishSetting" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "societyParticipation" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
+    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "tishSetting" | "tishSettlement" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "societyParticipation" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2250,6 +2251,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TishSettingCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TishSettingCountAggregateOutputType> | number
+        }
+      }
+    }
+    TishSettlement: {
+      payload: Prisma.$TishSettlementPayload<ExtArgs>
+      fields: Prisma.TishSettlementFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TishSettlementFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TishSettlementFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        findFirst: {
+          args: Prisma.TishSettlementFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TishSettlementFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        findMany: {
+          args: Prisma.TishSettlementFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>[]
+        }
+        create: {
+          args: Prisma.TishSettlementCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        createMany: {
+          args: Prisma.TishSettlementCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.TishSettlementDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        update: {
+          args: Prisma.TishSettlementUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        deleteMany: {
+          args: Prisma.TishSettlementDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TishSettlementUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.TishSettlementUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        aggregate: {
+          args: Prisma.TishSettlementAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTishSettlement>
+        }
+        groupBy: {
+          args: Prisma.TishSettlementGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettlementGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TishSettlementCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettlementCountAggregateOutputType> | number
         }
       }
     }
@@ -4588,6 +4655,26 @@ export const TishSettingScalarFieldEnum = {
 export type TishSettingScalarFieldEnum = (typeof TishSettingScalarFieldEnum)[keyof typeof TishSettingScalarFieldEnum]
 
 
+export const TishSettlementScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  year: 'year',
+  bimester: 'bimester',
+  version: 'version',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint',
+  sourceSnapshot: 'sourceSnapshot',
+  calculationSnapshot: 'calculationSnapshot',
+  total: 'total',
+  closedAt: 'closedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TishSettlementScalarFieldEnum = (typeof TishSettlementScalarFieldEnum)[keyof typeof TishSettlementScalarFieldEnum]
+
+
 export const ConventionCoefficientVersionScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
@@ -4821,6 +4908,7 @@ export const SocietyParticipationScalarFieldEnum = {
   participationPercent: 'participationPercent',
   societyResult: 'societyResult',
   attributedResultOverride: 'attributedResultOverride',
+  overrideReason: 'overrideReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -5403,6 +5491,18 @@ export const TishSettingOrderByRelevanceFieldEnum = {
 export type TishSettingOrderByRelevanceFieldEnum = (typeof TishSettingOrderByRelevanceFieldEnum)[keyof typeof TishSettingOrderByRelevanceFieldEnum]
 
 
+export const TishSettlementOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint'
+} as const
+
+export type TishSettlementOrderByRelevanceFieldEnum = (typeof TishSettlementOrderByRelevanceFieldEnum)[keyof typeof TishSettlementOrderByRelevanceFieldEnum]
+
+
 export const ConventionCoefficientVersionOrderByRelevanceFieldEnum = {
   id: 'id',
   clientId: 'clientId',
@@ -5553,7 +5653,8 @@ export const SocietyParticipationOrderByRelevanceFieldEnum = {
   taxReturnId: 'taxReturnId',
   cuit: 'cuit',
   denomination: 'denomination',
-  societyType: 'societyType'
+  societyType: 'societyType',
+  overrideReason: 'overrideReason'
 } as const
 
 export type SocietyParticipationOrderByRelevanceFieldEnum = (typeof SocietyParticipationOrderByRelevanceFieldEnum)[keyof typeof SocietyParticipationOrderByRelevanceFieldEnum]
@@ -6025,6 +6126,7 @@ export type GlobalOmitConfig = {
   grossIncomeSettlement?: Prisma.GrossIncomeSettlementOmit
   grossIncomeJurisdictionLine?: Prisma.GrossIncomeJurisdictionLineOmit
   tishSetting?: Prisma.TishSettingOmit
+  tishSettlement?: Prisma.TishSettlementOmit
   conventionCoefficientVersion?: Prisma.ConventionCoefficientVersionOmit
   conventionCoefficientLine?: Prisma.ConventionCoefficientLineOmit
   annualFiscalConsolidationSnapshot?: Prisma.AnnualFiscalConsolidationSnapshotOmit

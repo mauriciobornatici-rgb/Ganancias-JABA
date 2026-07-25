@@ -172,6 +172,7 @@ model Client {
   fiscalPeriods          FiscalPeriod[]
   conventionCoefficients ConventionCoefficientVersion[]
   tishSettings           TishSetting[]
+  tishSettlements        TishSettlement[]
 }
 
 // ==========================================
@@ -348,32 +349,33 @@ model RectificationLink {
 // ==========================================
 
 model ClientTaxProfileVersion {
-  id                     String            @id @default(uuid())
-  clientId               String
-  validFrom              DateTime
-  validTo                DateTime?
-  vatCondition           VatCondition
-  grossIncomeRegime      GrossIncomeRegime
-  conventionRegime       ConventionRegime  @default(NONE)
+  id                            String            @id @default(uuid())
+  clientId                      String
+  validFrom                     DateTime
+  validTo                       DateTime?
+  vatCondition                  VatCondition
+  grossIncomeRegime             GrossIncomeRegime
+  conventionRegime              ConventionRegime  @default(NONE)
   // Beneficio Ley 27.618 / RG 5003: reducción del saldo deudor de IVA durante tres años.
-  smallTaxpayerBenefitEnabled   Boolean @default(false)
+  smallTaxpayerBenefitEnabled   Boolean           @default(false)
   smallTaxpayerBenefitStartYear Int?
   // Impuesto sobre débitos y créditos bancarios (impuesto al cheque) computable como pago a cuenta
   // de Ganancias: 33 = régimen general; 100 = micro y pequeña empresa. Solo esos dos valores.
-  idcbComputablePercent         Int     @default(33)
-  arbaRegistrationNumber String?
-  cmRegistrationNumber   String?
-  sourceReference        String?
-  approvedBy             String?
-  approvedAt             DateTime?
-  notes                  String?           @db.Text
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
+  idcbComputablePercent         Int               @default(33)
+  arbaRegistrationNumber        String?
+  cmRegistrationNumber          String?
+  sourceReference               String?
+  approvedBy                    String?
+  approvedAt                    DateTime?
+  notes                         String?           @db.Text
+  createdAt                     DateTime          @default(now())
+  updatedAt                     DateTime          @updatedAt
 
-  client        Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  activities    ClientTaxActivity[]
-  jurisdictions ClientTaxJurisdiction[]
-  fiscalPeriods FiscalPeriod[]
+  client          Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  activities      ClientTaxActivity[]
+  jurisdictions   ClientTaxJurisdiction[]
+  fiscalPeriods   FiscalPeriod[]
+  tishSettlements TishSettlement[]
 
   @@unique([clientId, validFrom])
   @@index([clientId, validTo])
@@ -564,27 +566,27 @@ model TaxCreditRecord {
 }
 
 model VatSettlement {
-  id                       String              @id @default(uuid())
-  fiscalPeriodId           String
-  originalSettlementId     String?
-  version                  Int                 @default(0)
-  status                   VatSettlementStatus @default(DRAFT)
-  previousTechnicalBalance Decimal             @default(0) @db.Decimal(18, 2)
-  previousFreeAvailabilityBalance Decimal       @default(0) @db.Decimal(18, 2)
-  debitFiscal              Decimal             @default(0) @db.Decimal(18, 2)
-  creditFiscal             Decimal             @default(0) @db.Decimal(18, 2)
-  technicalDueBeforeBenefit Decimal            @default(0) @db.Decimal(18, 2)
-  smallTaxpayerBenefitRate Decimal              @default(0) @db.Decimal(8, 6)
-  smallTaxpayerBenefitReduction Decimal         @default(0) @db.Decimal(18, 2)
-  technicalCarryForward    Decimal             @default(0) @db.Decimal(18, 2)
-  freeAvailabilityBalance  Decimal             @default(0) @db.Decimal(18, 2)
-  amountDue                Decimal             @default(0) @db.Decimal(18, 2)
-  officialAmount           Decimal?            @db.Decimal(18, 2)
-  officialReference        String?
-  filedAt                  DateTime?
-  notes                    String?             @db.Text
-  createdAt                DateTime            @default(now())
-  updatedAt                DateTime            @updatedAt
+  id                              String              @id @default(uuid())
+  fiscalPeriodId                  String
+  originalSettlementId            String?
+  version                         Int                 @default(0)
+  status                          VatSettlementStatus @default(DRAFT)
+  previousTechnicalBalance        Decimal             @default(0) @db.Decimal(18, 2)
+  previousFreeAvailabilityBalance Decimal             @default(0) @db.Decimal(18, 2)
+  debitFiscal                     Decimal             @default(0) @db.Decimal(18, 2)
+  creditFiscal                    Decimal             @default(0) @db.Decimal(18, 2)
+  technicalDueBeforeBenefit       Decimal             @default(0) @db.Decimal(18, 2)
+  smallTaxpayerBenefitRate        Decimal             @default(0) @db.Decimal(8, 6)
+  smallTaxpayerBenefitReduction   Decimal             @default(0) @db.Decimal(18, 2)
+  technicalCarryForward           Decimal             @default(0) @db.Decimal(18, 2)
+  freeAvailabilityBalance         Decimal             @default(0) @db.Decimal(18, 2)
+  amountDue                       Decimal             @default(0) @db.Decimal(18, 2)
+  officialAmount                  Decimal?            @db.Decimal(18, 2)
+  officialReference               String?
+  filedAt                         DateTime?
+  notes                           String?             @db.Text
+  createdAt                       DateTime            @default(now())
+  updatedAt                       DateTime            @updatedAt
 
   fiscalPeriod       FiscalPeriod        @relation(fields: [fiscalPeriodId], references: [id], onDelete: Cascade)
   originalSettlement VatSettlement?      @relation("VatSettlementRectifications", fields: [originalSettlementId], references: [id], onDelete: Restrict)
@@ -658,12 +660,10 @@ model GrossIncomeJurisdictionLine {
 
 /**
  * Tasa por Inspección de Seguridad e Higiene (TISH) - punto 2 del PDF (2026-07-24).
- *
  * Alcance decidido con el usuario: solo RÉGIMEN GENERAL (responsable inscripto). La alícuota y la
  * categoría L/M/N son MANUALES por cliente y por año (la ordenanza 2026 está escaneada y el art. 23
  * con las alícuotas no es legible). Los importes de la ordenanza se guardan como parámetros
  * editables del año y por cliente, porque cada contribuyente puede estar en otro municipio.
- *
  * Los valores por defecto son los de la ordenanza 2026 de ARBAL (instructivo TISH 2026).
  */
 model TishSetting {
@@ -671,33 +671,81 @@ model TishSetting {
   clientId String
   year     Int
 
-  /** Categoría del Régimen General por tramo de facturación: L, M o N. */
+  /**
+   * Categoría del Régimen General por tramo de facturación: L, M o N.
+   */
   category String  @default("L")
-  /** Alícuota del art. 23 de la Ordenanza Impositiva (fracción, ej. 0.006 = 0,6%). */
-  taxRate  Decimal @db.Decimal(8, 6) @default(0)
+  /**
+   * Alícuota del art. 23 de la Ordenanza Impositiva (fracción, ej. 0.006 = 0,6%).
+   */
+  taxRate  Decimal @default(0) @db.Decimal(8, 6)
 
-  /** Cuota bimestral de la categoría K del Régimen Simplificado: piso de la tasa. */
-  minimumQuota            Decimal @db.Decimal(18, 2) @default(40000)
-  /** Cuota bimestral de la categoría A: base de la contribución a Bomberos. */
-  categoryAQuota          Decimal @db.Decimal(18, 2) @default(8000)
-  /** Contribución para la Salud sobre la tasa (fracción). */
-  healthRate              Decimal @db.Decimal(8, 6) @default(0.12)
-  /** Bomberos Voluntarios: fracción del valor de la categoría A. */
-  firefightersRate        Decimal @db.Decimal(8, 6) @default(0.10)
-  /** Residuos no domiciliarios: fracción del importe de la categoría K, según categoría. */
-  wasteRateCategoryL      Decimal @db.Decimal(8, 6) @default(0.25)
-  wasteRateCategoryM      Decimal @db.Decimal(8, 6) @default(0.40)
-  wasteRateCategoryN      Decimal @db.Decimal(8, 6) @default(0.60)
-  /** Vencimientos de presentación de las 6 cuotas (AAAA-MM-DD separados por coma). */
-  dueDates                String? @db.Text
-  notes                   String? @db.Text
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
+  /**
+   * Cuota bimestral de la categoría K del Régimen Simplificado: piso de la tasa.
+   */
+  minimumQuota       Decimal  @default(40000) @db.Decimal(18, 2)
+  /**
+   * Cuota bimestral de la categoría A: base de la contribución a Bomberos.
+   */
+  categoryAQuota     Decimal  @default(8000) @db.Decimal(18, 2)
+  /**
+   * Contribución para la Salud sobre la tasa (fracción).
+   */
+  healthRate         Decimal  @default(0.12) @db.Decimal(8, 6)
+  /**
+   * Bomberos Voluntarios: fracción del valor de la categoría A.
+   */
+  firefightersRate   Decimal  @default(0.10) @db.Decimal(8, 6)
+  /**
+   * Residuos no domiciliarios: fracción del importe de la categoría K, según categoría.
+   */
+  wasteRateCategoryL Decimal  @default(0.25) @db.Decimal(8, 6)
+  wasteRateCategoryM Decimal  @default(0.40) @db.Decimal(8, 6)
+  wasteRateCategoryN Decimal  @default(0.60) @db.Decimal(8, 6)
+  /**
+   * Vencimientos de presentación de las 6 cuotas (AAAA-MM-DD separados por coma).
+   */
+  dueDates           String?  @db.Text
+  notes              String?  @db.Text
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client      Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  settlements TishSettlement[]
 
   @@unique([clientId, year])
   @@index([year])
+}
+
+/**
+ * Liquidación TISH cerrada y versionada por bimestre.
+ * Los snapshots conservan las versiones de IIBB, el perfil, la configuración y el resultado usados
+ * en cada cierre. Una nueva fuente genera una versión nueva; nunca se sobreescribe la anterior.
+ */
+model TishSettlement {
+  id                  String   @id @default(uuid())
+  clientId            String
+  tishSettingId       String
+  taxProfileId        String
+  year                Int
+  bimester            Int
+  version             Int      @default(1)
+  status              String   @default("CLOSED")
+  sourceFingerprint   String   @db.VarChar(64)
+  sourceSnapshot      Json
+  calculationSnapshot Json
+  total               Decimal  @db.Decimal(18, 2)
+  closedAt            DateTime @default(now())
+  createdAt           DateTime @default(now())
+
+  client     Client                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  setting    TishSetting             @relation(fields: [tishSettingId], references: [id], onDelete: Restrict)
+  taxProfile ClientTaxProfileVersion @relation(fields: [taxProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([clientId, year, bimester, version], map: "tish_settlement_version_uk")
+  @@unique([clientId, year, bimester, sourceFingerprint], map: "tish_settlement_source_uk")
+  @@index([clientId, year, bimester])
+  @@index([status, closedAt])
 }
 
 model ConventionCoefficientVersion {
@@ -979,6 +1027,7 @@ model SocietyParticipation {
   participationPercent     Decimal  @db.Decimal(8, 4)
   societyResult            Decimal  @db.Decimal(18, 2)
   attributedResultOverride Decimal? @db.Decimal(18, 2)
+  overrideReason           String?  @db.Text
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 

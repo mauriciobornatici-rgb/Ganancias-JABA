@@ -8,6 +8,15 @@ import { normalizeArgentineAmountInput } from '../presentation/moneyFormat';
 import { TaxReturnInvalidPayloadError } from './taxReturnPersistencePolicy';
 import { DEFAULT_PURCHASE_EXPENSE_TYPE } from '../purchaseExpenseType';
 import {
+  normalizeArgentineCuit,
+  toSocietyParticipationInputs,
+  validateSocietyParticipationInputs,
+} from '../calculations/participacionSociedades';
+import {
+  normalizeTaxReturnStatus,
+  TAX_RETURN_STATUS,
+} from '../workflow/taxReturnWorkflow';
+import {
   resolveFixedAssetPersistenceIds,
   type FixedAssetIdentityOwner,
 } from './fixedAssetIdentity';
@@ -155,6 +164,7 @@ type SocietyParticipationPayload = {
   societyResult?: NumericValue;
   /** Vacío = usar el resultado calculado por la app. */
   attributedResultOverride?: NumericValue;
+  overrideReason?: string;
 };
 
 type PersonalAssetPayload = {
@@ -396,8 +406,25 @@ function validateTaxReturnPersistencePayload(payload: TaxReturnPersistencePayloa
     assertValidNumberInput(participation.participationPercent, `participacionSociedades[${index}].participationPercent`);
     // El resultado de la sociedad y el atribuido pueden ser negativos (quebranto).
     assertValidNumberInput(participation.societyResult, `participacionSociedades[${index}].societyResult`, true);
-    assertValidNumberInput(participation.attributedResultOverride, `participacionSociedades[${index}].attributedResultOverride`, true);
+    // Vacío = usar el atribuido calculado por la app; solo se valida si el contador lo reemplaza.
+    assertValidNumberInput(participation.attributedResultOverride, `participacionSociedades[${index}].attributedResultOverride`);
   });
+
+  if (
+    normalizeTaxReturnStatus(payload.status) === TAX_RETURN_STATUS.CERRADA
+    && payload.societyParticipations?.length
+  ) {
+    const issues = validateSocietyParticipationInputs(
+      toSocietyParticipationInputs(payload.societyParticipations),
+    );
+    const firstIssue = issues[0];
+    if (firstIssue) {
+      throw new TaxReturnInvalidPayloadError(
+        `participacionSociedades[${firstIssue.index}].${firstIssue.field}`,
+        firstIssue.message,
+      );
+    }
+  }
 
   if (payload.personalDeductions) {
     [
@@ -899,13 +926,14 @@ export async function persistTaxReturnDetails({
     await db.societyParticipation.createMany({
       data: societyParticipations.map(participation => ({
         taxReturnId,
-        cuit: stringInput(participation.cuit),
+        cuit: normalizeArgentineCuit(stringInput(participation.cuit)),
         denomination: stringInput(participation.denomination),
         societyType: stringInput(participation.societyType) || undefined,
         participationPercent: numberInput(participation.participationPercent, 0, 'participacionSociedades.participationPercent'),
         societyResult: numberInput(participation.societyResult, 0, 'participacionSociedades.societyResult'),
         // null = sin editar: al reabrir la app vuelve a mostrar el calculado.
         attributedResultOverride: nullableNumberInput(participation.attributedResultOverride, 'participacionSociedades.attributedResultOverride'),
+        overrideReason: stringInput(participation.overrideReason).trim() || undefined,
       })),
     });
   }

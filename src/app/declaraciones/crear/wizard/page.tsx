@@ -2939,6 +2939,7 @@ export default function WizardPage() {
                           <th className="px-4 py-3 text-right">Resultado sociedad ($)</th>
                           <th className="px-4 py-3 text-right">Atribuido calculado ($)</th>
                           <th className="px-4 py-3 text-right">Atribuido (editable)</th>
+                          <th className="px-4 py-3">Motivo del ajuste</th>
                           <th className="px-4 py-3 text-right">Eliminar</th>
                         </tr>
                       </thead>
@@ -2997,6 +2998,19 @@ export default function WizardPage() {
                                   onChange={(e) => handleCellChange(index, 'attributedResultOverride', e.target.value, 'societyParticipations')}
                                   placeholder="usa el calculado"
                                   className={`w-32 bg-transparent border-b outline-none text-xs font-mono text-right py-1 ${line?.isOverridden ? 'border-amber-500/60 text-amber-300' : 'border-zinc-800 focus:border-teal-500 text-zinc-200'}`}
+                                />
+                              </td>
+                              <td className="px-4 py-2">
+                                <input
+                                  value={participation.overrideReason ?? ''}
+                                  onChange={(e) => handleCellChange(index, 'overrideReason', e.target.value, 'societyParticipations')}
+                                  placeholder={line?.isOverridden ? 'Obligatorio: explique el ajuste' : 'Solo si modifica el calculado'}
+                                  aria-required={line?.isOverridden}
+                                  className={`w-56 bg-transparent border-b outline-none text-xs py-1 ${
+                                    line?.isOverridden && !(participation.overrideReason ?? '').trim()
+                                      ? 'border-red-500/70 text-red-200'
+                                      : 'border-zinc-800 focus:border-teal-500 text-zinc-300'
+                                  }`}
                                 />
                               </td>
                               <td className="px-4 py-2 text-right">

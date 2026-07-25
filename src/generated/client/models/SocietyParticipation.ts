@@ -51,6 +51,7 @@ export type SocietyParticipationMinAggregateOutputType = {
   participationPercent: runtime.Decimal | null
   societyResult: runtime.Decimal | null
   attributedResultOverride: runtime.Decimal | null
+  overrideReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,6 +65,7 @@ export type SocietyParticipationMaxAggregateOutputType = {
   participationPercent: runtime.Decimal | null
   societyResult: runtime.Decimal | null
   attributedResultOverride: runtime.Decimal | null
+  overrideReason: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -77,6 +79,7 @@ export type SocietyParticipationCountAggregateOutputType = {
   participationPercent: number
   societyResult: number
   attributedResultOverride: number
+  overrideReason: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -104,6 +107,7 @@ export type SocietyParticipationMinAggregateInputType = {
   participationPercent?: true
   societyResult?: true
   attributedResultOverride?: true
+  overrideReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -117,6 +121,7 @@ export type SocietyParticipationMaxAggregateInputType = {
   participationPercent?: true
   societyResult?: true
   attributedResultOverride?: true
+  overrideReason?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -130,6 +135,7 @@ export type SocietyParticipationCountAggregateInputType = {
   participationPercent?: true
   societyResult?: true
   attributedResultOverride?: true
+  overrideReason?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -230,6 +236,7 @@ export type SocietyParticipationGroupByOutputType = {
   participationPercent: runtime.Decimal
   societyResult: runtime.Decimal
   attributedResultOverride: runtime.Decimal | null
+  overrideReason: string | null
   createdAt: Date
   updatedAt: Date
   _count: SocietyParticipationCountAggregateOutputType | null
@@ -266,6 +273,7 @@ export type SocietyParticipationWhereInput = {
   participationPercent?: Prisma.DecimalFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.DecimalNullableFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.StringNullableFilter<"SocietyParticipation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SocietyParticipation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SocietyParticipation"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
@@ -280,6 +288,7 @@ export type SocietyParticipationOrderByWithRelationInput = {
   participationPercent?: Prisma.SortOrder
   societyResult?: Prisma.SortOrder
   attributedResultOverride?: Prisma.SortOrderInput | Prisma.SortOrder
+  overrideReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   taxReturn?: Prisma.TaxReturnOrderByWithRelationInput
@@ -298,6 +307,7 @@ export type SocietyParticipationWhereUniqueInput = Prisma.AtLeast<{
   participationPercent?: Prisma.DecimalFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.DecimalNullableFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.StringNullableFilter<"SocietyParticipation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SocietyParticipation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SocietyParticipation"> | Date | string
   taxReturn?: Prisma.XOR<Prisma.TaxReturnScalarRelationFilter, Prisma.TaxReturnWhereInput>
@@ -312,6 +322,7 @@ export type SocietyParticipationOrderByWithAggregationInput = {
   participationPercent?: Prisma.SortOrder
   societyResult?: Prisma.SortOrder
   attributedResultOverride?: Prisma.SortOrderInput | Prisma.SortOrder
+  overrideReason?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.SocietyParticipationCountOrderByAggregateInput
@@ -333,6 +344,7 @@ export type SocietyParticipationScalarWhereWithAggregatesInput = {
   participationPercent?: Prisma.DecimalWithAggregatesFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalWithAggregatesFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.DecimalNullableWithAggregatesFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.StringNullableWithAggregatesFilter<"SocietyParticipation"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"SocietyParticipation"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"SocietyParticipation"> | Date | string
 }
@@ -345,6 +357,7 @@ export type SocietyParticipationCreateInput = {
   participationPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult: runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   taxReturn: Prisma.TaxReturnCreateNestedOneWithoutSocietyParticipationsInput
@@ -359,6 +372,7 @@ export type SocietyParticipationUncheckedCreateInput = {
   participationPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult: runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -371,6 +385,7 @@ export type SocietyParticipationUpdateInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   taxReturn?: Prisma.TaxReturnUpdateOneRequiredWithoutSocietyParticipationsNestedInput
@@ -385,6 +400,7 @@ export type SocietyParticipationUncheckedUpdateInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -398,6 +414,7 @@ export type SocietyParticipationCreateManyInput = {
   participationPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult: runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -410,6 +427,7 @@ export type SocietyParticipationUpdateManyMutationInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -423,6 +441,7 @@ export type SocietyParticipationUncheckedUpdateManyInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -452,6 +471,7 @@ export type SocietyParticipationCountOrderByAggregateInput = {
   participationPercent?: Prisma.SortOrder
   societyResult?: Prisma.SortOrder
   attributedResultOverride?: Prisma.SortOrder
+  overrideReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -471,6 +491,7 @@ export type SocietyParticipationMaxOrderByAggregateInput = {
   participationPercent?: Prisma.SortOrder
   societyResult?: Prisma.SortOrder
   attributedResultOverride?: Prisma.SortOrder
+  overrideReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -484,6 +505,7 @@ export type SocietyParticipationMinOrderByAggregateInput = {
   participationPercent?: Prisma.SortOrder
   societyResult?: Prisma.SortOrder
   attributedResultOverride?: Prisma.SortOrder
+  overrideReason?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -544,6 +566,7 @@ export type SocietyParticipationCreateWithoutTaxReturnInput = {
   participationPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult: runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -556,6 +579,7 @@ export type SocietyParticipationUncheckedCreateWithoutTaxReturnInput = {
   participationPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult: runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -598,6 +622,7 @@ export type SocietyParticipationScalarWhereInput = {
   participationPercent?: Prisma.DecimalFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.DecimalNullableFilter<"SocietyParticipation"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.StringNullableFilter<"SocietyParticipation"> | string | null
   createdAt?: Prisma.DateTimeFilter<"SocietyParticipation"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"SocietyParticipation"> | Date | string
 }
@@ -610,6 +635,7 @@ export type SocietyParticipationCreateManyTaxReturnInput = {
   participationPercent: runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult: runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -622,6 +648,7 @@ export type SocietyParticipationUpdateWithoutTaxReturnInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -634,6 +661,7 @@ export type SocietyParticipationUncheckedUpdateWithoutTaxReturnInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -646,6 +674,7 @@ export type SocietyParticipationUncheckedUpdateManyWithoutTaxReturnInput = {
   participationPercent?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   societyResult?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   attributedResultOverride?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  overrideReason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -661,6 +690,7 @@ export type SocietyParticipationSelect<ExtArgs extends runtime.Types.Extensions.
   participationPercent?: boolean
   societyResult?: boolean
   attributedResultOverride?: boolean
+  overrideReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
@@ -677,11 +707,12 @@ export type SocietyParticipationSelectScalar = {
   participationPercent?: boolean
   societyResult?: boolean
   attributedResultOverride?: boolean
+  overrideReason?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type SocietyParticipationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "cuit" | "denomination" | "societyType" | "participationPercent" | "societyResult" | "attributedResultOverride" | "createdAt" | "updatedAt", ExtArgs["result"]["societyParticipation"]>
+export type SocietyParticipationOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxReturnId" | "cuit" | "denomination" | "societyType" | "participationPercent" | "societyResult" | "attributedResultOverride" | "overrideReason" | "createdAt" | "updatedAt", ExtArgs["result"]["societyParticipation"]>
 export type SocietyParticipationInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxReturn?: boolean | Prisma.TaxReturnDefaultArgs<ExtArgs>
 }
@@ -700,6 +731,7 @@ export type $SocietyParticipationPayload<ExtArgs extends runtime.Types.Extension
     participationPercent: runtime.Decimal
     societyResult: runtime.Decimal
     attributedResultOverride: runtime.Decimal | null
+    overrideReason: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["societyParticipation"]>
@@ -1080,6 +1112,7 @@ export interface SocietyParticipationFieldRefs {
   readonly participationPercent: Prisma.FieldRef<"SocietyParticipation", 'Decimal'>
   readonly societyResult: Prisma.FieldRef<"SocietyParticipation", 'Decimal'>
   readonly attributedResultOverride: Prisma.FieldRef<"SocietyParticipation", 'Decimal'>
+  readonly overrideReason: Prisma.FieldRef<"SocietyParticipation", 'String'>
   readonly createdAt: Prisma.FieldRef<"SocietyParticipation", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"SocietyParticipation", 'DateTime'>
 }

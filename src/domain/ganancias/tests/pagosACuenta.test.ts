@@ -101,6 +101,49 @@ describe('P29 - Pagos a cuenta IG 25 (F61:F67, F68, F70)', () => {
     expect(result.impuestoAPagarOARCA.toNumber()).toBe(350000);
   });
 
+  it('una anulacion sin credito original no aumenta el impuesto', () => {
+    const result = calculateTaxReturn(buildInput([
+      { amount: new Decimal(-40000), taxCode: 'Ganancias' },
+    ]));
+
+    expect(result.retencionesYPercepciones.toNumber()).toBe(0);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(350000);
+    expect(result.warnings.some(w => w.includes('anulaciones') && w.includes('$0.00'))).toBe(true);
+  });
+
+  it('limita a cero una anulacion que supera el credito original', () => {
+    const result = calculateTaxReturn(buildInput([
+      { amount: new Decimal(40000), taxCode: 'Ganancias' },
+      { amount: new Decimal(-60000), taxCode: 'Ganancias' },
+    ]));
+
+    expect(result.retencionesYPercepciones.toNumber()).toBe(0);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(350000);
+    expect(result.warnings.some(w => w.includes('superan los creditos'))).toBe(true);
+  });
+
+  it('un IDCB neto negativo no aumenta el impuesto ni genera saldo trasladable negativo', () => {
+    const result = calculateTaxReturn(buildInput([
+      { amount: new Decimal(-50000), taxCode: 'IDCB' },
+    ]));
+
+    expect(result.computoIdcb.toNumber()).toBe(0);
+    expect(result.saldoTrasladableIdcb.toNumber()).toBe(0);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(350000);
+    expect(result.warnings.some(w => w.includes('impuesto sobre creditos y debitos'))).toBe(true);
+  });
+
+  it('prioriza el libro mensual cuando convive con otro IDCB para evitar doble computo', () => {
+    const result = calculateTaxReturn(buildInput([
+      { amount: new Decimal(33000), taxCode: 'IDCB', certificateNumber: 'IDCB-2025-01' },
+      { amount: new Decimal(100000), taxCode: 'IDCB', certificateNumber: '2025000073' },
+    ]));
+
+    expect(result.computoIdcb.toNumber()).toBe(33000);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(317000);
+    expect(result.warnings.some(w => w.includes('conviven') && w.includes('doble computo'))).toBe(true);
+  });
+
   it('computa anticipos cancelados (F62/F63/F64) y combustibles (F66)', () => {
     const result = calculateTaxReturn(buildInput([
       { amount: new Decimal(100000), taxCode: 'Ganancias' },          // F67
@@ -152,5 +195,13 @@ describe('P29 - Pagos a cuenta IG 25 (F61:F67, F68, F70)', () => {
 
     // F68 = 350.000 - 30.000 - 100.000 = 220.000
     expect(result.impuestoAPagarOARCA.toNumber()).toBe(220000);
+  });
+
+  it('un saldo a favor anterior negativo no aumenta el impuesto', () => {
+    const result = calculateTaxReturn(buildInput([], new Decimal(-30000)));
+
+    expect(result.saldoAFavorAnterior.toNumber()).toBe(0);
+    expect(result.impuestoAPagarOARCA.toNumber()).toBe(350000);
+    expect(result.warnings.some(w => w.includes('Saldo a favor anterior'))).toBe(true);
   });
 });

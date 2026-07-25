@@ -181,6 +181,8 @@ export interface SocietyParticipationInput {
   societyResult: Decimal;
   /** Resultado atribuido cargado a mano. undefined/null = usar el calculado. */
   attributedResultOverride?: Decimal | null;
+  /** Justificación profesional obligatoria cuando el importe manual difiere del calculado. */
+  overrideReason?: string | null;
 }
 
 export interface PersonalAssetInput {

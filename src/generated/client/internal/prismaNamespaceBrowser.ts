@@ -78,6 +78,7 @@ export const ModelName = {
   GrossIncomeSettlement: 'GrossIncomeSettlement',
   GrossIncomeJurisdictionLine: 'GrossIncomeJurisdictionLine',
   TishSetting: 'TishSetting',
+  TishSettlement: 'TishSettlement',
   ConventionCoefficientVersion: 'ConventionCoefficientVersion',
   ConventionCoefficientLine: 'ConventionCoefficientLine',
   AnnualFiscalConsolidationSnapshot: 'AnnualFiscalConsolidationSnapshot',
@@ -572,6 +573,26 @@ export const TishSettingScalarFieldEnum = {
 export type TishSettingScalarFieldEnum = (typeof TishSettingScalarFieldEnum)[keyof typeof TishSettingScalarFieldEnum]
 
 
+export const TishSettlementScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  year: 'year',
+  bimester: 'bimester',
+  version: 'version',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint',
+  sourceSnapshot: 'sourceSnapshot',
+  calculationSnapshot: 'calculationSnapshot',
+  total: 'total',
+  closedAt: 'closedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TishSettlementScalarFieldEnum = (typeof TishSettlementScalarFieldEnum)[keyof typeof TishSettlementScalarFieldEnum]
+
+
 export const ConventionCoefficientVersionScalarFieldEnum = {
   id: 'id',
   clientId: 'clientId',
@@ -805,6 +826,7 @@ export const SocietyParticipationScalarFieldEnum = {
   participationPercent: 'participationPercent',
   societyResult: 'societyResult',
   attributedResultOverride: 'attributedResultOverride',
+  overrideReason: 'overrideReason',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1387,6 +1409,18 @@ export const TishSettingOrderByRelevanceFieldEnum = {
 export type TishSettingOrderByRelevanceFieldEnum = (typeof TishSettingOrderByRelevanceFieldEnum)[keyof typeof TishSettingOrderByRelevanceFieldEnum]
 
 
+export const TishSettlementOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint'
+} as const
+
+export type TishSettlementOrderByRelevanceFieldEnum = (typeof TishSettlementOrderByRelevanceFieldEnum)[keyof typeof TishSettlementOrderByRelevanceFieldEnum]
+
+
 export const ConventionCoefficientVersionOrderByRelevanceFieldEnum = {
   id: 'id',
   clientId: 'clientId',
@@ -1537,7 +1571,8 @@ export const SocietyParticipationOrderByRelevanceFieldEnum = {
   taxReturnId: 'taxReturnId',
   cuit: 'cuit',
   denomination: 'denomination',
-  societyType: 'societyType'
+  societyType: 'societyType',
+  overrideReason: 'overrideReason'
 } as const
 
 export type SocietyParticipationOrderByRelevanceFieldEnum = (typeof SocietyParticipationOrderByRelevanceFieldEnum)[keyof typeof SocietyParticipationOrderByRelevanceFieldEnum]

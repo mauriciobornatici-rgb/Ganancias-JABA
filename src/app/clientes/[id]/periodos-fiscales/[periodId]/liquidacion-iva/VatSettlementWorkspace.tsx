@@ -6,6 +6,7 @@ import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
   Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2, Landmark,
 } from 'lucide-react';
+import { buildFiscalDocumentImportFeedback } from '@/domain/ganancias/presentation/fiscalImportFeedback';
 import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
 
@@ -103,6 +104,7 @@ type OpeningBalancesView = {
 };
 
 type BenefitInfo = { enabled: boolean; startYear: number | null; rate: string };
+type WorkspaceNotice = { message: string; tone: 'success' | 'warning' };
 
 const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
@@ -113,7 +115,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<WorkspaceNotice | null>(null);
 
   const [uploading, setUploading] = useState(false);
   const [deletingDirection, setDeletingDirection] = useState<'SALE' | 'PURCHASE' | null>(null);
@@ -308,11 +310,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       if (res.status === 409) { setError(payload.error || 'El saldo de IIBB no coincide con el oficial.'); return; }
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar IIBB.');
       setSavedIibbStatus({ status: payload.data.status, version: payload.data.version });
-      setNotice(payload.data.status === 'CLOSED'
-        ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
-        : payload.data.status === 'DRAFT'
-          ? `IIBB guardado como Borrador (versión ${payload.data.version}). Para cerrarlo cargá el saldo oficial del organismo (aunque sea 0) y guardá de nuevo.`
-          : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`);
+      setNotice({
+        tone: payload.data.status === 'CLOSED' ? 'success' : 'warning',
+        message: payload.data.status === 'CLOSED'
+          ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
+          : payload.data.status === 'DRAFT'
+            ? `IIBB guardado como Borrador (versión ${payload.data.version}). Para cerrarlo cargá el saldo oficial del organismo (aunque sea 0) y guardá de nuevo.`
+            : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar IIBB.');
     } finally {
@@ -330,7 +335,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo reabrir la liquidación.');
       if (payload.data.reopened.length > 0) {
-        setNotice(`Período reabierto para rectificación (${payload.data.reopened.join(' e ')}). Cargá los cambios, recalculá y volvé a cotejar y guardar: quedará como versión nueva.`);
+        setNotice({
+          tone: 'warning',
+          message: `Período reabierto para rectificación (${payload.data.reopened.join(' e ')}). Cargá los cambios, recalculá y volvé a cotejar y guardar: quedará como versión nueva.`,
+        });
       }
       setReliquidating(true);
       setSettlement(null);
@@ -367,7 +375,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       let msg = `Importadas ${d.inserted} ret./perc. (${d.duplicates} duplicadas).`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.ignoredOtherTax) msg += ` ${d.ignoredOtherTax} de otros impuestos ignoradas.`;
-      setNotice(msg);
+      setNotice({
+        tone: d.outOfPeriod?.length || d.ignoredOtherTax ? 'warning' : 'success',
+        message: msg,
+      });
       await loadTaxCredits();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de retenciones/percepciones.');
@@ -427,7 +438,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)}.`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.unsupportedFiles?.length) msg += ` Régimen aún sin soporte: ${d.unsupportedFiles.join(', ')}.`;
-      setNotice(msg);
+      setNotice({
+        tone: d.outOfPeriod?.length || d.unsupportedFiles?.length ? 'warning' : 'success',
+        message: msg,
+      });
       await loadIibbCredits();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de deducciones de ARBA.');
@@ -475,10 +489,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudieron importar los archivos.');
-      let msg = `Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`;
-      // Control de imputación: los comprobantes de otro mes no entran y se avisan acá.
-      if (payload.data.periodWarning) msg += ` ${payload.data.periodWarning}`;
-      setNotice(msg);
+      setNotice(buildFiscalDocumentImportFeedback(payload.data));
       await loadDocuments();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron importar los archivos.');
@@ -514,7 +525,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         throw new Error(payload.error || 'No se pudieron eliminar los comprobantes.');
       }
       setDocuments(previous => previous.filter(document => document.direction !== direction));
-      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${kind} de ${periodLabel}. Ya podés cargar el archivo correcto.`);
+      setNotice({
+        tone: 'success',
+        message: `Se eliminaron ${payload.data.deleted} comprobantes de ${kind} de ${periodLabel}. Ya podés cargar el archivo correcto.`,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron eliminar los comprobantes.');
       await loadDocuments();
@@ -646,11 +660,12 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       setSaveResult({ status: payload.data.status, version: payload.data.version });
       // Solo una liquidación CLOSED (cotejada y coincidente) habilita su uso en Ganancias anual.
       const closed = payload.data.status === 'CLOSED';
-      setNotice(
-        closed
+      setNotice({
+        tone: closed ? 'success' : 'warning',
+        message: closed
           ? `Liquidación cotejada y cerrada (versión ${payload.data.version}). Ya disponible para la liquidación anual de Ganancias.`
           : `Liquidación guardada como ${humanStatus(payload.data.status)} (versión ${payload.data.version}). Todavía NO alimenta Ganancias: cotejá los tres importes con AFIP y cerrala para habilitarla.`,
-      );
+      });
       // Refresca el panel de "liquidación guardada" y vuelve al modo lectura.
       setReliquidating(false);
       setSettlement(null);
@@ -689,8 +704,18 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
           </div>
         ) : null}
         {notice ? (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-950/20 px-5 py-4 text-sm text-emerald-200">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><p>{notice}</p>
+          <div
+            role={notice.tone === 'warning' ? 'alert' : 'status'}
+            className={`flex items-start gap-3 rounded-xl border px-5 py-4 text-sm ${
+              notice.tone === 'warning'
+                ? 'border-amber-500/30 bg-amber-950/20 text-amber-200'
+                : 'border-emerald-500/25 bg-emerald-950/20 text-emerald-200'
+            }`}
+          >
+            {notice.tone === 'warning'
+              ? <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />}
+            <p>{notice.message}</p>
           </div>
         ) : null}
 

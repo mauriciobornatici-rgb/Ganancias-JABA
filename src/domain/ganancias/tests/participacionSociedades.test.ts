@@ -3,7 +3,10 @@ import { Decimal } from 'decimal.js';
 import {
   calculateSocietyParticipations,
   computeAttributedResult,
+  isValidArgentineCuit,
+  normalizeArgentineCuit,
   toSocietyParticipationInputs,
+  validateSocietyParticipationInputs,
 } from '../calculations/participacionSociedades';
 
 const D = (v: string) => new Decimal(v);
@@ -26,8 +29,8 @@ describe('computeAttributedResult', () => {
 describe('calculateSocietyParticipations', () => {
   it('calcula el atribuido de cada sociedad y el total', () => {
     const result = calculateSocietyParticipations([
-      { cuit: '30-71234567-8', denomination: 'Sociedad A', participationPercent: D('50'), societyResult: D('1000000') },
-      { cuit: '30-71234567-9', denomination: 'Sociedad B', participationPercent: D('25'), societyResult: D('400000') },
+      { cuit: '30-71234567-1', denomination: 'Sociedad A', participationPercent: D('50'), societyResult: D('1000000') },
+      { cuit: '30-71234568-9', denomination: 'Sociedad B', participationPercent: D('25'), societyResult: D('400000') },
     ]);
 
     expect(result.lines).toHaveLength(2);
@@ -41,11 +44,12 @@ describe('calculateSocietyParticipations', () => {
   it('verificacion cruzada: el importe editado se computa y la diferencia se avisa', () => {
     const result = calculateSocietyParticipations([
       {
-        cuit: '30-71234567-8',
+        cuit: '30-71234567-1',
         denomination: 'Sociedad A',
         participationPercent: D('50'),
         societyResult: D('1000000'),
         attributedResultOverride: D('480000'),
+        overrideReason: 'Ajuste informado por la sociedad',
       },
     ]);
 
@@ -62,7 +66,7 @@ describe('calculateSocietyParticipations', () => {
   it('un override que coincide con el calculado no genera aviso ni marca edicion', () => {
     const result = calculateSocietyParticipations([
       {
-        cuit: '30-71234567-8',
+        cuit: '30-71234567-1',
         denomination: 'Sociedad A',
         participationPercent: D('50'),
         societyResult: D('1000000'),
@@ -87,8 +91,8 @@ describe('calculateSocietyParticipations', () => {
 
   it('avisa CUIT repetido (misma sociedad cargada dos veces)', () => {
     const result = calculateSocietyParticipations([
-      { cuit: '30-71234567-8', denomination: 'Sociedad A', participationPercent: D('50'), societyResult: D('100000') },
-      { cuit: '30-71234567-8', denomination: 'Sociedad A (repetida)', participationPercent: D('50'), societyResult: D('100000') },
+      { cuit: '30-71234567-1', denomination: 'Sociedad A', participationPercent: D('50'), societyResult: D('100000') },
+      { cuit: '30712345671', denomination: 'Sociedad A (repetida)', participationPercent: D('50'), societyResult: D('100000') },
     ]);
     expect(result.warnings.some(w => w.includes('aparece en más de una fila'))).toBe(true);
     expect(result.totalAttributedResult.toFixed(2)).toBe('100000.00');
@@ -106,7 +110,7 @@ describe('toSocietyParticipationInputs', () => {
   it('convierte filas de pantalla con vacios y coma decimal', () => {
     const inputs = toSocietyParticipationInputs([
       { cuit: '30-1', denomination: 'A', participationPercent: '33,33', societyResult: '1000,50', attributedResultOverride: '' },
-      { cuit: '30-2', denomination: 'B', participationPercent: '', societyResult: '', attributedResultOverride: '250' },
+      { cuit: '30-2', denomination: 'B', participationPercent: '', societyResult: '', attributedResultOverride: '250', overrideReason: 'Ajuste manual' },
     ]);
 
     expect(inputs[0].participationPercent.toFixed(2)).toBe('33.33');
@@ -126,5 +130,49 @@ describe('toSocietyParticipationInputs', () => {
     const result = calculateSocietyParticipations(inputs);
     expect(result.totalAttributedResult.toFixed(2)).toBe('0.00');
     expect(result.warnings.some(w => w.includes('difiere'))).toBe(true);
+  });
+});
+
+describe('validacion de participaciones', () => {
+  it('normaliza y valida el CUIT argentino', () => {
+    expect(normalizeArgentineCuit('30712345671')).toBe('30-71234567-1');
+    expect(isValidArgentineCuit('30-71234567-1')).toBe(true);
+    expect(isValidArgentineCuit('30-71234567-8')).toBe(false);
+  });
+
+  it('exige identidad, porcentaje valido, unicidad y motivo de override', () => {
+    const issues = validateSocietyParticipationInputs([
+      {
+        cuit: '30-71234567-1',
+        denomination: 'Sociedad A',
+        participationPercent: D('50'),
+        societyResult: D('1000'),
+        attributedResultOverride: D('400'),
+      },
+      {
+        cuit: '30712345671',
+        denomination: '',
+        participationPercent: D('150'),
+        societyResult: D('1000'),
+      },
+    ]);
+
+    expect(issues.some(issue => issue.field === 'overrideReason')).toBe(true);
+    expect(issues.some(issue => issue.field === 'cuit' && issue.message.includes('fila 1'))).toBe(true);
+    expect(issues.some(issue => issue.field === 'denomination')).toBe(true);
+    expect(issues.some(issue => issue.field === 'participationPercent')).toBe(true);
+  });
+
+  it('acepta un override diferente cuando tiene justificacion', () => {
+    const issues = validateSocietyParticipationInputs([{
+      cuit: '30-71234567-1',
+      denomination: 'Sociedad A',
+      participationPercent: D('50'),
+      societyResult: D('1000'),
+      attributedResultOverride: D('400'),
+      overrideReason: 'La sociedad informo un ajuste de cierre',
+    }]);
+
+    expect(issues).toEqual([]);
   });
 });

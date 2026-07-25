@@ -751,6 +751,7 @@ export type WizardSocietyParticipation = WizardEditableRecord & {
   participationPercent?: WizardMoneyValue;
   societyResult?: WizardMoneyValue;
   attributedResultOverride?: WizardMoneyValue;
+  overrideReason?: string;
 };
 
 export function buildDefaultWizardSocietyParticipation(): WizardSocietyParticipation {
@@ -761,6 +762,7 @@ export function buildDefaultWizardSocietyParticipation(): WizardSocietyParticipa
     participationPercent: '0',
     societyResult: '0',
     attributedResultOverride: '',
+    overrideReason: '',
   };
 }
 

@@ -30,6 +30,8 @@ export type SocietyParticipationLineResult = {
   isOverridden: boolean;
   /** attributedResult - calculatedResult (0 si no hay override). */
   difference: Decimal;
+  /** Justificación profesional del reemplazo manual. */
+  overrideReason: string;
 };
 
 export type SocietyParticipationResult = {
@@ -52,6 +54,13 @@ export type RawSocietyParticipationRow = {
   participationPercent?: string | number | null;
   societyResult?: string | number | null;
   attributedResultOverride?: string | number | null;
+  overrideReason?: string | null;
+};
+
+export type SocietyParticipationValidationIssue = {
+  index: number;
+  field: 'cuit' | 'denomination' | 'participationPercent' | 'overrideReason';
+  message: string;
 };
 
 function rawDecimal(value: string | number | null | undefined): Decimal {
@@ -78,7 +87,88 @@ export function toSocietyParticipationInputs(rows: RawSocietyParticipationRow[])
     participationPercent: rawDecimal(row.participationPercent),
     societyResult: rawDecimal(row.societyResult),
     attributedResultOverride: rawOptionalDecimal(row.attributedResultOverride),
+    overrideReason: row.overrideReason?.trim() ?? '',
   }));
+}
+
+export function normalizeArgentineCuit(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 11) return value.trim();
+  return `${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`;
+}
+
+export function isValidArgentineCuit(value: string): boolean {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length !== 11) return false;
+
+  const factors = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];
+  const sum = factors.reduce((total, factor, index) => total + Number(digits[index]) * factor, 0);
+  let verifier = 11 - (sum % 11);
+  if (verifier === 11) verifier = 0;
+  if (verifier === 10) verifier = 9;
+  return verifier === Number(digits[10]);
+}
+
+/**
+ * Reglas que deben cumplirse antes de cerrar la DDJJ. En borrador se informan como advertencias
+ * para no impedir el autoguardado de una fila que el usuario todavía está completando.
+ */
+export function validateSocietyParticipationInputs(
+  participations: SocietyParticipationInput[],
+): SocietyParticipationValidationIssue[] {
+  const issues: SocietyParticipationValidationIssue[] = [];
+  const firstIndexByCuit = new Map<string, number>();
+
+  participations.forEach((participation, index) => {
+    const normalizedCuit = participation.cuit.replace(/\D/g, '');
+    const percent = new Decimal(participation.participationPercent || 0);
+    const societyResult = new Decimal(participation.societyResult || 0);
+    const calculated = computeAttributedResult(societyResult, percent);
+    const override = participation.attributedResultOverride;
+    const hasDifferentOverride = override !== undefined
+      && override !== null
+      && !money(new Decimal(override)).eq(calculated);
+
+    if (!isValidArgentineCuit(participation.cuit)) {
+      issues.push({
+        index,
+        field: 'cuit',
+        message: `Fila ${index + 1}: el CUIT de la sociedad es obligatorio y debe tener un dígito verificador válido.`,
+      });
+    } else if (firstIndexByCuit.has(normalizedCuit)) {
+      issues.push({
+        index,
+        field: 'cuit',
+        message: `Fila ${index + 1}: el CUIT ${normalizeArgentineCuit(participation.cuit)} ya fue cargado en la fila ${(firstIndexByCuit.get(normalizedCuit) ?? 0) + 1}.`,
+      });
+    } else {
+      firstIndexByCuit.set(normalizedCuit, index);
+    }
+
+    if (!participation.denomination.trim()) {
+      issues.push({
+        index,
+        field: 'denomination',
+        message: `Fila ${index + 1}: la denominación de la sociedad es obligatoria.`,
+      });
+    }
+    if (percent.lte(0) || percent.gt(100)) {
+      issues.push({
+        index,
+        field: 'participationPercent',
+        message: `Fila ${index + 1}: el porcentaje debe ser mayor a 0 y no superar 100.`,
+      });
+    }
+    if (hasDifferentOverride && !participation.overrideReason?.trim()) {
+      issues.push({
+        index,
+        field: 'overrideReason',
+        message: `Fila ${index + 1}: indique el motivo del resultado atribuido manual.`,
+      });
+    }
+  });
+
+  return issues;
 }
 
 /** Resultado atribuido = resultado total de la sociedad × porcentaje de participación. */
@@ -115,6 +205,7 @@ export function calculateSocietyParticipations(
     const overrideValue = hasOverride ? money(new Decimal(participation.attributedResultOverride!)) : null;
     const attributedResult = overrideValue ?? calculatedResult;
     const difference = attributedResult.sub(calculatedResult);
+    const overrideReason = participation.overrideReason?.trim() ?? '';
 
     const label = labelOf(participation);
 
@@ -136,10 +227,22 @@ export function calculateSocietyParticipations(
         `difiere en $${difference.toFixed(2)} del calculado por ${percent.toFixed(2)}% sobre ` +
         `$${societyResult.toFixed(2)} ($${calculatedResult.toFixed(2)}). Se computó el importe cargado.`,
       );
+      if (!overrideReason) {
+        warnings.push(
+          `Participación en ${label}: falta justificar el resultado atribuido cargado a mano. `
+          + 'La DDJJ no podrá cerrarse hasta indicar el motivo.',
+        );
+      }
+    }
+    if (!isValidArgentineCuit(participation.cuit)) {
+      warnings.push(`Participación en ${label}: el CUIT está vacío o tiene un dígito verificador inválido.`);
+    }
+    if (!participation.denomination?.trim()) {
+      warnings.push(`Participación con CUIT ${normalizeArgentineCuit(participation.cuit)}: falta la denominación.`);
     }
 
     lines.push({
-      cuit: participation.cuit?.trim() ?? '',
+      cuit: normalizeArgentineCuit(participation.cuit?.trim() ?? ''),
       denomination: participation.denomination?.trim() ?? '',
       societyType: participation.societyType?.trim() ?? '',
       participationPercent: percent,
@@ -148,6 +251,7 @@ export function calculateSocietyParticipations(
       attributedResult,
       isOverridden: hasOverride && !difference.isZero(),
       difference,
+      overrideReason,
     });
 
     totalAttributedResult = totalAttributedResult.add(attributedResult);
@@ -155,11 +259,11 @@ export function calculateSocietyParticipations(
   });
 
   // CUIT repetido: casi siempre es la misma sociedad cargada dos veces (duplicaría el resultado).
-  const cuits = lines.map(line => line.cuit).filter(cuit => cuit !== '');
+  const cuits = lines.map(line => line.cuit.replace(/\D/g, '')).filter(cuit => cuit !== '');
   const duplicated = [...new Set(cuits.filter((cuit, index) => cuits.indexOf(cuit) !== index))];
   duplicated.forEach(cuit => {
     warnings.push(
-      `Participación en sociedades: el CUIT ${cuit} aparece en más de una fila. ` +
+      `Participación en sociedades: el CUIT ${normalizeArgentineCuit(cuit)} aparece en más de una fila. ` +
       'Si es la misma sociedad, el resultado se está atribuyendo dos veces.',
     );
   });

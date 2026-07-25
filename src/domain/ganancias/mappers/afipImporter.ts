@@ -284,6 +284,7 @@ function parseMisRetenciones(
 ): ImportedDataSummary {
   const withholdings: TaxWithholdingInput[] = [];
   let totalAmount = new Decimal(0);
+  let hasPendingIdcbReconciliation = false;
 
   // Buscar índices de las columnas clave
   const amountIndex = headers.findIndex(h => h.includes('importe') || h.includes('monto ret'));
@@ -320,6 +321,9 @@ function parseMisRetenciones(
         // signo: la anulación netea contra la retención original en lugar de sumar crédito.
         // (Antes se descartaban por completo con isPositive(), y el crédito quedaba inflado.)
         const mappedTaxCode = mapAfipWithholdingTaxCode(rawTaxCode, taxName);
+        if (isAfipIdcbTax(rawTaxCode, taxName)) {
+          hasPendingIdcbReconciliation = true;
+        }
         withholdings.push({
           amount: amountVal,
           taxCode: mappedTaxCode,
@@ -337,6 +341,13 @@ function parseMisRetenciones(
     } catch (err: unknown) {
       errors.push(`Fila ${i + 1}: Error al parsear importe '${row[amountIndex]}': ${errorMessage(err)}`);
     }
+  }
+
+  if (hasPendingIdcbReconciliation) {
+    errors.push(
+      'ARCA 147 / IDCB: se importo como "Otros" y queda pendiente de conciliacion. '
+      + 'Comparelo con el libro mensual bancario antes de reclasificarlo como IDCB para evitar doble computo.',
+    );
   }
 
   return {
@@ -368,14 +379,20 @@ function mapAfipWithholdingTaxCode(
   ) {
     return 'Ganancias';
   }
-  if (
-    code === '147'
-    || normalizedName.includes('debitos y creditos')
-    || normalizedName.includes('creditos y debitos')
-  ) {
-    return 'IDCB';
-  }
+  // El 147 anual y el libro bancario mensual pueden representar el mismo credito. La importacion
+  // anual queda como "Otros" hasta que el contador la concilie y la reclasifique expresamente.
   return 'Otros';
+}
+
+function isAfipIdcbTax(rawTaxCode: string, taxName: string): boolean {
+  const normalizedName = taxName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  return rawTaxCode.trim() === '147'
+    || normalizedName.includes('debitos y creditos')
+    || normalizedName.includes('creditos y debitos');
 }
 
 /**

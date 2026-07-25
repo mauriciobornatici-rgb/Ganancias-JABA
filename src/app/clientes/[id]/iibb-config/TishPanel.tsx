@@ -21,6 +21,7 @@ type TishLine = {
 
 type TishBimesterView = {
   bimester: number;
+  sourceState: 'PRELIMINARY' | 'FINAL';
   months: number[];
   dueDate: string | null;
   taxRate: string;
@@ -52,11 +53,28 @@ type TishSettingView = {
 type TishData = {
   year: number;
   hasSetting: boolean;
+  hasCompleteSetting: boolean;
+  calculationState: 'NOT_APPLICABLE' | 'PROFILE_REQUIRED' | 'CONFIGURATION_REQUIRED' | 'ACTIVITY_REQUIRED' | 'PRELIMINARY' | 'READY';
+  canPreview: boolean;
+  canFinalize: boolean;
+  parameterSource: 'SAVED' | 'REFERENCE_2026' | 'MISSING';
   vatCondition: string | null;
+  profile: { id: string; validFrom: string; validTo: string | null } | null;
+  monthsNotClosed: number[];
+  monthsWithoutSettlement: number[];
   setting: TishSettingView;
   activities: Array<{ jurisdictionCode: string; activityCode: string; activityLabel: string | null; computesTish: boolean; isActive: boolean }>;
   bimesters: TishBimesterView[];
   totalYear: string;
+  savedSettlements: Array<{
+    id: string;
+    bimester: number;
+    version: number;
+    status: string;
+    total: string;
+    sourceFingerprint: string;
+    closedAt: string;
+  }>;
   notices: string[];
 };
 
@@ -68,11 +86,20 @@ const MONTHS_SHORT = ['', 'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago'
 const monthsLabel = (months: number[]) => months.map(m => MONTHS_SHORT[m] ?? m).join('-');
 const pctToInput = (fraction: string) => (Number(fraction) * 100).toString();
 const inputToFraction = (percent: string) => Number(percent.replace(',', '.')) / 100;
+const stateLabel: Record<TishData['calculationState'], string> = {
+  NOT_APPLICABLE: 'No aplicable',
+  PROFILE_REQUIRED: 'Falta perfil fiscal',
+  CONFIGURATION_REQUIRED: 'Falta configuración',
+  ACTIVITY_REQUIRED: 'Falta actividad',
+  PRELIMINARY: 'Preliquidación',
+  READY: 'Fuentes cerradas',
+};
 
 export default function TishPanel({ clientId, year, refreshKey }: { clientId: string; year: number; refreshKey: number }) {
   const [data, setData] = useState<TishData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingBimester, setSavingBimester] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -151,6 +178,33 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
     }
   };
 
+  const closeBimester = async (bimester: number) => {
+    setSavingBimester(bimester);
+    setError(null);
+    setNotice(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/tish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year, bimester }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || 'No se pudo guardar el cierre TISH.');
+      }
+      await load();
+      setNotice(
+        payload.data.deduplicated
+          ? `El ${bimester}º bimestre ya estaba guardado con esas mismas fuentes (versión ${payload.data.version}).`
+          : `TISH del ${bimester}º bimestre cerrada como versión ${payload.data.version}, total $${fmt(payload.data.total)}.`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el cierre TISH.');
+    } finally {
+      setSavingBimester(null);
+    }
+  };
+
   const markedActivities = (data?.activities ?? []).filter(a => a.computesTish && a.isActive);
 
   return (
@@ -168,8 +222,15 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
         </div>
         {data ? (
           <div className="shrink-0 rounded-lg border border-teal-500/25 bg-teal-500/10 px-3 py-2 text-right">
-            <span className="block text-[10px] font-bold uppercase tracking-wider text-teal-400">Total año {data.year}</span>
-            <span className="font-mono text-sm font-bold text-teal-300">${fmt(data.totalYear)}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-teal-400">
+              {data.canPreview ? `Total calculado ${data.year}` : `TISH ${data.year}`}
+            </span>
+            <span className="font-mono text-sm font-bold text-teal-300">
+              {data.canPreview ? `$${fmt(data.totalYear)}` : 'No calculado'}
+            </span>
+            <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-wider text-zinc-400">
+              {stateLabel[data.calculationState]}
+            </span>
           </div>
         ) : null}
       </div>
@@ -189,6 +250,12 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p>{item}</p>
         </div>
       ))}
+      {data?.profile ? (
+        <p className="mt-3 text-[10px] text-zinc-500">
+          Perfil fiscal aplicado a {year}: vigente desde {data.profile.validFrom}
+          {data.profile.validTo ? ` hasta ${data.profile.validTo}` : ' sin fecha de fin'}.
+        </p>
+      ) : null}
 
       {/* Configuración manual del año */}
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -267,7 +334,10 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
       {/* Liquidación por bimestre, con la estructura del formulario de Régimen General */}
       <div className="mt-6">
         <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-          Liquidación bimestral {year} <span className="font-normal normal-case tracking-normal text-zinc-600">— clic en una cuota para ver el detalle por actividad de la DDJJ</span>
+          {data?.calculationState === 'READY' ? 'Liquidación' : 'Preliquidación'} bimestral {year}
+          <span className="font-normal normal-case tracking-normal text-zinc-600">
+            {' '}— un bimestre es definitivo solo cuando sus dos liquidaciones de IIBB están cerradas
+          </span>
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -276,6 +346,7 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
                 <th className="px-2 py-1.5">Cuota</th>
                 <th className="px-2 py-1.5">Meses</th>
                 <th className="px-2 py-1.5">Vence</th>
+                <th className="px-2 py-1.5">Estado fuente</th>
                 <th className="px-2 py-1.5 text-right">Base imponible</th>
                 <th className="px-2 py-1.5 text-right">Tasa</th>
                 <th className="px-2 py-1.5 text-right">Subtotal</th>
@@ -283,22 +354,43 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
                 <th className="px-2 py-1.5 text-right">Bomberos</th>
                 <th className="px-2 py-1.5 text-right">Residuos</th>
                 <th className="px-2 py-1.5 text-right">Total a abonar</th>
+                <th className="px-2 py-1.5 text-right">Cierre TISH</th>
               </tr>
             </thead>
             <tbody>
               {(data?.bimesters ?? []).map(bimester => {
                 const base = bimester.lines.reduce((sum, line) => sum + Number(line.taxableBase), 0);
                 const isOpen = openBimester === bimester.bimester;
+                const history = (data?.savedSettlements ?? [])
+                  .filter(saved => saved.bimester === bimester.bimester);
+                const latestSaved = history[0];
                 return (
                   <Fragment key={bimester.bimester}>
                   <tr
-                    className="cursor-pointer border-t border-zinc-900 hover:bg-zinc-800/20"
-                    onClick={() => setOpenBimester(isOpen ? null : bimester.bimester)}
-                    title="Ver el detalle por actividad para completar la DDJJ"
+                    className="border-t border-zinc-900 hover:bg-zinc-800/20"
                   >
-                    <td className="px-2 py-1.5 font-bold text-zinc-200">{bimester.bimester}º</td>
+                    <td className="px-2 py-1.5 font-bold text-zinc-200">
+                      <button
+                        type="button"
+                        onClick={() => setOpenBimester(isOpen ? null : bimester.bimester)}
+                        aria-expanded={isOpen}
+                        title="Ver el detalle por actividad para completar la DDJJ"
+                        className="rounded px-1 py-0.5 hover:bg-zinc-800 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                      >
+                        {bimester.bimester}º
+                      </button>
+                    </td>
                     <td className="px-2 py-1.5 text-zinc-400">{monthsLabel(bimester.months)}</td>
                     <td className="px-2 py-1.5 font-mono text-zinc-400">{bimester.dueDate ?? '—'}</td>
+                    <td className="px-2 py-1.5">
+                      <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${
+                        bimester.sourceState === 'FINAL'
+                          ? 'bg-emerald-500/10 text-emerald-300'
+                          : 'bg-amber-500/10 text-amber-300'
+                      }`}>
+                        {bimester.sourceState === 'FINAL' ? 'IIBB cerrado' : 'Preliminar'}
+                      </span>
+                    </td>
                     <td className="px-2 py-1.5 text-right font-mono text-zinc-300">{fmt(base)}</td>
                     <td className="px-2 py-1.5 text-right font-mono text-zinc-300">{fmt(bimester.taxBeforeMinimum)}</td>
                     <td className={`px-2 py-1.5 text-right font-mono ${bimester.minimumApplied ? 'text-amber-300' : 'text-zinc-200'}`}>
@@ -308,10 +400,28 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
                     <td className="px-2 py-1.5 text-right font-mono text-zinc-400">{fmt(bimester.firefightersContribution)}</td>
                     <td className="px-2 py-1.5 text-right font-mono text-zinc-400">{fmt(bimester.wasteContribution)}</td>
                     <td className="px-2 py-1.5 text-right font-mono font-bold text-teal-300">{fmt(bimester.total)}</td>
+                    <td className="px-2 py-1.5 text-right">
+                      {latestSaved ? (
+                        <span className="mr-2 whitespace-nowrap text-[10px] text-zinc-400">
+                          v{latestSaved.version} · ${fmt(latestSaved.total)}
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => void closeBimester(bimester.bimester)}
+                        disabled={bimester.sourceState !== 'FINAL' || savingBimester !== null}
+                        title={bimester.sourceState === 'FINAL'
+                          ? 'Guarda una versión trazable con las fuentes IIBB cerradas'
+                          : 'Cierre primero los dos meses de IIBB del bimestre'}
+                        className="rounded border border-teal-500/30 px-2 py-1 text-[9px] font-bold uppercase text-teal-300 hover:bg-teal-500/10 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-600"
+                      >
+                        {savingBimester === bimester.bimester ? 'Guardando…' : 'Guardar cierre'}
+                      </button>
+                    </td>
                   </tr>
                   {isOpen ? (
                     <tr className="border-t border-zinc-900 bg-zinc-950/60">
-                      <td colSpan={10} className="px-3 py-3">
+                      <td colSpan={12} className="px-3 py-3">
                         <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                           Detalle para la DDJJ del {bimester.bimester}º bimestre (monto imponible por actividad)
                         </p>
@@ -363,8 +473,14 @@ export default function TishPanel({ clientId, year, refreshKey }: { clientId: st
                   </Fragment>
                 );
               })}
-              {!data && (
-                <tr><td colSpan={10} className="px-2 py-6 text-center text-[11px] text-zinc-400">{isLoading ? 'Cargando…' : 'Sin datos.'}</td></tr>
+              {(!data || data.bimesters.length === 0) && (
+                <tr>
+                  <td colSpan={12} className="px-2 py-6 text-center text-[11px] text-zinc-400">
+                    {isLoading
+                      ? 'Cargando…'
+                      : 'Sin bimestres calculables. Complete el perfil, la configuración TISH, la actividad y las liquidaciones mensuales indicadas arriba.'}
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

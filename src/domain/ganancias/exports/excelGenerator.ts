@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { Decimal } from 'decimal.js';
 import { TaxCalculationResult } from '../types';
-import { buildPaymentsOnAccountBreakdown } from '../presentation/paymentsOnAccountBreakdown';
+import { buildTaxBalanceCreditBreakdown } from '../presentation/paymentsOnAccountBreakdown';
 
 interface ExportFixedAsset {
   name?: string;
@@ -44,9 +44,7 @@ export function downloadTaxReturnExcel(
 
   // Mismos importes que el papel de trabajo en pantalla: el desglose de pagos a cuenta y los
   // quebrantos aplicados salen del motor, para que la planilla exportada cierre igual.
-  const pagosACuenta = buildPaymentsOnAccountBreakdown(
-    calculationResult ? (calculationResult as TaxCalculationResult) : null,
-  );
+  const taxBalanceCredits = buildTaxBalanceCreditBreakdown(calculationResult);
   const quebrantosAplicados = Math.max(
     0,
     Math.max(0, toNumber(calculationResult?.resultadoNetoAntesQuebrantos))
@@ -102,10 +100,8 @@ export function downloadTaxReturnExcel(
     ['3. DETERMINACIÓN DEL IMPUESTO Y SALDO FINAL', ''],
     ['BASE IMPONIBLE (Ganancia Neta Sujeta a Impuesto)', toNumber(calculationResult?.gananciaNetaSujetaImpuesto)],
     ['Impuesto Determinado AFIP (Artículo 94)', toNumber(calculationResult?.impuestoDeterminado)],
-    ['(-) Retenciones y Percepciones Computables', -Math.abs(toNumber(calculationResult?.retencionesYPercepciones))],
-    // Pagos a cuenta del IG 25 F62:F66 (impuesto al cheque, anticipos, combustibles).
-    ...pagosACuenta.map(item => [`(-) ${item.label} (${item.reference})`, -Math.abs(toNumber(item.amount))] as (string | number)[]),
-    ['(-) Saldo a Favor del Período Anterior', -Math.abs(toNumber(calculationResult?.saldoAFavorAnterior))],
+    // Fuente compartida F61:F67: mantiene la misma ecuacion en papel, informe y Excel.
+    ...taxBalanceCredits.map(item => [`(-) ${item.label} (${item.reference})`, -Math.abs(toNumber(item.amount))] as (string | number)[]),
     ['SALDO DETERMINADO A PAGAR / (A FAVOR)', toNumber(calculationResult?.impuestoAPagarOARCA)],
     ['Impuesto al cheque trasladable no computado (F70)', toNumber(calculationResult?.saldoTrasladableIdcb)],
     ['', ''],

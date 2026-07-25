@@ -11,7 +11,7 @@
     "build:turbopack": "next build",
     "start": "node scripts/run-test-db-command.mjs start",
     "lint": "eslint",
-    "test": "vitest run",
+    "test": "vitest run --exclude \".claude/**\"",
     "test:integration": "node scripts/run-test-db-command.mjs validate-integration",
     "typecheck": "tsc --noEmit",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",

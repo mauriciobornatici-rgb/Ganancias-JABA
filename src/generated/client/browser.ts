@@ -151,15 +151,21 @@ export type GrossIncomeJurisdictionLine = Prisma.GrossIncomeJurisdictionLineMode
  * Model TishSetting
  * *
  *  * Tasa por Inspección de Seguridad e Higiene (TISH) - punto 2 del PDF (2026-07-24).
- *  *
  *  * Alcance decidido con el usuario: solo RÉGIMEN GENERAL (responsable inscripto). La alícuota y la
  *  * categoría L/M/N son MANUALES por cliente y por año (la ordenanza 2026 está escaneada y el art. 23
  *  * con las alícuotas no es legible). Los importes de la ordenanza se guardan como parámetros
  *  * editables del año y por cliente, porque cada contribuyente puede estar en otro municipio.
- *  *
  *  * Los valores por defecto son los de la ordenanza 2026 de ARBAL (instructivo TISH 2026).
  */
 export type TishSetting = Prisma.TishSettingModel
+/**
+ * Model TishSettlement
+ * *
+ *  * Liquidación TISH cerrada y versionada por bimestre.
+ *  * Los snapshots conservan las versiones de IIBB, el perfil, la configuración y el resultado usados
+ *  * en cada cierre. Una nueva fuente genera una versión nueva; nunca se sobreescribe la anterior.
+ */
+export type TishSettlement = Prisma.TishSettlementModel
 /**
  * Model ConventionCoefficientVersion
  * 

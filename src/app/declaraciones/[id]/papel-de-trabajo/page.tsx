@@ -22,6 +22,7 @@ import { calculateTaxReturn } from '@/domain/ganancias/calculations/determinacio
 import { calculateClosingCommercialPatrimony } from '@/domain/ganancias/calculations/patrimonioComercial';
 import { buildTaxReturnCalculationInput } from '@/domain/ganancias/mappers/calculationInputMapper';
 import { buildGeneralDeductionsBreakdown } from '@/domain/ganancias/presentation/deductionsBreakdown';
+import { buildPaymentsOnAccountBreakdown } from '@/domain/ganancias/presentation/paymentsOnAccountBreakdown';
 import {
   buildFixedAssetDepreciationForPresentation,
   isWizardFixedAssetRetired,
@@ -247,6 +248,13 @@ export default function PapelDeTrabajoPage() {
   const comprasCmv = React.useMemo(() => sumDeductibleCostPurchases(data?.purchases || []), [data]);
 
   const resultadoComercialNeto = calculationResult ? calculationResult.resultadoComercialNeto : new Decimal(0);
+  // Punto 3 (2026-07-24): el resultado atribuido de sociedades suma al neto de todas las categorías.
+  const participacionSociedades = calculationResult ? calculationResult.resultadoParticipacionSociedades : new Decimal(0);
+  const resultadoNetoTodasCategorias = calculationResult ? calculationResult.resultadoNetoTodasCategorias : new Decimal(0);
+  // Quebrantos efectivamente aplicados: sin esta línea la resta del Apartado III no cierra.
+  const quebrantosAplicados = calculationResult
+    ? Decimal.max(calculationResult.resultadoNetoAntesQuebrantos, 0).minus(calculationResult.resultadoImpositivoNeto)
+    : new Decimal(0);
 
   const mni = calculationResult ? calculationResult.deduccionesPersonales.minimoNoImponible : new Decimal(0);
   const deduccionEspecial = calculationResult ? calculationResult.deduccionesPersonales.deduccionEspecial.plus(calculationResult.deduccionesPersonales.deduccionEspecialDoceavaParte || 0) : new Decimal(0);
@@ -272,6 +280,8 @@ export default function PapelDeTrabajoPage() {
   }, [taxParams, baseImponible]);
 
   const retenciones = calculationResult ? calculationResult.retencionesYPercepciones : new Decimal(0);
+  const pagosACuentaBreakdown = buildPaymentsOnAccountBreakdown(calculationResult);
+  const saldoTrasladableIdcb = calculationResult ? calculationResult.saldoTrasladableIdcb : new Decimal(0);
   const saldoAFavorAnterior = calculationResult ? calculationResult.saldoAFavorAnterior : new Decimal(0);
   const saldoFinal = calculationResult ? calculationResult.impuestoAPagarOARCA : new Decimal(0);
 
@@ -518,6 +528,21 @@ export default function PapelDeTrabajoPage() {
                   <span className="font-sans">Resultado de la Categoría Comercial</span>
                   <span>${resultadoComercialNeto.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
+                {!participacionSociedades.isZero() && (
+                  <>
+                    <div onClick={() => router.push(`/declaraciones/${id}/wizard?step=2`)} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black cursor-pointer hover:bg-zinc-800/20 hover:text-teal-300 transition-all px-2 rounded">
+                      <span className="text-zinc-450 print:text-black font-semibold">(+/-) Resultado Atribuido por Participación en Sociedades</span>
+                      <span className={participacionSociedades.isNegative() ? 'text-red-400 print:text-black' : 'text-emerald-450 print:text-black'}>
+                        {participacionSociedades.isPositive() ? '+' : ''}
+                        {formatMoney(participacionSociedades)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between py-2 border-t border-zinc-800 font-bold text-white print:text-black print:border-black text-sm">
+                      <span className="font-sans">Resultado Neto de Todas las Categorías</span>
+                      <span>${resultadoNetoTodasCategorias.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </section>
 
@@ -568,14 +593,24 @@ export default function PapelDeTrabajoPage() {
               </h3>
 
               <div className="space-y-2 text-xs font-mono">
+                {/* Arranca del neto de TODAS las categorías (comercial + sociedades atribuidas):
+                    si no, con participaciones cargadas la resta de abajo no cierra con la base. */}
                 <div className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black">
-                  <span className="text-zinc-400 print:text-black">Ganancia Neta Comercial</span>
-                  <span className="text-zinc-200 print:text-black">${resultadoComercialNeto.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  <span className="text-zinc-400 print:text-black">
+                    {participacionSociedades.isZero() ? 'Ganancia Neta Comercial' : 'Ganancia Neta de Todas las Categorías'}
+                  </span>
+                  <span className="text-zinc-200 print:text-black">${resultadoNetoTodasCategorias.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black">
                   <span className="text-zinc-450 print:text-black">(-) Total Erogaciones y Deducciones Computadas</span>
                   <span className="text-red-400 print:text-black">-${totalDeducciones.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
+                {quebrantosAplicados.gt(0) && (
+                  <div className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black">
+                    <span className="text-zinc-450 print:text-black">(-) Quebrantos de Ejercicios Anteriores Aplicados</span>
+                    <span className="text-red-400 print:text-black">-${quebrantosAplicados.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
                 <div className="flex justify-between py-2 border-t border-zinc-800 font-bold text-white print:text-black print:border-black text-sm">
                   <span className="font-sans text-teal-400 print:text-black">Base Imponible (Ganancia Neta Sujeta a Impuesto)</span>
                   <span className="text-teal-400 print:text-black">${baseImponible.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
@@ -612,10 +647,27 @@ export default function PapelDeTrabajoPage() {
                   <span className="text-zinc-450 print:text-black font-semibold">(-) Retenciones y Percepciones Computables</span>
                   <span className="text-emerald-400 print:text-black">-${retenciones.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
+                {/* Pagos a cuenta del IG 25 F62:F66. Sin estas líneas, la resta de abajo no cierra
+                    con el saldo determinado cuando hay impuesto al cheque, anticipos o combustibles. */}
+                {pagosACuentaBreakdown.map(({ label, reference, amount }) => (
+                  <div key={reference} onClick={() => router.push(`/declaraciones/${id}/wizard?step=5`)} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black cursor-pointer hover:bg-zinc-800/20 hover:text-teal-300 transition-all px-2 rounded">
+                    <span className="text-zinc-450 print:text-black font-semibold">
+                      (-) {label} <span className="text-zinc-600 print:text-black">({reference})</span>
+                    </span>
+                    <span className="text-emerald-400 print:text-black">-${amount.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                ))}
                 <div onClick={() => router.push(`/declaraciones/${id}/wizard?step=5`)} className="flex justify-between py-1 border-b border-zinc-850/30 print:border-black cursor-pointer hover:bg-zinc-800/20 hover:text-teal-300 transition-all px-2 rounded">
                   <span className="text-zinc-450 print:text-black font-semibold">(-) Saldo a Favor del Período Anterior</span>
                   <span className="text-emerald-400 print:text-black">-${saldoAFavorAnterior.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
                 </div>
+                {saldoTrasladableIdcb.gt(0) && (
+                  <p className="px-2 pt-1 text-[10px] leading-4 text-amber-300 print:text-black">
+                    Impuesto al cheque no computado por exceder el impuesto determinado: $
+                    {saldoTrasladableIdcb.toNumber().toLocaleString('es-AR', { minimumFractionDigits: 2 })} (IG 25 F70).
+                    No es saldo de libre disponibilidad: queda trasladable como IDCB.
+                  </p>
+                )}
                 <div className="flex justify-between py-2.5 border-t border-zinc-800 font-black text-white print:text-black print:border-black text-sm bg-zinc-900/20 px-3 rounded">
                   <span className="font-sans">Saldo Determinado (Saldo a Pagar al Fisco / A Favor)</span>
                   <span className={saldoFinal.isNegative() ? 'text-emerald-400' : 'text-white print:text-black'}>

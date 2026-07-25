@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { Decimal } from 'decimal.js';
 import { TaxCalculationResult } from '../types';
+import { buildPaymentsOnAccountBreakdown } from '../presentation/paymentsOnAccountBreakdown';
 
 interface ExportFixedAsset {
   name?: string;
@@ -41,6 +42,17 @@ export function downloadTaxReturnExcel(
 
   const wb = XLSX.utils.book_new();
 
+  // Mismos importes que el papel de trabajo en pantalla: el desglose de pagos a cuenta y los
+  // quebrantos aplicados salen del motor, para que la planilla exportada cierre igual.
+  const pagosACuenta = buildPaymentsOnAccountBreakdown(
+    calculationResult ? (calculationResult as TaxCalculationResult) : null,
+  );
+  const quebrantosAplicados = Math.max(
+    0,
+    Math.max(0, toNumber(calculationResult?.resultadoNetoAntesQuebrantos))
+      - toNumber(calculationResult?.resultadoImpositivoNeto),
+  );
+
   // ==========================================
   // SHEET 1: DETERMINACIÓN GENERAL
   // ==========================================
@@ -64,29 +76,38 @@ export function downloadTaxReturnExcel(
     ['(-) Amortizaciones de Bienes de Uso', -Math.abs(toNumber(calculationResult?.amortizacionesBienesDeUso))],
     ['(+/-) Ajuste por Inflación Impositivo (AXI)', toNumber(calculationResult?.resultadoAjustePorInflacion)],
     ['RESULTADO NETO COMERCIAL', toNumber(calculationResult?.resultadoComercialNeto)],
+    // Punto 3 (2026-07-24): el resultado atribuido de sociedades suma al neto de la categoría.
+    ['(+/-) Resultado Atribuido por Participación en Sociedades', toNumber(calculationResult?.resultadoParticipacionSociedades)],
+    ['RESULTADO NETO DE TODAS LAS CATEGORÍAS', toNumber(calculationResult?.resultadoNetoTodasCategorias)],
     ['', ''],
     ['2. DEDUCCIONES COMPUTADAS (ART. 30 Y GENERALES)', ''],
     ['Mínimo No Imponible (MNI)', -Math.abs(toNumber(calculationResult?.deduccionesPersonales?.minimoNoImponible))],
-    ['Deducción Especial (Art. 30 Inc. C)', -Math.abs(toNumber(calculationResult?.deduccionesPersonales?.deduccionEspecial))],
-    ['Cargas de Familia (Cónyuge/Hijos)', -Math.abs(
-      toNumber(calculationResult?.deduccionesPersonales?.conyuge || 0) + 
-      toNumber(calculationResult?.deduccionesPersonales?.hijos || 0)
-    )],
-    ['Deducciones Generales Admitidas', -Math.abs(toNumber(calculationResult?.deduccionesGenerales?.totalDeduccionesGeneralesAdmitidas))],
-    ['TOTAL EROGACIONES Y DEDUCCIONES COMPUTADAS', -Math.abs(
-      toNumber(calculationResult?.deduccionesPersonales?.minimoNoImponible || 0) +
+    ['Deducción Especial (Art. 30 Inc. C, con doceava parte)', -Math.abs(
       toNumber(calculationResult?.deduccionesPersonales?.deduccionEspecial || 0) +
+      toNumber(calculationResult?.deduccionesPersonales?.deduccionEspecialDoceavaParte || 0)
+    )],
+    ['Cargas de Familia (Cónyuge/Hijos)', -Math.abs(
       toNumber(calculationResult?.deduccionesPersonales?.conyuge || 0) +
       toNumber(calculationResult?.deduccionesPersonales?.hijos || 0) +
+      toNumber(calculationResult?.deduccionesPersonales?.hijosIncapacitados || 0)
+    )],
+    ['Deducciones Generales Admitidas', -Math.abs(toNumber(calculationResult?.deduccionesGenerales?.totalDeduccionesGeneralesAdmitidas))],
+    // Totales tomados del motor (no recalculados a mano): si no, el papel exportado no cierra.
+    ['TOTAL EROGACIONES Y DEDUCCIONES COMPUTADAS', -Math.abs(
+      toNumber(calculationResult?.deduccionesPersonales?.totalDeduccionesPersonalesAdmitidas || 0) +
       toNumber(calculationResult?.deduccionesGenerales?.totalDeduccionesGeneralesAdmitidas || 0)
     )],
+    ['(-) Quebrantos de Ejercicios Anteriores Aplicados', -Math.abs(quebrantosAplicados)],
     ['', ''],
     ['3. DETERMINACIÓN DEL IMPUESTO Y SALDO FINAL', ''],
     ['BASE IMPONIBLE (Ganancia Neta Sujeta a Impuesto)', toNumber(calculationResult?.gananciaNetaSujetaImpuesto)],
     ['Impuesto Determinado AFIP (Artículo 94)', toNumber(calculationResult?.impuestoDeterminado)],
     ['(-) Retenciones y Percepciones Computables', -Math.abs(toNumber(calculationResult?.retencionesYPercepciones))],
-    ['(-) Anticipos Impositivos Abonados', 0],
+    // Pagos a cuenta del IG 25 F62:F66 (impuesto al cheque, anticipos, combustibles).
+    ...pagosACuenta.map(item => [`(-) ${item.label} (${item.reference})`, -Math.abs(toNumber(item.amount))] as (string | number)[]),
+    ['(-) Saldo a Favor del Período Anterior', -Math.abs(toNumber(calculationResult?.saldoAFavorAnterior))],
     ['SALDO DETERMINADO A PAGAR / (A FAVOR)', toNumber(calculationResult?.impuestoAPagarOARCA)],
+    ['Impuesto al cheque trasladable no computado (F70)', toNumber(calculationResult?.saldoTrasladableIdcb)],
     ['', ''],
     ['4. PROYECCIÓN DE ANTICIPOS (EJERCICIO SIGUIENTE)', '']
   ];

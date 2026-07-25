@@ -40,6 +40,16 @@ Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae 
 
 Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
 
+### 2026-07-25 - El papel de trabajo y el Excel exportado vuelven a cerrar con el motor
+
+- Hallazgo al completar los módulos nuevos: el papel de trabajo tenía **dos restas que no cerraban** con la determinación, y una es anterior a este tramo.
+  - Apartado III arrancaba de `resultadoComercialNeto` y restaba deducciones para llegar a la base imponible: con participación en sociedades cargada, la cuenta impresa no daba. Ahora arranca del **neto de todas las categorías** (con participaciones en cero el texto sigue diciendo "Ganancia Neta Comercial", así que el caso simple no cambia) y expone los **quebrantos aplicados**, que faltaban desde antes.
+  - Apartado IV restaba sólo retenciones y saldo a favor: los pagos a cuenta F62:F66 (impuesto al cheque, anticipos en efectivo, Mis Facilidades, combustibles) existían en el motor desde P29 pero no se imprimían, así que el saldo determinado no coincidía con la resta de arriba. Se desglosan con su referencia de la planilla, y el excedente de IDCB no computable se aclara como trasladable (F70), no como saldo de libre disponibilidad.
+- Apartado I suma la línea "(+/-) Resultado Atribuido por Participación en Sociedades" y el subtotal de todas las categorías, sólo cuando hay participaciones.
+- Helper puro nuevo `presentation/paymentsOnAccountBreakdown.ts`: arma el desglose (descontando del IDCB el excedente trasladable y sin informar computables negativos) y lo usan tanto la pantalla como la exportación, para que no vuelvan a divergir. 6 tests.
+- La exportación Excel tenía además tres errores propios: los anticipos abonados salían hardcodeados en 0, las cargas de familia no sumaban hijos incapacitados y la deducción especial omitía la doceava parte; el total de erogaciones se recalculaba a mano en la planilla en vez de tomarse del motor. Corregido y alineado con la pantalla.
+- Verificado: 501 tests unitarios, typecheck, lint y build en verde.
+
 ### 2026-07-24 - Camino habilitado para migrar producción (`npm run db:prod:migrate`)
 
 - Hallazgo al preparar el pase a producción de los 6 puntos: el Paso 2 del checklist de pre-merge y el paso 4 de `FLUJO_SEGURO_DEPLOY.md` decían `npx prisma migrate deploy` contra Hostinger, pero el endurecimiento del 2026-07-20 (`scripts/prismaDatabaseSafety.ts`) aborta **cualquier** comando Prisma local cuya base sea la productiva. La doc quedó desactualizada y no había camino habilitado para migrar producción: el riesgo real era terminar aplicando el SQL a mano.

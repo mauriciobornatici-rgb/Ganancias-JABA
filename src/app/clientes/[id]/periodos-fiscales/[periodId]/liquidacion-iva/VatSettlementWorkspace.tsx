@@ -55,10 +55,16 @@ type TaxCreditRow = {
   notes?: string | null;
 };
 
-// Deducciones ARBA: el régimen viaja en notes ("Deducción bancaria ARBA (SIRCREB)..." / "Retención tarjetas ARBA").
+// Deducciones ARBA: B/T se distinguen por notes; P conserva además kind=PERCEPTION.
 const isArbaBankRow = (r: TaxCreditRow) => (r.notes ?? '').includes('bancaria');
-const arbaRowKindLabel = (r: TaxCreditRow) =>
-  (isArbaBankRow(r) ? 'Bancaria' : (r.notes ?? '').includes('tarjetas') ? 'Tarjetas' : 'Retención');
+const isArbaCardRow = (r: TaxCreditRow) => (r.notes ?? '').includes('tarjetas');
+const isArbaPerceptionRow = (r: TaxCreditRow) => r.kind === 'PERCEPTION';
+const arbaRowKindLabel = (r: TaxCreditRow) => {
+  if (isArbaBankRow(r)) return 'Bancaria';
+  if (isArbaCardRow(r)) return 'Tarjetas';
+  if (isArbaPerceptionRow(r)) return 'Percepción';
+  return 'Retención';
+};
 
 type GrossIncomeView = {
   regime: string;
@@ -126,7 +132,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [uploadingCredits, setUploadingCredits] = useState(false);
   const creditsFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Deducciones de IIBB (ARBA: bancarias SIRCREB y tarjetas)
+  // Deducciones de IIBB (ARBA: bancarias SIRCREB, tarjetas y percepciones)
   const [iibbCredits, setIibbCredits] = useState<TaxCreditRow[]>([]);
   const [uploadingIibbCredits, setUploadingIibbCredits] = useState(false);
   const iibbCreditsFileInputRef = useRef<HTMLInputElement>(null);
@@ -417,7 +423,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     [iibbCredits],
   );
   const includedIibbCards = useMemo(
-    () => iibbCredits.filter(c => c.includedInSettlement && !isArbaBankRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaCardRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+  const includedIibbPerceptions = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaPerceptionRow(c)).reduce((s, c) => s + Number(c.amount), 0),
     [iibbCredits],
   );
 
@@ -435,11 +445,12 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de deducciones de ARBA.');
       const d = payload.data;
-      let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)}.`;
+      let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)} · Percepciones ${fmt(d.totals.perceptions)}.`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.unsupportedFiles?.length) msg += ` Régimen aún sin soporte: ${d.unsupportedFiles.join(', ')}.`;
+      if (d.errors?.length) msg += ` ${d.errors.length} líneas o archivos tuvieron errores de formato y no se importaron.`;
       setNotice({
-        tone: d.outOfPeriod?.length || d.unsupportedFiles?.length ? 'warning' : 'success',
+        tone: d.outOfPeriod?.length || d.unsupportedFiles?.length || d.errors?.length ? 'warning' : 'success',
         message: msg,
       });
       await loadIibbCredits();
@@ -825,14 +836,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
 
         {/* Paso 2c — Deducciones de IIBB (ARBA) */}
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
-          <StepTitle n="2c" icon={<MapPin className="h-4 w-4" />} title="Deducciones de IIBB (ARBA)" subtitle="Subí el ZIP de 'Mis Deducciones' de ARBA tal como se descarga (IB-CUIT-PERIODO.zip) o los TXT que contiene. Las deducciones bancarias (SIRCREB) y de tarjetas se descuentan del saldo a pagar de Ingresos Brutos." />
+          <StepTitle n="2c" icon={<MapPin className="h-4 w-4" />} title="Deducciones de IIBB (ARBA)" subtitle="Subí el ZIP de 'Mis Deducciones' de ARBA tal como se descarga (IB-CUIT-PERIODO.zip) o los TXT que contiene. Las deducciones bancarias (SIRCREB), de tarjetas y las percepciones se descuentan del saldo a pagar de Ingresos Brutos." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <input ref={iibbCreditsFileInputRef} type="file" accept=".zip,.txt,application/zip,text/plain" multiple onChange={e => void uploadIibbCreditsFiles(e.target.files)} className="hidden" id="arba-deducciones-files" />
             <label htmlFor="arba-deducciones-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploadingIibbCredits ? 'cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploadingIibbCredits ? 'Importando…' : 'Subir deducciones ARBA (zip o txt)'}
             </label>
             <span className="text-[11px] text-zinc-400">
-              Bancarias (SIRCREB): <strong className="font-mono text-teal-300">{fmt(includedIibbBank)}</strong> · Tarjetas: <strong className="font-mono text-teal-300">{fmt(includedIibbCards)}</strong>
+              Bancarias (SIRCREB): <strong className="font-mono text-teal-300">{fmt(includedIibbBank)}</strong> · Tarjetas: <strong className="font-mono text-teal-300">{fmt(includedIibbCards)}</strong> · Percepciones: <strong className="font-mono text-teal-300">{fmt(includedIibbPerceptions)}</strong>
             </span>
           </div>
           {iibbCredits.length > 0 ? (

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         clientCuit: period.client?.cuit,
         clientName: period.client?.name,
         fiscalYear: period.year,
-        details: `Importación deducciones ARBA IIBB ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevas, ${persisted.duplicates} duplicadas, ${parsed.outOfPeriod.length} fuera de período. Bancarias ${parsed.totals.bank}, tarjetas ${parsed.totals.cards}.`,
+        details: `Importación deducciones ARBA IIBB ${String(period.month).padStart(2, '0')}/${period.year}: ${persisted.inserted} nuevas, ${persisted.duplicates} duplicadas, ${parsed.outOfPeriod.length} fuera de período, ${errors.length} errores de formato. Bancarias ${parsed.totals.bank}, tarjetas ${parsed.totals.cards}, percepciones ${parsed.totals.perceptions}.`,
       } });
       return persisted;
     }, { timeout: 60000, maxWait: 10000 }); // importaciones sobre base remota: nunca el default de 5 s

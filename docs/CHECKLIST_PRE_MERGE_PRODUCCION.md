@@ -38,7 +38,15 @@ git status                                                         # limpio, pus
 
 ## Paso 1 — Backup de la base productiva (ANTES de tocar nada)
 
-- [ ] Backup completo de `u669600172_ganancias_jaba` desde el panel de Hostinger (o `mysqldump`).
+La forma más simple es el script del repo, que hace un volcado **solo de lectura** de la base que
+figura en el `.env` (hoy: la productiva de Hostinger) y lo deja en `./backups`:
+
+```powershell
+npm run db:backup
+```
+
+- [ ] `npm run db:backup` terminó OK e imprimió el archivo, su tamaño y la cantidad de tablas/filas.
+      (Alternativa: backup desde el panel de Hostinger o `mysqldump`.)
 - [ ] **Probar la restauración** del backup en una base vacía (un backup sin restore probado no es backup).
 - [ ] Anotar fecha/hora y tamaño del backup.
 
@@ -46,12 +54,31 @@ git status                                                         # limpio, pus
 
 > Esto crea las tablas/columnas nuevas. Es aditivo, pero igual hacelo después del backup.
 > **Nunca `prisma migrate dev` contra producción.** Solo `migrate deploy`.
+>
+> **Desde 2026-07-24 esto NO se hace con `npx prisma migrate deploy` a mano**: la guarda
+> `scripts/prismaDatabaseSafety.ts` (endurecimiento del 2026-07-20) aborta cualquier comando Prisma
+> local contra la base productiva. El único camino habilitado es `npm run db:prod:migrate`, que exige
+> intención explícita y sólo entonces habilita la excepción nombrada de la guarda.
+
+El destino sale del `.env` del proyecto (el mismo que usa Prisma), así que no hay que pegar
+credenciales en la terminal. Sólo falta confirmar la intención:
 
 ```powershell
-# Con DATABASE_URL apuntando a la base de PRODUCCIÓN (Hostinger), en una terminal local:
-$env:DATABASE_URL="mysql://USUARIO:PASSWORD@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"
-npx prisma migrate deploy
+$env:CONFIRM_PROD_MIGRATION="1"   # confirmá SOLO después del backup del Paso 1
+npm run db:prod:migrate           # muestra el destino con la password enmascarada y corre migrate deploy
 ```
+
+Al terminar, limpiá la confirmación para no quedar con una terminal habilitada contra producción:
+
+```powershell
+Remove-Item Env:\CONFIRM_PROD_MIGRATION
+```
+
+Si el `.env` no apuntara a producción, se puede pasar el destino a mano con
+`$env:DATABASE_URL="mysql://USUARIO:PASSWORD@srv1199.hstgr.io:3306/u669600172_ganancias_jaba"`
+(tiene prioridad sobre el `.env`), **reemplazando `USUARIO` y `PASSWORD` por los reales**. Si esa
+variable queda pegada en la terminal con los valores de ejemplo, el script aborta avisando y hay que
+borrarla con `Remove-Item Env:\DATABASE_URL`.
 
 - [ ] `migrate deploy` aplicó las 5 migraciones nuevas sin error.
 - [ ] Verificar en la base que existen las tablas nuevas (ej. `FiscalPeriod`, `VatSettlement`,

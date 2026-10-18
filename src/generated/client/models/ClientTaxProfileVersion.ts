@@ -20,8 +20,20 @@ export type ClientTaxProfileVersionModel = runtime.Types.Result.DefaultSelection
 
 export type AggregateClientTaxProfileVersion = {
   _count: ClientTaxProfileVersionCountAggregateOutputType | null
+  _avg: ClientTaxProfileVersionAvgAggregateOutputType | null
+  _sum: ClientTaxProfileVersionSumAggregateOutputType | null
   _min: ClientTaxProfileVersionMinAggregateOutputType | null
   _max: ClientTaxProfileVersionMaxAggregateOutputType | null
+}
+
+export type ClientTaxProfileVersionAvgAggregateOutputType = {
+  smallTaxpayerBenefitStartYear: number | null
+  idcbComputablePercent: number | null
+}
+
+export type ClientTaxProfileVersionSumAggregateOutputType = {
+  smallTaxpayerBenefitStartYear: number | null
+  idcbComputablePercent: number | null
 }
 
 export type ClientTaxProfileVersionMinAggregateOutputType = {
@@ -32,6 +44,9 @@ export type ClientTaxProfileVersionMinAggregateOutputType = {
   vatCondition: $Enums.VatCondition | null
   grossIncomeRegime: $Enums.GrossIncomeRegime | null
   conventionRegime: $Enums.ConventionRegime | null
+  smallTaxpayerBenefitEnabled: boolean | null
+  smallTaxpayerBenefitStartYear: number | null
+  idcbComputablePercent: number | null
   arbaRegistrationNumber: string | null
   cmRegistrationNumber: string | null
   sourceReference: string | null
@@ -50,6 +65,9 @@ export type ClientTaxProfileVersionMaxAggregateOutputType = {
   vatCondition: $Enums.VatCondition | null
   grossIncomeRegime: $Enums.GrossIncomeRegime | null
   conventionRegime: $Enums.ConventionRegime | null
+  smallTaxpayerBenefitEnabled: boolean | null
+  smallTaxpayerBenefitStartYear: number | null
+  idcbComputablePercent: number | null
   arbaRegistrationNumber: string | null
   cmRegistrationNumber: string | null
   sourceReference: string | null
@@ -68,6 +86,9 @@ export type ClientTaxProfileVersionCountAggregateOutputType = {
   vatCondition: number
   grossIncomeRegime: number
   conventionRegime: number
+  smallTaxpayerBenefitEnabled: number
+  smallTaxpayerBenefitStartYear: number
+  idcbComputablePercent: number
   arbaRegistrationNumber: number
   cmRegistrationNumber: number
   sourceReference: number
@@ -80,6 +101,16 @@ export type ClientTaxProfileVersionCountAggregateOutputType = {
 }
 
 
+export type ClientTaxProfileVersionAvgAggregateInputType = {
+  smallTaxpayerBenefitStartYear?: true
+  idcbComputablePercent?: true
+}
+
+export type ClientTaxProfileVersionSumAggregateInputType = {
+  smallTaxpayerBenefitStartYear?: true
+  idcbComputablePercent?: true
+}
+
 export type ClientTaxProfileVersionMinAggregateInputType = {
   id?: true
   clientId?: true
@@ -88,6 +119,9 @@ export type ClientTaxProfileVersionMinAggregateInputType = {
   vatCondition?: true
   grossIncomeRegime?: true
   conventionRegime?: true
+  smallTaxpayerBenefitEnabled?: true
+  smallTaxpayerBenefitStartYear?: true
+  idcbComputablePercent?: true
   arbaRegistrationNumber?: true
   cmRegistrationNumber?: true
   sourceReference?: true
@@ -106,6 +140,9 @@ export type ClientTaxProfileVersionMaxAggregateInputType = {
   vatCondition?: true
   grossIncomeRegime?: true
   conventionRegime?: true
+  smallTaxpayerBenefitEnabled?: true
+  smallTaxpayerBenefitStartYear?: true
+  idcbComputablePercent?: true
   arbaRegistrationNumber?: true
   cmRegistrationNumber?: true
   sourceReference?: true
@@ -124,6 +161,9 @@ export type ClientTaxProfileVersionCountAggregateInputType = {
   vatCondition?: true
   grossIncomeRegime?: true
   conventionRegime?: true
+  smallTaxpayerBenefitEnabled?: true
+  smallTaxpayerBenefitStartYear?: true
+  idcbComputablePercent?: true
   arbaRegistrationNumber?: true
   cmRegistrationNumber?: true
   sourceReference?: true
@@ -173,6 +213,18 @@ export type ClientTaxProfileVersionAggregateArgs<ExtArgs extends runtime.Types.E
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: ClientTaxProfileVersionAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: ClientTaxProfileVersionSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: ClientTaxProfileVersionMinAggregateInputType
@@ -203,6 +255,8 @@ export type ClientTaxProfileVersionGroupByArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   _count?: ClientTaxProfileVersionCountAggregateInputType | true
+  _avg?: ClientTaxProfileVersionAvgAggregateInputType
+  _sum?: ClientTaxProfileVersionSumAggregateInputType
   _min?: ClientTaxProfileVersionMinAggregateInputType
   _max?: ClientTaxProfileVersionMaxAggregateInputType
 }
@@ -215,6 +269,9 @@ export type ClientTaxProfileVersionGroupByOutputType = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled: boolean
+  smallTaxpayerBenefitStartYear: number | null
+  idcbComputablePercent: number
   arbaRegistrationNumber: string | null
   cmRegistrationNumber: string | null
   sourceReference: string | null
@@ -224,6 +281,8 @@ export type ClientTaxProfileVersionGroupByOutputType = {
   createdAt: Date
   updatedAt: Date
   _count: ClientTaxProfileVersionCountAggregateOutputType | null
+  _avg: ClientTaxProfileVersionAvgAggregateOutputType | null
+  _sum: ClientTaxProfileVersionSumAggregateOutputType | null
   _min: ClientTaxProfileVersionMinAggregateOutputType | null
   _max: ClientTaxProfileVersionMaxAggregateOutputType | null
 }
@@ -254,6 +313,9 @@ export type ClientTaxProfileVersionWhereInput = {
   vatCondition?: Prisma.EnumVatConditionFilter<"ClientTaxProfileVersion"> | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFilter<"ClientTaxProfileVersion"> | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFilter<"ClientTaxProfileVersion"> | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFilter<"ClientTaxProfileVersion"> | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.IntNullableFilter<"ClientTaxProfileVersion"> | number | null
+  idcbComputablePercent?: Prisma.IntFilter<"ClientTaxProfileVersion"> | number
   arbaRegistrationNumber?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
   cmRegistrationNumber?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
   sourceReference?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
@@ -266,6 +328,7 @@ export type ClientTaxProfileVersionWhereInput = {
   activities?: Prisma.ClientTaxActivityListRelationFilter
   jurisdictions?: Prisma.ClientTaxJurisdictionListRelationFilter
   fiscalPeriods?: Prisma.FiscalPeriodListRelationFilter
+  tishSettlements?: Prisma.TishSettlementListRelationFilter
 }
 
 export type ClientTaxProfileVersionOrderByWithRelationInput = {
@@ -276,6 +339,9 @@ export type ClientTaxProfileVersionOrderByWithRelationInput = {
   vatCondition?: Prisma.SortOrder
   grossIncomeRegime?: Prisma.SortOrder
   conventionRegime?: Prisma.SortOrder
+  smallTaxpayerBenefitEnabled?: Prisma.SortOrder
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrderInput | Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
   arbaRegistrationNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   cmRegistrationNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceReference?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -288,6 +354,7 @@ export type ClientTaxProfileVersionOrderByWithRelationInput = {
   activities?: Prisma.ClientTaxActivityOrderByRelationAggregateInput
   jurisdictions?: Prisma.ClientTaxJurisdictionOrderByRelationAggregateInput
   fiscalPeriods?: Prisma.FiscalPeriodOrderByRelationAggregateInput
+  tishSettlements?: Prisma.TishSettlementOrderByRelationAggregateInput
   _relevance?: Prisma.ClientTaxProfileVersionOrderByRelevanceInput
 }
 
@@ -303,6 +370,9 @@ export type ClientTaxProfileVersionWhereUniqueInput = Prisma.AtLeast<{
   vatCondition?: Prisma.EnumVatConditionFilter<"ClientTaxProfileVersion"> | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFilter<"ClientTaxProfileVersion"> | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFilter<"ClientTaxProfileVersion"> | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFilter<"ClientTaxProfileVersion"> | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.IntNullableFilter<"ClientTaxProfileVersion"> | number | null
+  idcbComputablePercent?: Prisma.IntFilter<"ClientTaxProfileVersion"> | number
   arbaRegistrationNumber?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
   cmRegistrationNumber?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
   sourceReference?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
@@ -315,6 +385,7 @@ export type ClientTaxProfileVersionWhereUniqueInput = Prisma.AtLeast<{
   activities?: Prisma.ClientTaxActivityListRelationFilter
   jurisdictions?: Prisma.ClientTaxJurisdictionListRelationFilter
   fiscalPeriods?: Prisma.FiscalPeriodListRelationFilter
+  tishSettlements?: Prisma.TishSettlementListRelationFilter
 }, "id" | "clientId_validFrom">
 
 export type ClientTaxProfileVersionOrderByWithAggregationInput = {
@@ -325,6 +396,9 @@ export type ClientTaxProfileVersionOrderByWithAggregationInput = {
   vatCondition?: Prisma.SortOrder
   grossIncomeRegime?: Prisma.SortOrder
   conventionRegime?: Prisma.SortOrder
+  smallTaxpayerBenefitEnabled?: Prisma.SortOrder
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrderInput | Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
   arbaRegistrationNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   cmRegistrationNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   sourceReference?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -334,8 +408,10 @@ export type ClientTaxProfileVersionOrderByWithAggregationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ClientTaxProfileVersionCountOrderByAggregateInput
+  _avg?: Prisma.ClientTaxProfileVersionAvgOrderByAggregateInput
   _max?: Prisma.ClientTaxProfileVersionMaxOrderByAggregateInput
   _min?: Prisma.ClientTaxProfileVersionMinOrderByAggregateInput
+  _sum?: Prisma.ClientTaxProfileVersionSumOrderByAggregateInput
 }
 
 export type ClientTaxProfileVersionScalarWhereWithAggregatesInput = {
@@ -349,6 +425,9 @@ export type ClientTaxProfileVersionScalarWhereWithAggregatesInput = {
   vatCondition?: Prisma.EnumVatConditionWithAggregatesFilter<"ClientTaxProfileVersion"> | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeWithAggregatesFilter<"ClientTaxProfileVersion"> | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeWithAggregatesFilter<"ClientTaxProfileVersion"> | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolWithAggregatesFilter<"ClientTaxProfileVersion"> | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.IntNullableWithAggregatesFilter<"ClientTaxProfileVersion"> | number | null
+  idcbComputablePercent?: Prisma.IntWithAggregatesFilter<"ClientTaxProfileVersion"> | number
   arbaRegistrationNumber?: Prisma.StringNullableWithAggregatesFilter<"ClientTaxProfileVersion"> | string | null
   cmRegistrationNumber?: Prisma.StringNullableWithAggregatesFilter<"ClientTaxProfileVersion"> | string | null
   sourceReference?: Prisma.StringNullableWithAggregatesFilter<"ClientTaxProfileVersion"> | string | null
@@ -366,6 +445,9 @@ export type ClientTaxProfileVersionCreateInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -378,6 +460,7 @@ export type ClientTaxProfileVersionCreateInput = {
   activities?: Prisma.ClientTaxActivityCreateNestedManyWithoutTaxProfileInput
   jurisdictions?: Prisma.ClientTaxJurisdictionCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionUncheckedCreateInput = {
@@ -388,6 +471,9 @@ export type ClientTaxProfileVersionUncheckedCreateInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -399,6 +485,7 @@ export type ClientTaxProfileVersionUncheckedCreateInput = {
   activities?: Prisma.ClientTaxActivityUncheckedCreateNestedManyWithoutTaxProfileInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionUpdateInput = {
@@ -408,6 +495,9 @@ export type ClientTaxProfileVersionUpdateInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -420,6 +510,7 @@ export type ClientTaxProfileVersionUpdateInput = {
   activities?: Prisma.ClientTaxActivityUpdateManyWithoutTaxProfileNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionUncheckedUpdateInput = {
@@ -430,6 +521,9 @@ export type ClientTaxProfileVersionUncheckedUpdateInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -441,6 +535,7 @@ export type ClientTaxProfileVersionUncheckedUpdateInput = {
   activities?: Prisma.ClientTaxActivityUncheckedUpdateManyWithoutTaxProfileNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionCreateManyInput = {
@@ -451,6 +546,9 @@ export type ClientTaxProfileVersionCreateManyInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -468,6 +566,9 @@ export type ClientTaxProfileVersionUpdateManyMutationInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -486,6 +587,9 @@ export type ClientTaxProfileVersionUncheckedUpdateManyInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -525,6 +629,9 @@ export type ClientTaxProfileVersionCountOrderByAggregateInput = {
   vatCondition?: Prisma.SortOrder
   grossIncomeRegime?: Prisma.SortOrder
   conventionRegime?: Prisma.SortOrder
+  smallTaxpayerBenefitEnabled?: Prisma.SortOrder
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
   arbaRegistrationNumber?: Prisma.SortOrder
   cmRegistrationNumber?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrder
@@ -535,6 +642,11 @@ export type ClientTaxProfileVersionCountOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type ClientTaxProfileVersionAvgOrderByAggregateInput = {
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
+}
+
 export type ClientTaxProfileVersionMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   clientId?: Prisma.SortOrder
@@ -543,6 +655,9 @@ export type ClientTaxProfileVersionMaxOrderByAggregateInput = {
   vatCondition?: Prisma.SortOrder
   grossIncomeRegime?: Prisma.SortOrder
   conventionRegime?: Prisma.SortOrder
+  smallTaxpayerBenefitEnabled?: Prisma.SortOrder
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
   arbaRegistrationNumber?: Prisma.SortOrder
   cmRegistrationNumber?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrder
@@ -561,6 +676,9 @@ export type ClientTaxProfileVersionMinOrderByAggregateInput = {
   vatCondition?: Prisma.SortOrder
   grossIncomeRegime?: Prisma.SortOrder
   conventionRegime?: Prisma.SortOrder
+  smallTaxpayerBenefitEnabled?: Prisma.SortOrder
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
   arbaRegistrationNumber?: Prisma.SortOrder
   cmRegistrationNumber?: Prisma.SortOrder
   sourceReference?: Prisma.SortOrder
@@ -569,6 +687,11 @@ export type ClientTaxProfileVersionMinOrderByAggregateInput = {
   notes?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type ClientTaxProfileVersionSumOrderByAggregateInput = {
+  smallTaxpayerBenefitStartYear?: Prisma.SortOrder
+  idcbComputablePercent?: Prisma.SortOrder
 }
 
 export type ClientTaxProfileVersionScalarRelationFilter = {
@@ -634,6 +757,14 @@ export type EnumConventionRegimeFieldUpdateOperationsInput = {
   set?: $Enums.ConventionRegime
 }
 
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
+}
+
 export type ClientTaxProfileVersionCreateNestedOneWithoutActivitiesInput = {
   create?: Prisma.XOR<Prisma.ClientTaxProfileVersionCreateWithoutActivitiesInput, Prisma.ClientTaxProfileVersionUncheckedCreateWithoutActivitiesInput>
   connectOrCreate?: Prisma.ClientTaxProfileVersionCreateOrConnectWithoutActivitiesInput
@@ -676,6 +807,20 @@ export type ClientTaxProfileVersionUpdateOneRequiredWithoutFiscalPeriodsNestedIn
   update?: Prisma.XOR<Prisma.XOR<Prisma.ClientTaxProfileVersionUpdateToOneWithWhereWithoutFiscalPeriodsInput, Prisma.ClientTaxProfileVersionUpdateWithoutFiscalPeriodsInput>, Prisma.ClientTaxProfileVersionUncheckedUpdateWithoutFiscalPeriodsInput>
 }
 
+export type ClientTaxProfileVersionCreateNestedOneWithoutTishSettlementsInput = {
+  create?: Prisma.XOR<Prisma.ClientTaxProfileVersionCreateWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUncheckedCreateWithoutTishSettlementsInput>
+  connectOrCreate?: Prisma.ClientTaxProfileVersionCreateOrConnectWithoutTishSettlementsInput
+  connect?: Prisma.ClientTaxProfileVersionWhereUniqueInput
+}
+
+export type ClientTaxProfileVersionUpdateOneRequiredWithoutTishSettlementsNestedInput = {
+  create?: Prisma.XOR<Prisma.ClientTaxProfileVersionCreateWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUncheckedCreateWithoutTishSettlementsInput>
+  connectOrCreate?: Prisma.ClientTaxProfileVersionCreateOrConnectWithoutTishSettlementsInput
+  upsert?: Prisma.ClientTaxProfileVersionUpsertWithoutTishSettlementsInput
+  connect?: Prisma.ClientTaxProfileVersionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ClientTaxProfileVersionUpdateToOneWithWhereWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUpdateWithoutTishSettlementsInput>, Prisma.ClientTaxProfileVersionUncheckedUpdateWithoutTishSettlementsInput>
+}
+
 export type ClientTaxProfileVersionCreateWithoutClientInput = {
   id?: string
   validFrom: Date | string
@@ -683,6 +828,9 @@ export type ClientTaxProfileVersionCreateWithoutClientInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -694,6 +842,7 @@ export type ClientTaxProfileVersionCreateWithoutClientInput = {
   activities?: Prisma.ClientTaxActivityCreateNestedManyWithoutTaxProfileInput
   jurisdictions?: Prisma.ClientTaxJurisdictionCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionUncheckedCreateWithoutClientInput = {
@@ -703,6 +852,9 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutClientInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -714,6 +866,7 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutClientInput = {
   activities?: Prisma.ClientTaxActivityUncheckedCreateNestedManyWithoutTaxProfileInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionCreateOrConnectWithoutClientInput = {
@@ -753,6 +906,9 @@ export type ClientTaxProfileVersionScalarWhereInput = {
   vatCondition?: Prisma.EnumVatConditionFilter<"ClientTaxProfileVersion"> | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFilter<"ClientTaxProfileVersion"> | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFilter<"ClientTaxProfileVersion"> | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFilter<"ClientTaxProfileVersion"> | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.IntNullableFilter<"ClientTaxProfileVersion"> | number | null
+  idcbComputablePercent?: Prisma.IntFilter<"ClientTaxProfileVersion"> | number
   arbaRegistrationNumber?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
   cmRegistrationNumber?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
   sourceReference?: Prisma.StringNullableFilter<"ClientTaxProfileVersion"> | string | null
@@ -770,6 +926,9 @@ export type ClientTaxProfileVersionCreateWithoutActivitiesInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -781,6 +940,7 @@ export type ClientTaxProfileVersionCreateWithoutActivitiesInput = {
   client: Prisma.ClientCreateNestedOneWithoutTaxProfilesInput
   jurisdictions?: Prisma.ClientTaxJurisdictionCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionUncheckedCreateWithoutActivitiesInput = {
@@ -791,6 +951,9 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutActivitiesInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -801,6 +964,7 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutActivitiesInput = {
   updatedAt?: Date | string
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionCreateOrConnectWithoutActivitiesInput = {
@@ -826,6 +990,9 @@ export type ClientTaxProfileVersionUpdateWithoutActivitiesInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -837,6 +1004,7 @@ export type ClientTaxProfileVersionUpdateWithoutActivitiesInput = {
   client?: Prisma.ClientUpdateOneRequiredWithoutTaxProfilesNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionUncheckedUpdateWithoutActivitiesInput = {
@@ -847,6 +1015,9 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutActivitiesInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -857,6 +1028,7 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutActivitiesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionCreateWithoutJurisdictionsInput = {
@@ -866,6 +1038,9 @@ export type ClientTaxProfileVersionCreateWithoutJurisdictionsInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -877,6 +1052,7 @@ export type ClientTaxProfileVersionCreateWithoutJurisdictionsInput = {
   client: Prisma.ClientCreateNestedOneWithoutTaxProfilesInput
   activities?: Prisma.ClientTaxActivityCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionUncheckedCreateWithoutJurisdictionsInput = {
@@ -887,6 +1063,9 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutJurisdictionsInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -897,6 +1076,7 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutJurisdictionsInput = {
   updatedAt?: Date | string
   activities?: Prisma.ClientTaxActivityUncheckedCreateNestedManyWithoutTaxProfileInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionCreateOrConnectWithoutJurisdictionsInput = {
@@ -922,6 +1102,9 @@ export type ClientTaxProfileVersionUpdateWithoutJurisdictionsInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -933,6 +1116,7 @@ export type ClientTaxProfileVersionUpdateWithoutJurisdictionsInput = {
   client?: Prisma.ClientUpdateOneRequiredWithoutTaxProfilesNestedInput
   activities?: Prisma.ClientTaxActivityUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionUncheckedUpdateWithoutJurisdictionsInput = {
@@ -943,6 +1127,9 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutJurisdictionsInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -953,6 +1140,7 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutJurisdictionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   activities?: Prisma.ClientTaxActivityUncheckedUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionCreateWithoutFiscalPeriodsInput = {
@@ -962,6 +1150,9 @@ export type ClientTaxProfileVersionCreateWithoutFiscalPeriodsInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -973,6 +1164,7 @@ export type ClientTaxProfileVersionCreateWithoutFiscalPeriodsInput = {
   client: Prisma.ClientCreateNestedOneWithoutTaxProfilesInput
   activities?: Prisma.ClientTaxActivityCreateNestedManyWithoutTaxProfileInput
   jurisdictions?: Prisma.ClientTaxJurisdictionCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionUncheckedCreateWithoutFiscalPeriodsInput = {
@@ -983,6 +1175,9 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutFiscalPeriodsInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -993,6 +1188,7 @@ export type ClientTaxProfileVersionUncheckedCreateWithoutFiscalPeriodsInput = {
   updatedAt?: Date | string
   activities?: Prisma.ClientTaxActivityUncheckedCreateNestedManyWithoutTaxProfileInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedCreateNestedManyWithoutTaxProfileInput
+  tishSettlements?: Prisma.TishSettlementUncheckedCreateNestedManyWithoutTaxProfileInput
 }
 
 export type ClientTaxProfileVersionCreateOrConnectWithoutFiscalPeriodsInput = {
@@ -1018,6 +1214,9 @@ export type ClientTaxProfileVersionUpdateWithoutFiscalPeriodsInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1029,6 +1228,7 @@ export type ClientTaxProfileVersionUpdateWithoutFiscalPeriodsInput = {
   client?: Prisma.ClientUpdateOneRequiredWithoutTaxProfilesNestedInput
   activities?: Prisma.ClientTaxActivityUpdateManyWithoutTaxProfileNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionUncheckedUpdateWithoutFiscalPeriodsInput = {
@@ -1039,6 +1239,9 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutFiscalPeriodsInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1049,6 +1252,119 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutFiscalPeriodsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   activities?: Prisma.ClientTaxActivityUncheckedUpdateManyWithoutTaxProfileNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutTaxProfileNestedInput
+}
+
+export type ClientTaxProfileVersionCreateWithoutTishSettlementsInput = {
+  id?: string
+  validFrom: Date | string
+  validTo?: Date | string | null
+  vatCondition: $Enums.VatCondition
+  grossIncomeRegime: $Enums.GrossIncomeRegime
+  conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
+  arbaRegistrationNumber?: string | null
+  cmRegistrationNumber?: string | null
+  sourceReference?: string | null
+  approvedBy?: string | null
+  approvedAt?: Date | string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  client: Prisma.ClientCreateNestedOneWithoutTaxProfilesInput
+  activities?: Prisma.ClientTaxActivityCreateNestedManyWithoutTaxProfileInput
+  jurisdictions?: Prisma.ClientTaxJurisdictionCreateNestedManyWithoutTaxProfileInput
+  fiscalPeriods?: Prisma.FiscalPeriodCreateNestedManyWithoutTaxProfileInput
+}
+
+export type ClientTaxProfileVersionUncheckedCreateWithoutTishSettlementsInput = {
+  id?: string
+  clientId: string
+  validFrom: Date | string
+  validTo?: Date | string | null
+  vatCondition: $Enums.VatCondition
+  grossIncomeRegime: $Enums.GrossIncomeRegime
+  conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
+  arbaRegistrationNumber?: string | null
+  cmRegistrationNumber?: string | null
+  sourceReference?: string | null
+  approvedBy?: string | null
+  approvedAt?: Date | string | null
+  notes?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  activities?: Prisma.ClientTaxActivityUncheckedCreateNestedManyWithoutTaxProfileInput
+  jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedCreateNestedManyWithoutTaxProfileInput
+  fiscalPeriods?: Prisma.FiscalPeriodUncheckedCreateNestedManyWithoutTaxProfileInput
+}
+
+export type ClientTaxProfileVersionCreateOrConnectWithoutTishSettlementsInput = {
+  where: Prisma.ClientTaxProfileVersionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ClientTaxProfileVersionCreateWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUncheckedCreateWithoutTishSettlementsInput>
+}
+
+export type ClientTaxProfileVersionUpsertWithoutTishSettlementsInput = {
+  update: Prisma.XOR<Prisma.ClientTaxProfileVersionUpdateWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUncheckedUpdateWithoutTishSettlementsInput>
+  create: Prisma.XOR<Prisma.ClientTaxProfileVersionCreateWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUncheckedCreateWithoutTishSettlementsInput>
+  where?: Prisma.ClientTaxProfileVersionWhereInput
+}
+
+export type ClientTaxProfileVersionUpdateToOneWithWhereWithoutTishSettlementsInput = {
+  where?: Prisma.ClientTaxProfileVersionWhereInput
+  data: Prisma.XOR<Prisma.ClientTaxProfileVersionUpdateWithoutTishSettlementsInput, Prisma.ClientTaxProfileVersionUncheckedUpdateWithoutTishSettlementsInput>
+}
+
+export type ClientTaxProfileVersionUpdateWithoutTishSettlementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  validTo?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
+  grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
+  conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
+  arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  client?: Prisma.ClientUpdateOneRequiredWithoutTaxProfilesNestedInput
+  activities?: Prisma.ClientTaxActivityUpdateManyWithoutTaxProfileNestedInput
+  jurisdictions?: Prisma.ClientTaxJurisdictionUpdateManyWithoutTaxProfileNestedInput
+  fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutTaxProfileNestedInput
+}
+
+export type ClientTaxProfileVersionUncheckedUpdateWithoutTishSettlementsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  clientId?: Prisma.StringFieldUpdateOperationsInput | string
+  validFrom?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  validTo?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
+  grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
+  conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
+  arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvedBy?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  approvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  activities?: Prisma.ClientTaxActivityUncheckedUpdateManyWithoutTaxProfileNestedInput
+  jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedUpdateManyWithoutTaxProfileNestedInput
+  fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionCreateManyClientInput = {
@@ -1058,6 +1374,9 @@ export type ClientTaxProfileVersionCreateManyClientInput = {
   vatCondition: $Enums.VatCondition
   grossIncomeRegime: $Enums.GrossIncomeRegime
   conventionRegime?: $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: number | null
+  idcbComputablePercent?: number
   arbaRegistrationNumber?: string | null
   cmRegistrationNumber?: string | null
   sourceReference?: string | null
@@ -1075,6 +1394,9 @@ export type ClientTaxProfileVersionUpdateWithoutClientInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1086,6 +1408,7 @@ export type ClientTaxProfileVersionUpdateWithoutClientInput = {
   activities?: Prisma.ClientTaxActivityUpdateManyWithoutTaxProfileNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionUncheckedUpdateWithoutClientInput = {
@@ -1095,6 +1418,9 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutClientInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1106,6 +1432,7 @@ export type ClientTaxProfileVersionUncheckedUpdateWithoutClientInput = {
   activities?: Prisma.ClientTaxActivityUncheckedUpdateManyWithoutTaxProfileNestedInput
   jurisdictions?: Prisma.ClientTaxJurisdictionUncheckedUpdateManyWithoutTaxProfileNestedInput
   fiscalPeriods?: Prisma.FiscalPeriodUncheckedUpdateManyWithoutTaxProfileNestedInput
+  tishSettlements?: Prisma.TishSettlementUncheckedUpdateManyWithoutTaxProfileNestedInput
 }
 
 export type ClientTaxProfileVersionUncheckedUpdateManyWithoutClientInput = {
@@ -1115,6 +1442,9 @@ export type ClientTaxProfileVersionUncheckedUpdateManyWithoutClientInput = {
   vatCondition?: Prisma.EnumVatConditionFieldUpdateOperationsInput | $Enums.VatCondition
   grossIncomeRegime?: Prisma.EnumGrossIncomeRegimeFieldUpdateOperationsInput | $Enums.GrossIncomeRegime
   conventionRegime?: Prisma.EnumConventionRegimeFieldUpdateOperationsInput | $Enums.ConventionRegime
+  smallTaxpayerBenefitEnabled?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  smallTaxpayerBenefitStartYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  idcbComputablePercent?: Prisma.IntFieldUpdateOperationsInput | number
   arbaRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   cmRegistrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   sourceReference?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1134,12 +1464,14 @@ export type ClientTaxProfileVersionCountOutputType = {
   activities: number
   jurisdictions: number
   fiscalPeriods: number
+  tishSettlements: number
 }
 
 export type ClientTaxProfileVersionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   activities?: boolean | ClientTaxProfileVersionCountOutputTypeCountActivitiesArgs
   jurisdictions?: boolean | ClientTaxProfileVersionCountOutputTypeCountJurisdictionsArgs
   fiscalPeriods?: boolean | ClientTaxProfileVersionCountOutputTypeCountFiscalPeriodsArgs
+  tishSettlements?: boolean | ClientTaxProfileVersionCountOutputTypeCountTishSettlementsArgs
 }
 
 /**
@@ -1173,6 +1505,13 @@ export type ClientTaxProfileVersionCountOutputTypeCountFiscalPeriodsArgs<ExtArgs
   where?: Prisma.FiscalPeriodWhereInput
 }
 
+/**
+ * ClientTaxProfileVersionCountOutputType without action
+ */
+export type ClientTaxProfileVersionCountOutputTypeCountTishSettlementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TishSettlementWhereInput
+}
+
 
 export type ClientTaxProfileVersionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1182,6 +1521,9 @@ export type ClientTaxProfileVersionSelect<ExtArgs extends runtime.Types.Extensio
   vatCondition?: boolean
   grossIncomeRegime?: boolean
   conventionRegime?: boolean
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: boolean
+  idcbComputablePercent?: boolean
   arbaRegistrationNumber?: boolean
   cmRegistrationNumber?: boolean
   sourceReference?: boolean
@@ -1194,6 +1536,7 @@ export type ClientTaxProfileVersionSelect<ExtArgs extends runtime.Types.Extensio
   activities?: boolean | Prisma.ClientTaxProfileVersion$activitiesArgs<ExtArgs>
   jurisdictions?: boolean | Prisma.ClientTaxProfileVersion$jurisdictionsArgs<ExtArgs>
   fiscalPeriods?: boolean | Prisma.ClientTaxProfileVersion$fiscalPeriodsArgs<ExtArgs>
+  tishSettlements?: boolean | Prisma.ClientTaxProfileVersion$tishSettlementsArgs<ExtArgs>
   _count?: boolean | Prisma.ClientTaxProfileVersionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["clientTaxProfileVersion"]>
 
@@ -1207,6 +1550,9 @@ export type ClientTaxProfileVersionSelectScalar = {
   vatCondition?: boolean
   grossIncomeRegime?: boolean
   conventionRegime?: boolean
+  smallTaxpayerBenefitEnabled?: boolean
+  smallTaxpayerBenefitStartYear?: boolean
+  idcbComputablePercent?: boolean
   arbaRegistrationNumber?: boolean
   cmRegistrationNumber?: boolean
   sourceReference?: boolean
@@ -1217,12 +1563,13 @@ export type ClientTaxProfileVersionSelectScalar = {
   updatedAt?: boolean
 }
 
-export type ClientTaxProfileVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "validFrom" | "validTo" | "vatCondition" | "grossIncomeRegime" | "conventionRegime" | "arbaRegistrationNumber" | "cmRegistrationNumber" | "sourceReference" | "approvedBy" | "approvedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["clientTaxProfileVersion"]>
+export type ClientTaxProfileVersionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "clientId" | "validFrom" | "validTo" | "vatCondition" | "grossIncomeRegime" | "conventionRegime" | "smallTaxpayerBenefitEnabled" | "smallTaxpayerBenefitStartYear" | "idcbComputablePercent" | "arbaRegistrationNumber" | "cmRegistrationNumber" | "sourceReference" | "approvedBy" | "approvedAt" | "notes" | "createdAt" | "updatedAt", ExtArgs["result"]["clientTaxProfileVersion"]>
 export type ClientTaxProfileVersionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   client?: boolean | Prisma.ClientDefaultArgs<ExtArgs>
   activities?: boolean | Prisma.ClientTaxProfileVersion$activitiesArgs<ExtArgs>
   jurisdictions?: boolean | Prisma.ClientTaxProfileVersion$jurisdictionsArgs<ExtArgs>
   fiscalPeriods?: boolean | Prisma.ClientTaxProfileVersion$fiscalPeriodsArgs<ExtArgs>
+  tishSettlements?: boolean | Prisma.ClientTaxProfileVersion$tishSettlementsArgs<ExtArgs>
   _count?: boolean | Prisma.ClientTaxProfileVersionCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1233,6 +1580,7 @@ export type $ClientTaxProfileVersionPayload<ExtArgs extends runtime.Types.Extens
     activities: Prisma.$ClientTaxActivityPayload<ExtArgs>[]
     jurisdictions: Prisma.$ClientTaxJurisdictionPayload<ExtArgs>[]
     fiscalPeriods: Prisma.$FiscalPeriodPayload<ExtArgs>[]
+    tishSettlements: Prisma.$TishSettlementPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1242,6 +1590,9 @@ export type $ClientTaxProfileVersionPayload<ExtArgs extends runtime.Types.Extens
     vatCondition: $Enums.VatCondition
     grossIncomeRegime: $Enums.GrossIncomeRegime
     conventionRegime: $Enums.ConventionRegime
+    smallTaxpayerBenefitEnabled: boolean
+    smallTaxpayerBenefitStartYear: number | null
+    idcbComputablePercent: number
     arbaRegistrationNumber: string | null
     cmRegistrationNumber: string | null
     sourceReference: string | null
@@ -1594,6 +1945,7 @@ export interface Prisma__ClientTaxProfileVersionClient<T, Null = never, ExtArgs 
   activities<T extends Prisma.ClientTaxProfileVersion$activitiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClientTaxProfileVersion$activitiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClientTaxActivityPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   jurisdictions<T extends Prisma.ClientTaxProfileVersion$jurisdictionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClientTaxProfileVersion$jurisdictionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClientTaxJurisdictionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   fiscalPeriods<T extends Prisma.ClientTaxProfileVersion$fiscalPeriodsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClientTaxProfileVersion$fiscalPeriodsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FiscalPeriodPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tishSettlements<T extends Prisma.ClientTaxProfileVersion$tishSettlementsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClientTaxProfileVersion$tishSettlementsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TishSettlementPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1630,6 +1982,9 @@ export interface ClientTaxProfileVersionFieldRefs {
   readonly vatCondition: Prisma.FieldRef<"ClientTaxProfileVersion", 'VatCondition'>
   readonly grossIncomeRegime: Prisma.FieldRef<"ClientTaxProfileVersion", 'GrossIncomeRegime'>
   readonly conventionRegime: Prisma.FieldRef<"ClientTaxProfileVersion", 'ConventionRegime'>
+  readonly smallTaxpayerBenefitEnabled: Prisma.FieldRef<"ClientTaxProfileVersion", 'Boolean'>
+  readonly smallTaxpayerBenefitStartYear: Prisma.FieldRef<"ClientTaxProfileVersion", 'Int'>
+  readonly idcbComputablePercent: Prisma.FieldRef<"ClientTaxProfileVersion", 'Int'>
   readonly arbaRegistrationNumber: Prisma.FieldRef<"ClientTaxProfileVersion", 'String'>
   readonly cmRegistrationNumber: Prisma.FieldRef<"ClientTaxProfileVersion", 'String'>
   readonly sourceReference: Prisma.FieldRef<"ClientTaxProfileVersion", 'String'>
@@ -2055,6 +2410,30 @@ export type ClientTaxProfileVersion$fiscalPeriodsArgs<ExtArgs extends runtime.Ty
   take?: number
   skip?: number
   distinct?: Prisma.FiscalPeriodScalarFieldEnum | Prisma.FiscalPeriodScalarFieldEnum[]
+}
+
+/**
+ * ClientTaxProfileVersion.tishSettlements
+ */
+export type ClientTaxProfileVersion$tishSettlementsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TishSettlement
+   */
+  select?: Prisma.TishSettlementSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TishSettlement
+   */
+  omit?: Prisma.TishSettlementOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TishSettlementInclude<ExtArgs> | null
+  where?: Prisma.TishSettlementWhereInput
+  orderBy?: Prisma.TishSettlementOrderByWithRelationInput | Prisma.TishSettlementOrderByWithRelationInput[]
+  cursor?: Prisma.TishSettlementWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TishSettlementScalarFieldEnum | Prisma.TishSettlementScalarFieldEnum[]
 }
 
 /**

@@ -30,7 +30,7 @@ Se agrego `scripts/check-deployment-db-safety.mjs` y se conecto como `prebuild`.
 
 Comportamiento:
 
-- En local no bloquea tareas controladas.
+- En local bloquea cualquier intento de usar la base productiva.
 - En Vercel Production exige `DATABASE_URL`.
 - En Vercel Production bloquea si la rama detectada no es `main`.
 - En Vercel Preview permite no tener `DATABASE_URL`, porque asi no puede escribir en produccion.
@@ -42,10 +42,9 @@ Variables opcionales del script:
 ```env
 PRODUCTION_DATABASE_HOSTS="srv1199.hstgr.io,193.203.175.56"
 PRODUCTION_DATABASE_NAME="u669600172_ganancias_jaba"
-ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION="false"
 ```
 
-No usar `ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION="true"` en Vercel salvo mantenimiento excepcional y consciente.
+No existe una bandera de excepciÃ³n para conectar Preview o localhost a producciÃ³n.
 
 ## Configuracion recomendada en Vercel
 
@@ -91,11 +90,30 @@ No usar `prisma db push` sobre produccion.
 Proceso seguro para cambios de schema productivos:
 
 1. Crear migracion versionada con Prisma.
-2. Probar local/staging.
-3. Exportar backup SQL desde Hostinger.
-4. Ejecutar `prisma migrate deploy` contra produccion.
+2. Probar local contra Docker (`npm run db:test:migrate`).
+3. Exportar backup SQL desde Hostinger y probar la restauracion.
+4. Migrar produccion con `npm run db:prod:migrate` (ver abajo). **Antes** del merge a `main`: la base
+   debe tener las columnas nuevas antes de que el codigo nuevo despliegue.
 5. Verificar tablas/datos criticos.
 6. Registrar fecha, commit y resultado en `docs/REGISTRO_PROYECTO.md`.
+
+Desde el 2026-07-24, `npx prisma migrate deploy` a mano contra produccion **esta bloqueado** por
+`scripts/prismaDatabaseSafety.ts`. El unico camino habilitado es:
+
+```powershell
+npm run db:backup                 # volcado de solo lectura de la base del .env a ./backups
+$env:CONFIRM_PROD_MIGRATION="1"   # solo despues del backup
+npm run db:prod:migrate           # toma el destino del .env; muestra la password enmascarada
+Remove-Item Env:\CONFIRM_PROD_MIGRATION   # cerrar la ventana habilitada
+```
+
+El script valida el destino (rechaza Docker y el nombre productivo contra localhost), nunca imprime la
+password y habilita la excepcion de la guarda nombrando la base productiva (un `1` o un `true` no
+sirven). Se puede forzar otro destino con `$env:DATABASE_URL`, que tiene prioridad sobre el `.env`;
+si esa variable quedo con los valores de ejemplo de la doc, el script aborta y pide borrarla con
+`Remove-Item Env:\DATABASE_URL`.
+El resto de los comandos Prisma locales (dev, studio, migrate dev) siguen bloqueados contra
+produccion.
 
 Seeds:
 

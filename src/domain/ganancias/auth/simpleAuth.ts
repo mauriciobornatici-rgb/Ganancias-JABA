@@ -200,6 +200,10 @@ export function isAuthorizedHealthToken(
 export function isProtectedPath(pathname: string): boolean {
   if (pathname === '/login' || pathname.startsWith('/login/')) return false;
   if (pathname === '/api/auth/login' || pathname === '/api/auth/logout') return false;
+  // Los endpoints de integracion tienen autenticacion de servicio propia dentro de
+  // cada Route Handler. Solo se exceptua este prefijo exacto; el resto de la API
+  // continua protegido por la cookie de sesion humana.
+  if (pathname === '/api/integrations/uipath' || pathname.startsWith('/api/integrations/uipath/')) return false;
   if (pathname.startsWith('/_next/')) return false;
   if (pathname === '/favicon.ico' || pathname === '/robots.txt' || pathname === '/sitemap.xml') {
     return false;

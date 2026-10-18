@@ -7,6 +7,7 @@ const DETAILED_ARRAY_FIELDS = [
   'receivables',
   'liabilities',
   'withholdings',
+  'societyParticipations',
   'personalAssets',
   'personalLiabilities',
   'otherJustifications',

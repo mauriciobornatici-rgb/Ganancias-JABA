@@ -1,0 +1,25 @@
+CREATE TABLE `ExternalImportReceipt` (
+  `id` VARCHAR(191) NOT NULL,
+  `source` VARCHAR(191) NOT NULL DEFAULT 'UIPATH',
+  `idempotencyKey` VARCHAR(191) NOT NULL,
+  `clientId` VARCHAR(191) NOT NULL,
+  `fiscalPeriodId` VARCHAR(191) NOT NULL,
+  `ownerCuit` VARCHAR(191) NOT NULL,
+  `year` INTEGER NOT NULL,
+  `month` INTEGER NOT NULL,
+  `status` VARCHAR(191) NOT NULL,
+  `fileManifest` JSON NOT NULL,
+  `inserted` INTEGER NOT NULL DEFAULT 0,
+  `duplicates` INTEGER NOT NULL DEFAULT 0,
+  `conflicts` INTEGER NOT NULL DEFAULT 0,
+  `totalDocuments` INTEGER NOT NULL DEFAULT 0,
+  `warnings` JSON NULL,
+  `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updatedAt` DATETIME(3) NOT NULL,
+
+  UNIQUE INDEX `ExternalImportReceipt_idempotencyKey_key`(`idempotencyKey`),
+  INDEX `ExternalImportReceipt_clientId_year_month_idx`(`clientId`, `year`, `month`),
+  INDEX `ExternalImportReceipt_fiscalPeriodId_idx`(`fiscalPeriodId`),
+  INDEX `ExternalImportReceipt_createdAt_idx`(`createdAt`),
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

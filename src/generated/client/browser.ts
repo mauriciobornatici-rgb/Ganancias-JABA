@@ -108,6 +108,11 @@ export type FiscalPeriod = Prisma.FiscalPeriodModel
  */
 export type FiscalDocument = Prisma.FiscalDocumentModel
 /**
+ * Model ExternalImportReceipt
+ * 
+ */
+export type ExternalImportReceipt = Prisma.ExternalImportReceiptModel
+/**
  * Model FiscalDocumentVatLine
  * 
  */
@@ -142,6 +147,25 @@ export type GrossIncomeSettlement = Prisma.GrossIncomeSettlementModel
  * 
  */
 export type GrossIncomeJurisdictionLine = Prisma.GrossIncomeJurisdictionLineModel
+/**
+ * Model TishSetting
+ * *
+ *  * Tasa por Inspección de Seguridad e Higiene (TISH) - punto 2 del PDF (2026-07-24).
+ *  * Alcance decidido con el usuario: solo RÉGIMEN GENERAL (responsable inscripto). La alícuota y la
+ *  * categoría L/M/N son MANUALES por cliente y por año (la ordenanza 2026 está escaneada y el art. 23
+ *  * con las alícuotas no es legible). Los importes de la ordenanza se guardan como parámetros
+ *  * editables del año y por cliente, porque cada contribuyente puede estar en otro municipio.
+ *  * Los valores por defecto son los de la ordenanza 2026 de ARBAL (instructivo TISH 2026).
+ */
+export type TishSetting = Prisma.TishSettingModel
+/**
+ * Model TishSettlement
+ * *
+ *  * Liquidación TISH cerrada y versionada por bimestre.
+ *  * Los snapshots conservan las versiones de IIBB, el perfil, la configuración y el resultado usados
+ *  * en cada cierre. Una nueva fuente genera una versión nueva; nunca se sobreescribe la anterior.
+ */
+export type TishSettlement = Prisma.TishSettlementModel
 /**
  * Model ConventionCoefficientVersion
  * 
@@ -207,6 +231,15 @@ export type PayableDebt = Prisma.PayableDebtModel
  * 
  */
 export type TaxWithholding = Prisma.TaxWithholdingModel
+/**
+ * Model SocietyParticipation
+ * *
+ *  * Participación en sociedades, explotaciones unipersonales y fideicomisos (excepto art. 73).
+ *  * Punto 3 del PDF de correcciones (2026-07-24): se guardan el porcentaje y el resultado total de la
+ *  * sociedad; el resultado atribuido se deriva de esos dos datos, y `attributedResultOverride` (null =
+ *  * sin editar) conserva la corrección manual del contador para poder avisar la diferencia.
+ */
+export type SocietyParticipation = Prisma.SocietyParticipationModel
 /**
  * Model PersonalAsset
  * 

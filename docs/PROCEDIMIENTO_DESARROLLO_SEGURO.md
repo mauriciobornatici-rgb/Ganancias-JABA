@@ -80,13 +80,15 @@ Regla de seguridad:
 
 ## Comandos que NO deben usarse para pruebas comunes
 
-No usar para desarrollo normal:
+No evitar el runner seguro invocando Next directamente:
 
 ```powershell
-npm run dev
+next dev
+next start
 ```
 
-Motivo: `npm run dev` lee la `.env` normal. Si esa `.env` apunta a Hostinger, se trabajaria contra datos reales.
+`npm run dev` es el comando correcto: ahora fuerza Docker. Si alguien invoca Next directamente,
+la guardia de conexiÃ³n igualmente rechaza Hostinger fuera de Vercel Production/main.
 
 No usar contra produccion:
 

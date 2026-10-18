@@ -71,6 +71,8 @@ export type VatSettlementBuildInput = {
   previousTechnicalBalance: Decimal;
   /** Saldo de libre disponibilidad del período anterior neto de usos. */
   previousFreeAvailability?: Decimal;
+  /** Reduccion del saldo deudor para pequenos contribuyentes cumplidores. */
+  smallTaxpayerBenefitRate?: Decimal;
 };
 
 function groupByRate(lines: SettlementVatLine[]): Map<string, { taxableBase: Decimal; vatAmount: Decimal }> {
@@ -110,6 +112,7 @@ export function buildVatSettlement(input: VatSettlementBuildInput): VatSettlemen
     purchases: creditLines.map(l => ({ vatAmount: l.vatAmount, creditComputable: true })),
     previousTechnicalBalance: input.previousTechnicalBalance,
     previousFreeAvailability: input.previousFreeAvailability,
+    smallTaxpayerBenefitRate: input.smallTaxpayerBenefitRate,
     taxCredits: input.vatCredits,
   });
 
@@ -134,6 +137,8 @@ export type GrossIncomeJurisdictionConfig = {
   coefficient?: Decimal;
   credits?: Array<{ amount: Decimal }>;
   previousFavorBalance?: Decimal;
+  /** Base imponible asignada a esta actividad (reparto por monto entre actividades de una jurisdicción). */
+  assignedBaseOverride?: Decimal;
 };
 
 export type GrossIncomeSettlementView = {
@@ -141,18 +146,31 @@ export type GrossIncomeSettlementView = {
   taxableBase: Decimal;
 };
 
+/**
+ * Base imponible de IIBB = ventas gravadas netas. Los padrones de AFIP pueden entregar las
+ * notas de crédito con importes positivos o negativos según el origen; por tipo de comprobante
+ * siempre deben reducir la base una sola vez.
+ */
+export function calculateGrossIncomeTaxableBase(documents: SettlementDocument[]): Decimal {
+  return documents
+    .filter(d => d.direction === 'SALE')
+    .reduce((total, document) => {
+      const documentTaxedBase = document.vatLines
+        .filter(line => line.kind === 'TAXED')
+        .reduce((sum, line) => sum.add(line.taxableBase), new Decimal(0));
+      return isNotaCredito(document.voucherType)
+        ? total.sub(documentTaxedBase.abs())
+        : total.add(documentTaxedBase);
+    }, new Decimal(0));
+}
+
 export function buildGrossIncomeSettlement(input: {
   regime: GrossIncomeRegime;
   /** Documentos para derivar la base imponible (ventas gravadas netas). */
   documents: SettlementDocument[];
   jurisdictions: GrossIncomeJurisdictionConfig[];
 }): GrossIncomeSettlementView {
-  // Base imponible de IIBB = ventas gravadas netas (suma de bases gravadas de los documentos SALE).
-  const taxableBase = input.documents
-    .filter(d => d.direction === 'SALE')
-    .flatMap(d => d.vatLines)
-    .filter(l => l.kind === 'TAXED')
-    .reduce((sum, l) => sum.add(l.taxableBase), new Decimal(0));
+  const taxableBase = calculateGrossIncomeTaxableBase(input.documents);
 
   const settlement = calculateGrossIncomeSettlement({
     regime: input.regime,

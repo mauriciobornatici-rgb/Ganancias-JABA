@@ -41,6 +41,7 @@ export async function persistTaxCredits(
       creditKey: credit.creditKey,
       tax: credit.tax,
       kind: credit.kind,
+      jurisdictionCode: credit.jurisdictionCode ?? null,
       issueDate: credit.issueDate,
       agentCuit: credit.agentCuit,
       certificateNumber: credit.certificateNumber,

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/domain/ganancias/prisma';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
+import { normalizeIdcbComputablePercent } from '@/domain/ganancias/fiscalLedger/bankTaxCredit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -17,9 +18,13 @@ const putSchema = z.object({
   year: z.number().int().min(2000).max(2100),
   jurisdictions: z.array(z.object({
     jurisdictionCode: z.string().min(1).max(20),
+    activityCode: z.string().max(40).optional().default(''),
+    activityLabel: z.string().max(120).nullable().optional(),
     taxRate: rate.nullable().optional(),
     registrationNumber: z.string().max(50).nullable().optional(),
     isActive: z.boolean().optional(),
+    // Tilde explícito de TISH por línea de actividad (punto 2, 2026-07-24).
+    computesTish: z.boolean().optional(),
   })).max(50),
   coefficients: z.array(z.object({
     jurisdictionCode: z.string().min(1).max(20),
@@ -33,7 +38,9 @@ async function latestProfile(clientId: string) {
     orderBy: { validFrom: 'desc' },
     select: {
       id: true, vatCondition: true, grossIncomeRegime: true, conventionRegime: true,
-      jurisdictions: { select: { jurisdictionCode: true, registrationNumber: true, taxRate: true, isActive: true }, orderBy: { jurisdictionCode: 'asc' } },
+      smallTaxpayerBenefitEnabled: true, smallTaxpayerBenefitStartYear: true,
+      idcbComputablePercent: true,
+      jurisdictions: { select: { jurisdictionCode: true, activityCode: true, activityLabel: true, registrationNumber: true, taxRate: true, computesTish: true, isActive: true }, orderBy: [{ jurisdictionCode: 'asc' }, { activityCode: 'asc' }] },
     },
   });
 }
@@ -61,11 +68,17 @@ export async function GET(request: NextRequest, context: RouteContext) {
         vatCondition: profile?.vatCondition ?? 'RESPONSABLE_INSCRIPTO',
         regime: profile?.grossIncomeRegime ?? 'NONE',
         conventionRegime: profile?.conventionRegime ?? 'NONE',
+        smallTaxpayerBenefitEnabled: profile?.smallTaxpayerBenefitEnabled ?? false,
+        smallTaxpayerBenefitStartYear: profile?.smallTaxpayerBenefitStartYear ?? null,
+        idcbComputablePercent: normalizeIdcbComputablePercent(profile?.idcbComputablePercent),
         hasProfile: Boolean(profile),
         jurisdictions: (profile?.jurisdictions ?? []).map(j => ({
           jurisdictionCode: j.jurisdictionCode,
+          activityCode: j.activityCode,
+          activityLabel: j.activityLabel,
           registrationNumber: j.registrationNumber,
           taxRate: j.taxRate != null ? j.taxRate.toString() : null,
+          computesTish: j.computesTish,
           isActive: j.isActive,
         })),
         coefficients: (coefVersion?.coefficientLines ?? []).map(l => ({
@@ -91,6 +104,20 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
     const { year, jurisdictions, coefficients } = parsed.data;
 
+    // Cada (jurisdicción, actividad) debe ser único: dos alícuotas en la misma jurisdicción necesitan
+    // códigos de actividad distintos, si no chocan con el índice único de la base.
+    const combos = new Set<string>();
+    for (const j of jurisdictions) {
+      const key = `${j.jurisdictionCode}|${j.activityCode ?? ''}`;
+      if (combos.has(key)) {
+        return NextResponse.json(
+          { success: false, error: `Hay dos filas con la jurisdicción ${j.jurisdictionCode} y el mismo código de actividad. Asigná un código de actividad distinto a cada alícuota de una misma jurisdicción.` },
+          { status: 400 },
+        );
+      }
+      combos.add(key);
+    }
+
     const profile = await prisma.clientTaxProfileVersion.findFirst({
       where: { clientId },
       orderBy: { validFrom: 'desc' },
@@ -99,6 +126,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         vatCondition: true,
         grossIncomeRegime: true,
         conventionRegime: true,
+        smallTaxpayerBenefitEnabled: true,
+        smallTaxpayerBenefitStartYear: true,
+        idcbComputablePercent: true,
         arbaRegistrationNumber: true,
         cmRegistrationNumber: true,
         sourceReference: true,
@@ -135,6 +165,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           vatCondition: profile.vatCondition,
           grossIncomeRegime: profile.grossIncomeRegime,
           conventionRegime: profile.conventionRegime,
+          smallTaxpayerBenefitEnabled: profile.smallTaxpayerBenefitEnabled,
+          smallTaxpayerBenefitStartYear: profile.smallTaxpayerBenefitStartYear,
+          // Se arrastra a la versión nueva: si no, guardar IIBB resetearía el % del impuesto al cheque.
+          idcbComputablePercent: profile.idcbComputablePercent,
           arbaRegistrationNumber: profile.arbaRegistrationNumber,
           cmRegistrationNumber: profile.cmRegistrationNumber,
           sourceReference: profile.sourceReference,
@@ -143,8 +177,11 @@ export async function PUT(request: NextRequest, context: RouteContext) {
           notes: profile.notes,
           jurisdictions: { create: jurisdictions.map(j => ({
             jurisdictionCode: j.jurisdictionCode,
+            activityCode: j.activityCode ?? '',
+            activityLabel: j.activityLabel ?? null,
             taxRate: j.taxRate ?? null,
             registrationNumber: j.registrationNumber ?? null,
+            computesTish: j.computesTish ?? false,
             isActive: j.isActive ?? true,
           })) },
         },

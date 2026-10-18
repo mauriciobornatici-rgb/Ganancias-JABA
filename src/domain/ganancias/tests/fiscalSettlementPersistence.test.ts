@@ -95,12 +95,15 @@ describe('persistVatSettlement — versionado y estado por cotejo', () => {
       fiscalPeriodId: 'p1',
       view: sampleView(),
       previousTechnicalBalance: D(0),
+      previousFreeAvailabilityBalance: D('250'),
       official: { debitFiscal: '21000', creditFiscal: '8400', amountDue: '12600' },
     });
     expect(res.version).toBe(0);
     expect(res.status).toBe('CLOSED');
     expect(res.cotejo.matches).toBe(true);
     expect(store.rows[0].amountDue).toBe('12600.00');
+    expect(store.rows[0].previousFreeAvailabilityBalance).toBe('250.00');
+    expect(store.rows[0].smallTaxpayerBenefitRate).toBe('0.000000');
     expect(store.rows[0].filedAt).toBeInstanceOf(Date);
   });
 

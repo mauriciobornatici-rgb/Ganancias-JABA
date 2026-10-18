@@ -1,59 +1,48 @@
-# Base de prueba local — probar el módulo IVA + inyección al wizard
+# Base local aislada para pruebas
 
-Todo corre en tu máquina, **sin tocar producción**. Requiere **Docker Desktop** instalado y abierto.
-Yo ya dejé configurado el `.env` del worktree apuntando a esta base local (clave de acceso `1234`).
+Todo corre en Docker y no puede modificar producciÃ³n. Requiere Docker Desktop abierto.
 
-> Parate siempre en el worktree:
-> ```powershell
-> cd "C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual"
-> ```
+## PreparaciÃ³n inicial
 
-## Paso a paso (una sola vez)
+Desde la raÃ­z del repositorio:
 
 ```powershell
-# 1) Levantar la base MySQL de prueba (puerto 3318, aislada de producción)
-docker compose up -d
-
-# 2) Esperar ~15 seg a que arranque, y aplicar TODO el esquema (incluye las migraciones nuevas)
-npx prisma migrate deploy
-
-# 3) Sembrar datos base (años fiscales, parámetros, escalas, clientes de ejemplo)
-npx prisma db seed
-
-# 4) Levantar la app
+npm run db:test:up
+npm run db:test:migrate
+npm run db:test:seed
 npm run dev
 ```
 
-Después entrá a http://localhost:3000 y logueate con **`1234`**.
+Abrir `http://localhost:3000`. Debe verse una franja amarilla permanente:
 
-## Probar el flujo completo mensual → anual
+> ENTORNO DE PRUEBA â€” Base Docker aislada: los datos no afectan producciÃ³n.
 
-Con la app abierta:
+`npm run dev` y `npm run dev:testdb` son equivalentes. Ambos fuerzan:
 
-1. **Cargar un mes de IVA.** Andá a un cliente (p. ej. *Lobato*, que viene del seed) → *Períodos fiscales* →
-   creá un período (ej. 2025 / mes 5) → entrá a **Liquidar IVA**.
-2. Subí tus dos CSV de AFIP (compras y ventas). Revisá la grilla y destildá lo que no quieras.
-3. **Calcular** → mirá los totales estilo F2002.
-4. Cargá los **tres importes de AFIP** (débito, crédito, saldo) en el cotejo → si coinciden, **Guardar**
-   (queda `CLOSED` / cotejada).
-5. **Crear la DDJJ anual.** Andá a *Declaraciones* → creá una declaración para ese cliente y año 2025.
-6. En el wizard, **Paso 2 (Ventas)**, vas a ver el botón **"Importar del módulo mensual (IVA)"**.
-   Apretalo → confirmá → la página recarga y las ventas/compras del mes cotejado aparecen cargadas.
-7. Avanzá los pasos y verificá la determinación.
+- host `127.0.0.1`;
+- puerto `3317` por defecto;
+- base `ganancias_jaba_test`;
+- entorno `APP_ENV=test-db`.
 
-## Comandos útiles
+Aunque `.env` contenga una URL productiva, el runner la reemplaza. Como segunda barrera, el backend
+rechaza cualquier conexiÃ³n a Hostinger fuera de Vercel Production desplegado desde `main`.
+
+## Comandos Ãºtiles
 
 ```powershell
-docker compose ps          # ver si la base está corriendo
-docker compose logs -f      # ver logs de la base
-docker compose down         # apagar la base (los datos quedan en el volumen)
-docker compose down -v      # apagar y BORRAR los datos (empezar de cero)
+npm run db:test:up       # levantar MySQL Docker
+npm run db:test:migrate  # aplicar migraciones sÃ³lo en Docker
+npm run db:test:seed     # cargar datos ficticios
+npm run db:test:validate # validar Prisma contra Docker
+npm run db:test:studio   # Prisma Studio contra Docker
+npm run db:test:down     # apagar sin borrar el volumen
+npm run db:test:reset    # borrar y recrear sÃ³lo la base local
 ```
 
-## Notas
+## Reglas
 
-- Esta base es **descartable**: si algo se ensucia, `docker compose down -v` + repetir los pasos 1–3.
-- El `.env` del worktree apunta a `127.0.0.1:3318` (local). La guarda de deploy impide correr esto
-  contra producción por accidente.
-- Si el puerto 3318 está ocupado, cambialo en el `.env` (`JABA_TEST_DB_PORT` y el puerto del `DATABASE_URL`).
-- **No** se commitea el `.env` (está en `.gitignore`).
+- No ejecutar `next dev`, `next start`, `prisma db push` ni `prisma migrate` directamente.
+- Usar siempre los scripts `npm run ...` versionados en el proyecto.
+- No copiar credenciales productivas a `.env.docker.example`.
+- Los archivos `.env*` locales permanecen fuera de Git.
+- La eliminaciÃ³n del volumen Docker nunca afecta Hostinger.

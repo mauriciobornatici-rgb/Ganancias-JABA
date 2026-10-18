@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.8.0
- * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
+ * Prisma Client JS version: 7.10.1
+ * Query Engine version: d1b3f377ca835d73fd50954a5e22128b9ebdd6b8
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.8.0",
-  engine: "3c6e192761c0362d496ed980de936e2f3cebcd3a"
+  client: "7.10.1",
+  engine: "d1b3f377ca835d73fd50954a5e22128b9ebdd6b8"
 }
 
 /**
@@ -156,6 +156,19 @@ export type Subset<T, U> = {
 };
 
 /**
+ * Resolved type of the argument passed to the `PrismaClient` constructor.
+ *
+ * When called without a narrower options type (the common case), this resolves
+ * to `PrismaClientOptions` directly, which produces a clear TypeScript error
+ * message (`not assignable to parameter of type 'PrismaClientOptions'`) when
+ * the argument is missing or incomplete. When the user supplies a narrower
+ * options type (e.g. via a literal), it falls back to `Subset` to keep
+ * filtering out unknown properties.
+ */
+export type PrismaClientConstructorArgs<Options extends PrismaClientOptions> =
+  [PrismaClientOptions] extends [Options] ? PrismaClientOptions : Subset<Options, PrismaClientOptions>;
+
+/**
  * SelectSubset
  * @desc From `T` pick properties that exist in `U`. Simple version of Intersection.
  * Additionally, it validates, if both select and include are present. If the case, it errors.
@@ -187,7 +200,7 @@ type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 export type XOR<T, U> =
   T extends object ?
   U extends object ?
-    (Without<T, U> & U) | (Without<U, T> & T)
+    ((Without<T, U> & U) | (Without<U, T> & T)) & object
   : U : T
 
 
@@ -402,6 +415,7 @@ export const ModelName = {
   ClientTaxJurisdiction: 'ClientTaxJurisdiction',
   FiscalPeriod: 'FiscalPeriod',
   FiscalDocument: 'FiscalDocument',
+  ExternalImportReceipt: 'ExternalImportReceipt',
   FiscalDocumentVatLine: 'FiscalDocumentVatLine',
   FiscalDocumentAllocation: 'FiscalDocumentAllocation',
   TaxCreditRecord: 'TaxCreditRecord',
@@ -409,6 +423,8 @@ export const ModelName = {
   VatSettlementLine: 'VatSettlementLine',
   GrossIncomeSettlement: 'GrossIncomeSettlement',
   GrossIncomeJurisdictionLine: 'GrossIncomeJurisdictionLine',
+  TishSetting: 'TishSetting',
+  TishSettlement: 'TishSettlement',
   ConventionCoefficientVersion: 'ConventionCoefficientVersion',
   ConventionCoefficientLine: 'ConventionCoefficientLine',
   AnnualFiscalConsolidationSnapshot: 'AnnualFiscalConsolidationSnapshot',
@@ -422,6 +438,7 @@ export const ModelName = {
   ReceivableDebt: 'ReceivableDebt',
   PayableDebt: 'PayableDebt',
   TaxWithholding: 'TaxWithholding',
+  SocietyParticipation: 'SocietyParticipation',
   PersonalAsset: 'PersonalAsset',
   PersonalLiability: 'PersonalLiability',
   PatrimonialJustification: 'PatrimonialJustification',
@@ -451,7 +468,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
+    modelProps: "user" | "role" | "permission" | "rolePermission" | "clientUserAccess" | "client" | "fiscalYear" | "taxParameterSet" | "taxArt94Bracket" | "updateIndex" | "taxReturn" | "fixedAssetImportCandidate" | "rectificationLink" | "clientTaxProfileVersion" | "clientTaxActivity" | "clientTaxJurisdiction" | "fiscalPeriod" | "fiscalDocument" | "externalImportReceipt" | "fiscalDocumentVatLine" | "fiscalDocumentAllocation" | "taxCreditRecord" | "vatSettlement" | "vatSettlementLine" | "grossIncomeSettlement" | "grossIncomeJurisdictionLine" | "tishSetting" | "tishSettlement" | "conventionCoefficientVersion" | "conventionCoefficientLine" | "annualFiscalConsolidationSnapshot" | "annualFiscalConsolidationPeriod" | "salesInvoice" | "purchaseInvoice" | "fixedAsset" | "inventoryValue" | "bankAccountBalance" | "cashHolding" | "receivableDebt" | "payableDebt" | "taxWithholding" | "societyParticipation" | "personalAsset" | "personalLiability" | "patrimonialJustification" | "generalDeduction" | "personalDeduction" | "axiStaticItem" | "axiDynamicItem" | "calculationRun" | "attachment" | "attachmentBlob" | "importBatch" | "importFile" | "auditLog" | "backupConfig"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1643,6 +1660,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ExternalImportReceipt: {
+      payload: Prisma.$ExternalImportReceiptPayload<ExtArgs>
+      fields: Prisma.ExternalImportReceiptFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ExternalImportReceiptFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ExternalImportReceiptFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>
+        }
+        findFirst: {
+          args: Prisma.ExternalImportReceiptFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ExternalImportReceiptFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>
+        }
+        findMany: {
+          args: Prisma.ExternalImportReceiptFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>[]
+        }
+        create: {
+          args: Prisma.ExternalImportReceiptCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>
+        }
+        createMany: {
+          args: Prisma.ExternalImportReceiptCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.ExternalImportReceiptDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>
+        }
+        update: {
+          args: Prisma.ExternalImportReceiptUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>
+        }
+        deleteMany: {
+          args: Prisma.ExternalImportReceiptDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ExternalImportReceiptUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.ExternalImportReceiptUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ExternalImportReceiptPayload>
+        }
+        aggregate: {
+          args: Prisma.ExternalImportReceiptAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateExternalImportReceipt>
+        }
+        groupBy: {
+          args: Prisma.ExternalImportReceiptGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExternalImportReceiptGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ExternalImportReceiptCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ExternalImportReceiptCountAggregateOutputType> | number
+        }
+      }
+    }
     FiscalDocumentVatLine: {
       payload: Prisma.$FiscalDocumentVatLinePayload<ExtArgs>
       fields: Prisma.FiscalDocumentVatLineFieldRefs
@@ -2102,6 +2185,138 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.GrossIncomeJurisdictionLineCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.GrossIncomeJurisdictionLineCountAggregateOutputType> | number
+        }
+      }
+    }
+    TishSetting: {
+      payload: Prisma.$TishSettingPayload<ExtArgs>
+      fields: Prisma.TishSettingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TishSettingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TishSettingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        findFirst: {
+          args: Prisma.TishSettingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TishSettingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        findMany: {
+          args: Prisma.TishSettingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>[]
+        }
+        create: {
+          args: Prisma.TishSettingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        createMany: {
+          args: Prisma.TishSettingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.TishSettingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        update: {
+          args: Prisma.TishSettingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        deleteMany: {
+          args: Prisma.TishSettingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TishSettingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.TishSettingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettingPayload>
+        }
+        aggregate: {
+          args: Prisma.TishSettingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTishSetting>
+        }
+        groupBy: {
+          args: Prisma.TishSettingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TishSettingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettingCountAggregateOutputType> | number
+        }
+      }
+    }
+    TishSettlement: {
+      payload: Prisma.$TishSettlementPayload<ExtArgs>
+      fields: Prisma.TishSettlementFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.TishSettlementFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.TishSettlementFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        findFirst: {
+          args: Prisma.TishSettlementFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.TishSettlementFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        findMany: {
+          args: Prisma.TishSettlementFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>[]
+        }
+        create: {
+          args: Prisma.TishSettlementCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        createMany: {
+          args: Prisma.TishSettlementCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.TishSettlementDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        update: {
+          args: Prisma.TishSettlementUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        deleteMany: {
+          args: Prisma.TishSettlementDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.TishSettlementUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.TishSettlementUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$TishSettlementPayload>
+        }
+        aggregate: {
+          args: Prisma.TishSettlementAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateTishSettlement>
+        }
+        groupBy: {
+          args: Prisma.TishSettlementGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettlementGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.TishSettlementCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.TishSettlementCountAggregateOutputType> | number
         }
       }
     }
@@ -2960,6 +3175,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TaxWithholdingCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TaxWithholdingCountAggregateOutputType> | number
+        }
+      }
+    }
+    SocietyParticipation: {
+      payload: Prisma.$SocietyParticipationPayload<ExtArgs>
+      fields: Prisma.SocietyParticipationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.SocietyParticipationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.SocietyParticipationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        findFirst: {
+          args: Prisma.SocietyParticipationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.SocietyParticipationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        findMany: {
+          args: Prisma.SocietyParticipationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>[]
+        }
+        create: {
+          args: Prisma.SocietyParticipationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        createMany: {
+          args: Prisma.SocietyParticipationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.SocietyParticipationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        update: {
+          args: Prisma.SocietyParticipationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        deleteMany: {
+          args: Prisma.SocietyParticipationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.SocietyParticipationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.SocietyParticipationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$SocietyParticipationPayload>
+        }
+        aggregate: {
+          args: Prisma.SocietyParticipationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateSocietyParticipation>
+        }
+        groupBy: {
+          args: Prisma.SocietyParticipationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SocietyParticipationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.SocietyParticipationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.SocietyParticipationCountAggregateOutputType> | number
         }
       }
     }
@@ -4109,6 +4390,9 @@ export const ClientTaxProfileVersionScalarFieldEnum = {
   vatCondition: 'vatCondition',
   grossIncomeRegime: 'grossIncomeRegime',
   conventionRegime: 'conventionRegime',
+  smallTaxpayerBenefitEnabled: 'smallTaxpayerBenefitEnabled',
+  smallTaxpayerBenefitStartYear: 'smallTaxpayerBenefitStartYear',
+  idcbComputablePercent: 'idcbComputablePercent',
   arbaRegistrationNumber: 'arbaRegistrationNumber',
   cmRegistrationNumber: 'cmRegistrationNumber',
   sourceReference: 'sourceReference',
@@ -4139,8 +4423,11 @@ export const ClientTaxJurisdictionScalarFieldEnum = {
   id: 'id',
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
+  activityCode: 'activityCode',
+  activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber',
   taxRate: 'taxRate',
+  computesTish: 'computesTish',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -4185,6 +4472,29 @@ export const FiscalDocumentScalarFieldEnum = {
 } as const
 
 export type FiscalDocumentScalarFieldEnum = (typeof FiscalDocumentScalarFieldEnum)[keyof typeof FiscalDocumentScalarFieldEnum]
+
+
+export const ExternalImportReceiptScalarFieldEnum = {
+  id: 'id',
+  source: 'source',
+  idempotencyKey: 'idempotencyKey',
+  clientId: 'clientId',
+  fiscalPeriodId: 'fiscalPeriodId',
+  ownerCuit: 'ownerCuit',
+  year: 'year',
+  month: 'month',
+  status: 'status',
+  fileManifest: 'fileManifest',
+  inserted: 'inserted',
+  duplicates: 'duplicates',
+  conflicts: 'conflicts',
+  totalDocuments: 'totalDocuments',
+  warnings: 'warnings',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ExternalImportReceiptScalarFieldEnum = (typeof ExternalImportReceiptScalarFieldEnum)[keyof typeof ExternalImportReceiptScalarFieldEnum]
 
 
 export const FiscalDocumentVatLineScalarFieldEnum = {
@@ -4249,8 +4559,12 @@ export const VatSettlementScalarFieldEnum = {
   version: 'version',
   status: 'status',
   previousTechnicalBalance: 'previousTechnicalBalance',
+  previousFreeAvailabilityBalance: 'previousFreeAvailabilityBalance',
   debitFiscal: 'debitFiscal',
   creditFiscal: 'creditFiscal',
+  technicalDueBeforeBenefit: 'technicalDueBeforeBenefit',
+  smallTaxpayerBenefitRate: 'smallTaxpayerBenefitRate',
+  smallTaxpayerBenefitReduction: 'smallTaxpayerBenefitReduction',
   technicalCarryForward: 'technicalCarryForward',
   freeAvailabilityBalance: 'freeAvailabilityBalance',
   amountDue: 'amountDue',
@@ -4310,12 +4624,55 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
   taxRate: 'taxRate',
   determinedTax: 'determinedTax',
   creditsApplied: 'creditsApplied',
+  previousFavorBalance: 'previousFavorBalance',
   balance: 'balance',
   favorCarryForward: 'favorCarryForward',
   createdAt: 'createdAt'
 } as const
 
 export type GrossIncomeJurisdictionLineScalarFieldEnum = (typeof GrossIncomeJurisdictionLineScalarFieldEnum)[keyof typeof GrossIncomeJurisdictionLineScalarFieldEnum]
+
+
+export const TishSettingScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  year: 'year',
+  category: 'category',
+  taxRate: 'taxRate',
+  minimumQuota: 'minimumQuota',
+  categoryAQuota: 'categoryAQuota',
+  healthRate: 'healthRate',
+  firefightersRate: 'firefightersRate',
+  wasteRateCategoryL: 'wasteRateCategoryL',
+  wasteRateCategoryM: 'wasteRateCategoryM',
+  wasteRateCategoryN: 'wasteRateCategoryN',
+  dueDates: 'dueDates',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TishSettingScalarFieldEnum = (typeof TishSettingScalarFieldEnum)[keyof typeof TishSettingScalarFieldEnum]
+
+
+export const TishSettlementScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  year: 'year',
+  bimester: 'bimester',
+  version: 'version',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint',
+  sourceSnapshot: 'sourceSnapshot',
+  calculationSnapshot: 'calculationSnapshot',
+  total: 'total',
+  closedAt: 'closedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TishSettlementScalarFieldEnum = (typeof TishSettlementScalarFieldEnum)[keyof typeof TishSettlementScalarFieldEnum]
 
 
 export const ConventionCoefficientVersionScalarFieldEnum = {
@@ -4540,6 +4897,23 @@ export const TaxWithholdingScalarFieldEnum = {
 } as const
 
 export type TaxWithholdingScalarFieldEnum = (typeof TaxWithholdingScalarFieldEnum)[keyof typeof TaxWithholdingScalarFieldEnum]
+
+
+export const SocietyParticipationScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType',
+  participationPercent: 'participationPercent',
+  societyResult: 'societyResult',
+  attributedResultOverride: 'attributedResultOverride',
+  overrideReason: 'overrideReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SocietyParticipationScalarFieldEnum = (typeof SocietyParticipationScalarFieldEnum)[keyof typeof SocietyParticipationScalarFieldEnum]
 
 
 export const PersonalAssetScalarFieldEnum = {
@@ -4786,6 +5160,21 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const UserOrderByRelevanceFieldEnum = {
   id: 'id',
   email: 'email',
@@ -4951,6 +5340,8 @@ export const ClientTaxJurisdictionOrderByRelevanceFieldEnum = {
   id: 'id',
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
+  activityCode: 'activityCode',
+  activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber'
 } as const
 
@@ -4982,6 +5373,36 @@ export const FiscalDocumentOrderByRelevanceFieldEnum = {
 } as const
 
 export type FiscalDocumentOrderByRelevanceFieldEnum = (typeof FiscalDocumentOrderByRelevanceFieldEnum)[keyof typeof FiscalDocumentOrderByRelevanceFieldEnum]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const ExternalImportReceiptOrderByRelevanceFieldEnum = {
+  id: 'id',
+  source: 'source',
+  idempotencyKey: 'idempotencyKey',
+  clientId: 'clientId',
+  fiscalPeriodId: 'fiscalPeriodId',
+  ownerCuit: 'ownerCuit',
+  status: 'status'
+} as const
+
+export type ExternalImportReceiptOrderByRelevanceFieldEnum = (typeof ExternalImportReceiptOrderByRelevanceFieldEnum)[keyof typeof ExternalImportReceiptOrderByRelevanceFieldEnum]
 
 
 export const FiscalDocumentVatLineOrderByRelevanceFieldEnum = {
@@ -5057,6 +5478,29 @@ export const GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = {
 } as const
 
 export type GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = (typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum)[keyof typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum]
+
+
+export const TishSettingOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  category: 'category',
+  dueDates: 'dueDates',
+  notes: 'notes'
+} as const
+
+export type TishSettingOrderByRelevanceFieldEnum = (typeof TishSettingOrderByRelevanceFieldEnum)[keyof typeof TishSettingOrderByRelevanceFieldEnum]
+
+
+export const TishSettlementOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint'
+} as const
+
+export type TishSettlementOrderByRelevanceFieldEnum = (typeof TishSettlementOrderByRelevanceFieldEnum)[keyof typeof TishSettlementOrderByRelevanceFieldEnum]
 
 
 export const ConventionCoefficientVersionOrderByRelevanceFieldEnum = {
@@ -5202,6 +5646,18 @@ export const TaxWithholdingOrderByRelevanceFieldEnum = {
 } as const
 
 export type TaxWithholdingOrderByRelevanceFieldEnum = (typeof TaxWithholdingOrderByRelevanceFieldEnum)[keyof typeof TaxWithholdingOrderByRelevanceFieldEnum]
+
+
+export const SocietyParticipationOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType',
+  overrideReason: 'overrideReason'
+} as const
+
+export type SocietyParticipationOrderByRelevanceFieldEnum = (typeof SocietyParticipationOrderByRelevanceFieldEnum)[keyof typeof SocietyParticipationOrderByRelevanceFieldEnum]
 
 
 export const PersonalAssetOrderByRelevanceFieldEnum = {
@@ -5424,6 +5880,20 @@ export type EnumFiscalDocumentDirectionFieldRefInput<$PrismaModel> = FieldRefInp
 
 
 /**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
  * Reference to a field of type 'VatLineKind'
  */
 export type EnumVatLineKindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'VatLineKind'>
@@ -5488,19 +5958,10 @@ export type BatchPayload = {
 export const defineExtension = runtime.Extensions.defineExtension as unknown as runtime.Types.Extensions.ExtendsHook<"define", TypeMapCb, runtime.Types.Extensions.DefaultArgs>
 export type DefaultPrismaClient = PrismaClient
 export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
-export type PrismaClientOptions = ({
-  /**
-   * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-pg`.
-   */
-  adapter: runtime.SqlDriverAdapterFactory
-  accelerateUrl?: never
-} | {
-  /**
-   * Prisma Accelerate URL allowing the client to connect through Accelerate instead of a direct database.
-   */
-  accelerateUrl: string
-  adapter?: never
-}) & {
+/**
+ * Options common to all variants of `PrismaClientOptions`, regardless of whether you connect to your database through a driver adapter or through Prisma Accelerate.
+ */
+export interface PrismaClientBaseOptions {
   /**
    * @default "colorless"
    */
@@ -5587,6 +6048,56 @@ export type PrismaClientOptions = ({
    */
   queryPlanCacheMaxSize?: number
 }
+
+/**
+ * `PrismaClient` options for connecting to your database through Prisma Accelerate instead of a driver adapter.
+ * 
+ * Learn more: https://pris.ly/d/accelerate
+ */
+export interface PrismaClientOptionsWithAccelerateUrl extends PrismaClientBaseOptions {
+  /**
+   * The Prisma Accelerate connection URL. Use this option to connect to your database through Prisma Accelerate instead of using a driver adapter to connect directly.
+   * 
+   * Learn more: https://pris.ly/d/accelerate
+   */
+  accelerateUrl: string
+  adapter?: never
+}
+
+/**
+ * `PrismaClient` options for connecting to your database through a driver adapter. This is the common case in Prisma 7.
+ * 
+ * Learn more: https://pris.ly/d/driver-adapters
+ */
+export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions {
+  /**
+   * A driver adapter that PrismaClient uses to connect to your database, such as the ones provided by `@prisma/adapter-pg`, `@prisma/adapter-libsql`, `@prisma/adapter-planetscale`, etc.
+   * 
+   * A driver adapter is **required** unless you connect to your database through Prisma Accelerate (in which case use `accelerateUrl` instead).
+   * 
+   * Learn more: https://pris.ly/d/driver-adapters
+   * 
+   * @example
+   * ```ts
+   * import { PrismaPg } from '@prisma/adapter-pg'
+   * import { PrismaClient } from './generated/prisma/client'
+   * 
+   * const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+   * const prisma = new PrismaClient({ adapter })
+   * ```
+   */
+  adapter: runtime.SqlDriverAdapterFactory
+  accelerateUrl?: never
+}
+
+/**
+ * Options passed to the `PrismaClient` constructor.
+ * 
+ * A driver adapter (or, alternatively, a Prisma Accelerate URL) is **required**. See {@link PrismaClientOptionsWithAdapter} and {@link PrismaClientOptionsWithAccelerateUrl} for the two variants. All other properties live in {@link PrismaClientBaseOptions} and are optional.
+ * 
+ * Learn more about driver adapters: https://pris.ly/d/driver-adapters
+ */
+export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   role?: Prisma.RoleOmit
@@ -5606,6 +6117,7 @@ export type GlobalOmitConfig = {
   clientTaxJurisdiction?: Prisma.ClientTaxJurisdictionOmit
   fiscalPeriod?: Prisma.FiscalPeriodOmit
   fiscalDocument?: Prisma.FiscalDocumentOmit
+  externalImportReceipt?: Prisma.ExternalImportReceiptOmit
   fiscalDocumentVatLine?: Prisma.FiscalDocumentVatLineOmit
   fiscalDocumentAllocation?: Prisma.FiscalDocumentAllocationOmit
   taxCreditRecord?: Prisma.TaxCreditRecordOmit
@@ -5613,6 +6125,8 @@ export type GlobalOmitConfig = {
   vatSettlementLine?: Prisma.VatSettlementLineOmit
   grossIncomeSettlement?: Prisma.GrossIncomeSettlementOmit
   grossIncomeJurisdictionLine?: Prisma.GrossIncomeJurisdictionLineOmit
+  tishSetting?: Prisma.TishSettingOmit
+  tishSettlement?: Prisma.TishSettlementOmit
   conventionCoefficientVersion?: Prisma.ConventionCoefficientVersionOmit
   conventionCoefficientLine?: Prisma.ConventionCoefficientLineOmit
   annualFiscalConsolidationSnapshot?: Prisma.AnnualFiscalConsolidationSnapshotOmit
@@ -5626,6 +6140,7 @@ export type GlobalOmitConfig = {
   receivableDebt?: Prisma.ReceivableDebtOmit
   payableDebt?: Prisma.PayableDebtOmit
   taxWithholding?: Prisma.TaxWithholdingOmit
+  societyParticipation?: Prisma.SocietyParticipationOmit
   personalAsset?: Prisma.PersonalAssetOmit
   personalLiability?: Prisma.PersonalLiabilityOmit
   patrimonialJustification?: Prisma.PatrimonialJustificationOmit

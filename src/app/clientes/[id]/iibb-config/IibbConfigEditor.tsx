@@ -3,12 +3,15 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Plus, Trash2, Save, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react';
+import TishPanel from './TishPanel';
 
 type JurRow = {
   jurisdictionCode: string;
+  activity: string; // actividad dentro de la jurisdicción (vacío = actividad única)
   registrationNumber: string;
   taxRatePct: string; // alícuota como % (lo que ve el usuario)
   unifiedCoefficient: string; // para CM
+  computesTish: boolean; // tilde explícito de TISH (nunca por coincidencia de texto)
   isActive: boolean;
 };
 
@@ -18,8 +21,11 @@ type ConfigData = {
   vatCondition: string;
   regime: string;
   conventionRegime: string;
+  smallTaxpayerBenefitEnabled: boolean;
+  smallTaxpayerBenefitStartYear: number | null;
+  idcbComputablePercent: number;
   hasProfile: boolean;
-  jurisdictions: Array<{ jurisdictionCode: string; registrationNumber: string | null; taxRate: string | null; isActive: boolean }>;
+  jurisdictions: Array<{ jurisdictionCode: string; activityCode: string; activityLabel: string | null; registrationNumber: string | null; taxRate: string | null; computesTish: boolean; isActive: boolean }>;
   coefficients: Array<{ jurisdictionCode: string; unifiedCoefficient: string }>;
 };
 
@@ -36,18 +42,24 @@ const REGIME_LABEL: Record<string, string> = {
 };
 
 export default function IibbConfigEditor({ clientId }: { clientId: string }) {
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [config, setConfig] = useState<ConfigData | null>(null);
   const [rows, setRows] = useState<JurRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Se incrementa al guardar jurisdicciones: TISH depende de los tildes y de las bases del año.
+  const [tishRefreshKey, setTishRefreshKey] = useState(0);
 
   // Formulario de perfil fiscal (condición IVA + régimen IIBB + Convenio)
   const [pVat, setPVat] = useState('RESPONSABLE_INSCRIPTO');
   const [pRegime, setPRegime] = useState('NONE');
   const [pConvention, setPConvention] = useState('NONE');
+  const [pBenefitEnabled, setPBenefitEnabled] = useState(false);
+  const [pBenefitStartYear, setPBenefitStartYear] = useState(() => new Date().getFullYear());
+  // Impuesto al cheque computable como pago a cuenta de Ganancias: 33% general, 100% micro y pequeña empresa.
+  const [pIdcbPercent, setPIdcbPercent] = useState<33 | 100>(33);
   const [savingProfile, setSavingProfile] = useState(false);
 
   const isConvenio = config?.regime === 'CM_REGIMEN_GENERAL' || config?.regime === 'CM_REGIMEN_ESPECIAL';
@@ -64,13 +76,18 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       setPVat(data.vatCondition);
       setPRegime(data.regime);
       setPConvention(data.conventionRegime);
+      setPBenefitEnabled(data.smallTaxpayerBenefitEnabled);
+      setPBenefitStartYear(data.smallTaxpayerBenefitStartYear ?? new Date().getFullYear());
+      setPIdcbPercent(data.idcbComputablePercent === 100 ? 100 : 33);
       const coefMap = new Map(data.coefficients.map(c => [c.jurisdictionCode, c.unifiedCoefficient]));
       setRows(
         data.jurisdictions.map(j => ({
           jurisdictionCode: j.jurisdictionCode,
+          activity: j.activityLabel ?? j.activityCode ?? '',
           registrationNumber: j.registrationNumber ?? '',
           taxRatePct: j.taxRate != null ? (Number(j.taxRate) * 100).toString() : '',
           unifiedCoefficient: coefMap.get(j.jurisdictionCode) ?? '',
+          computesTish: j.computesTish,
           isActive: j.isActive,
         })),
       );
@@ -89,7 +106,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
   );
   const coefOk = Math.abs(coefSum - 1) <= 0.0001;
 
-  const addRow = () => setRows(prev => [...prev, { jurisdictionCode: '', registrationNumber: '', taxRatePct: '', unifiedCoefficient: '', isActive: true }]);
+  const addRow = () => setRows(prev => [...prev, { jurisdictionCode: '', activity: '', registrationNumber: '', taxRatePct: '', unifiedCoefficient: '', computesTish: false, isActive: true }]);
   const removeRow = (i: number) => setRows(prev => prev.filter((_, idx) => idx !== i));
   const update = (i: number, patch: Partial<JurRow>) => setRows(prev => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
@@ -101,7 +118,14 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       const res = await fetch(`/api/clientes/${clientId}/tax-profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vatCondition: pVat, grossIncomeRegime: pRegime, conventionRegime: pConvention }),
+        body: JSON.stringify({
+          vatCondition: pVat,
+          grossIncomeRegime: pRegime,
+          conventionRegime: pConvention,
+          smallTaxpayerBenefitEnabled: pBenefitEnabled,
+          smallTaxpayerBenefitStartYear: pBenefitEnabled ? pBenefitStartYear : null,
+          idcbComputablePercent: pIdcbPercent,
+        }),
       });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar el perfil.');
@@ -136,14 +160,40 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
         return;
       }
 
+      // Dos filas de la misma jurisdicción deben tener actividad distinta (para poder diferenciarlas).
+      const combos = new Map<string, number>();
+      for (const r of valid) {
+        const key = `${r.jurisdictionCode.trim()}|${r.activity.trim()}`;
+        combos.set(key, (combos.get(key) ?? 0) + 1);
+      }
+      const dup = [...combos.entries()].find(([, n]) => n > 1);
+      if (dup) {
+        const [jur] = dup[0].split('|');
+        setError(`Tenés dos filas de la jurisdicción ${jur} con la misma actividad. Escribí una actividad distinta en cada una (ej. "Comercio" y "Servicios") para cargar dos alícuotas.`);
+        setSaving(false);
+        return;
+      }
+
       const jurisdictions = valid.map(r => ({
         jurisdictionCode: r.jurisdictionCode.trim(),
+        activityCode: r.activity.trim().slice(0, 40),
+        activityLabel: r.activity.trim() || null,
         taxRate: r.taxRatePct.trim() === '' ? null : Number(r.taxRatePct.replace(',', '.')) / 100,
         registrationNumber: r.registrationNumber.trim() || null,
+        computesTish: r.computesTish,
         isActive: r.isActive,
       }));
+      // El coeficiente CM es por jurisdicción (no por actividad): se deduplica.
+      const coefByJur = new Map<string, number>();
+      if (isConvenio) {
+        for (const r of valid) {
+          if (r.isActive && r.unifiedCoefficient.trim() !== '') {
+            coefByJur.set(r.jurisdictionCode.trim(), Number(r.unifiedCoefficient.replace(',', '.')));
+          }
+        }
+      }
       const coefficients = isConvenio
-        ? valid.filter(r => r.isActive && r.unifiedCoefficient.trim() !== '').map(r => ({ jurisdictionCode: r.jurisdictionCode.trim(), unifiedCoefficient: Number(r.unifiedCoefficient.replace(',', '.')) }))
+        ? [...coefByJur.entries()].map(([jurisdictionCode, unifiedCoefficient]) => ({ jurisdictionCode, unifiedCoefficient }))
         : undefined;
 
       const res = await fetch(`/api/clientes/${clientId}/iibb-config`, {
@@ -154,6 +204,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar.');
       setNotice(`Configuración guardada: ${payload.data?.updated ?? jurisdictions.length} jurisdicción(es)${payload.data?.coefficients ? ` y ${payload.data.coefficients} coeficiente(s) CM` : ''}. Quedan cargadas abajo.`);
+      setTishRefreshKey(prev => prev + 1);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar.');
@@ -180,8 +231,8 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
             </div>
           </div>
           <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-[#121216] p-3 shadow-xl">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500" htmlFor="year">Año coef. CM</label>
-            <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || 2025)} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
+            <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500" htmlFor="year">Año (coef. CM y TISH)</label>
+            <input id="year" type="number" min="2020" max="2100" value={year} onChange={e => setYear(Number(e.target.value) || new Date().getFullYear())} className="h-9 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-center font-mono text-sm font-bold text-teal-300 outline-none focus:border-teal-400" />
           </div>
         </div>
 
@@ -220,6 +271,45 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
               </select>
             </div>
           </div>
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <label className="flex cursor-pointer items-start gap-3 text-sm text-zinc-200">
+              <input type="checkbox" checked={pBenefitEnabled} onChange={e => setPBenefitEnabled(e.target.checked)} className="mt-0.5 h-4 w-4 accent-teal-400" />
+              <span>
+                <strong className="block text-xs text-white">Beneficio para pequeños contribuyentes cumplidores</strong>
+                <span className="mt-1 block text-[11px] leading-5 text-zinc-500">Reducción del saldo deudor de IVA: 50% el primer año, 30% el segundo y 10% el tercero (Ley 27.618 / RG 5003).</span>
+              </span>
+            </label>
+            {pBenefitEnabled ? (
+              <div className="mt-3 max-w-xs">
+                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Primer año calendario del beneficio</label>
+                <input type="number" min="2021" max="2100" value={pBenefitStartYear} onChange={e => setPBenefitStartYear(Number(e.target.value) || new Date().getFullYear())} className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 font-mono text-sm text-zinc-200 outline-none focus:border-teal-400" />
+              </div>
+            ) : null}
+          </div>
+          <div className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="text-xs font-extrabold text-white">Impuesto sobre débitos y créditos bancarios (impuesto al cheque)</p>
+            <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+              Porcentaje del impuesto al cheque que se computa como pago a cuenta de Ganancias. El importe total de cada mes se carga en la liquidación mensual; la app aplica este porcentaje y lo lleva a la DDJJ anual.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {([33, 100] as const).map(pct => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setPIdcbPercent(pct)}
+                  aria-pressed={pIdcbPercent === pct}
+                  className={`inline-flex h-9 items-center rounded border px-3 text-xs font-bold transition-colors ${
+                    pIdcbPercent === pct
+                      ? 'border-teal-400 bg-teal-400/10 text-teal-200'
+                      : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-teal-500/50 hover:text-teal-300'
+                  }`}
+                >
+                  {pct === 33 ? '33% — régimen general' : '100% — micro y pequeña empresa'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button type="button" onClick={() => void saveProfile()} disabled={savingProfile} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50">
             <Save className="h-4 w-4" /> {savingProfile ? 'Guardando…' : 'Guardar perfil'}
           </button>
@@ -234,7 +324,7 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-extrabold text-white">Jurisdicciones y alícuotas</h2>
-                <p className="mt-1 text-xs text-zinc-500">Cargá la alícuota de cada jurisdicción (en %). {isConvenio ? 'Para Convenio Multilateral, también el coeficiente unificado (CM05) — deben sumar 1.' : ''}</p>
+                <p className="mt-1 text-xs text-zinc-500">Cargá la alícuota de cada jurisdicción (en %). Si una jurisdicción tiene dos actividades con distinta alícuota, agregá una fila por actividad con el mismo código de jurisdicción y una actividad distinta en cada una. {isConvenio ? 'Para Convenio Multilateral, también el coeficiente unificado (CM05) — deben sumar 1.' : ''}</p>
               </div>
               <button type="button" onClick={addRow} className="inline-flex h-9 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-200 hover:border-teal-500/50 hover:text-teal-300"><Plus className="h-4 w-4" /> Jurisdicción</button>
             </div>
@@ -245,9 +335,11 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
                   <tr>
                     <th className="px-2 py-1.5">Activa</th>
                     <th className="px-2 py-1.5">Código jurisdicción</th>
+                    <th className="px-2 py-1.5">Actividad</th>
                     <th className="px-2 py-1.5">N° inscripción</th>
                     <th className="px-2 py-1.5 text-right">Alícuota (%)</th>
                     {isConvenio ? <th className="px-2 py-1.5 text-right">Coef. unificado</th> : null}
+                    <th className="px-2 py-1.5 text-center">Computa TISH</th>
                     <th className="px-2 py-1.5"></th>
                   </tr>
                 </thead>
@@ -256,14 +348,16 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
                     <tr key={i} className="border-t border-zinc-900">
                       <td className="px-2 py-1.5"><input type="checkbox" checked={r.isActive} onChange={e => update(i, { isActive: e.target.checked })} className="h-3.5 w-3.5 accent-teal-400" /></td>
                       <td className="px-2 py-1.5"><input value={r.jurisdictionCode} onChange={e => update(i, { jurisdictionCode: e.target.value })} placeholder="902" className="h-8 w-24 rounded border border-zinc-700 bg-zinc-950 px-2 font-mono text-zinc-200 outline-none focus:border-teal-400" /></td>
+                      <td className="px-2 py-1.5"><input value={r.activity} onChange={e => update(i, { activity: e.target.value })} placeholder="única / ej. Comercio" className="h-8 w-36 rounded border border-zinc-700 bg-zinc-950 px-2 text-zinc-200 outline-none focus:border-teal-400" /></td>
                       <td className="px-2 py-1.5"><input value={r.registrationNumber} onChange={e => update(i, { registrationNumber: e.target.value })} placeholder="opcional" className="h-8 w-32 rounded border border-zinc-700 bg-zinc-950 px-2 font-mono text-zinc-300 outline-none focus:border-teal-400" /></td>
                       <td className="px-2 py-1.5 text-right"><input inputMode="decimal" value={r.taxRatePct} onChange={e => update(i, { taxRatePct: e.target.value })} placeholder="5" className="h-8 w-20 rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-zinc-200 outline-none focus:border-teal-400" /></td>
                       {isConvenio ? <td className="px-2 py-1.5 text-right"><input inputMode="decimal" value={r.unifiedCoefficient} onChange={e => update(i, { unifiedCoefficient: e.target.value })} placeholder="0.6500" className="h-8 w-24 rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-zinc-200 outline-none focus:border-teal-400" /></td> : null}
+                      <td className="px-2 py-1.5 text-center"><input type="checkbox" checked={r.computesTish} onChange={e => update(i, { computesTish: e.target.checked })} className="h-3.5 w-3.5 accent-teal-400" aria-label="Computa TISH" /></td>
                       <td className="px-2 py-1.5 text-right"><button type="button" onClick={() => removeRow(i)} className="text-zinc-500 hover:text-red-400" aria-label="Quitar"><Trash2 className="h-4 w-4" /></button></td>
                     </tr>
                   ))}
                   {rows.length === 0 ? (
-                    <tr><td colSpan={isConvenio ? 6 : 5} className="px-2 py-6 text-center text-[11px] text-zinc-400">{isLoading ? 'Cargando…' : 'Sin jurisdicciones. Agregá una.'}</td></tr>
+                    <tr><td colSpan={isConvenio ? 8 : 7} className="px-2 py-6 text-center text-[11px] text-zinc-400">{isLoading ? 'Cargando…' : 'Sin jurisdicciones. Agregá una.'}</td></tr>
                   ) : null}
                 </tbody>
               </table>
@@ -283,6 +377,9 @@ export default function IibbConfigEditor({ clientId }: { clientId: string }) {
             </div>
           </section>
         )}
+
+        {/* TISH: bloque propio al lado de la config de IIBB (pedido expreso del usuario) */}
+        <TishPanel clientId={clientId} year={year} refreshKey={tishRefreshKey} />
       </div>
     </main>
   );

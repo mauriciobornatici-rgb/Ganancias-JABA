@@ -4,14 +4,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parseAfipTaxCredits, type TaxCreditDraft } from '@/domain/ganancias/mappers/afipTaxCreditImporter';
 import { persistTaxCredits } from '@/domain/ganancias/persistence/taxCreditPersistence';
 import { MAX_IMPORT_TOTAL_BYTES } from '@/domain/ganancias/presentation/apiValidation';
+import { buildNothingImportedMessage } from '@/domain/ganancias/presentation/taxCreditImportMessage';
 import { prisma } from '@/domain/ganancias/prisma';
 import { buildFiscalPeriodSourceMutationDecision } from '@/domain/ganancias/workflow/fiscalPeriodWorkflow';
 import { requireRouteAuth } from '@/domain/ganancias/auth/routeAuth';
 
 type RouteContext = { params: Promise<{ id: string; periodId: string }> };
 
-/** Lista las retenciones/percepciones cargadas en el período, para la grilla de revisión. */
-export async function GET(_request: NextRequest, context: RouteContext) {
+/** Lista las retenciones/percepciones cargadas en el período, para la grilla de revisión. ?tax=GROSS_INCOME lista las de IIBB (default: IVA). */
+export async function GET(request: NextRequest, context: RouteContext) {
   const { id: clientId, periodId } = await context.params;
   try {
     const period = await prisma.fiscalPeriod.findUnique({ where: { id: periodId }, select: { id: true, clientId: true } });
@@ -19,8 +20,9 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       return NextResponse.json({ success: false, error: 'El período no existe o no pertenece a este contribuyente.' }, { status: 404 });
     }
 
+    const tax = new URL(request.url).searchParams.get('tax') === 'GROSS_INCOME' ? 'GROSS_INCOME' as const : 'VAT' as const;
     const records = await prisma.taxCreditRecord.findMany({
-      where: { fiscalPeriodId: periodId, tax: 'VAT' },
+      where: { fiscalPeriodId: periodId, tax },
       orderBy: [{ kind: 'asc' }, { issueDate: 'asc' }],
       select: {
         id: true, kind: true, agentCuit: true, certificateNumber: true, issueDate: true,
@@ -94,6 +96,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const all: TaxCreditDraft[] = [];
+    let rowsRead = 0;
     let ignoredOtherTax = 0;
     const outOfPeriod: Array<{ certificateNumber: string; date: string; amount: string; kind: string }> = [];
     const errors: string[] = [];
@@ -104,6 +107,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const fileBuffer = Buffer.from(await file.arrayBuffer());
       const r = parseAfipTaxCredits({ fileName: file.name, fileBuffer }, { periodYear: period.year, periodMonth: period.month });
       all.push(...r.credits);
+      rowsRead += r.rowsRead;
       ignoredOtherTax += r.ignoredOtherTax;
       outOfPeriod.push(...r.outOfPeriod);
       errors.push(...r.errors);
@@ -112,11 +116,19 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     if (all.length === 0) {
+      // Decir POR QUÉ no entró nada: sin esto la pantalla mostraba un mensaje genérico aunque el
+      // importador supiera exactamente qué pasó con cada fila.
       return NextResponse.json(
         {
           success: false,
-          error: 'No se compiló ninguna retención/percepción de IVA del mes liquidado. Verificá que el archivo sea el de "Mis Retenciones" de ARCA y que las fechas correspondan al período.',
-          details: { ignoredOtherTax, outOfPeriod, errors },
+          error: buildNothingImportedMessage({
+            periodLabel: `${String(period.month).padStart(2, '0')}/${period.year}`,
+            rowsRead,
+            ignoredOtherTax,
+            outOfPeriod,
+            errors,
+          }),
+          details: { rowsRead, ignoredOtherTax, outOfPeriod, errors },
         },
         { status: 422 },
       );
@@ -141,6 +153,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       data: {
         inserted,
         duplicates,
+        rowsRead,
         ignoredOtherTax,
         outOfPeriod,
         errors,

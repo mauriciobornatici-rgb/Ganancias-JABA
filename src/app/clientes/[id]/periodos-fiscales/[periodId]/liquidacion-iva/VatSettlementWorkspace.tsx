@@ -4,9 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
-  Calculator, Save, FileSpreadsheet, ScanLine, MapPin,
+  Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2, Landmark,
 } from 'lucide-react';
+import { buildFiscalDocumentImportFeedback } from '@/domain/ganancias/presentation/fiscalImportFeedback';
+import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
+import { buildVatCreditsDisplay } from '@/domain/ganancias/presentation/vatCreditsDisplay';
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -30,6 +33,9 @@ type VatView = {
   debitFiscal: string;
   creditFiscal: string;
   technicalBalance: string;
+  technicalDueBeforeBenefit: string;
+  smallTaxpayerBenefitRate: string;
+  smallTaxpayerBenefitReduction: string;
   technicalDue: string;
   technicalCarryForward: string;
   creditsApplied: string;
@@ -47,6 +53,18 @@ type TaxCreditRow = {
   issueDate: string;
   amount: string;
   includedInSettlement: boolean;
+  notes?: string | null;
+};
+
+// Deducciones ARBA: B/T se distinguen por notes; P conserva además kind=PERCEPTION.
+const isArbaBankRow = (r: TaxCreditRow) => (r.notes ?? '').includes('bancaria');
+const isArbaCardRow = (r: TaxCreditRow) => (r.notes ?? '').includes('tarjetas');
+const isArbaPerceptionRow = (r: TaxCreditRow) => r.kind === 'PERCEPTION';
+const arbaRowKindLabel = (r: TaxCreditRow) => {
+  if (isArbaBankRow(r)) return 'Bancaria';
+  if (isArbaCardRow(r)) return 'Tarjetas';
+  if (isArbaPerceptionRow(r)) return 'Percepción';
+  return 'Retención';
 };
 
 type GrossIncomeView = {
@@ -56,7 +74,7 @@ type GrossIncomeView = {
   totalCreditsApplied: string;
   totalBalanceDue: string;
   totalFavorCarryForward: string;
-  jurisdictionLines: Array<{ jurisdictionCode: string; assignedBase: string; taxRate: string; determinedTax: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
+  jurisdictionLines: Array<{ jurisdictionCode: string; activityCode: string; assignedBase: string; taxRate: string; determinedTax: string; previousFavorBalance: string; creditsApplied: string; balanceDue: string; favorCarryForward: string }>;
   warnings: string[];
 };
 
@@ -66,6 +84,11 @@ type SavedSettlement = {
   status: string;
   debitFiscal: string;
   creditFiscal: string;
+  previousTechnicalBalance: string;
+  previousFreeAvailabilityBalance: string;
+  technicalDueBeforeBenefit: string;
+  smallTaxpayerBenefitRate: string;
+  smallTaxpayerBenefitReduction: string;
   technicalCarryForward: string;
   freeAvailabilityBalance: string;
   amountDue: string;
@@ -74,6 +97,21 @@ type SavedSettlement = {
   officialReference: string | null;
   updatedAt: string;
 };
+
+type OpeningBalancesView = {
+  vat: {
+    previousTechnical: string;
+    automaticPreviousTechnical: string;
+    previousTechnicalSource: 'AUTO' | 'MANUAL';
+    previousFree: string;
+    automaticPreviousFree: string;
+    previousFreeSource: 'AUTO' | 'MANUAL';
+  };
+  grossIncome: Record<string, { value: string; automaticValue: string; source: 'AUTO' | 'MANUAL' }>;
+};
+
+type BenefitInfo = { enabled: boolean; startYear: number | null; rate: string };
+type WorkspaceNotice = { message: string; tone: 'success' | 'warning' };
 
 const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
@@ -84,9 +122,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<WorkspaceNotice | null>(null);
 
   const [uploading, setUploading] = useState(false);
+  const [deletingDirection, setDeletingDirection] = useState<'SALE' | 'PURCHASE' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Retenciones y percepciones (créditos de IVA)
@@ -94,8 +133,25 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [uploadingCredits, setUploadingCredits] = useState(false);
   const creditsFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Deducciones de IIBB (ARBA: bancarias SIRCREB, tarjetas y percepciones)
+  const [iibbCredits, setIibbCredits] = useState<TaxCreditRow[]>([]);
+  const [uploadingIibbCredits, setUploadingIibbCredits] = useState(false);
+  const iibbCreditsFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Impuesto al cheque del mes (pago a cuenta de GANANCIAS: no entra en IVA ni en IIBB).
+  const [idcbAmount, setIdcbAmount] = useState('');
+  const [idcbPercent, setIdcbPercent] = useState<33 | 100>(33);
+  const [idcbComputable, setIdcbComputable] = useState('0.00');
+  const [savingIdcb, setSavingIdcb] = useState(false);
+  const [idcbNotice, setIdcbNotice] = useState<string | null>(null);
+
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
+  // Vacío = arrastre automático del último mes cerrado. "0" permite reemplazarlo explícitamente.
+  const [previousTechnical, setPreviousTechnical] = useState('');
+  const [previousFree, setPreviousFree] = useState('');
+  const [openingBalances, setOpeningBalances] = useState<OpeningBalancesView | null>(null);
+  const [benefitInfo, setBenefitInfo] = useState<BenefitInfo | null>(null);
 
   // IIBB calculado del período + cotejo/guardado
   const [grossIncome, setGrossIncome] = useState<GrossIncomeView | null>(null);
@@ -104,6 +160,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [iibbRef, setIibbRef] = useState('');
   const [savingIibb, setSavingIibb] = useState(false);
   const [savedIibbStatus, setSavedIibbStatus] = useState<{ status: string; version: number } | null>(null);
+  // Reparto por monto: base editable de cada actividad (key = "jurisdiccion|actividad").
+  const [activityBases, setActivityBases] = useState<Record<string, string>>({});
+  const [iibbPreviousBalances, setIibbPreviousBalances] = useState<Record<string, string>>({});
+  const [iibbBalancesDirty, setIibbBalancesDirty] = useState(false);
 
   // Liquidación ya guardada (al volver a un mes cerrado) + modo "reliquidar".
   const [savedSettlement, setSavedSettlement] = useState<SavedSettlement | null>(null);
@@ -145,6 +205,30 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
+  const loadIibbCredits = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits?tax=GROSS_INCOME`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) setIibbCredits(payload.data.credits);
+    } catch {
+      // si falla la carga de deducciones no bloquea la pantalla
+    }
+  }, [clientId, periodId]);
+
+  const loadIdcb = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/idcb`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) {
+        setIdcbAmount(payload.data.amount ?? '');
+        setIdcbPercent(payload.data.computablePercent === 100 ? 100 : 33);
+        setIdcbComputable(payload.data.computableAmount ?? '0.00');
+      }
+    } catch {
+      // el impuesto al cheque es de Ganancias: si falla su carga, la liquidación de IVA sigue usable
+    }
+  }, [clientId, periodId]);
+
   const loadSaved = useCallback(async () => {
     try {
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/saved`, { cache: 'no-store' });
@@ -172,30 +256,104 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     queueMicrotask(() => {
       void loadDocuments();
       void loadTaxCredits();
+      void loadIibbCredits();
+      void loadIdcb();
       void loadSaved();
       void loadSavedIibb();
     });
-  }, [loadDocuments, loadTaxCredits, loadSaved, loadSavedIibb]);
+  }, [loadDocuments, loadTaxCredits, loadIibbCredits, loadIdcb, loadSaved, loadSavedIibb]);
+
+  const saveIdcb = async () => {
+    setSavingIdcb(true);
+    setError(null);
+    setIdcbNotice(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/idcb`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: idcbAmount }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar el impuesto al cheque.');
+      setIdcbAmount(payload.data.amount ?? '');
+      setIdcbPercent(payload.data.computablePercent === 100 ? 100 : 33);
+      setIdcbComputable(payload.data.computableAmount ?? '0.00');
+      setIdcbNotice(Number(payload.data.computableAmount) > 0
+        ? `Guardado. Computable como pago a cuenta de Ganancias: $${fmt(payload.data.computableAmount)} (${payload.data.computablePercent}% del total del mes).`
+        : 'Importe borrado: este mes no computa impuesto al cheque.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el impuesto al cheque.');
+    } finally {
+      setSavingIdcb(false);
+    }
+  };
 
   const saveIibb = async (force: boolean) => {
+    if (iibbBalancesDirty) {
+      setError('Recalculá IIBB después de modificar los saldos anteriores antes de guardar.');
+      return;
+    }
     setSavingIibb(true);
     setError(null);
     try {
       const official = (iibbOfficial || iibbRef) ? { amount: iibbOfficial || null, reference: iibbRef || null } : null;
+      const bases = Object.entries(activityBases).map(([key, base]) => {
+        const [jurisdictionCode, activityCode] = key.split('|');
+        return { jurisdictionCode, activityCode, base };
+      });
+      const previousFavorBalances = Object.entries(iibbPreviousBalances)
+        .filter(([, amount]) => amount.trim() !== '')
+        .map(([jurisdictionCode, amount]) => ({ jurisdictionCode, amount }));
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/iibb/save`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ official, forceSave: force }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          official,
+          forceSave: force,
+          activityBases: bases.length > 0 ? bases : undefined,
+          previousFavorBalances: previousFavorBalances.length > 0 ? previousFavorBalances : undefined,
+        }),
       });
       const payload = await res.json();
       if (res.status === 409) { setError(payload.error || 'El saldo de IIBB no coincide con el oficial.'); return; }
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar IIBB.');
       setSavedIibbStatus({ status: payload.data.status, version: payload.data.version });
-      setNotice(payload.data.status === 'CLOSED'
-        ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
-        : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`);
+      setNotice({
+        tone: payload.data.status === 'CLOSED' ? 'success' : 'warning',
+        message: payload.data.status === 'CLOSED'
+          ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
+          : payload.data.status === 'DRAFT'
+            ? `IIBB guardado como Borrador (versión ${payload.data.version}). Para cerrarlo cargá el saldo oficial del organismo (aunque sea 0) y guardá de nuevo.`
+            : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar IIBB.');
     } finally {
       setSavingIibb(false);
+    }
+  };
+
+  // "Reliquidar / Modificar": reabre EN EL SERVIDOR las liquidaciones cerradas (CLOSED → IN_REVIEW)
+  // para que la carga de comprobantes y créditos vuelva a estar permitida; el nuevo cierre se
+  // guardará como versión+1. Sin esto el modo edición era solo visual y el servidor rechazaba todo.
+  const reopenForRectification = async () => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/reopen`, { method: 'POST' });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo reabrir la liquidación.');
+      if (payload.data.reopened.length > 0) {
+        setNotice({
+          tone: 'warning',
+          message: `Período reabierto para rectificación (${payload.data.reopened.join(' e ')}). Cargá los cambios, recalculá y volvé a cotejar y guardar: quedará como versión nueva.`,
+        });
+      }
+      setReliquidating(true);
+      setSettlement(null);
+      setGrossIncome(null);
+      if (savedSettlement?.officialAmount) setOffDue(savedSettlement.officialAmount);
+      await Promise.all([loadSaved(), loadSavedIibb()]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo reabrir la liquidación.');
     }
   };
 
@@ -221,10 +379,15 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de retenciones/percepciones.');
       const d = payload.data;
-      let msg = `Importadas ${d.inserted} ret./perc. (${d.duplicates} duplicadas).`;
+      let msg = `Importadas ${d.inserted} ret./perc. de IVA (${d.duplicates} duplicadas).`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.ignoredOtherTax) msg += ` ${d.ignoredOtherTax} de otros impuestos ignoradas.`;
-      setNotice(msg);
+      // Filas con error: antes se descartaban sin aviso y el mensaje salía en verde.
+      if (d.errors?.length) msg += ` ${d.errors.length} fila(s) con error no se cargaron: ${d.errors[0]}`;
+      setNotice({
+        tone: d.outOfPeriod?.length || d.ignoredOtherTax || d.errors?.length ? 'warning' : 'success',
+        message: msg,
+      });
       await loadTaxCredits();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de retenciones/percepciones.');
@@ -258,6 +421,64 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     void persistCreditSelection(taxCredits.map(c => ({ creditId: c.id, included })));
   };
 
+  const includedIibbBank = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaBankRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+  const includedIibbCards = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaCardRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+  const includedIibbPerceptions = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaPerceptionRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+
+  const uploadIibbCreditsFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploadingIibbCredits(true);
+    setError(null);
+    setNotice(null);
+    setSettlement(null);
+    setGrossIncome(null);
+    try {
+      const form = new FormData();
+      Array.from(files).forEach(f => form.append('files', f));
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/tax-credits/arba`, { method: 'POST', body: form });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de deducciones de ARBA.');
+      const d = payload.data;
+      let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)} · Percepciones ${fmt(d.totals.perceptions)}.`;
+      if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
+      if (d.unsupportedFiles?.length) msg += ` Régimen aún sin soporte: ${d.unsupportedFiles.join(', ')}.`;
+      if (d.errors?.length) msg += ` ${d.errors.length} líneas o archivos tuvieron errores de formato y no se importaron.`;
+      setNotice({
+        tone: d.outOfPeriod?.length || d.unsupportedFiles?.length || d.errors?.length ? 'warning' : 'success',
+        message: msg,
+      });
+      await loadIibbCredits();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de deducciones de ARBA.');
+    } finally {
+      setUploadingIibbCredits(false);
+      if (iibbCreditsFileInputRef.current) iibbCreditsFileInputRef.current.value = '';
+    }
+  };
+
+  const toggleIibbCreditRow = (id: string, included: boolean) => {
+    setIibbCredits(prev => prev.map(c => (c.id === id ? { ...c, includedInSettlement: included } : c)));
+    setSettlement(null);
+    setGrossIncome(null);
+    void persistCreditSelection([{ creditId: id, included }]);
+  };
+
+  const toggleAllIibbCredits = (included: boolean) => {
+    setIibbCredits(prev => prev.map(c => ({ ...c, includedInSettlement: included })));
+    setSettlement(null);
+    setGrossIncome(null);
+    void persistCreditSelection(iibbCredits.map(c => ({ creditId: c.id, included })));
+  };
+
   const sales = useMemo(() => documents.filter(d => d.direction === 'SALE'), [documents]);
   const purchases = useMemo(() => documents.filter(d => d.direction === 'PURCHASE'), [documents]);
 
@@ -282,13 +503,51 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudieron importar los archivos.');
-      setNotice(`Importados ${payload.data.inserted} comprobantes nuevos (${payload.data.duplicates} duplicados omitidos).`);
+      setNotice(buildFiscalDocumentImportFeedback(payload.data));
       await loadDocuments();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron importar los archivos.');
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const deleteLoadedDocuments = async (direction: 'SALE' | 'PURCHASE') => {
+    const affected = documents.filter(document => document.direction === direction);
+    if (affected.length === 0 || deletingDirection) return;
+    const periodLabel = period ? `${MONTHS[period.month]} ${period.year}` : 'este período';
+    const kind = direction === 'SALE' ? 'ventas' : 'compras';
+    const confirmed = window.confirm(
+      `Se eliminarán ${affected.length} comprobantes de ${kind} cargados en ${periodLabel}.\n\n`
+      + 'Las retenciones y percepciones no se eliminarán. Esta acción no se puede deshacer. ¿Desea continuar?',
+    );
+    if (!confirmed) return;
+
+    setDeletingDirection(direction);
+    setError(null);
+    setNotice(null);
+    setSettlement(null);
+    setGrossIncome(null);
+    setActivityBases({});
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents?direction=${direction}`, {
+        method: 'DELETE',
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) {
+        throw new Error(payload.error || 'No se pudieron eliminar los comprobantes.');
+      }
+      setDocuments(previous => previous.filter(document => document.direction !== direction));
+      setNotice({
+        tone: 'success',
+        message: `Se eliminaron ${payload.data.deleted} comprobantes de ${kind} de ${periodLabel}. Ya podés cargar el archivo correcto.`,
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudieron eliminar los comprobantes.');
+      await loadDocuments();
+    } finally {
+      setDeletingDirection(null);
     }
   };
 
@@ -324,12 +583,37 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     setSaveResult(null);
     setCotejoDiffs(null);
     try {
-      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement`, { cache: 'no-store' });
+      const params = new URLSearchParams();
+      if (previousTechnical.trim() !== '') params.set('previousTechnical', previousTechnical);
+      if (previousFree.trim() !== '') params.set('previousFree', previousFree);
+      const manualIibb = Object.fromEntries(
+        Object.entries(iibbPreviousBalances).filter(([, amount]) => amount.trim() !== ''),
+      );
+      if (Object.keys(manualIibb).length > 0) params.set('iibbPrevious', JSON.stringify(manualIibb));
+      const query = params.size > 0 ? `?${params.toString()}` : '';
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement${query}`, { cache: 'no-store' });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo calcular la liquidación.');
       setSettlement(payload.data.vat);
-      setGrossIncome(payload.data.grossIncome ?? null);
+      const gi: GrossIncomeView | null = payload.data.grossIncome ?? null;
+      setGrossIncome(gi);
       setGrossIncomeNotice(payload.data.grossIncomeNotice ?? null);
+      setOpeningBalances(payload.data.openingBalances ?? null);
+      setBenefitInfo(payload.data.smallTaxpayerBenefit ?? null);
+      setIibbBalancesDirty(false);
+      // Precarga las bases editables por actividad con lo que sugiere el servidor (reparto equitativo).
+      if (gi) {
+        const perJur = new Map<string, number>();
+        for (const l of gi.jurisdictionLines) perJur.set(l.jurisdictionCode, (perJur.get(l.jurisdictionCode) ?? 0) + 1);
+        const hasMulti = [...perJur.values()].some(n => n > 1);
+        if (hasMulti) {
+          const initial: Record<string, string> = {};
+          for (const l of gi.jurisdictionLines) initial[`${l.jurisdictionCode}|${l.activityCode}`] = l.assignedBase;
+          setActivityBases(initial);
+        } else {
+          setActivityBases({});
+        }
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo calcular la liquidación.');
     } finally {
@@ -368,7 +652,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ official, forceSave: force }),
+        body: JSON.stringify({
+          official,
+          forceSave: force,
+          openingBalances: {
+            previousTechnical: previousTechnical.trim() === '' ? undefined : previousTechnical,
+            previousFree: previousFree.trim() === '' ? undefined : previousFree,
+          },
+        }),
       });
       const payload = await res.json();
       if (res.status === 409) {
@@ -383,11 +674,12 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       setSaveResult({ status: payload.data.status, version: payload.data.version });
       // Solo una liquidación CLOSED (cotejada y coincidente) habilita su uso en Ganancias anual.
       const closed = payload.data.status === 'CLOSED';
-      setNotice(
-        closed
+      setNotice({
+        tone: closed ? 'success' : 'warning',
+        message: closed
           ? `Liquidación cotejada y cerrada (versión ${payload.data.version}). Ya disponible para la liquidación anual de Ganancias.`
           : `Liquidación guardada como ${humanStatus(payload.data.status)} (versión ${payload.data.version}). Todavía NO alimenta Ganancias: cotejá los tres importes con AFIP y cerrala para habilitarla.`,
-      );
+      });
       // Refresca el panel de "liquidación guardada" y vuelve al modo lectura.
       setReliquidating(false);
       setSettlement(null);
@@ -426,8 +718,18 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
           </div>
         ) : null}
         {notice ? (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-950/20 px-5 py-4 text-sm text-emerald-200">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><p>{notice}</p>
+          <div
+            role={notice.tone === 'warning' ? 'alert' : 'status'}
+            className={`flex items-start gap-3 rounded-xl border px-5 py-4 text-sm ${
+              notice.tone === 'warning'
+                ? 'border-amber-500/30 bg-amber-950/20 text-amber-200'
+                : 'border-emerald-500/25 bg-emerald-950/20 text-emerald-200'
+            }`}
+          >
+            {notice.tone === 'warning'
+              ? <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />}
+            <p>{notice.message}</p>
           </div>
         ) : null}
 
@@ -435,11 +737,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         {savedSettlement && !reliquidating ? (
           <SavedSettlementPanel
             saved={savedSettlement}
-            onReliquidar={() => {
-              setReliquidating(true);
-              setSettlement(null);
-              if (savedSettlement.officialAmount) setOffDue(savedSettlement.officialAmount);
-            }}
+            onReliquidar={() => void reopenForRectification()}
           />
         ) : null}
 
@@ -449,12 +747,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
           <StepTitle n={1} icon={<UploadCloud className="h-4 w-4" />} title="Subir archivos de AFIP" subtitle="Compras y ventas exportados de Mis Comprobantes (.csv). El sistema detecta automáticamente cuál es cuál." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
-            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploading ? 'cursor-wait opacity-60' : ''}`}>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || Boolean(deletingDirection)} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
+            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDirection) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploading ? 'Importando…' : 'Seleccionar CSV (compras y ventas)'}
             </label>
-            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
+            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || Boolean(deletingDirection)} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Actualizar
+            </button>
+            <button
+              type="button"
+              onClick={() => void deleteLoadedDocuments('PURCHASE')}
+              disabled={purchases.length === 0 || Boolean(deletingDirection) || uploading}
+              className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'PURCHASE' ? 'Eliminando compras…' : 'Eliminar compras'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void deleteLoadedDocuments('SALE')}
+              disabled={sales.length === 0 || Boolean(deletingDirection) || uploading}
+              className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'SALE' ? 'Eliminando ventas…' : 'Eliminar ventas'}
             </button>
           </div>
         </section>
@@ -494,6 +808,55 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             <p className="mt-4 rounded border border-dashed border-zinc-700 px-4 py-4 text-center text-[11px] text-zinc-500">Sin retenciones/percepciones cargadas (opcional).</p>
           )}
 
+          <div className="mt-5 rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
+            <p className="text-xs font-extrabold text-zinc-200">Saldos de IVA del período anterior</p>
+            <p className="mt-1 text-[11px] leading-5 text-zinc-500">Dejá el campo vacío para usar el arrastre automático del último mes cerrado. Podés ingresar 0 o un importe para reemplazarlo en esta liquidación.</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <OpeningBalanceInput
+                label="Saldo técnico a favor anterior"
+                value={previousTechnical}
+                automaticValue={openingBalances?.vat.automaticPreviousTechnical}
+                onChange={value => {
+                  setPreviousTechnical(value);
+                  setSettlement(null);
+                  setGrossIncome(null);
+                }}
+              />
+              <OpeningBalanceInput
+                label="Saldo de libre disponibilidad anterior"
+                value={previousFree}
+                automaticValue={openingBalances?.vat.automaticPreviousFree}
+                onChange={value => {
+                  setPreviousFree(value);
+                  setSettlement(null);
+                  setGrossIncome(null);
+                }}
+              />
+            </div>
+          </div>
+
+        </section>
+
+        {/* Paso 2c — Deducciones de IIBB (ARBA) */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <StepTitle n="2c" icon={<MapPin className="h-4 w-4" />} title="Deducciones de IIBB (ARBA)" subtitle="Subí el ZIP de 'Mis Deducciones' de ARBA tal como se descarga (IB-CUIT-PERIODO.zip) o los TXT que contiene. Las deducciones bancarias (SIRCREB), de tarjetas y las percepciones se descuentan del saldo a pagar de Ingresos Brutos." />
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <input ref={iibbCreditsFileInputRef} type="file" accept=".zip,.txt,application/zip,text/plain" multiple onChange={e => void uploadIibbCreditsFiles(e.target.files)} className="hidden" id="arba-deducciones-files" />
+            <label htmlFor="arba-deducciones-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploadingIibbCredits ? 'cursor-wait opacity-60' : ''}`}>
+              <UploadCloud className="h-4 w-4" /> {uploadingIibbCredits ? 'Importando…' : 'Subir deducciones ARBA (zip o txt)'}
+            </label>
+            <span className="text-[11px] text-zinc-400">
+              Bancarias (SIRCREB): <strong className="font-mono text-teal-300">{fmt(includedIibbBank)}</strong> · Tarjetas: <strong className="font-mono text-teal-300">{fmt(includedIibbCards)}</strong> · Percepciones: <strong className="font-mono text-teal-300">{fmt(includedIibbPerceptions)}</strong>
+            </span>
+          </div>
+          {iibbCredits.length > 0 ? (
+            <div className="mt-4">
+              <CreditTable rows={iibbCredits} onToggle={toggleIibbCreditRow} onToggleAll={toggleAllIibbCredits} title="Deducciones IIBB (ARBA)" rowKindLabel={arbaRowKindLabel} />
+            </div>
+          ) : (
+            <p className="mt-4 rounded border border-dashed border-zinc-700 px-4 py-4 text-center text-[11px] text-zinc-500">Sin deducciones de IIBB cargadas (opcional).</p>
+          )}
+
           <div className="mt-5">
             <button type="button" onClick={() => void calculate()} disabled={calculating || documents.length === 0} className="inline-flex h-10 items-center gap-2 rounded bg-zinc-100 px-4 text-xs font-extrabold text-zinc-900 transition-colors hover:bg-white disabled:opacity-40">
               <Calculator className="h-4 w-4" /> {calculating ? 'Calculando…' : 'Calcular liquidación'}
@@ -502,6 +865,51 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         </section>
         </>
         ) : null}
+
+        {/* Impuesto al cheque del mes — pago a cuenta de GANANCIAS (no entra en IVA ni en IIBB).
+            Queda visible y editable aunque el mes esté cerrado: cerrar IVA no es evidencia de este
+            impuesto, y sin poder cargarlo el pago a cuenta anual quedaría corto. */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <StepTitle
+            n="2d"
+            icon={<Landmark className="h-4 w-4" />}
+            title="Impuesto al cheque (pago a cuenta de Ganancias)"
+            subtitle="Cargá el importe TOTAL del impuesto sobre débitos y créditos bancarios del mes. No afecta IVA ni IIBB: la app aplica el porcentaje computable del perfil fiscal y lo lleva a la DDJJ anual de Ganancias."
+          />
+          <div className="mt-4 flex flex-wrap items-end gap-4">
+            <div>
+              <label htmlFor="idcb-amount" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Total del mes</label>
+              <input
+                id="idcb-amount"
+                inputMode="decimal"
+                value={idcbAmount}
+                onChange={e => setIdcbAmount(e.target.value)}
+                placeholder="sin cargar"
+                className="h-10 w-44 rounded border border-zinc-700 bg-zinc-950 px-3 text-right font-mono text-sm text-zinc-100 outline-none focus:border-teal-400"
+              />
+            </div>
+            <div className="text-[11px] leading-5 text-zinc-400">
+              <p>Computable: <strong className="font-mono text-teal-300">{fmt(idcbComputable)}</strong> <span className="text-zinc-500">({idcbPercent}% configurado en el perfil fiscal)</span></p>
+              <p className="text-zinc-500">
+                {idcbPercent === 100 ? 'Micro y pequeña empresa: computa el 100%.' : 'Régimen general: computa el 33%.'}{' '}
+                <Link href={`/clientes/${clientId}/iibb-config`} className="text-teal-400 underline decoration-dotted hover:text-teal-300">Cambiar porcentaje</Link>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void saveIdcb()}
+              disabled={savingIdcb}
+              className="inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" /> {savingIdcb ? 'Guardando…' : 'Guardar impuesto al cheque'}
+            </button>
+          </div>
+          {idcbNotice ? (
+            <p className="mt-3 rounded border border-emerald-500/25 bg-emerald-950/20 px-3 py-2 text-[11px] text-emerald-200">{idcbNotice}</p>
+          ) : (
+            <p className="mt-3 text-[11px] text-zinc-500">Dejá el campo vacío (o en 0) si el mes no tuvo impuesto al cheque. Se guarda por período y se puede corregir en cualquier momento.</p>
+          )}
+        </section>
 
         {/* Paso 3 — Totales + cotejo + guardar */}
         {settlement ? (
@@ -514,12 +922,26 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
                 <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-400">Calculado por la app</p>
                 <Row label="Débito fiscal" value={settlement.debitFiscal} strong />
                 <Row label="Crédito fiscal" value={settlement.creditFiscal} strong />
-                <Row label="Saldo técnico del período" value={settlement.technicalDue} />
+                {Number(openingBalances?.vat.previousTechnical ?? 0) > 0 ? <Row label="Saldo técnico a favor anterior aplicado" value={openingBalances?.vat.previousTechnical ?? '0'} muted /> : null}
+                {Number(settlement.smallTaxpayerBenefitReduction) > 0 ? (
+                  <>
+                    <Row label="Saldo técnico antes del beneficio" value={settlement.technicalDueBeforeBenefit} />
+                    <Row label={`Reducción pequeños contribuyentes (${(Number(settlement.smallTaxpayerBenefitRate) * 100).toFixed(0)}%)`} value={settlement.smallTaxpayerBenefitReduction} muted />
+                    <Row label="Saldo técnico luego del beneficio" value={settlement.technicalDue} />
+                  </>
+                ) : <Row label="Saldo técnico del período" value={settlement.technicalDue} />}
                 {Number(settlement.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={settlement.technicalCarryForward} muted /> : null}
-                {Number(settlement.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={settlement.creditsApplied} muted /> : null}
+                <VatCreditRows
+                  previousFreeAvailability={openingBalances?.vat.previousFree ?? '0'}
+                  creditsApplied={settlement.creditsApplied}
+                  freeAvailabilityBalance={settlement.freeAvailabilityBalance}
+                />
                 <div className="my-2 border-t border-zinc-800" />
                 <Row label="Saldo a pagar" value={settlement.amountDue} highlight />
                 {Number(settlement.freeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad (arrastra)" value={settlement.freeAvailabilityBalance} muted /> : null}
+                {benefitInfo?.enabled && Number(benefitInfo.rate) === 0 ? (
+                  <p className="mt-3 rounded border border-zinc-800 px-3 py-2 text-[10px] leading-4 text-zinc-500">El beneficio está configurado desde {benefitInfo.startYear}, pero este período queda fuera de sus tres años de reducción.</p>
+                ) : null}
 
                 <p className="mt-4 mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Desglose por alícuota</p>
                 <div className="space-y-1">
@@ -590,6 +1012,16 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
             saving={savingIibb}
             savedStatus={savedIibbStatus}
             onSave={saveIibb}
+            activityBases={activityBases}
+            onActivityBase={(key, v) => setActivityBases(prev => ({ ...prev, [key]: v }))}
+            automaticPreviousBalances={openingBalances?.grossIncome ?? {}}
+            previousBalances={iibbPreviousBalances}
+            balancesDirty={iibbBalancesDirty}
+            onPreviousBalance={(jurisdictionCode, value) => {
+              setIibbPreviousBalances(prev => ({ ...prev, [jurisdictionCode]: value }));
+              setIibbBalancesDirty(true);
+            }}
+            onRecalculate={() => void calculate()}
           />
         ) : null}
       </div>
@@ -597,7 +1029,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   );
 }
 
-function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave }: {
+function IibbSection({ view, notice, official, onOfficial, reference, onReference, saving, savedStatus, onSave, activityBases, onActivityBase, automaticPreviousBalances, previousBalances, balancesDirty, onPreviousBalance, onRecalculate }: {
   view: GrossIncomeView | null;
   notice: string | null;
   official: string;
@@ -607,8 +1039,34 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
   saving: boolean;
   savedStatus: { status: string; version: number } | null;
   onSave: (force: boolean) => void;
+  activityBases: Record<string, string>;
+  onActivityBase: (key: string, v: string) => void;
+  automaticPreviousBalances: OpeningBalancesView['grossIncome'];
+  previousBalances: Record<string, string>;
+  balancesDirty: boolean;
+  onPreviousBalance: (jurisdictionCode: string, value: string) => void;
+  onRecalculate: () => void;
 }) {
-  const liveMatch = view && official.trim() !== '' && Math.abs(Number(view.totalBalanceDue) - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
+  // Multi-actividad: alguna jurisdicción con más de una línea (dos actividades con distinta alícuota).
+  const perJur = new Map<string, number>();
+  for (const l of view?.jurisdictionLines ?? []) perJur.set(l.jurisdictionCode, (perJur.get(l.jurisdictionCode) ?? 0) + 1);
+  const isMulti = [...perJur.values()].some(n => n > 1);
+
+  // En modo multi se recalculan en vivo impuesto, créditos, saldo a pagar y saldo a favor.
+  const live = calculateGrossIncomeLivePreview(view?.jurisdictionLines ?? [], activityBases, isMulti);
+  const localDetermined = (l: { jurisdictionCode: string; activityCode: string }) =>
+    live.determinedByLine[`${l.jurisdictionCode}|${l.activityCode}`] ?? 0;
+  const grossBase = Number(view?.taxableBase ?? 0);
+  const basesMatch = live.basesValid
+    && live.basesNonNegative
+    && Math.abs(live.totalAssignedBase - grossBase) <= 0.01;
+
+  const liveTarget = isMulti ? live.totalBalanceDue : Number(view?.totalBalanceDue ?? NaN);
+  const liveMatch = view
+    && (!isMulti || basesMatch)
+    && official.trim() !== ''
+    && Math.abs(liveTarget - Number(parseMoneyToPlain(official) ?? NaN)) <= 0.01;
+
   return (
     <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
       <div className="flex items-start justify-between gap-3">
@@ -617,46 +1075,120 @@ function IibbSection({ view, notice, official, onOfficial, reference, onReferenc
       </div>
 
       {notice ? <p className="mt-3 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">{notice}</p> : null}
+      {view?.warnings.map(warning => (
+        <p key={warning} className="mt-3 rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-200">{warning}</p>
+      ))}
 
       {view ? (
         <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4 lg:col-span-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold text-zinc-200">Saldos a favor anteriores de IIBB</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Se cargan por jurisdicción. Vacío usa el arrastre automático del último mes cerrado; ingresá 0 para reemplazarlo.</p>
+              </div>
+              {balancesDirty ? (
+                <button type="button" onClick={onRecalculate} className="inline-flex h-9 items-center gap-2 rounded border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-bold text-amber-200 hover:bg-amber-500/20">
+                  <RefreshCw className="h-3.5 w-3.5" /> Recalcular saldos
+                </button>
+              ) : null}
+            </div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {[...perJur.keys()].map(jurisdictionCode => (
+                <OpeningBalanceInput
+                  key={jurisdictionCode}
+                  label={`Jurisdicción ${jurisdictionCode}`}
+                  value={previousBalances[jurisdictionCode] ?? ''}
+                  automaticValue={automaticPreviousBalances[jurisdictionCode]?.automaticValue}
+                  onChange={value => onPreviousBalance(jurisdictionCode, value)}
+                />
+              ))}
+            </div>
+            {balancesDirty ? <p className="mt-2 text-[10px] text-amber-300">Recalculá para aplicar los nuevos saldos antes de cotejar o guardar.</p> : null}
+          </div>
+
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-teal-400">Por jurisdicción</p>
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-teal-400">Por jurisdicción{isMulti ? ' y actividad' : ''}</p>
+            {isMulti ? (
+              <p className="mb-2 text-[10px] text-zinc-500">Ingresá la base imponible de cada actividad. Deben sumar la base gravada del mes ({fmt(view.taxableBase)}).</p>
+            ) : null}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[11px]">
                 <thead className="text-[10px] uppercase tracking-wider text-zinc-500">
-                  <tr><th className="px-2 py-1">Juris.</th><th className="px-2 py-1 text-right">Base asig.</th><th className="px-2 py-1 text-right">Alíc.</th><th className="px-2 py-1 text-right">Determinado</th><th className="px-2 py-1 text-right">Saldo</th></tr>
+                  <tr>
+                    <th className="px-2 py-1">Juris.</th>
+                    {isMulti ? <th className="px-2 py-1">Actividad</th> : null}
+                    <th className="px-2 py-1 text-right">Base{isMulti ? ' (editar)' : ' asig.'}</th>
+                    <th className="px-2 py-1 text-right">Alíc.</th>
+                    <th className="px-2 py-1 text-right">Determinado</th>
+                    {isMulti ? null : <th className="px-2 py-1 text-right">Saldo</th>}
+                  </tr>
                 </thead>
                 <tbody>
-                  {view.jurisdictionLines.map(l => (
-                    <tr key={l.jurisdictionCode} className="border-t border-zinc-900">
-                      <td className="px-2 py-1 font-mono text-zinc-300">{l.jurisdictionCode}</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-400">{fmt(l.assignedBase)}</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-500">{(Number(l.taxRate) * 100).toFixed(2)}%</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-300">{fmt(l.determinedTax)}</td>
-                      <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(l.balanceDue)}</td>
-                    </tr>
-                  ))}
+                  {view.jurisdictionLines.map(l => {
+                    const key = `${l.jurisdictionCode}|${l.activityCode}`;
+                    return (
+                      <tr key={key} className="border-t border-zinc-900">
+                        <td className="px-2 py-1 font-mono text-zinc-300">{l.jurisdictionCode}</td>
+                        {isMulti ? <td className="px-2 py-1 text-zinc-300">{l.activityCode || '—'}</td> : null}
+                        <td className="px-2 py-1 text-right">
+                          {isMulti ? (
+                            <input inputMode="decimal" value={activityBases[key] ?? l.assignedBase} onChange={e => onActivityBase(key, e.target.value)} className="h-7 w-28 rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-zinc-200 outline-none focus:border-teal-400" />
+                          ) : (
+                            <span className="font-mono text-zinc-400">{fmt(l.assignedBase)}</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-1 text-right font-mono text-zinc-500">{(Number(l.taxRate) * 100).toFixed(2)}%</td>
+                        <td className="px-2 py-1 text-right font-mono text-zinc-300">{isMulti ? fmt(localDetermined(l).toFixed(2)) : fmt(l.determinedTax)}</td>
+                        {isMulti ? null : <td className="px-2 py-1 text-right font-mono text-zinc-200">{fmt(l.balanceDue)}</td>}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
+            {isMulti ? (
+              <p className={`mt-2 flex items-center gap-1.5 text-[11px] font-semibold ${basesMatch ? 'text-emerald-300' : 'text-amber-300'}`}>
+                {basesMatch ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
+                Suma de bases: {fmt(live.totalAssignedBase.toFixed(2))} {basesMatch ? '— coincide con la base gravada' : `— debe ser ${fmt(view.taxableBase)}`}
+              </p>
+            ) : null}
             <div className="mt-3 border-t border-zinc-800 pt-2">
-              <Row label="Impuesto determinado total" value={view.totalDeterminedTax} strong />
-              {Number(view.totalCreditsApplied) > 0 ? <Row label="Percep./retenc. IIBB aplicadas" value={view.totalCreditsApplied} muted /> : null}
-              <Row label="Saldo a pagar IIBB" value={view.totalBalanceDue} highlight />
+              <Row label="Impuesto determinado total" value={isMulti ? live.totalDeterminedTax.toFixed(2) : view.totalDeterminedTax} strong />
+              {view.jurisdictionLines.reduce((sum, line) => sum + Number(line.previousFavorBalance), 0) > 0
+                ? <Row label="Saldo a favor anterior aplicado" value={view.jurisdictionLines.reduce((sum, line) => sum + Number(line.previousFavorBalance), 0).toFixed(2)} muted />
+                : null}
+              {(isMulti ? live.totalCreditsApplied : Number(view.totalCreditsApplied)) > 0
+                ? <Row label="Percep./retenc. IIBB aplicadas" value={isMulti ? live.totalCreditsApplied.toFixed(2) : view.totalCreditsApplied} muted />
+                : null}
+              <Row label="Saldo a pagar IIBB" value={isMulti ? live.totalBalanceDue.toFixed(2) : view.totalBalanceDue} highlight />
+              {(isMulti ? live.totalFavorCarryForward : Number(view.totalFavorCarryForward)) > 0
+                ? <Row label="Saldo a favor para el mes siguiente" value={isMulti ? live.totalFavorCarryForward.toFixed(2) : view.totalFavorCarryForward} muted />
+                : null}
             </div>
           </div>
 
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-400">Cotejo y guardado</p>
             <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Saldo a pagar oficial (organismo)</label>
-            <input inputMode="decimal" value={official} onChange={e => onOfficial(e.target.value)} placeholder="0,00" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+            <input inputMode="decimal" value={official} onChange={e => onOfficial(e.target.value)} placeholder="sin cargar" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
             <label className="mb-1 mt-3 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Referencia (opcional)</label>
             <input value={reference} onChange={e => onReference(e.target.value)} placeholder="N° presentación, jurisdicción…" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-200 outline-none focus:border-teal-400" />
             {official.trim() !== '' ? (
               <p className={`mt-3 flex items-center gap-2 text-xs font-bold ${liveMatch ? 'text-emerald-300' : 'text-amber-300'}`}>{liveMatch ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}{liveMatch ? 'Coincide — listo para cerrar' : 'No coincide con el cálculo'}</p>
+            ) : (
+              <p className="mt-3 flex items-center gap-2 text-xs text-amber-200"><AlertTriangle className="h-4 w-4 shrink-0" /> Sin el saldo del organismo (aunque sea 0), IIBB se guarda como Borrador y NO cierra.</p>
+            )}
+            <button type="button" onClick={() => onSave(false)} disabled={saving || balancesDirty || (isMulti && !basesMatch)} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
+            {isMulti && !basesMatch ? (
+              <p className="mt-2 text-[10px] text-amber-300">
+                {!live.basesValid
+                  ? 'Ingresá importes válidos en todas las bases.'
+                  : !live.basesNonNegative
+                    ? 'Las bases por actividad no pueden ser negativas.'
+                    : 'Ajustá las bases para que sumen la base gravada antes de guardar.'}
+              </p>
             ) : null}
-            <button type="button" onClick={() => onSave(false)} disabled={saving} className="mt-4 inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"><Save className="h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar IIBB'}</button>
           </div>
         </div>
       ) : null}
@@ -695,7 +1227,18 @@ function SavedSettlementPanel({ saved, onReliquidar }: { saved: SavedSettlement;
         <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-4">
           <Row label="Débito fiscal" value={saved.debitFiscal} strong />
           <Row label="Crédito fiscal" value={saved.creditFiscal} strong />
-          {Number(saved.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={saved.creditsApplied} muted /> : null}
+          {Number(saved.previousTechnicalBalance) > 0 ? <Row label="Saldo técnico anterior aplicado" value={saved.previousTechnicalBalance} muted /> : null}
+          {Number(saved.smallTaxpayerBenefitReduction) > 0 ? (
+            <>
+              <Row label="Saldo técnico antes del beneficio" value={saved.technicalDueBeforeBenefit} />
+              <Row label={`Reducción beneficio (${(Number(saved.smallTaxpayerBenefitRate) * 100).toFixed(0)}%)`} value={saved.smallTaxpayerBenefitReduction} muted />
+            </>
+          ) : null}
+          <VatCreditRows
+            previousFreeAvailability={saved.previousFreeAvailabilityBalance}
+            creditsApplied={saved.creditsApplied}
+            freeAvailabilityBalance={saved.freeAvailabilityBalance}
+          />
           {Number(saved.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={saved.technicalCarryForward} muted /> : null}
           <div className="my-2 border-t border-zinc-800" />
           <Row label="Saldo a pagar" value={saved.amountDue} highlight />
@@ -748,8 +1291,8 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
           </label>
         </div>
       </div>
-      <div className="max-h-72 overflow-y-auto">
-        <table className="w-full text-left text-[11px]">
+      <div className="max-h-72 overflow-auto">
+        <table className="min-w-[980px] w-full text-left text-[11px]">
           <thead className="sticky top-0 bg-zinc-950/90 text-[10px] uppercase tracking-wider text-zinc-500">
             <tr>
               <th className="px-3 py-1.5 w-8"></th>
@@ -759,6 +1302,7 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
               <th className="px-2 py-1.5">Contraparte</th>
               <th className="px-2 py-1.5 text-right">Neto</th>
               <th className="px-2 py-1.5 text-right">IVA</th>
+              <th className="px-2 py-1.5 text-right">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -771,6 +1315,7 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
                 <td className="px-2 py-1.5 text-zinc-300">{r.counterpartyName || r.counterpartyCuit || '—'}</td>
                 <td className="px-2 py-1.5 text-right font-mono text-zinc-400">{fmt(r.netAmount)}</td>
                 <td className="px-2 py-1.5 text-right font-mono text-zinc-200">{fmt(r.vatAmount)}</td>
+                <td className="px-2 py-1.5 text-right font-mono font-semibold text-teal-200">{fmt(r.totalAmount)}</td>
               </tr>
             ))}
           </tbody>
@@ -780,19 +1325,23 @@ function DocTable({ title, rows, onToggle, onToggleAll, vatTotal }: {
   );
 }
 
-function CreditTable({ rows, onToggle, onToggleAll }: {
+function CreditTable({ rows, onToggle, onToggleAll, title = 'Retenciones y percepciones', rowKindLabel }: {
   rows: TaxCreditRow[];
   onToggle: (id: string, included: boolean) => void;
   onToggleAll: (included: boolean) => void;
+  title?: string;
+  /** Etiqueta de la columna Tipo por fila (default: Retención/Percepción según kind). */
+  rowKindLabel?: (r: TaxCreditRow) => string;
 }) {
   const allOn = rows.length > 0 && rows.every(r => r.includedInSettlement);
   const includedCount = rows.filter(r => r.includedInSettlement).length;
-  const kindLabel = (k: string) => (k === 'WITHHOLDING' ? 'Retención' : k === 'PERCEPTION' ? 'Percepción' : k);
+  const kindLabel = (r: TaxCreditRow) =>
+    rowKindLabel ? rowKindLabel(r) : (r.kind === 'WITHHOLDING' ? 'Retención' : r.kind === 'PERCEPTION' ? 'Percepción' : r.kind);
   const includedTotal = rows.filter(r => r.includedInSettlement).reduce((s, r) => s + Number(r.amount), 0);
   return (
     <div className="overflow-hidden rounded-lg border border-zinc-800">
       <div className="flex items-center justify-between gap-3 bg-zinc-900/60 px-3 py-2">
-        <p className="text-xs font-bold text-zinc-200">Retenciones y percepciones <span className="font-mono text-zinc-500">· {includedCount}/{rows.length}</span></p>
+        <p className="text-xs font-bold text-zinc-200">{title} <span className="font-mono text-zinc-500">· {includedCount}/{rows.length}</span></p>
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-zinc-400">Total a aplicar: <strong className="font-mono text-teal-300">{fmt(includedTotal)}</strong></span>
           <label className="flex cursor-pointer items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
@@ -816,7 +1365,7 @@ function CreditTable({ rows, onToggle, onToggleAll }: {
             {rows.map(r => (
               <tr key={r.id} className={`border-t border-zinc-900 ${r.includedInSettlement ? '' : 'opacity-40'}`}>
                 <td className="px-3 py-1.5"><input type="checkbox" checked={r.includedInSettlement} onChange={e => onToggle(r.id, e.target.checked)} className="h-3.5 w-3.5 accent-teal-400" /></td>
-                <td className={`px-2 py-1.5 font-semibold ${r.kind === 'WITHHOLDING' ? 'text-sky-300' : 'text-violet-300'}`}>{kindLabel(r.kind)}</td>
+                <td className={`px-2 py-1.5 font-semibold ${r.kind === 'WITHHOLDING' ? 'text-sky-300' : 'text-violet-300'}`}>{kindLabel(r)}</td>
                 <td className="px-2 py-1.5 font-mono text-zinc-400">{r.issueDate}</td>
                 <td className="px-2 py-1.5 font-mono text-zinc-400">{r.agentCuit || '—'}</td>
                 <td className="px-2 py-1.5 font-mono text-zinc-500">{r.certificateNumber || '—'}</td>
@@ -839,6 +1388,36 @@ function Row({ label, value, strong, highlight, muted }: { label: string; value:
   );
 }
 
+/**
+ * Créditos de la posición mensual con cada fuente rotulada por separado: la libre disponibilidad
+ * anterior DISPONIBLE, las percepciones/retenciones DEL PERÍODO y el total APLICADO. Antes el total
+ * aplicado se rotulaba "Percep./retenc. aplicadas" aunque viniera entero de la libre disponibilidad.
+ */
+function VatCreditRows({ previousFreeAvailability, creditsApplied, freeAvailabilityBalance }: {
+  previousFreeAvailability: string;
+  creditsApplied: string;
+  freeAvailabilityBalance: string;
+}) {
+  const display = buildVatCreditsDisplay({ previousFreeAvailability, creditsApplied, freeAvailabilityBalance });
+  const hasPrevious = display.previousFreeAvailable.greaterThan(0);
+  const hasPeriod = !display.periodCredits.isZero();
+  return (
+    <>
+      {hasPrevious ? <Row label="Libre disponibilidad anterior (disponible)" value={display.previousFreeAvailable.toFixed(2)} muted /> : null}
+      {hasPeriod ? <Row label="Percep./retenc. del período" value={display.periodCredits.toFixed(2)} muted /> : null}
+      {display.totalApplied.greaterThan(0) ? (
+        <Row
+          label={hasPrevious && hasPeriod
+            ? 'Aplicado contra el saldo (libre disp. + percep./retenc.)'
+            : hasPrevious ? 'Aplicado contra el saldo (de la libre disponibilidad)' : 'Aplicado contra el saldo (percep./retenc.)'}
+          value={display.totalApplied.toFixed(2)}
+          muted
+        />
+      ) : null}
+    </>
+  );
+}
+
 function MiniRow({ label, base, vat }: { label: string; base: string; vat: string }) {
   return (
     <p className="flex justify-between gap-3 text-[11px] text-zinc-500">
@@ -852,7 +1431,28 @@ function CotejoInput({ label, value, onChange }: { label: string; value: string;
   return (
     <div className="mb-2">
       <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</label>
-      <input inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder="0,00" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+      {/* "sin cargar" y no "0,00": el placeholder gris parecía un valor cargado y confundía el cotejo. */}
+      <input inputMode="decimal" value={value} onChange={e => onChange(e.target.value)} placeholder="sin cargar" className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-amber-400" />
+    </div>
+  );
+}
+
+function OpeningBalanceInput({ label, value, automaticValue, onChange }: {
+  label: string;
+  value: string;
+  automaticValue?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</label>
+      <input
+        inputMode="decimal"
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        placeholder={automaticValue == null ? 'Automático' : `Automático: ${fmt(automaticValue)}`}
+        className="h-9 w-full rounded border border-zinc-700 bg-zinc-950 px-2 text-right font-mono text-sm text-zinc-200 outline-none focus:border-teal-400"
+      />
     </div>
   );
 }

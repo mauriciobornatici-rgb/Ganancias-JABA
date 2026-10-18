@@ -69,6 +69,7 @@ export const ModelName = {
   ClientTaxJurisdiction: 'ClientTaxJurisdiction',
   FiscalPeriod: 'FiscalPeriod',
   FiscalDocument: 'FiscalDocument',
+  ExternalImportReceipt: 'ExternalImportReceipt',
   FiscalDocumentVatLine: 'FiscalDocumentVatLine',
   FiscalDocumentAllocation: 'FiscalDocumentAllocation',
   TaxCreditRecord: 'TaxCreditRecord',
@@ -76,6 +77,8 @@ export const ModelName = {
   VatSettlementLine: 'VatSettlementLine',
   GrossIncomeSettlement: 'GrossIncomeSettlement',
   GrossIncomeJurisdictionLine: 'GrossIncomeJurisdictionLine',
+  TishSetting: 'TishSetting',
+  TishSettlement: 'TishSettlement',
   ConventionCoefficientVersion: 'ConventionCoefficientVersion',
   ConventionCoefficientLine: 'ConventionCoefficientLine',
   AnnualFiscalConsolidationSnapshot: 'AnnualFiscalConsolidationSnapshot',
@@ -89,6 +92,7 @@ export const ModelName = {
   ReceivableDebt: 'ReceivableDebt',
   PayableDebt: 'PayableDebt',
   TaxWithholding: 'TaxWithholding',
+  SocietyParticipation: 'SocietyParticipation',
   PersonalAsset: 'PersonalAsset',
   PersonalLiability: 'PersonalLiability',
   PatrimonialJustification: 'PatrimonialJustification',
@@ -304,6 +308,9 @@ export const ClientTaxProfileVersionScalarFieldEnum = {
   vatCondition: 'vatCondition',
   grossIncomeRegime: 'grossIncomeRegime',
   conventionRegime: 'conventionRegime',
+  smallTaxpayerBenefitEnabled: 'smallTaxpayerBenefitEnabled',
+  smallTaxpayerBenefitStartYear: 'smallTaxpayerBenefitStartYear',
+  idcbComputablePercent: 'idcbComputablePercent',
   arbaRegistrationNumber: 'arbaRegistrationNumber',
   cmRegistrationNumber: 'cmRegistrationNumber',
   sourceReference: 'sourceReference',
@@ -334,8 +341,11 @@ export const ClientTaxJurisdictionScalarFieldEnum = {
   id: 'id',
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
+  activityCode: 'activityCode',
+  activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber',
   taxRate: 'taxRate',
+  computesTish: 'computesTish',
   isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -380,6 +390,29 @@ export const FiscalDocumentScalarFieldEnum = {
 } as const
 
 export type FiscalDocumentScalarFieldEnum = (typeof FiscalDocumentScalarFieldEnum)[keyof typeof FiscalDocumentScalarFieldEnum]
+
+
+export const ExternalImportReceiptScalarFieldEnum = {
+  id: 'id',
+  source: 'source',
+  idempotencyKey: 'idempotencyKey',
+  clientId: 'clientId',
+  fiscalPeriodId: 'fiscalPeriodId',
+  ownerCuit: 'ownerCuit',
+  year: 'year',
+  month: 'month',
+  status: 'status',
+  fileManifest: 'fileManifest',
+  inserted: 'inserted',
+  duplicates: 'duplicates',
+  conflicts: 'conflicts',
+  totalDocuments: 'totalDocuments',
+  warnings: 'warnings',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ExternalImportReceiptScalarFieldEnum = (typeof ExternalImportReceiptScalarFieldEnum)[keyof typeof ExternalImportReceiptScalarFieldEnum]
 
 
 export const FiscalDocumentVatLineScalarFieldEnum = {
@@ -444,8 +477,12 @@ export const VatSettlementScalarFieldEnum = {
   version: 'version',
   status: 'status',
   previousTechnicalBalance: 'previousTechnicalBalance',
+  previousFreeAvailabilityBalance: 'previousFreeAvailabilityBalance',
   debitFiscal: 'debitFiscal',
   creditFiscal: 'creditFiscal',
+  technicalDueBeforeBenefit: 'technicalDueBeforeBenefit',
+  smallTaxpayerBenefitRate: 'smallTaxpayerBenefitRate',
+  smallTaxpayerBenefitReduction: 'smallTaxpayerBenefitReduction',
   technicalCarryForward: 'technicalCarryForward',
   freeAvailabilityBalance: 'freeAvailabilityBalance',
   amountDue: 'amountDue',
@@ -505,12 +542,55 @@ export const GrossIncomeJurisdictionLineScalarFieldEnum = {
   taxRate: 'taxRate',
   determinedTax: 'determinedTax',
   creditsApplied: 'creditsApplied',
+  previousFavorBalance: 'previousFavorBalance',
   balance: 'balance',
   favorCarryForward: 'favorCarryForward',
   createdAt: 'createdAt'
 } as const
 
 export type GrossIncomeJurisdictionLineScalarFieldEnum = (typeof GrossIncomeJurisdictionLineScalarFieldEnum)[keyof typeof GrossIncomeJurisdictionLineScalarFieldEnum]
+
+
+export const TishSettingScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  year: 'year',
+  category: 'category',
+  taxRate: 'taxRate',
+  minimumQuota: 'minimumQuota',
+  categoryAQuota: 'categoryAQuota',
+  healthRate: 'healthRate',
+  firefightersRate: 'firefightersRate',
+  wasteRateCategoryL: 'wasteRateCategoryL',
+  wasteRateCategoryM: 'wasteRateCategoryM',
+  wasteRateCategoryN: 'wasteRateCategoryN',
+  dueDates: 'dueDates',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TishSettingScalarFieldEnum = (typeof TishSettingScalarFieldEnum)[keyof typeof TishSettingScalarFieldEnum]
+
+
+export const TishSettlementScalarFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  year: 'year',
+  bimester: 'bimester',
+  version: 'version',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint',
+  sourceSnapshot: 'sourceSnapshot',
+  calculationSnapshot: 'calculationSnapshot',
+  total: 'total',
+  closedAt: 'closedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type TishSettlementScalarFieldEnum = (typeof TishSettlementScalarFieldEnum)[keyof typeof TishSettlementScalarFieldEnum]
 
 
 export const ConventionCoefficientVersionScalarFieldEnum = {
@@ -735,6 +815,23 @@ export const TaxWithholdingScalarFieldEnum = {
 } as const
 
 export type TaxWithholdingScalarFieldEnum = (typeof TaxWithholdingScalarFieldEnum)[keyof typeof TaxWithholdingScalarFieldEnum]
+
+
+export const SocietyParticipationScalarFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType',
+  participationPercent: 'participationPercent',
+  societyResult: 'societyResult',
+  attributedResultOverride: 'attributedResultOverride',
+  overrideReason: 'overrideReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type SocietyParticipationScalarFieldEnum = (typeof SocietyParticipationScalarFieldEnum)[keyof typeof SocietyParticipationScalarFieldEnum]
 
 
 export const PersonalAssetScalarFieldEnum = {
@@ -981,6 +1078,21 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const UserOrderByRelevanceFieldEnum = {
   id: 'id',
   email: 'email',
@@ -1146,6 +1258,8 @@ export const ClientTaxJurisdictionOrderByRelevanceFieldEnum = {
   id: 'id',
   taxProfileId: 'taxProfileId',
   jurisdictionCode: 'jurisdictionCode',
+  activityCode: 'activityCode',
+  activityLabel: 'activityLabel',
   registrationNumber: 'registrationNumber'
 } as const
 
@@ -1177,6 +1291,36 @@ export const FiscalDocumentOrderByRelevanceFieldEnum = {
 } as const
 
 export type FiscalDocumentOrderByRelevanceFieldEnum = (typeof FiscalDocumentOrderByRelevanceFieldEnum)[keyof typeof FiscalDocumentOrderByRelevanceFieldEnum]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const ExternalImportReceiptOrderByRelevanceFieldEnum = {
+  id: 'id',
+  source: 'source',
+  idempotencyKey: 'idempotencyKey',
+  clientId: 'clientId',
+  fiscalPeriodId: 'fiscalPeriodId',
+  ownerCuit: 'ownerCuit',
+  status: 'status'
+} as const
+
+export type ExternalImportReceiptOrderByRelevanceFieldEnum = (typeof ExternalImportReceiptOrderByRelevanceFieldEnum)[keyof typeof ExternalImportReceiptOrderByRelevanceFieldEnum]
 
 
 export const FiscalDocumentVatLineOrderByRelevanceFieldEnum = {
@@ -1252,6 +1396,29 @@ export const GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = {
 } as const
 
 export type GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum = (typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum)[keyof typeof GrossIncomeJurisdictionLineOrderByRelevanceFieldEnum]
+
+
+export const TishSettingOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  category: 'category',
+  dueDates: 'dueDates',
+  notes: 'notes'
+} as const
+
+export type TishSettingOrderByRelevanceFieldEnum = (typeof TishSettingOrderByRelevanceFieldEnum)[keyof typeof TishSettingOrderByRelevanceFieldEnum]
+
+
+export const TishSettlementOrderByRelevanceFieldEnum = {
+  id: 'id',
+  clientId: 'clientId',
+  tishSettingId: 'tishSettingId',
+  taxProfileId: 'taxProfileId',
+  status: 'status',
+  sourceFingerprint: 'sourceFingerprint'
+} as const
+
+export type TishSettlementOrderByRelevanceFieldEnum = (typeof TishSettlementOrderByRelevanceFieldEnum)[keyof typeof TishSettlementOrderByRelevanceFieldEnum]
 
 
 export const ConventionCoefficientVersionOrderByRelevanceFieldEnum = {
@@ -1397,6 +1564,18 @@ export const TaxWithholdingOrderByRelevanceFieldEnum = {
 } as const
 
 export type TaxWithholdingOrderByRelevanceFieldEnum = (typeof TaxWithholdingOrderByRelevanceFieldEnum)[keyof typeof TaxWithholdingOrderByRelevanceFieldEnum]
+
+
+export const SocietyParticipationOrderByRelevanceFieldEnum = {
+  id: 'id',
+  taxReturnId: 'taxReturnId',
+  cuit: 'cuit',
+  denomination: 'denomination',
+  societyType: 'societyType',
+  overrideReason: 'overrideReason'
+} as const
+
+export type SocietyParticipationOrderByRelevanceFieldEnum = (typeof SocietyParticipationOrderByRelevanceFieldEnum)[keyof typeof SocietyParticipationOrderByRelevanceFieldEnum]
 
 
 export const PersonalAssetOrderByRelevanceFieldEnum = {

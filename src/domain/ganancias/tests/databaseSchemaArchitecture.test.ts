@@ -12,8 +12,8 @@ function modelBlock(modelName: string): string {
 
 describe('Prisma schema architecture', () => {
   it('estructura CUIT de contraparte en ventas y compras para evitar depender del snapshot', () => {
-    expect(modelBlock('SalesInvoice')).toContain('counterpartyCuit String?');
-    expect(modelBlock('PurchaseInvoice')).toContain('counterpartyCuit String?');
+    expect(modelBlock('SalesInvoice')).toMatch(/counterpartyCuit\s+String\?/);
+    expect(modelBlock('PurchaseInvoice')).toMatch(/counterpartyCuit\s+String\?/);
   });
 
   it('estructura bajas de bienes de uso y perdidas por baja', () => {

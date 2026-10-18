@@ -99,9 +99,10 @@ npm run db:test:down
 
 - No copiar la `DATABASE_URL` productiva en `.env.docker.example`.
 - No usar `prisma db push` contra produccion.
-- Para desarrollo local con Docker, preferir `npm run dev:testdb` en lugar de `npm run dev`.
-- `npm run dev` usa la `.env` normal; si esa `.env` apunta a Hostinger, trabajara contra Hostinger.
-- `npm run dev:testdb` fuerza la base Docker aunque exista `.env` productiva.
+- `npm run dev` y `npm run dev:testdb` son equivalentes y fuerzan siempre la base Docker.
+- `npm run dev:turbopack` y `npm start` tambiÃ©n pasan por el runner aislado.
+- La conexiÃ³n productiva estÃ¡ bloqueada en runtime fuera de Vercel Production/main.
+- No ejecutar `next dev` directamente; aun asÃ­, la guardia bloquearÃ¡ Hostinger si se intenta.
 
 ## Flujo recomendado
 
@@ -109,5 +110,5 @@ npm run db:test:down
 2. Levantar Docker con `npm run db:test:up`.
 3. Aplicar migraciones con `npm run db:test:migrate`.
 4. Cargar datos iniciales con `npm run db:test:seed`.
-5. Probar la app con `npm run dev:testdb`.
+5. Probar la app con `npm run dev` y confirmar la franja `ENTORNO DE PRUEBA`.
 6. Si todo esta correcto, pasar cambios a `main`.

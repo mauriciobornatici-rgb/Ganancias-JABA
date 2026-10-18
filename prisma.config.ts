@@ -2,6 +2,9 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { assertPrismaDatabaseSafety } from "./scripts/prismaDatabaseSafety";
+
+assertPrismaDatabaseSafety();
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

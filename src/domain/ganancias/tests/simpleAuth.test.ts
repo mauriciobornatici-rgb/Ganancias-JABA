@@ -49,6 +49,8 @@ describe('simpleAuth', () => {
     expect(isProtectedPath('/login')).toBe(false);
     expect(isProtectedPath('/api/auth/login')).toBe(false);
     expect(isProtectedPath('/api/auth/logout')).toBe(false);
+    expect(isProtectedPath('/api/integrations/uipath/preflight')).toBe(false);
+    expect(isProtectedPath('/api/integrations/otro')).toBe(true);
     expect(isProtectedPath('/_next/static/app.js')).toBe(false);
     expect(isProtectedPath('/favicon.ico')).toBe(false);
   });

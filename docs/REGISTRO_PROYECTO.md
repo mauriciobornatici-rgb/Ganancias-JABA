@@ -4,6 +4,34 @@ Ultima actualizacion: 2026-10-18
 
 ## Entrada reciente
 
+### 2026-10-18 - Prisma 7.8.0/7.9.0 → 7.10.1, con control de datos antes/después
+
+- Motivo: cerrar las 2 moderadas de `mariadb` que dejó el PR #32 (crash con autenticación ed25519 y TLS sin configuración). Solo se cierran con `mariadb` 3.5.4, que es la que trae `@prisma/adapter-mariadb` 7.10.1. No se usó la 8.0.0-rc, que figura como `latest` en npm pero es prerelease.
+- Cambio: `@prisma/client`, `@prisma/adapter-mariadb` y `prisma` fijados en **7.10.1** exacto. El adaptador usa `mariadb` 3.5.4, la misma que la dependencia directa (deduplicada).
+- Overrides retirados: `mysql2`, `find-my-way`, `valibot`, `fast-uri` y el acotado `@prisma/adapter-mariadb > mariadb`. Sin ellos, 7.10.1 resuelve las mismas versiones parcheadas (`mysql2` 3.24.4, `find-my-way` 9.7.0, `valibot` 1.4.2, `fast-uri` 3.1.8), así que ninguno reabre un aviso. Quedan `sharp`, `postcss`, `nanoid`, `deepmerge-ts`, `source-map-js` y `baseline-browser-mapping`, que no dependen de Prisma.
+- Cliente regenerado (`src/generated/client`): el schema embebido es idéntico y no hay migraciones nuevas (`prisma migrate status` contra Docker: "Database schema is up to date"). Las diferencias reales son tres:
+  - la versión del cliente y del motor;
+  - un campo `schema: null` agregado en el modelo de datos de cada uno de los 56 modelos (metadato de multi-schema, sin cambios de campos, tipos ni escalas);
+  - espacios finales en `TishSettlement.ts`.
+  El resto de los archivos solo cambia el fin de línea.
+- **Control de datos antes/después** (Docker `ganancias_jaba_test`):
+  - Docker no tenía ninguna liquidación CLOSED. Antes de la foto se cerró por la API local la IVA de 06/2026, cotejada contra 3.066.463,04 / 2.228.608,34 / 837.854,70, y quedó v1 CLOSED. La IIBB de ese mes no se pudo cerrar (409: el cliente de prueba no tiene coeficientes de Convenio cargados), así que el estado CLOSED queda cubierto por IVA.
+  - Fotos tomadas: con el cliente Prisma, todas las filas de VatSettlement (2), VatSettlementLine (12), GrossIncomeSettlement (1), GrossIncomeJurisdictionLine (2), TaxCreditRecord (223), TaxReturn (1) y CalculationRun (1), ordenadas por id. Cada Decimal se guardó con la escala de su columna y con su valor exacto (527 importes); las fechas, en ISO. Además, un volcado SQL crudo de las mismas tablas con `CHECKSUM TABLE ... EXTENDED`, independiente de Prisma.
+  - Resultado: **idéntico byte a byte**. Foto Prisma SHA-256 `1D6ED2FC…A45168` con 7.8.0 + mariadb 3.4.7 y con 7.10.1 + mariadb 3.5.4. Volcado SQL `9BC05115…BD728C` en ambos casos.
+  - Lectura y escritura con el cliente nuevo, en el período abierto 09/2026:
+    - 20 lecturas concurrentes con el pool de 5 conexiones, consistentes;
+    - alta de un TaxCreditRecord con 9.999.999.999.999.999,99 y 0,01 (los límites de Decimal(18,2)), leído al centavo;
+    - transacción con rollback, revertida;
+    - baja del registro: 223 → 223.
+    La foto tomada después de esa prueba sigue idéntica.
+- Verificado:
+  - 546 tests (6 omitidos), 3 de integración contra Docker, typecheck, lint (0 errores) y build;
+  - `npm audit --omit=dev`: **0 vulnerabilidades**, ya sin las moderadas de `mariadb`;
+  - en el árbol completo quedan 10 avisos de herramientas de desarrollo (vitest, eslint, browserslist, js-yaml), que ya estaban en `main` (allí son 12);
+  - la migración productiva sigue abortando sin `CONFIRM_PROD_MIGRATION` (se validó el plan puro con su test, sin ejecutar el comando);
+  - la guarda de `prisma.config.ts` sigue bloqueando a Prisma 7.10.1 contra el nombre de la base productiva.
+- Rollback: en Vercel, volver a desplegar el deployment anterior (Promote/Redeploy). No hay migraciones, así que la base no se toca.
+
 ### 2026-10-18 - IVA 2b: "Mis Retenciones" no cargaba nada + rótulo engañoso de los créditos aplicados
 
 - Reporte del usuario: al subir "Mis Retenciones" en el bloque 2b quedaba todo en 0 con el aviso "No se compiló ninguna retención/percepción de IVA del mes liquidado". Además, en el cálculo la línea "Percep./retenc. aplicadas" mostraba el mismo importe que el saldo técnico del período.

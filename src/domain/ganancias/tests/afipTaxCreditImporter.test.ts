@@ -141,6 +141,40 @@ describe('parseAfipTaxCredits — archivo AFIP de retenciones/percepciones', () 
     expect(result.credits[0].issueDate.toISOString().slice(0, 10)).toBe('2026-05-04');
   });
 
+  it('lee el "XML Spreadsheet 2003" que ARCA baja con extensión .xls (caso real del usuario)', () => {
+    // Misma estructura que el archivo real de ARCA (datos ficticios): celdas String salvo el
+    // importe, que viene como Number con punto decimal. Antes se leía como CSV y no entraba nada.
+    const cell = (type: 'String' | 'Number', value: string) => `<Cell><Data ss:Type="${type}">${value}</Data></Cell>`;
+    const row = (cells: string[]) => `<Row>${cells.join('')}</Row>`;
+    const headers = ['CUIT Agente Ret./Perc.', 'Impuesto', 'Regimen', 'Fecha Ret./Perc.', 'Numero Certificado', 'Descripcion Operacion', 'Importe Ret./Perc.', 'Numero Comprobante', 'Fecha Comprobante', 'Descripcion Comprobante', 'Fecha Ingreso', 'Codigo de Seguridad'];
+    const data = (cuit: string, cert: string, amount: string, voucher: string) => row([
+      cell('String', cuit), cell('String', '767'), cell('String', '493'), cell('String', '01/09/2026'),
+      cell('String', cert), cell('String', 'PERCEPCION'), cell('Number', amount), cell('String', '303411602090'),
+      cell('String', '01/09/2026'), cell('String', voucher), cell('String', '09/10/2026'), cell('String', '0000'),
+    ]);
+    const xml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<?mso-application progid="Excel.Sheet"?>',
+      '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40">',
+      '<Worksheet ss:Name="Hoja1"><Table>',
+      row(headers.map(h => cell('String', h))),
+      data('30700000001', '16741', '134.58', 'FACTURA'),
+      data('30700000001', '102493', '-139.61', 'NOTA DE CREDITO'),
+      data('30700000002', '435784', '2370', 'OTRO COMPROBANTE'),
+      '</Table></Worksheet></Workbook>',
+    ].join('\n');
+
+    const result = parseAfipTaxCredits(
+      { fileName: '30700000000_IMP_PER_RET_16102026.xls', fileBuffer: Buffer.from(xml, 'utf8') },
+      { periodYear: 2026, periodMonth: 9 },
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.rowsRead).toBe(3);
+    expect(result.totals.count).toBe(3);
+    expect(result.totals.perception).toBe('2364.97'); // 134,58 - 139,61 (NC) + 2.370,00
+    expect(result.credits[1].originalAmount.toFixed(2)).toBe('-139.61');
+  });
+
   it('un archivo que no es "Mis Retenciones" devuelve un error que lo dice, no un cero mudo', () => {
     const result = parseAfipTaxCredits(
       { fileName: 'ventas.csv', fileBuffer: Buffer.from('Fecha;Tipo;Punto de Venta;Numero\n04/05/2026;11;5;1870', 'latin1') },

@@ -13,11 +13,27 @@ export type AfipSheetRow = AfipSheetCell[];
  * formato numerico argentino ("15123,97"). Si se delega en SheetJS, este interpreta la coma
  * como separador de miles y convierte "15123,97" -> 1512397 (importe x100, error critico de
  * liquidacion). Por eso los CSV se leen como texto plano preservando el valor original, y
- * SheetJS se reserva para los .xlsx reales (donde numeros y fechas ya son tipos nativos).
+ * SheetJS se reserva para las planillas reales (.xlsx, .xls binario y el "XML Spreadsheet 2003"
+ * que ARCA baja con extension .xls), donde numeros y fechas ya son tipos nativos.
  */
-function isLikelyXlsxBuffer(fileBuffer: Buffer): boolean {
-  // Los .xlsx/.xls modernos son contenedores ZIP: empiezan con "PK" (0x50 0x4B).
-  return fileBuffer.length >= 2 && fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b;
+/**
+ * ¿El buffer es una planilla (con celdas tipadas) y no un CSV de texto plano?
+ *
+ * - .xlsx: contenedor ZIP, empieza con "PK" (0x50 0x4B).
+ * - .xls binario de Excel 97-2003: contenedor OLE2 (D0 CF 11 E0).
+ * - "XML Spreadsheet 2003" o tabla HTML con extensión .xls: texto que empieza con '<'.
+ *   ARCA baja "Mis Retenciones" así (`<?xml ...?><Workbook xmlns="urn:schemas-microsoft-com:
+ *   office:spreadsheet">`). Leído como CSV no reconocía ninguna fila; SheetJS lo lee con los
+ *   importes ya numéricos.
+ *
+ * Un CSV de ARCA nunca empieza con '<' (arranca con el encabezado o con un CUIT).
+ */
+function isLikelySpreadsheetBuffer(fileBuffer: Buffer): boolean {
+  if (fileBuffer.length >= 2 && fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b) return true;
+  if (fileBuffer.length >= 4 && fileBuffer[0] === 0xd0 && fileBuffer[1] === 0xcf
+    && fileBuffer[2] === 0x11 && fileBuffer[3] === 0xe0) return true;
+  const head = fileBuffer.subarray(0, 64).toString('utf8').replace(/^﻿/, '').trimStart();
+  return head.startsWith('<');
 }
 
 function splitCsvLine(line: string, separator: string): string[] {
@@ -69,7 +85,7 @@ function parseCsvRows(fileBuffer: Buffer): AfipSheetRow[] {
 }
 
 export function readAfipSheetRows(fileBuffer: Buffer): AfipSheetRow[] {
-  if (isLikelyXlsxBuffer(fileBuffer)) {
+  if (isLikelySpreadsheetBuffer(fileBuffer)) {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;

@@ -1,8 +1,15 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-07-25
+Ultima actualizacion: 2026-10-18
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
+
+## Estado al 2026-10-18
+
+- `main` en produccion con los PR #32 (Mis Retenciones de ARCA en IVA 2b + parches de seguridad), #33 (Prisma 7.10.1 / mariadb 3.5.4, con control de datos antes/despues identico), #26 (recibo UiPath por clave idempotente) y #22 (instructivo IVA+IIBB). Sin PRs abiertos. Detalle en las entradas `2026-10-18` del registro.
+- Ramas: en GitHub quedan solo `main` y `staging`; las ramas ya integradas se borraron (se restauran desde su PR si hiciera falta). El worktree historico `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual` se retiro.
+- Monitor de salud (`health-monitor.yml`) reactivado el 2026-10-18: GitHub lo apaga solo por inactividad; revisar `gh workflow list --all` despues de cada deploy.
+- Pendientes conocidos (no urgentes): avisos de seguridad solo de desarrollo (vitest, eslint, browserslist, js-yaml); antes de encender la carga real de UiPath, control de datos antes/despues, migraciones confirmadas en produccion y canary con un CUIT; TLS a MySQL y E2E de navegador.
 
 ## Estado al 2026-07-25 - los 6 puntos del PDF estan EN PRODUCCION
 
@@ -17,7 +24,7 @@ Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga
 
 ## Estado actual
 
-- Rama historica del modulo mensual: `feature/iva-iibb-mensual-core` en `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual` (ya integrada; el trabajo actual va en la rama del tramo activo).
+- Rama historica del modulo mensual: `feature/iva-iibb-mensual-core` (integrada en `main` por el PR #1; rama y worktree retirados el 2026-10-18).
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
 - MODULO IVA + IIBB (P32): diseno registrado en `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`. Alcance inicial: IVA Simple, IIBB local ARBA y Convenio Multilateral regimen general; desarrollo y pruebas solo contra Docker. No se tocaron Hostinger, Vercel, `main` ni las DDJJ existentes.

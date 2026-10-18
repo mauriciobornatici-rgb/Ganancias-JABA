@@ -2,7 +2,7 @@
 
 ## P32 - Modulo IVA + IIBB mensual integrado con Ganancias
 
-Estado: Activo. Desarrollo exclusivamente en `feature/iva-iibb-mensual-core` y Docker `3318`. El siguiente bloque es el piloto IVA AFIP mayo 2026; no se habilita merge, Preview ni Produccion hasta completar sus gates.
+Estado: Resuelto y EN PRODUCCION desde el 2026-06-25 (PR #1, `feature/iva-iibb-mensual-core` → `main`). Rama y worktree retirados el 2026-10-18. Lo que sigue es historia del desarrollo.
 
 Avance:
 

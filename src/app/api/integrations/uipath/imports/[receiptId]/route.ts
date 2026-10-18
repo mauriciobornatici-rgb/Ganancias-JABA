@@ -10,7 +10,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
   const authError = requireUiPathIntegrationAuth(request);
   if (authError) return authError;
   const { receiptId } = await context.params;
-  const receipt = await prisma.externalImportReceipt.findUnique({ where: { id: receiptId } });
+  // Tras un timeout UiPath no conoce el receiptId pero si su clave idempotente:
+  // se resuelve por cualquiera de las dos (ambas son unicas).
+  const receipt =
+    (await prisma.externalImportReceipt.findUnique({ where: { id: receiptId } })) ??
+    (await prisma.externalImportReceipt.findUnique({ where: { idempotencyKey: receiptId } }));
   if (!receipt) {
     return NextResponse.json({ success: false, error: 'Recibo de importacion inexistente.' }, { status: 404 });
   }

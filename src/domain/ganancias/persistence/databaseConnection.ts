@@ -17,7 +17,7 @@ const TEST_DATABASE_NAME = 'ganancias_jaba_test';
 
 /**
  * Impide que un servidor local, un test o un Preview de Vercel abra la base productiva.
- * La Ãºnica autorizaciÃ³n posible es el runtime Production de Vercel desplegado desde main.
+ * La única autorización posible es el runtime Production de Vercel desplegado desde main.
  */
 export function assertDatabaseEnvironmentSafety(
   databaseUrl: string,

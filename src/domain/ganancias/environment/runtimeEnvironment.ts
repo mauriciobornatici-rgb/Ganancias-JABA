@@ -9,7 +9,7 @@ export function getRuntimeEnvironmentNotice(
   if (env.APP_ENV === 'test-db') {
     return {
       label: 'ENTORNO DE PRUEBA',
-      detail: 'Base Docker aislada: los datos no afectan producciÃ³n.',
+      detail: 'Base Docker aislada: los datos no afectan producción.',
     };
   }
 
@@ -23,7 +23,7 @@ export function getRuntimeEnvironmentNotice(
   if (env.NODE_ENV === 'development') {
     return {
       label: 'DESARROLLO LOCAL',
-      detail: 'El acceso a la base productiva estÃ¡ bloqueado.',
+      detail: 'El acceso a la base productiva está bloqueado.',
     };
   }
 

@@ -305,8 +305,11 @@ function parseMisRetenciones(
   // Buscar índices de las columnas clave
   const amountIndex = headers.findIndex(h => h.includes('importe') || h.includes('monto ret'));
   const cuitAgentIndex = findColumnIndex(headers, ['cuit agente', 'agente ret']);
-  const agentNameIndex = findColumnIndex(headers, ['denominaci', 'razon social', 'razÃ³n social']);
-  const taxCodeIndex = headers.findIndex(h => h === 'impuesto' || h.includes('cod impuesto') || h.includes('cÃ³digo impuesto'));
+  // Se aceptan el encabezado con tilde, sin tilde y con el tilde mal decodificado (archivo Latin-1
+  // leído como UTF-8 o al revés): antes solo estaba la variante rota y "Razón Social" no matcheaba.
+  const agentNameIndex = findColumnIndex(headers, ['denominaci', 'razon social', 'razón social', 'razÃ³n social']);
+  const taxCodeIndex = headers.findIndex(h => h === 'impuesto' || h.includes('cod impuesto')
+    || h.includes('codigo impuesto') || h.includes('código impuesto') || h.includes('cÃ³digo impuesto'));
   
   // Buscar primero la columna que contiene la descripción del impuesto, y si no, la del código del impuesto
   const descIndex = headers.findIndex(h => h.includes('descrip') && h.includes('impuesto'));

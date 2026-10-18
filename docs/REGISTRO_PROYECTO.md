@@ -1,8 +1,19 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-24
+Ultima actualizacion: 2026-10-18
 
 ## Entrada reciente
+
+### 2026-10-18 - IVA 2b: "Mis Retenciones" no cargaba nada + rótulo engañoso de los créditos aplicados
+
+- Reporte del usuario: al subir "Mis Retenciones" en el bloque 2b quedaba todo en 0 con el aviso "No se compiló ninguna retención/percepción de IVA del mes liquidado". Además, en el cálculo la línea "Percep./retenc. aplicadas" mostraba el mismo importe que el saldo técnico del período.
+- Causa 1 (importación): `afipTaxCreditImporter` leía el archivo por POSICIÓN fija y separando SOLO por coma, y descartaba en silencio las filas con menos de 7 columnas. El importador de Ganancias lee el mismo archivo con `readAfipSheetRows` (detecta `;` o `,`, Latin-1 o UTF-8, y .xlsx) y ubica las columnas por encabezado: por eso el mismo archivo podía funcionar en Ganancias y no en IVA. Con un export separado por `;` (el estándar de ARCA), con columnas extra (denominación, descripciones) o en .xlsx, ninguna fila llegaba a contarse y el aviso salía sin detalle. Sin el archivo real del usuario no se pudo confirmar cuál de esas variantes era; el arreglo cubre las tres.
+- Arreglo: el importador de IVA usa ahora `readAfipSheetRows` y ubica las columnas por encabezado (Impuesto o su descripción, Descripción Operación, Fecha Ret./Perc., Importe Ret./Perc., CUIT agente, Régimen, Certificado). Las filas que no se pueden leer cuentan como error con su número de fila en vez de desaparecer. Si el archivo no es "Mis Retenciones" o le faltan columnas, lo dice y muestra las columnas que encontró.
+- Cuando no entra nada, el mensaje explica por qué con el desglose de filas: otros impuestos, IVA de otros meses (con los meses) o errores. Si el archivo sólo trae Ganancias, aclara que ese mes no hay IVA que cargar. Helper puro `presentation/taxCreditImportMessage.ts`. Cuando sí entra algo, las filas con error vuelven el aviso a ámbar.
+- Causa 2 (rótulo): el motor (Art. 24, 2º párr.) aplica JUNTOS la libre disponibilidad anterior y las percepciones/retenciones del período y devuelve un solo `creditsApplied`. La pantalla rotulaba ese total como "Percep./retenc. aplicadas", y "Libre disponibilidad anterior aplicada" mostraba el saldo DISPONIBLE completo. En el caso del usuario (técnico 1.933,70; libre disponibilidad 52.369,80; sin retenciones) el 1.933,70 salía entero de la libre disponibilidad. **Las cuentas eran correctas**: saldo a pagar 0 y arrastre 50.436,10.
+- Arreglo: helper puro `presentation/vatCreditsDisplay.ts` que reconstruye las percepciones/retenciones del período con la identidad del motor (disponible = libre disp. anterior + período = aplicado + arrastre). La pantalla muestra por separado "Libre disponibilidad anterior (disponible)", "Percep./retenc. del período" y "Aplicado contra el saldo", con la fuente en el rótulo, tanto en el cálculo en vivo como en la liquidación guardada.
+- Verificado: 547 tests (11 nuevos: export con `;`, columnas extra en otro orden, .xlsx, archivo que no es "Mis Retenciones", fila con importe ilegible, mensajes de desglose y el caso exacto de la captura), typecheck, lint y build en verde.
+- Pendiente: probar con el archivo real del usuario en producción.
 
 ### 2026-07-24 - PDF de correcciones del usuario: puntos 1, 4 y 6 implementados + seguridad de dependencias (PR #31)
 

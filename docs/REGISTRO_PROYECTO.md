@@ -17,6 +17,18 @@ Ultima actualizacion: 2026-10-18
 - Resultado con el archivo real (septiembre 2026): 170 filas, **170 percepciones de IVA cargadas por $40.670,63** (6 notas de crédito netean), 0 errores, 170 claves únicas. El importador de Ganancias lee el mismo archivo con el mismo total. El 0 de la pantalla era un error de la app, no un mes sin retenciones: la libre disponibilidad que arrastra septiembre estaba subestimada en ese importe.
 - Test permanente con un XML 2003 sintético de la misma estructura (sin datos del cliente). 548 tests, typecheck, lint y build en verde.
 
+#### Validación de punta a punta y mejoras encontradas en el camino (mismo PR #32)
+
+- **Prueba real en la app local contra Docker** (cliente ficticio, período 09/2026 creado para la prueba): el archivo del usuario subido al endpoint del bloque 2b guarda 170 percepciones por $40.670,63; subido otra vez, 0 nuevas y 170 duplicadas (idempotente). La pantalla muestra "Percepciones: 40.670,63 · 170/170". Subido a junio, rechaza con "El archivo tiene 170 filas: 170 de IVA de otro mes (09/2026)". En junio, con una libre disponibilidad anterior de 52.369,80, el bloque de totales muestra "Libre disponibilidad anterior (disponible)" y "Aplicado contra el saldo (de la libre disponibilidad)" y el saldo cierra (837.854,70 − 52.369,80 = 785.484,90).
+- **Dependencias con vulnerabilidades nuevas**: el CI del PR, y también `main`, fallaban en el control de auditoría por avisos publicados después del último pase, entre ellos uno **crítico de Next.js** (ejecución remota de código en Image Optimization y `next/og`, SSRF y envenenamiento de caché). Producción corría Next 16.3.1. Se corrigió con saltos de parche, sin cambios mayores:
+  - `next` y `eslint-config-next` 16.3.1 → **16.3.8** (sale del rango vulnerable `< 16.3.8`; se eligió el parche de la misma línea antes que 16.4.x).
+  - `mariadb` directo `^3.5.4`; dentro de `@prisma/adapter-mariadb` (el driver que usa la app contra Hostinger) se fijó **3.4.7**, el parche de su misma línea, por override acotado al adaptador y no global. Las pruebas de integración contra Docker pasan con este driver.
+  - Overrides: `mysql2` 3.24.4 (la versión que eligió Prisma para 7.10.1), `sharp` ^0.35.5, `fast-uri` 3.1.8, `source-map-js` 1.2.2, `baseline-browser-mapping` ^2.11.0.
+  - Resultado: 0 vulnerabilidades altas o críticas. Quedan 2 moderadas en `mariadb` dentro del adaptador (crash con autenticación ed25519 y TLS sin configuración, que no es el modo de Hostinger): se cierran recién con la línea 3.5, es decir, actualizando Prisma a 7.10.1. Queda como siguiente paso: regenera los 64 archivos del cliente versionado y conviene probarlo en un PR propio, no mezclado con un pase.
+- **Textos con acentos mal codificados**: el cartel "ENTORNO DE PRUEBA" mostraba "producciÃ³n" y "â€”", y la etiqueta de accesibilidad decía "ejecuciÃ³n". Corregidos, con un test que impide que vuelva a pasar en ese cartel. También en un comentario y dos nombres de tests.
+- **Importador de Ganancias**: buscaba los encabezados "Razón Social" y "Código Impuesto" solo en su variante mal decodificada ("razÃ³n social"); ahora acepta también la correcta y la versión sin tilde.
+- Verificado: 549 tests, 3 de integración contra Docker, typecheck, lint, build de producción y auditoría en verde.
+
 ### 2026-07-24 - PDF de correcciones del usuario: puntos 1, 4 y 6 implementados + seguridad de dependencias (PR #31)
 
 Origen: PDF de correcciones entregado por el usuario con 6 puntos numerados (capturas de la app + referencias de ARCA y de la planilla). Los archivos de trabajo quedaron en `tmp/pdfs/correcciones-app/` (no versionados). Los 6 puntos son:

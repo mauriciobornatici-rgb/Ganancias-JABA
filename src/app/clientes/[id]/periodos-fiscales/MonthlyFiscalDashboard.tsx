@@ -171,7 +171,7 @@ export default function MonthlyFiscalDashboard({ clientId }: { clientId: string 
               href={`/clientes/${clientId}/iibb-config`}
               className="inline-flex h-9 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300"
             >
-              <MapPin className="h-4 w-4" /> Config. IIBB
+              <MapPin className="h-4 w-4" /> Config. IIBB y TISH
             </Link>
           </div>
         </div>

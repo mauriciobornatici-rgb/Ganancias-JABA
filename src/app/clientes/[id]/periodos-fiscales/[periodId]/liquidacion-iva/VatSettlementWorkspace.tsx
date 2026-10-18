@@ -4,10 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import Link from 'next/link';
 import {
   ArrowLeft, UploadCloud, RefreshCw, ShieldAlert, CheckCircle2, AlertTriangle,
-  Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2,
+  Calculator, Save, FileSpreadsheet, ScanLine, MapPin, Trash2, Landmark,
 } from 'lucide-react';
+import { buildFiscalDocumentImportFeedback } from '@/domain/ganancias/presentation/fiscalImportFeedback';
 import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
+import { buildVatCreditsDisplay } from '@/domain/ganancias/presentation/vatCreditsDisplay';
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -54,10 +56,16 @@ type TaxCreditRow = {
   notes?: string | null;
 };
 
-// Deducciones ARBA: el régimen viaja en notes ("Deducción bancaria ARBA (SIRCREB)..." / "Retención tarjetas ARBA").
+// Deducciones ARBA: B/T se distinguen por notes; P conserva además kind=PERCEPTION.
 const isArbaBankRow = (r: TaxCreditRow) => (r.notes ?? '').includes('bancaria');
-const arbaRowKindLabel = (r: TaxCreditRow) =>
-  (isArbaBankRow(r) ? 'Bancaria' : (r.notes ?? '').includes('tarjetas') ? 'Tarjetas' : 'Retención');
+const isArbaCardRow = (r: TaxCreditRow) => (r.notes ?? '').includes('tarjetas');
+const isArbaPerceptionRow = (r: TaxCreditRow) => r.kind === 'PERCEPTION';
+const arbaRowKindLabel = (r: TaxCreditRow) => {
+  if (isArbaBankRow(r)) return 'Bancaria';
+  if (isArbaCardRow(r)) return 'Tarjetas';
+  if (isArbaPerceptionRow(r)) return 'Percepción';
+  return 'Retención';
+};
 
 type GrossIncomeView = {
   regime: string;
@@ -103,6 +111,7 @@ type OpeningBalancesView = {
 };
 
 type BenefitInfo = { enabled: boolean; startYear: number | null; rate: string };
+type WorkspaceNotice = { message: string; tone: 'success' | 'warning' };
 
 const ARS = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : ARS.format(Number(v)));
@@ -113,10 +122,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<WorkspaceNotice | null>(null);
 
   const [uploading, setUploading] = useState(false);
-  const [deletingDocuments, setDeletingDocuments] = useState(false);
+  const [deletingDirection, setDeletingDirection] = useState<'SALE' | 'PURCHASE' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Retenciones y percepciones (créditos de IVA)
@@ -124,10 +133,17 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
   const [uploadingCredits, setUploadingCredits] = useState(false);
   const creditsFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Deducciones de IIBB (ARBA: bancarias SIRCREB y tarjetas)
+  // Deducciones de IIBB (ARBA: bancarias SIRCREB, tarjetas y percepciones)
   const [iibbCredits, setIibbCredits] = useState<TaxCreditRow[]>([]);
   const [uploadingIibbCredits, setUploadingIibbCredits] = useState(false);
   const iibbCreditsFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Impuesto al cheque del mes (pago a cuenta de GANANCIAS: no entra en IVA ni en IIBB).
+  const [idcbAmount, setIdcbAmount] = useState('');
+  const [idcbPercent, setIdcbPercent] = useState<33 | 100>(33);
+  const [idcbComputable, setIdcbComputable] = useState('0.00');
+  const [savingIdcb, setSavingIdcb] = useState(false);
+  const [idcbNotice, setIdcbNotice] = useState<string | null>(null);
 
   const [settlement, setSettlement] = useState<VatView | null>(null);
   const [calculating, setCalculating] = useState(false);
@@ -199,6 +215,20 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   }, [clientId, periodId]);
 
+  const loadIdcb = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/idcb`, { cache: 'no-store' });
+      const payload = await res.json();
+      if (res.ok && payload.success) {
+        setIdcbAmount(payload.data.amount ?? '');
+        setIdcbPercent(payload.data.computablePercent === 100 ? 100 : 33);
+        setIdcbComputable(payload.data.computableAmount ?? '0.00');
+      }
+    } catch {
+      // el impuesto al cheque es de Ganancias: si falla su carga, la liquidación de IVA sigue usable
+    }
+  }, [clientId, periodId]);
+
   const loadSaved = useCallback(async () => {
     try {
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/settlement/saved`, { cache: 'no-store' });
@@ -227,10 +257,36 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       void loadDocuments();
       void loadTaxCredits();
       void loadIibbCredits();
+      void loadIdcb();
       void loadSaved();
       void loadSavedIibb();
     });
-  }, [loadDocuments, loadTaxCredits, loadIibbCredits, loadSaved, loadSavedIibb]);
+  }, [loadDocuments, loadTaxCredits, loadIibbCredits, loadIdcb, loadSaved, loadSavedIibb]);
+
+  const saveIdcb = async () => {
+    setSavingIdcb(true);
+    setError(null);
+    setIdcbNotice(null);
+    try {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/idcb`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: idcbAmount }),
+      });
+      const payload = await res.json();
+      if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar el impuesto al cheque.');
+      setIdcbAmount(payload.data.amount ?? '');
+      setIdcbPercent(payload.data.computablePercent === 100 ? 100 : 33);
+      setIdcbComputable(payload.data.computableAmount ?? '0.00');
+      setIdcbNotice(Number(payload.data.computableAmount) > 0
+        ? `Guardado. Computable como pago a cuenta de Ganancias: $${fmt(payload.data.computableAmount)} (${payload.data.computablePercent}% del total del mes).`
+        : 'Importe borrado: este mes no computa impuesto al cheque.');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo guardar el impuesto al cheque.');
+    } finally {
+      setSavingIdcb(false);
+    }
+  };
 
   const saveIibb = async (force: boolean) => {
     if (iibbBalancesDirty) {
@@ -261,11 +317,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       if (res.status === 409) { setError(payload.error || 'El saldo de IIBB no coincide con el oficial.'); return; }
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo guardar IIBB.');
       setSavedIibbStatus({ status: payload.data.status, version: payload.data.version });
-      setNotice(payload.data.status === 'CLOSED'
-        ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
-        : payload.data.status === 'DRAFT'
-          ? `IIBB guardado como Borrador (versión ${payload.data.version}). Para cerrarlo cargá el saldo oficial del organismo (aunque sea 0) y guardá de nuevo.`
-          : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`);
+      setNotice({
+        tone: payload.data.status === 'CLOSED' ? 'success' : 'warning',
+        message: payload.data.status === 'CLOSED'
+          ? `IIBB cotejado y cerrado (versión ${payload.data.version}). Disponible como gasto deducible en Ganancias.`
+          : payload.data.status === 'DRAFT'
+            ? `IIBB guardado como Borrador (versión ${payload.data.version}). Para cerrarlo cargá el saldo oficial del organismo (aunque sea 0) y guardá de nuevo.`
+            : `IIBB guardado como ${humanStatus(payload.data.status)} (versión ${payload.data.version}).`,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar IIBB.');
     } finally {
@@ -283,7 +342,10 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo reabrir la liquidación.');
       if (payload.data.reopened.length > 0) {
-        setNotice(`Período reabierto para rectificación (${payload.data.reopened.join(' e ')}). Cargá los cambios, recalculá y volvé a cotejar y guardar: quedará como versión nueva.`);
+        setNotice({
+          tone: 'warning',
+          message: `Período reabierto para rectificación (${payload.data.reopened.join(' e ')}). Cargá los cambios, recalculá y volvé a cotejar y guardar: quedará como versión nueva.`,
+        });
       }
       setReliquidating(true);
       setSettlement(null);
@@ -317,10 +379,15 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de retenciones/percepciones.');
       const d = payload.data;
-      let msg = `Importadas ${d.inserted} ret./perc. (${d.duplicates} duplicadas).`;
+      let msg = `Importadas ${d.inserted} ret./perc. de IVA (${d.duplicates} duplicadas).`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.ignoredOtherTax) msg += ` ${d.ignoredOtherTax} de otros impuestos ignoradas.`;
-      setNotice(msg);
+      // Filas con error: antes se descartaban sin aviso y el mensaje salía en verde.
+      if (d.errors?.length) msg += ` ${d.errors.length} fila(s) con error no se cargaron: ${d.errors[0]}`;
+      setNotice({
+        tone: d.outOfPeriod?.length || d.ignoredOtherTax || d.errors?.length ? 'warning' : 'success',
+        message: msg,
+      });
       await loadTaxCredits();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de retenciones/percepciones.');
@@ -359,7 +426,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     [iibbCredits],
   );
   const includedIibbCards = useMemo(
-    () => iibbCredits.filter(c => c.includedInSettlement && !isArbaBankRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaCardRow(c)).reduce((s, c) => s + Number(c.amount), 0),
+    [iibbCredits],
+  );
+  const includedIibbPerceptions = useMemo(
+    () => iibbCredits.filter(c => c.includedInSettlement && isArbaPerceptionRow(c)).reduce((s, c) => s + Number(c.amount), 0),
     [iibbCredits],
   );
 
@@ -377,10 +448,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de deducciones de ARBA.');
       const d = payload.data;
-      let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)}.`;
+      let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)} · Percepciones ${fmt(d.totals.perceptions)}.`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.unsupportedFiles?.length) msg += ` Régimen aún sin soporte: ${d.unsupportedFiles.join(', ')}.`;
-      setNotice(msg);
+      if (d.errors?.length) msg += ` ${d.errors.length} líneas o archivos tuvieron errores de formato y no se importaron.`;
+      setNotice({
+        tone: d.outOfPeriod?.length || d.unsupportedFiles?.length || d.errors?.length ? 'warning' : 'success',
+        message: msg,
+      });
       await loadIibbCredits();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo importar el archivo de deducciones de ARBA.');
@@ -428,7 +503,7 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudieron importar los archivos.');
-      setNotice(`Importados ${payload.data.inserted} comprobantes nuevos, ${payload.data.updated} actualizados y ${payload.data.duplicates} sin cambios.`);
+      setNotice(buildFiscalDocumentImportFeedback(payload.data));
       await loadDocuments();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron importar los archivos.');
@@ -438,36 +513,41 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
     }
   };
 
-  const deleteLoadedDocuments = async () => {
-    if (documents.length === 0 || deletingDocuments) return;
+  const deleteLoadedDocuments = async (direction: 'SALE' | 'PURCHASE') => {
+    const affected = documents.filter(document => document.direction === direction);
+    if (affected.length === 0 || deletingDirection) return;
     const periodLabel = period ? `${MONTHS[period.month]} ${period.year}` : 'este período';
+    const kind = direction === 'SALE' ? 'ventas' : 'compras';
     const confirmed = window.confirm(
-      `Se eliminarán los ${documents.length} comprobantes cargados en ${periodLabel}.\n\n`
+      `Se eliminarán ${affected.length} comprobantes de ${kind} cargados en ${periodLabel}.\n\n`
       + 'Las retenciones y percepciones no se eliminarán. Esta acción no se puede deshacer. ¿Desea continuar?',
     );
     if (!confirmed) return;
 
-    setDeletingDocuments(true);
+    setDeletingDirection(direction);
     setError(null);
     setNotice(null);
     setSettlement(null);
     setGrossIncome(null);
     setActivityBases({});
     try {
-      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents`, {
+      const res = await fetch(`/api/clientes/${clientId}/fiscal-periods/${periodId}/documents?direction=${direction}`, {
         method: 'DELETE',
       });
       const payload = await res.json();
       if (!res.ok || !payload.success) {
         throw new Error(payload.error || 'No se pudieron eliminar los comprobantes.');
       }
-      setDocuments([]);
-      setNotice(`Se eliminaron ${payload.data.deleted} comprobantes de ${periodLabel}. Ya podés cargar los archivos en el mes correcto.`);
+      setDocuments(previous => previous.filter(document => document.direction !== direction));
+      setNotice({
+        tone: 'success',
+        message: `Se eliminaron ${payload.data.deleted} comprobantes de ${kind} de ${periodLabel}. Ya podés cargar el archivo correcto.`,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudieron eliminar los comprobantes.');
       await loadDocuments();
     } finally {
-      setDeletingDocuments(false);
+      setDeletingDirection(null);
     }
   };
 
@@ -594,11 +674,12 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       setSaveResult({ status: payload.data.status, version: payload.data.version });
       // Solo una liquidación CLOSED (cotejada y coincidente) habilita su uso en Ganancias anual.
       const closed = payload.data.status === 'CLOSED';
-      setNotice(
-        closed
+      setNotice({
+        tone: closed ? 'success' : 'warning',
+        message: closed
           ? `Liquidación cotejada y cerrada (versión ${payload.data.version}). Ya disponible para la liquidación anual de Ganancias.`
           : `Liquidación guardada como ${humanStatus(payload.data.status)} (versión ${payload.data.version}). Todavía NO alimenta Ganancias: cotejá los tres importes con AFIP y cerrala para habilitarla.`,
-      );
+      });
       // Refresca el panel de "liquidación guardada" y vuelve al modo lectura.
       setReliquidating(false);
       setSettlement(null);
@@ -637,8 +718,18 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
           </div>
         ) : null}
         {notice ? (
-          <div className="flex items-start gap-3 rounded-xl border border-emerald-500/25 bg-emerald-950/20 px-5 py-4 text-sm text-emerald-200">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><p>{notice}</p>
+          <div
+            role={notice.tone === 'warning' ? 'alert' : 'status'}
+            className={`flex items-start gap-3 rounded-xl border px-5 py-4 text-sm ${
+              notice.tone === 'warning'
+                ? 'border-amber-500/30 bg-amber-950/20 text-amber-200'
+                : 'border-emerald-500/25 bg-emerald-950/20 text-emerald-200'
+            }`}
+          >
+            {notice.tone === 'warning'
+              ? <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+              : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />}
+            <p>{notice.message}</p>
           </div>
         ) : null}
 
@@ -656,20 +747,28 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
           <StepTitle n={1} icon={<UploadCloud className="h-4 w-4" />} title="Subir archivos de AFIP" subtitle="Compras y ventas exportados de Mis Comprobantes (.csv). El sistema detecta automáticamente cuál es cuál." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
-            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || deletingDocuments} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
-            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDocuments) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" multiple disabled={uploading || Boolean(deletingDirection)} onChange={e => void uploadFiles(e.target.files)} className="hidden" id="afip-files" />
+            <label htmlFor="afip-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${(uploading || deletingDirection) ? 'pointer-events-none cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploading ? 'Importando…' : 'Seleccionar CSV (compras y ventas)'}
             </label>
-            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || deletingDocuments} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
+            <button type="button" onClick={() => void loadDocuments()} disabled={isLoading || Boolean(deletingDirection)} className="inline-flex h-10 items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300 disabled:opacity-50">
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} /> Actualizar
             </button>
             <button
               type="button"
-              onClick={() => void deleteLoadedDocuments()}
-              disabled={documents.length === 0 || deletingDocuments || uploading}
+              onClick={() => void deleteLoadedDocuments('PURCHASE')}
+              disabled={purchases.length === 0 || Boolean(deletingDirection) || uploading}
               className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Trash2 className="h-4 w-4" /> {deletingDocuments ? 'Eliminando…' : 'Eliminar comprobantes cargados'}
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'PURCHASE' ? 'Eliminando compras…' : 'Eliminar compras'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void deleteLoadedDocuments('SALE')}
+              disabled={sales.length === 0 || Boolean(deletingDirection) || uploading}
+              className="inline-flex h-10 items-center gap-2 rounded border border-red-500/35 bg-red-950/20 px-3 text-xs font-bold text-red-300 transition-colors hover:border-red-400 hover:bg-red-950/40 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Trash2 className="h-4 w-4" /> {deletingDirection === 'SALE' ? 'Eliminando ventas…' : 'Eliminar ventas'}
             </button>
           </div>
         </section>
@@ -740,14 +839,14 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
 
         {/* Paso 2c — Deducciones de IIBB (ARBA) */}
         <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
-          <StepTitle n="2c" icon={<MapPin className="h-4 w-4" />} title="Deducciones de IIBB (ARBA)" subtitle="Subí el ZIP de 'Mis Deducciones' de ARBA tal como se descarga (IB-CUIT-PERIODO.zip) o los TXT que contiene. Las deducciones bancarias (SIRCREB) y de tarjetas se descuentan del saldo a pagar de Ingresos Brutos." />
+          <StepTitle n="2c" icon={<MapPin className="h-4 w-4" />} title="Deducciones de IIBB (ARBA)" subtitle="Subí el ZIP de 'Mis Deducciones' de ARBA tal como se descarga (IB-CUIT-PERIODO.zip) o los TXT que contiene. Las deducciones bancarias (SIRCREB), de tarjetas y las percepciones se descuentan del saldo a pagar de Ingresos Brutos." />
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <input ref={iibbCreditsFileInputRef} type="file" accept=".zip,.txt,application/zip,text/plain" multiple onChange={e => void uploadIibbCreditsFiles(e.target.files)} className="hidden" id="arba-deducciones-files" />
             <label htmlFor="arba-deducciones-files" className={`inline-flex h-10 cursor-pointer items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 ${uploadingIibbCredits ? 'cursor-wait opacity-60' : ''}`}>
               <UploadCloud className="h-4 w-4" /> {uploadingIibbCredits ? 'Importando…' : 'Subir deducciones ARBA (zip o txt)'}
             </label>
             <span className="text-[11px] text-zinc-400">
-              Bancarias (SIRCREB): <strong className="font-mono text-teal-300">{fmt(includedIibbBank)}</strong> · Tarjetas: <strong className="font-mono text-teal-300">{fmt(includedIibbCards)}</strong>
+              Bancarias (SIRCREB): <strong className="font-mono text-teal-300">{fmt(includedIibbBank)}</strong> · Tarjetas: <strong className="font-mono text-teal-300">{fmt(includedIibbCards)}</strong> · Percepciones: <strong className="font-mono text-teal-300">{fmt(includedIibbPerceptions)}</strong>
             </span>
           </div>
           {iibbCredits.length > 0 ? (
@@ -766,6 +865,51 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
         </section>
         </>
         ) : null}
+
+        {/* Impuesto al cheque del mes — pago a cuenta de GANANCIAS (no entra en IVA ni en IIBB).
+            Queda visible y editable aunque el mes esté cerrado: cerrar IVA no es evidencia de este
+            impuesto, y sin poder cargarlo el pago a cuenta anual quedaría corto. */}
+        <section className="rounded-xl border border-zinc-800 bg-[#121216] p-5 shadow-xl">
+          <StepTitle
+            n="2d"
+            icon={<Landmark className="h-4 w-4" />}
+            title="Impuesto al cheque (pago a cuenta de Ganancias)"
+            subtitle="Cargá el importe TOTAL del impuesto sobre débitos y créditos bancarios del mes. No afecta IVA ni IIBB: la app aplica el porcentaje computable del perfil fiscal y lo lleva a la DDJJ anual de Ganancias."
+          />
+          <div className="mt-4 flex flex-wrap items-end gap-4">
+            <div>
+              <label htmlFor="idcb-amount" className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-zinc-500">Total del mes</label>
+              <input
+                id="idcb-amount"
+                inputMode="decimal"
+                value={idcbAmount}
+                onChange={e => setIdcbAmount(e.target.value)}
+                placeholder="sin cargar"
+                className="h-10 w-44 rounded border border-zinc-700 bg-zinc-950 px-3 text-right font-mono text-sm text-zinc-100 outline-none focus:border-teal-400"
+              />
+            </div>
+            <div className="text-[11px] leading-5 text-zinc-400">
+              <p>Computable: <strong className="font-mono text-teal-300">{fmt(idcbComputable)}</strong> <span className="text-zinc-500">({idcbPercent}% configurado en el perfil fiscal)</span></p>
+              <p className="text-zinc-500">
+                {idcbPercent === 100 ? 'Micro y pequeña empresa: computa el 100%.' : 'Régimen general: computa el 33%.'}{' '}
+                <Link href={`/clientes/${clientId}/iibb-config`} className="text-teal-400 underline decoration-dotted hover:text-teal-300">Cambiar porcentaje</Link>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void saveIdcb()}
+              disabled={savingIdcb}
+              className="inline-flex h-10 items-center gap-2 rounded bg-teal-400 px-4 text-xs font-extrabold text-[#09090b] transition-colors hover:bg-teal-300 disabled:opacity-50"
+            >
+              <Save className="h-4 w-4" /> {savingIdcb ? 'Guardando…' : 'Guardar impuesto al cheque'}
+            </button>
+          </div>
+          {idcbNotice ? (
+            <p className="mt-3 rounded border border-emerald-500/25 bg-emerald-950/20 px-3 py-2 text-[11px] text-emerald-200">{idcbNotice}</p>
+          ) : (
+            <p className="mt-3 text-[11px] text-zinc-500">Dejá el campo vacío (o en 0) si el mes no tuvo impuesto al cheque. Se guarda por período y se puede corregir en cualquier momento.</p>
+          )}
+        </section>
 
         {/* Paso 3 — Totales + cotejo + guardar */}
         {settlement ? (
@@ -787,8 +931,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
                   </>
                 ) : <Row label="Saldo técnico del período" value={settlement.technicalDue} />}
                 {Number(settlement.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={settlement.technicalCarryForward} muted /> : null}
-                {Number(openingBalances?.vat.previousFree ?? 0) > 0 ? <Row label="Libre disponibilidad anterior aplicada" value={openingBalances?.vat.previousFree ?? '0'} muted /> : null}
-                {Number(settlement.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={settlement.creditsApplied} muted /> : null}
+                <VatCreditRows
+                  previousFreeAvailability={openingBalances?.vat.previousFree ?? '0'}
+                  creditsApplied={settlement.creditsApplied}
+                  freeAvailabilityBalance={settlement.freeAvailabilityBalance}
+                />
                 <div className="my-2 border-t border-zinc-800" />
                 <Row label="Saldo a pagar" value={settlement.amountDue} highlight />
                 {Number(settlement.freeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad (arrastra)" value={settlement.freeAvailabilityBalance} muted /> : null}
@@ -1087,8 +1234,11 @@ function SavedSettlementPanel({ saved, onReliquidar }: { saved: SavedSettlement;
               <Row label={`Reducción beneficio (${(Number(saved.smallTaxpayerBenefitRate) * 100).toFixed(0)}%)`} value={saved.smallTaxpayerBenefitReduction} muted />
             </>
           ) : null}
-          {Number(saved.previousFreeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad anterior aplicada" value={saved.previousFreeAvailabilityBalance} muted /> : null}
-          {Number(saved.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={saved.creditsApplied} muted /> : null}
+          <VatCreditRows
+            previousFreeAvailability={saved.previousFreeAvailabilityBalance}
+            creditsApplied={saved.creditsApplied}
+            freeAvailabilityBalance={saved.freeAvailabilityBalance}
+          />
           {Number(saved.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={saved.technicalCarryForward} muted /> : null}
           <div className="my-2 border-t border-zinc-800" />
           <Row label="Saldo a pagar" value={saved.amountDue} highlight />
@@ -1235,6 +1385,36 @@ function Row({ label, value, strong, highlight, muted }: { label: string; value:
       <span>{label}</span>
       <strong className={`font-mono ${highlight ? 'text-lg text-teal-300' : strong ? 'text-zinc-100' : 'text-zinc-300'}`}>{fmt(value)}</strong>
     </p>
+  );
+}
+
+/**
+ * Créditos de la posición mensual con cada fuente rotulada por separado: la libre disponibilidad
+ * anterior DISPONIBLE, las percepciones/retenciones DEL PERÍODO y el total APLICADO. Antes el total
+ * aplicado se rotulaba "Percep./retenc. aplicadas" aunque viniera entero de la libre disponibilidad.
+ */
+function VatCreditRows({ previousFreeAvailability, creditsApplied, freeAvailabilityBalance }: {
+  previousFreeAvailability: string;
+  creditsApplied: string;
+  freeAvailabilityBalance: string;
+}) {
+  const display = buildVatCreditsDisplay({ previousFreeAvailability, creditsApplied, freeAvailabilityBalance });
+  const hasPrevious = display.previousFreeAvailable.greaterThan(0);
+  const hasPeriod = !display.periodCredits.isZero();
+  return (
+    <>
+      {hasPrevious ? <Row label="Libre disponibilidad anterior (disponible)" value={display.previousFreeAvailable.toFixed(2)} muted /> : null}
+      {hasPeriod ? <Row label="Percep./retenc. del período" value={display.periodCredits.toFixed(2)} muted /> : null}
+      {display.totalApplied.greaterThan(0) ? (
+        <Row
+          label={hasPrevious && hasPeriod
+            ? 'Aplicado contra el saldo (libre disp. + percep./retenc.)'
+            : hasPrevious ? 'Aplicado contra el saldo (de la libre disponibilidad)' : 'Aplicado contra el saldo (percep./retenc.)'}
+          value={display.totalApplied.toFixed(2)}
+          muted
+        />
+      ) : null}
+    </>
   );
 }
 

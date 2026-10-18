@@ -11,6 +11,8 @@ import { calculateTotalDepreciation } from './amortizaciones';
 import { calculateTotalAxi } from './ajustePorInflacion';
 import { calculatePatrimonialJustification } from './justificacionPatrimonial';
 import { calculateClosingCommercialPatrimony } from './patrimonioComercial';
+import { calculateSocietyParticipations } from './participacionSociedades';
+import { reconcilePaymentsOnAccount } from './pagosACuentaReconciliation';
 
 /**
  * Aplica la escala progresiva del Artículo 94 para determinar el impuesto correspondiente.
@@ -170,8 +172,16 @@ export function calculateTaxReturn(
     .sub(totalBajaLossAdj)
     .add(resultadoAjustePorInflacion);
 
-  // Consolida categorías impositivas (en este MVP de 3ra Cat es equivalente)
-  const resultadoNetoTodasCategorias = resultadoComercialNeto;
+  // ==========================================
+  // 5b. PARTICIPACIÓN EN SOCIEDADES (punto 3 del PDF, criterio 2026-07-24)
+  // El resultado atribuido de cada sociedad suma (o resta, si es quebranto) al neto de la categoría.
+  // ==========================================
+  const participacionSociedades = calculateSocietyParticipations(input.societyParticipations ?? []);
+  warnings.push(...participacionSociedades.warnings);
+
+  // Consolida categorías impositivas: tercera categoría propia + resultado atribuido de sociedades.
+  const resultadoNetoTodasCategorias = resultadoComercialNeto
+    .add(participacionSociedades.totalAttributedResult);
 
   // ==========================================
   // 6. DEDUCCIONES GENERALES (CON TOPES LEGALES)
@@ -425,57 +435,40 @@ export function calculateTaxReturn(
   // ==========================================
   // 10. PAGOS A CUENTA Y SALDO FINAL (IG 25 F61:F67, F68 y F70)
   // ==========================================
-  let retencionesYPercepciones = new Decimal(0);      // F67: solo retenciones/percepciones de Ganancias
-  let anticiposCanceladosIdcb = new Decimal(0);       // F62
-  let anticiposCanceladosEfectivo = new Decimal(0);   // F63
-  let anticiposCanceladosMisFacilidades = new Decimal(0); // F64
-  let computoIdcb = new Decimal(0);                   // F65
-  let computoCombustibles = new Decimal(0);           // F66
-  let creditosOtrosNoComputables = new Decimal(0);    // No computan contra Ganancias
+  const reconciledPayments = reconcilePaymentsOnAccount(input.withholdings);
+  const {
+    retencionesYPercepciones,           // F67
+    anticiposCanceladosIdcb,            // F62
+    anticiposCanceladosEfectivo,        // F63
+    anticiposCanceladosMisFacilidades,  // F64
+    computoIdcb,                        // F65
+    computoCombustibles,                // F66
+    creditosOtrosNoComputables,         // No computan contra Ganancias
+  } = reconciledPayments;
+  warnings.push(...reconciledPayments.warnings);
 
-  input.withholdings.forEach(w => {
-    const amount = new Decimal(w.amount);
-    switch (w.taxCode) {
-      case 'Ganancias':
-        retencionesYPercepciones = retencionesYPercepciones.add(amount);
-        break;
-      case 'AnticipoIDCB':
-        anticiposCanceladosIdcb = anticiposCanceladosIdcb.add(amount);
-        break;
-      case 'AnticipoEfectivo':
-        anticiposCanceladosEfectivo = anticiposCanceladosEfectivo.add(amount);
-        break;
-      case 'AnticipoMisFacilidades':
-        anticiposCanceladosMisFacilidades = anticiposCanceladosMisFacilidades.add(amount);
-        break;
-      case 'IDCB':
-        computoIdcb = computoIdcb.add(amount);
-        break;
-      case 'Combustibles':
-        computoCombustibles = computoCombustibles.add(amount);
-        break;
-      default:
-        // 'Otros' (IVA, IIBB, etc.): no es pago a cuenta de Ganancias.
-        creditosOtrosNoComputables = creditosOtrosNoComputables.add(amount);
-        break;
-    }
-  });
-
-  if (creditosOtrosNoComputables.gt(0)) {
+  if (!creditosOtrosNoComputables.isZero()) {
     warnings.push(
-      `Pagos a cuenta: hay $${creditosOtrosNoComputables.toFixed(2)} cargados con codigo "Otros" ` +
+      `Pagos a cuenta: hay movimientos netos por $${creditosOtrosNoComputables.toFixed(2)} cargados con codigo "Otros" ` +
       `que NO se computan contra el Impuesto a las Ganancias.`
     );
   }
 
   // Saldo a favor impositivo anterior o de libre disponibilidad (F61)
-  const saldoAFavorAnterior = new Decimal(input.saldoAFavorAnterior || 0);
+  const saldoAFavorAnteriorRaw = new Decimal(input.saldoAFavorAnterior || 0);
+  const saldoAFavorAnterior = Decimal.max(saldoAFavorAnteriorRaw, 0);
+  if (saldoAFavorAnteriorRaw.isNegative()) {
+    warnings.push(
+      `Saldo a favor anterior: el importe cargado ($${saldoAFavorAnteriorRaw.toFixed(2)}) es negativo. `
+      + 'Se limito el computo a $0.00 para no aumentar el impuesto; revise el arrastre del periodo anterior.',
+    );
+  }
 
   // Logica de IG 25!F68 y F70: el IDCB (computo directo F65 + anticipos cancelados con IDCB F62)
   // solo se computa hasta el impuesto determinado. El excedente no es saldo de libre
   // disponibilidad: queda como saldo trasladable de IDCB (F70).
-  const idcbTotal = computoIdcb.add(anticiposCanceladosIdcb);
-  const idcbComputable = Decimal.min(idcbTotal, impuestoDeterminado);
+  const idcbTotal = Decimal.max(computoIdcb.add(anticiposCanceladosIdcb), 0);
+  const idcbComputable = Decimal.min(idcbTotal, Decimal.max(impuestoDeterminado, 0));
   const saldoTrasladableIdcb = idcbTotal.sub(idcbComputable); // F70
 
   const creditosNoIdcb = saldoAFavorAnterior        // F61
@@ -613,21 +606,25 @@ export function calculateTaxReturn(
   const impuestoAnticipoDeterminado = calculateArt94Tax(gananciaAnticipo, escalaActualizada);
 
   // Anticipos!E24 / RG 5211: cuota = (Impuesto proyectado - Retenciones - ITC) / 5.
-  // Si la cuota no supera $5.000, no corresponde ingresar anticipos.
+  // Si la cuota es menor a $5.000, no corresponde ingresar anticipos.
   const PISO_ANTICIPO = new Decimal(5000);
+  // RG 5211 art. 3: tanto el resultado/deducciones como los conceptos deducibles del período
+  // base se actualizan por la variación IPC julio-diciembre.
+  const retencionesAnticipo = retencionesYPercepciones.mul(ipcAnticipoRate);
+  const combustiblesAnticipo = computoCombustibles.mul(ipcAnticipoRate);
   const baseAnticipos = impuestoAnticipoDeterminado
-    .sub(retencionesYPercepciones)
-    .sub(computoCombustibles);
+    .sub(retencionesAnticipo)
+    .sub(combustiblesAnticipo);
   const anticiposSiguientePeriodo: Decimal[] = [];
   if (baseAnticipos.gt(0)) {
     const cuotaAnticipo = baseAnticipos.div(5).toDecimalPlaces(0, Decimal.ROUND_HALF_UP);
-    if (cuotaAnticipo.gt(PISO_ANTICIPO)) {
+    if (cuotaAnticipo.gte(PISO_ANTICIPO)) {
       for (let i = 0; i < 5; i++) {
         anticiposSiguientePeriodo.push(cuotaAnticipo);
       }
     } else {
       warnings.push(
-        `Anticipos: la cuota proyectada ($${cuotaAnticipo.toFixed(2)}) no supera el minimo de $5.000. ` +
+        `Anticipos: la cuota proyectada ($${cuotaAnticipo.toFixed(2)}) es inferior al minimo de $5.000. ` +
         'No se deberan ingresar anticipos (Anticipos!E24).'
       );
     }
@@ -649,6 +646,7 @@ export function calculateTaxReturn(
     axiDynamicResult: axiResult.totalAxiDynamic.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     axiDynamicLines: axiResult.dynamicLines,
     resultadoComercialNeto: resultadoComercialNeto.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
+    resultadoParticipacionSociedades: participacionSociedades.totalAttributedResult.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     resultadoNetoTodasCategorias: resultadoNetoTodasCategorias.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),
     deduccionesGenerales,
     resultadoNetoAntesQuebrantos: resultadoNetoAntesQuebrantos.toDecimalPlaces(0, Decimal.ROUND_HALF_UP),

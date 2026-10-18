@@ -13,11 +13,27 @@ export type AfipSheetRow = AfipSheetCell[];
  * formato numerico argentino ("15123,97"). Si se delega en SheetJS, este interpreta la coma
  * como separador de miles y convierte "15123,97" -> 1512397 (importe x100, error critico de
  * liquidacion). Por eso los CSV se leen como texto plano preservando el valor original, y
- * SheetJS se reserva para los .xlsx reales (donde numeros y fechas ya son tipos nativos).
+ * SheetJS se reserva para las planillas reales (.xlsx, .xls binario y el "XML Spreadsheet 2003"
+ * que ARCA baja con extension .xls), donde numeros y fechas ya son tipos nativos.
  */
-function isLikelyXlsxBuffer(fileBuffer: Buffer): boolean {
-  // Los .xlsx/.xls modernos son contenedores ZIP: empiezan con "PK" (0x50 0x4B).
-  return fileBuffer.length >= 2 && fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b;
+/**
+ * ¿El buffer es una planilla (con celdas tipadas) y no un CSV de texto plano?
+ *
+ * - .xlsx: contenedor ZIP, empieza con "PK" (0x50 0x4B).
+ * - .xls binario de Excel 97-2003: contenedor OLE2 (D0 CF 11 E0).
+ * - "XML Spreadsheet 2003" o tabla HTML con extensión .xls: texto que empieza con '<'.
+ *   ARCA baja "Mis Retenciones" así (`<?xml ...?><Workbook xmlns="urn:schemas-microsoft-com:
+ *   office:spreadsheet">`). Leído como CSV no reconocía ninguna fila; SheetJS lo lee con los
+ *   importes ya numéricos.
+ *
+ * Un CSV de ARCA nunca empieza con '<' (arranca con el encabezado o con un CUIT).
+ */
+function isLikelySpreadsheetBuffer(fileBuffer: Buffer): boolean {
+  if (fileBuffer.length >= 2 && fileBuffer[0] === 0x50 && fileBuffer[1] === 0x4b) return true;
+  if (fileBuffer.length >= 4 && fileBuffer[0] === 0xd0 && fileBuffer[1] === 0xcf
+    && fileBuffer[2] === 0x11 && fileBuffer[3] === 0xe0) return true;
+  const head = fileBuffer.subarray(0, 64).toString('utf8').replace(/^﻿/, '').trimStart();
+  return head.startsWith('<');
 }
 
 function splitCsvLine(line: string, separator: string): string[] {
@@ -69,7 +85,7 @@ function parseCsvRows(fileBuffer: Buffer): AfipSheetRow[] {
 }
 
 export function readAfipSheetRows(fileBuffer: Buffer): AfipSheetRow[] {
-  if (isLikelyXlsxBuffer(fileBuffer)) {
+  if (isLikelySpreadsheetBuffer(fileBuffer)) {
     const workbook = xlsx.read(fileBuffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const sheet = sheetName ? workbook.Sheets[sheetName] : undefined;
@@ -284,12 +300,16 @@ function parseMisRetenciones(
 ): ImportedDataSummary {
   const withholdings: TaxWithholdingInput[] = [];
   let totalAmount = new Decimal(0);
+  let hasPendingIdcbReconciliation = false;
 
   // Buscar índices de las columnas clave
   const amountIndex = headers.findIndex(h => h.includes('importe') || h.includes('monto ret'));
   const cuitAgentIndex = findColumnIndex(headers, ['cuit agente', 'agente ret']);
-  const agentNameIndex = findColumnIndex(headers, ['denominaci', 'razon social', 'razÃ³n social']);
-  const taxCodeIndex = headers.findIndex(h => h === 'impuesto' || h.includes('cod impuesto') || h.includes('cÃ³digo impuesto'));
+  // Se aceptan el encabezado con tilde, sin tilde y con el tilde mal decodificado (archivo Latin-1
+  // leído como UTF-8 o al revés): antes solo estaba la variante rota y "Razón Social" no matcheaba.
+  const agentNameIndex = findColumnIndex(headers, ['denominaci', 'razon social', 'razón social', 'razÃ³n social']);
+  const taxCodeIndex = headers.findIndex(h => h === 'impuesto' || h.includes('cod impuesto')
+    || h.includes('codigo impuesto') || h.includes('código impuesto') || h.includes('cÃ³digo impuesto'));
   
   // Buscar primero la columna que contiene la descripción del impuesto, y si no, la del código del impuesto
   const descIndex = headers.findIndex(h => h.includes('descrip') && h.includes('impuesto'));
@@ -314,11 +334,18 @@ function parseMisRetenciones(
       const taxName = taxIndex !== -1 ? String(row[taxIndex]).trim() : 'Impuesto a las Ganancias';
       const rawTaxCode = textCell(row, taxCodeIndex);
 
-      if (amountVal.isPositive() && !amountVal.isZero()) {
-        const isGanancias = taxName.toLowerCase().includes('ganancias') || rawTaxCode === '787' || taxName === '787';
+      if (!amountVal.isZero()) {
+        // Criterio del usuario (2026-07-24): un importe NEGATIVO en Mis Retenciones es una
+        // ANULACIÓN del crédito, no un crédito expresado con otro signo. Por eso se conserva el
+        // signo: la anulación netea contra la retención original en lugar de sumar crédito.
+        // (Antes se descartaban por completo con isPositive(), y el crédito quedaba inflado.)
+        const mappedTaxCode = mapAfipWithholdingTaxCode(rawTaxCode, taxName);
+        if (isAfipIdcbTax(rawTaxCode, taxName)) {
+          hasPendingIdcbReconciliation = true;
+        }
         withholdings.push({
           amount: amountVal,
-          taxCode: isGanancias ? 'Ganancias' : 'Otros',
+          taxCode: mappedTaxCode,
           cuitAgent: textCell(row, cuitAgentIndex) || undefined,
           agentName: textCell(row, agentNameIndex) || undefined,
           taxDescription: taxName || undefined,
@@ -335,6 +362,13 @@ function parseMisRetenciones(
     }
   }
 
+  if (hasPendingIdcbReconciliation) {
+    errors.push(
+      'ARCA 147 / IDCB: se importo como "Otros" y queda pendiente de conciliacion. '
+      + 'Comparelo con el libro mensual bancario antes de reclasificarlo como IDCB para evitar doble computo.',
+    );
+  }
+
   return {
     fileType: 'MisRetenciones',
     withholdings,
@@ -342,6 +376,42 @@ function parseMisRetenciones(
     totalAmount: totalAmount,
     errors
   };
+}
+
+function mapAfipWithholdingTaxCode(
+  rawTaxCode: string,
+  taxName: string,
+): TaxWithholdingInput['taxCode'] {
+  const code = rawTaxCode.trim() || taxName.trim();
+  const normalizedName = taxName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  // Tabla de impuestos SICORE/SIRE:
+  // 210/217/218/787 = Ganancias; 147 = Impuesto sobre Débitos y Créditos; 767 = IVA.
+  // El 787 se mantiene por confirmación del usuario (2026-07-24) y porque era el único código
+  // que reconocía la versión anterior: quitarlo habría hecho perder créditos ya cargados.
+  if (
+    code === '210' || code === '217' || code === '218' || code === '787'
+    || normalizedName.includes('ganancias')
+  ) {
+    return 'Ganancias';
+  }
+  // El 147 anual y el libro bancario mensual pueden representar el mismo credito. La importacion
+  // anual queda como "Otros" hasta que el contador la concilie y la reclasifique expresamente.
+  return 'Otros';
+}
+
+function isAfipIdcbTax(rawTaxCode: string, taxName: string): boolean {
+  const normalizedName = taxName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  return rawTaxCode.trim() === '147'
+    || normalizedName.includes('debitos y creditos')
+    || normalizedName.includes('creditos y debitos');
 }
 
 /**

@@ -99,6 +99,32 @@ describe('buildGrossIncomeSettlement — arma la liquidación de IIBB', () => {
     expect(view.settlement.totalDeterminedTax.toString()).toBe('50000');
   });
 
+  it('resta una nota de crédito de venta aunque AFIP la haya importado con base positiva', () => {
+    const view = buildGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      documents: [
+        { direction: 'SALE', voucherType: '6', vatLines: [vatLine('0.21', '15798680.75', '3317722.96')] },
+        { direction: 'SALE', voucherType: '8', vatLines: [vatLine('0.21', '43636.36', '9163.64')] },
+      ],
+      jurisdictions: [{ jurisdictionCode: '902', taxRate: D('0.035') }],
+    });
+
+    expect(view.taxableBase.toFixed(2)).toBe('15755044.39');
+  });
+
+  it('no invierte dos veces una nota de crédito de venta que ya viene con base negativa', () => {
+    const view = buildGrossIncomeSettlement({
+      regime: 'ARBA_LOCAL',
+      documents: [
+        { direction: 'SALE', voucherType: '6', vatLines: [vatLine('0.21', '100000', '21000')] },
+        { direction: 'SALE', voucherType: '8', vatLines: [vatLine('0.21', '-10000', '-2100')] },
+      ],
+      jurisdictions: [{ jurisdictionCode: '902', taxRate: D('0.035') }],
+    });
+
+    expect(view.taxableBase.toFixed(2)).toBe('90000.00');
+  });
+
   it('Convenio Multilateral: reparte la base por coeficiente unificado y aplica alícuota por jurisdicción', () => {
     const view = buildGrossIncomeSettlement({
       regime: 'CM_REGIMEN_GENERAL',

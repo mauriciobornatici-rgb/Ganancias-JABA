@@ -18,7 +18,7 @@ const commandMap = {
   // --no-file-parallelism: los 3 tests comparten una única MariaDB y escriben sobre tablas comunes
   // dentro de transacciones; corridos en paralelo (default de vitest) se pisan y deadlockean
   // (MariaDB 1213 / Prisma P2034). Se corren en serie para que sean deterministas.
-  'validate-integration': ['node_modules/vitest/vitest.mjs', 'run', '--no-file-parallelism', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts', 'src/domain/ganancias/tests/fiscalLedgerSeedDocker.test.ts', 'src/domain/ganancias/tests/fixedAssetIdentityDockerPersistence.test.ts'],
+  'validate-integration': ['node_modules/vitest/vitest.mjs', 'run', '--exclude', '.claude/**', '--no-file-parallelism', 'src/domain/ganancias/tests/excelCaptureCaseDockerPersistence.test.ts', 'src/domain/ganancias/tests/fiscalLedgerSeedDocker.test.ts', 'src/domain/ganancias/tests/fixedAssetIdentityDockerPersistence.test.ts'],
   'create-migration': ['node_modules/prisma/build/index.js', 'migrate', 'dev', '--create-only', '--schema', 'prisma/schema.prisma'],
 };
 

@@ -16,7 +16,7 @@ describe('DELETE de comprobantes mensuales', () => {
     expect(route).toContain('export async function DELETE');
     expect(route).toContain('requireRouteAuth(request)');
     expect(route).toContain('buildFiscalPeriodSourceMutationDecision');
-    expect(route).toContain('deleteFiscalDocumentsForPeriod(tx, periodId)');
+    expect(route).toContain('deleteFiscalDocumentsForPeriod(tx, periodId, direction)');
   });
 
   it('registra el borrado para auditoría', () => {
@@ -26,9 +26,21 @@ describe('DELETE de comprobantes mensuales', () => {
   });
 
   it('expone el control de borrado y la columna Total en la revisión', () => {
-    expect(workspace).toContain('Eliminar comprobantes cargados');
+    expect(workspace).toContain('Eliminar compras');
+    expect(workspace).toContain('Eliminar ventas');
+    expect(workspace).toContain('documents?direction=${direction}');
     expect(workspace).toContain('method: \'DELETE\'');
     expect(workspace).toContain('>Total</th>');
     expect(workspace).toContain('fmt(r.totalAmount)');
+  });
+
+  it('controla la imputación al mes: persiste solo lo del período y avisa el resto', () => {
+    expect(route).toContain('partitionFiscalDocumentsByPeriod');
+    // Solo se persiste la partición del período, nunca el lote completo.
+    expect(route).toContain('persistFiscalDocuments(tx, periodId, inPeriod)');
+    expect(route).toContain('fiscalDocumentPeriodMismatchMessage');
+    // Si NADA pertenece al mes, se bloquea con 422 en vez de escribir.
+    expect(route).toContain('fiscalDocumentPeriodRejectionMessage');
+    expect(route).toContain('{ status: 422 }');
   });
 });

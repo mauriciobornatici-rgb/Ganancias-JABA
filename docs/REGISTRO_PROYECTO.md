@@ -1,8 +1,161 @@
 # Registro del proyecto - Ganancias JABA Persona Fisica
 
-Ultima actualizacion: 2026-07-21
+Ultima actualizacion: 2026-10-18
 
 ## Entrada reciente
+
+### 2026-10-18 - Prisma 7.8.0/7.9.0 → 7.10.1, con control de datos antes/después
+
+- Motivo: cerrar las 2 moderadas de `mariadb` que dejó el PR #32 (crash con autenticación ed25519 y TLS sin configuración). Solo se cierran con `mariadb` 3.5.4, que es la que trae `@prisma/adapter-mariadb` 7.10.1. No se usó la 8.0.0-rc, que figura como `latest` en npm pero es prerelease.
+- Cambio: `@prisma/client`, `@prisma/adapter-mariadb` y `prisma` fijados en **7.10.1** exacto. El adaptador usa `mariadb` 3.5.4, la misma que la dependencia directa (deduplicada).
+- Overrides retirados: `mysql2`, `find-my-way`, `valibot`, `fast-uri` y el acotado `@prisma/adapter-mariadb > mariadb`. Sin ellos, 7.10.1 resuelve las mismas versiones parcheadas (`mysql2` 3.24.4, `find-my-way` 9.7.0, `valibot` 1.4.2, `fast-uri` 3.1.8), así que ninguno reabre un aviso. Quedan `sharp`, `postcss`, `nanoid`, `deepmerge-ts`, `source-map-js` y `baseline-browser-mapping`, que no dependen de Prisma.
+- Cliente regenerado (`src/generated/client`): el schema embebido es idéntico y no hay migraciones nuevas (`prisma migrate status` contra Docker: "Database schema is up to date"). Las diferencias reales son tres:
+  - la versión del cliente y del motor;
+  - un campo `schema: null` agregado en el modelo de datos de cada uno de los 56 modelos (metadato de multi-schema, sin cambios de campos, tipos ni escalas);
+  - espacios finales en `TishSettlement.ts`.
+  El resto de los archivos solo cambia el fin de línea.
+- **Control de datos antes/después** (Docker `ganancias_jaba_test`):
+  - Docker no tenía ninguna liquidación CLOSED. Antes de la foto se cerró por la API local la IVA de 06/2026, cotejada contra 3.066.463,04 / 2.228.608,34 / 837.854,70, y quedó v1 CLOSED. La IIBB de ese mes no se pudo cerrar (409: el cliente de prueba no tiene coeficientes de Convenio cargados), así que el estado CLOSED queda cubierto por IVA.
+  - Fotos tomadas: con el cliente Prisma, todas las filas de VatSettlement (2), VatSettlementLine (12), GrossIncomeSettlement (1), GrossIncomeJurisdictionLine (2), TaxCreditRecord (223), TaxReturn (1) y CalculationRun (1), ordenadas por id. Cada Decimal se guardó con la escala de su columna y con su valor exacto (527 importes); las fechas, en ISO. Además, un volcado SQL crudo de las mismas tablas con `CHECKSUM TABLE ... EXTENDED`, independiente de Prisma.
+  - Resultado: **idéntico byte a byte**. Foto Prisma SHA-256 `1D6ED2FC…A45168` con 7.8.0 + mariadb 3.4.7 y con 7.10.1 + mariadb 3.5.4. Volcado SQL `9BC05115…BD728C` en ambos casos.
+  - Lectura y escritura con el cliente nuevo, en el período abierto 09/2026:
+    - 20 lecturas concurrentes con el pool de 5 conexiones, consistentes;
+    - alta de un TaxCreditRecord con 9.999.999.999.999.999,99 y 0,01 (los límites de Decimal(18,2)), leído al centavo;
+    - transacción con rollback, revertida;
+    - baja del registro: 223 → 223.
+    La foto tomada después de esa prueba sigue idéntica.
+- Verificado:
+  - 546 tests (6 omitidos), 3 de integración contra Docker, typecheck, lint (0 errores) y build;
+  - `npm audit --omit=dev`: **0 vulnerabilidades**, ya sin las moderadas de `mariadb`;
+  - en el árbol completo quedan 10 avisos de herramientas de desarrollo (vitest, eslint, browserslist, js-yaml), que ya estaban en `main` (allí son 12);
+  - la migración productiva sigue abortando sin `CONFIRM_PROD_MIGRATION` (se validó el plan puro con su test, sin ejecutar el comando);
+  - la guarda de `prisma.config.ts` sigue bloqueando a Prisma 7.10.1 contra el nombre de la base productiva.
+- Rollback: en Vercel, volver a desplegar el deployment anterior (Promote/Redeploy). No hay migraciones, así que la base no se toca.
+
+### 2026-10-18 - IVA 2b: "Mis Retenciones" no cargaba nada + rótulo engañoso de los créditos aplicados
+
+- Reporte del usuario: al subir "Mis Retenciones" en el bloque 2b quedaba todo en 0 con el aviso "No se compiló ninguna retención/percepción de IVA del mes liquidado". Además, en el cálculo la línea "Percep./retenc. aplicadas" mostraba el mismo importe que el saldo técnico del período.
+- Causa 1 (importación): `afipTaxCreditImporter` leía el archivo por POSICIÓN fija y separando SOLO por coma, y descartaba en silencio las filas con menos de 7 columnas. El importador de Ganancias lee el mismo archivo con `readAfipSheetRows` (detecta `;` o `,`, Latin-1 o UTF-8, y .xlsx) y ubica las columnas por encabezado: por eso el mismo archivo podía funcionar en Ganancias y no en IVA. Con un export separado por `;` (el estándar de ARCA), con columnas extra (denominación, descripciones) o en .xlsx, ninguna fila llegaba a contarse y el aviso salía sin detalle. Sin el archivo real del usuario no se pudo confirmar cuál de esas variantes era; el arreglo cubre las tres.
+- Arreglo: el importador de IVA usa ahora `readAfipSheetRows` y ubica las columnas por encabezado (Impuesto o su descripción, Descripción Operación, Fecha Ret./Perc., Importe Ret./Perc., CUIT agente, Régimen, Certificado). Las filas que no se pueden leer cuentan como error con su número de fila en vez de desaparecer. Si el archivo no es "Mis Retenciones" o le faltan columnas, lo dice y muestra las columnas que encontró.
+- Cuando no entra nada, el mensaje explica por qué con el desglose de filas: otros impuestos, IVA de otros meses (con los meses) o errores. Si el archivo sólo trae Ganancias, aclara que ese mes no hay IVA que cargar. Helper puro `presentation/taxCreditImportMessage.ts`. Cuando sí entra algo, las filas con error vuelven el aviso a ámbar.
+- Causa 2 (rótulo): el motor (Art. 24, 2º párr.) aplica JUNTOS la libre disponibilidad anterior y las percepciones/retenciones del período y devuelve un solo `creditsApplied`. La pantalla rotulaba ese total como "Percep./retenc. aplicadas", y "Libre disponibilidad anterior aplicada" mostraba el saldo DISPONIBLE completo. En el caso del usuario (técnico 1.933,70; libre disponibilidad 52.369,80; sin retenciones) el 1.933,70 salía entero de la libre disponibilidad. **Las cuentas eran correctas**: saldo a pagar 0 y arrastre 50.436,10.
+- Arreglo: helper puro `presentation/vatCreditsDisplay.ts` que reconstruye las percepciones/retenciones del período con la identidad del motor (disponible = libre disp. anterior + período = aplicado + arrastre). La pantalla muestra por separado "Libre disponibilidad anterior (disponible)", "Percep./retenc. del período" y "Aplicado contra el saldo", con la fuente en el rótulo, tanto en el cálculo en vivo como en la liquidación guardada.
+- Verificado: 547 tests (11 nuevos: export con `;`, columnas extra en otro orden, .xlsx, archivo que no es "Mis Retenciones", fila con importe ilegible, mensajes de desglose y el caso exacto de la captura), typecheck, lint y build en verde.
+- **Causa real, confirmada con el archivo del usuario** (`..._IMP_PER_RET_16102026.xls`): ARCA baja "Mis Retenciones" como **"XML Spreadsheet 2003" con extensión `.xls`** (`<?xml ...?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet">`). No es CSV ni .xlsx: el lector compartido `readAfipSheetRows` solo mandaba a SheetJS los contenedores ZIP y leía todo lo demás como CSV, así que este formato fallaba **también en el importador de Ganancias**. Ahora reconoce .xlsx (ZIP), .xls binario (OLE2) y cualquier archivo que empiece con `<` (XML 2003 o tabla HTML) y los lee con SheetJS, que ya entrega los importes como números.
+- Resultado con el archivo real (septiembre 2026): 170 filas, **170 percepciones de IVA cargadas por $40.670,63** (6 notas de crédito netean), 0 errores, 170 claves únicas. El importador de Ganancias lee el mismo archivo con el mismo total. El 0 de la pantalla era un error de la app, no un mes sin retenciones: la libre disponibilidad que arrastra septiembre estaba subestimada en ese importe.
+- Test permanente con un XML 2003 sintético de la misma estructura (sin datos del cliente). 548 tests, typecheck, lint y build en verde.
+
+#### Validación de punta a punta y mejoras encontradas en el camino (mismo PR #32)
+
+- **Prueba real en la app local contra Docker** (cliente ficticio, período 09/2026 creado para la prueba): el archivo del usuario subido al endpoint del bloque 2b guarda 170 percepciones por $40.670,63; subido otra vez, 0 nuevas y 170 duplicadas (idempotente). La pantalla muestra "Percepciones: 40.670,63 · 170/170". Subido a junio, rechaza con "El archivo tiene 170 filas: 170 de IVA de otro mes (09/2026)". En junio, con una libre disponibilidad anterior de 52.369,80, el bloque de totales muestra "Libre disponibilidad anterior (disponible)" y "Aplicado contra el saldo (de la libre disponibilidad)" y el saldo cierra (837.854,70 − 52.369,80 = 785.484,90).
+- **Dependencias con vulnerabilidades nuevas**: el CI del PR, y también `main`, fallaban en el control de auditoría por avisos publicados después del último pase, entre ellos uno **crítico de Next.js** (ejecución remota de código en Image Optimization y `next/og`, SSRF y envenenamiento de caché). Producción corría Next 16.3.1. Se corrigió con saltos de parche, sin cambios mayores:
+  - `next` y `eslint-config-next` 16.3.1 → **16.3.8** (sale del rango vulnerable `< 16.3.8`; se eligió el parche de la misma línea antes que 16.4.x).
+  - `mariadb` directo `^3.5.4`; dentro de `@prisma/adapter-mariadb` (el driver que usa la app contra Hostinger) se fijó **3.4.7**, el parche de su misma línea, por override acotado al adaptador y no global. Las pruebas de integración contra Docker pasan con este driver.
+  - Overrides: `mysql2` 3.24.4 (la versión que eligió Prisma para 7.10.1), `sharp` ^0.35.5, `fast-uri` 3.1.8, `source-map-js` 1.2.2, `baseline-browser-mapping` ^2.11.0.
+  - Resultado: 0 vulnerabilidades altas o críticas. Quedan 2 moderadas en `mariadb` dentro del adaptador (crash con autenticación ed25519 y TLS sin configuración, que no es el modo de Hostinger): se cierran recién con la línea 3.5, es decir, actualizando Prisma a 7.10.1. Queda como siguiente paso: regenera los 64 archivos del cliente versionado y conviene probarlo en un PR propio, no mezclado con un pase.
+- **Textos con acentos mal codificados**: el cartel "ENTORNO DE PRUEBA" mostraba "producciÃ³n" y "â€”", y la etiqueta de accesibilidad decía "ejecuciÃ³n". Corregidos, con un test que impide que vuelva a pasar en ese cartel. También en un comentario y dos nombres de tests.
+- **Importador de Ganancias**: buscaba los encabezados "Razón Social" y "Código Impuesto" solo en su variante mal decodificada ("razÃ³n social"); ahora acepta también la correcta y la versión sin tilde.
+- Verificado: 549 tests, 3 de integración contra Docker, typecheck, lint, build de producción y auditoría en verde.
+
+### 2026-07-24 - PDF de correcciones del usuario: puntos 1, 4 y 6 implementados + seguridad de dependencias (PR #31)
+
+Origen: PDF de correcciones entregado por el usuario con 6 puntos numerados (capturas de la app + referencias de ARCA y de la planilla). Los archivos de trabajo quedaron en `tmp/pdfs/correcciones-app/` (no versionados). Los 6 puntos son:
+
+1. Verificación de períodos de carga y eliminación (liquidación mensual de IVA).
+2. Liquidación de Tasa de Seguridad e Higiene (TISH).
+3. Clientes con participación en sociedades.
+4. Retenciones con signo negativo que no restaban.
+5. Determinación del impuesto: falta computar el impuesto sobre los débitos y créditos bancarios (IDCB).
+6. Cálculo de la proyección de anticipos.
+
+Implementado en `fix/fiabilidad-carga-y-retenciones` (PR #31), commit `d9a985b`:
+
+- **Punto 1 (RESUELTO).** La carga manual de comprobantes valida el mes; antes solo lo hacía el puente UiPath. Criterio decidido por el usuario: **tolerante con aviso** — entra lo que pertenece al período, se informa lo que quedó afuera, y si nada pertenece al período no se escribe nada. Helper puro `fiscalDocumentPeriodValidation` con tests. El "tacho" de eliminación se partió en dos eventos independientes: borrar solo compras o solo ventas (antes borraba ambos juntos).
+- **Punto 4 (RESUELTO).** Las retenciones de Ganancias se reconocen por **código 210 / 217 / 218 / 787**; antes solo 787 y todas las demás caían en "Otros (no computa)". Los importes negativos **son anulaciones y netean** contra la retención original: se conserva el signo en importador, mapper y motor. Decisión fiscal del usuario, registrada porque una sesión anterior lo había implementado con valor absoluto (`.abs()`) y era incorrecto.
+- **Punto 6 (RESUELTO).** La proyección de anticipos actualiza retenciones y combustibles por IPC (RG 5211 art. 3), como en la planilla de referencia del usuario (tabla 2025 reexpresada IPC jul→dic).
+
+Seguridad de dependencias, commit `b0686bb`:
+
+- **Next 16.2.6 → 16.2.11** por advisories high, uno de ellos bypass de middleware.
+- El gate de vulnerabilidades del workflow se acotó a dependencias de producción: `npm audit --audit-level=high --omit=dev`.
+
+Estado de CI del PR #31: **todo verde menos el gate de audit**, que es el último paso del pipeline (434 tests, typecheck, lint, build y las pruebas de integración ya pasaron en CI). El audit fallaba por cadena transitiva de Prisma: `@prisma/client 7.9.0` → `prisma 7.9.0` → `@prisma/dev 0.24.14` → `find-my-way 9.6.0` (high, DDoS con HTTP2) + `valibot 1.2.0` (moderate). No servía subir Prisma: 7.9.0 es la última **estable** y está dentro del rango vulnerable, y `7.10.0-dev.35` sale del rango pero es pre-release (**en esta app no se instalan prereleases**).
+
+Resolución del gate: `overrides` de `find-my-way` a `9.7.0` y `valibot` a `1.4.2`, sin tocar la versión de Prisma. Los dos son exactamente los saltos que hizo el propio proveedor: `@prisma/dev 0.24.16` ya usa `find-my-way 9.7.0`. `prisma 7.9.0` pinnea `@prisma/dev 0.24.14` de forma exacta, así que el override es la única vía sin prereleases. Resultado local: `npm audit --audit-level=high --omit=dev` → **0 vulnerabilidades**; 434 tests, typecheck, lint y build en verde. Revisar al salir Prisma 7.10.0 estable: si su `@prisma/dev` ya trae las versiones sanas, quitar los dos overrides. `npm run prisma:validate` no corre en local por diseño (la guarda de aislamiento bloquea comandos Prisma directos cuando el `.env` local apunta a la base productiva); en CI corre con destino de prueba.
+
+Decisiones fiscales tomadas para los puntos que faltan (definidas por el usuario en esta sesión, listas para implementar sin volver a preguntar):
+
+- **Punto 5 - IDCB.** Se carga **mes a mes el importe total** del impuesto al cheque, con **selector 33% / 100% configurable por cliente** (100% = micro y pequeña empresa). La app calcula el importe computable y a fin de año queda todo imputado en la DDJJ anual, restando en la determinación del impuesto (Paso 6). El saldo IDCB trasladable ya existía en el mapeo del IG 25 (F70); lo que falta es la carga mensual y el cómputo.
+- **Punto 3 - Participación en sociedades.** Criterio **"ambos con verificación cruzada"**: se cargan el **% de participación** y el **resultado total de la sociedad**; la app calcula el resultado atribuido y lo deja **editable**. Referencia de presentación: bloque "Participación en empresas" de la DDJJ simplificada de ARCA (origen, CUIT de la empresa, denominación, tipo societario).
+- **Punto 2 - TISH.** Alcance: **solo Régimen General (responsable inscripto)**; el régimen simplificado de monotributistas queda fuera. Base: base imponible de IIBB de las actividades marcadas, acumulada **por bimestre** (la tasa es bimestral, 6 cuotas, mientras los períodos de IVA/IIBB son mensuales). Solo computa la actividad de comercio, y se identifica con un **tilde explícito "computa TISH" por línea de actividad** en la configuración de IIBB — **no** por coincidencia de texto en la descripción. **Alícuota manual por cliente y por año**; **categoría L/M/N manual** (la ordenanza 2026 está escaneada sin capa de texto y el art. 23 con las alícuotas no es legible, de ahí que la alícuota vaya manual). Ubicación pedida expresamente: bloque propio y bien visible "Tasa de Seguridad e Higiene (TISH)" dentro del perfil fiscal del cliente, al lado de la configuración de IIBB, para no tener que buscarlo. Parámetros de la ordenanza 2026 a cargar como parámetros editables del año: mínimo = cuota categoría K $40.000; cuota A $8.000; +12% Contribución Salud; Bomberos 10% de la cuota A; Residuos 25%/40%/60% de K según categoría L/M/N. Vencimientos 2026: 26/03, 28/05, 23/07, 24/09, 26/11 y 19/01/2027. Documentación fuente fuera del repo, en `C:\Users\mauri\Downloads`: `ordenanza impositiva 2026.pdf`, `Instructivo_TISH_2026.pdf`, `DDJJ_SEGURIDAD_HIGIENE_REGIMEN_GENERAL_2026.pdf`, `DDJJ_SEGURIDAD_HIGIENE_REGIMEN_SIMPLIFICADO_2026.pdf`.
+
+Nota de entorno: en esta máquina no está `pdftoppm`; para leer PDFs se extrae el texto con `pdf-parse` desde el scratchpad. El test `fiscalLedgerSeedDocker` falla **en local** por seeds acumulados (espera 2 perfiles y hay 3): no es regresión, en CI pasa. No correr `db:test:reset` sin revisar antes `docker-compose.yml`, porque hace `down -v` y podría borrar volúmenes de la base de desarrollo.
+
+Orden de trabajo acordado: bitácora → gate de audit → punto 5 → punto 3 → TISH.
+
+### 2026-07-25 - El papel de trabajo y el Excel exportado vuelven a cerrar con el motor
+
+- Hallazgo al completar los módulos nuevos: el papel de trabajo tenía **dos restas que no cerraban** con la determinación, y una es anterior a este tramo.
+  - Apartado III arrancaba de `resultadoComercialNeto` y restaba deducciones para llegar a la base imponible: con participación en sociedades cargada, la cuenta impresa no daba. Ahora arranca del **neto de todas las categorías** (con participaciones en cero el texto sigue diciendo "Ganancia Neta Comercial", así que el caso simple no cambia) y expone los **quebrantos aplicados**, que faltaban desde antes.
+  - Apartado IV restaba sólo retenciones y saldo a favor: los pagos a cuenta F62:F66 (impuesto al cheque, anticipos en efectivo, Mis Facilidades, combustibles) existían en el motor desde P29 pero no se imprimían, así que el saldo determinado no coincidía con la resta de arriba. Se desglosan con su referencia de la planilla, y el excedente de IDCB no computable se aclara como trasladable (F70), no como saldo de libre disponibilidad.
+- Apartado I suma la línea "(+/-) Resultado Atribuido por Participación en Sociedades" y el subtotal de todas las categorías, sólo cuando hay participaciones.
+- Helper puro nuevo `presentation/paymentsOnAccountBreakdown.ts`: arma el desglose (descontando del IDCB el excedente trasladable y sin informar computables negativos) y lo usan tanto la pantalla como la exportación, para que no vuelvan a divergir. 6 tests.
+- La exportación Excel tenía además tres errores propios: los anticipos abonados salían hardcodeados en 0, las cargas de familia no sumaban hijos incapacitados y la deducción especial omitía la doceava parte; el total de erogaciones se recalculaba a mano en la planilla en vez de tomarse del motor. Corregido y alineado con la pantalla.
+- El informe al cliente tenía el mismo problema: mostraba impuesto determinado menos retenciones y saltaba al saldo. Ahora incluye los pagos a cuenta (con etiquetas sin jerga de planilla) y el saldo a favor anterior, así la resta que ve el cliente cierra.
+- TISH: la tabla de cuotas mostraba sólo totales, pero la DDJJ pide el detalle por actividad. Clic en una cuota abre el detalle (período, código NAIIB 18, jurisdicción, monto imponible, alícuota y tasa) más los avisos de ese bimestre, que es exactamente lo que hay que transcribir al formulario.
+- Verificado: 501 tests unitarios, typecheck, lint y build en verde.
+
+### 2026-07-24 - Camino habilitado para migrar producción (`npm run db:prod:migrate`)
+
+- Hallazgo al preparar el pase a producción de los 6 puntos: el Paso 2 del checklist de pre-merge y el paso 4 de `FLUJO_SEGURO_DEPLOY.md` decían `npx prisma migrate deploy` contra Hostinger, pero el endurecimiento del 2026-07-20 (`scripts/prismaDatabaseSafety.ts`) aborta **cualquier** comando Prisma local cuya base sea la productiva. La doc quedó desactualizada y no había camino habilitado para migrar producción: el riesgo real era terminar aplicando el SQL a mano.
+- Script nuevo `scripts/run-prod-migration.mjs` (`npm run db:prod:migrate`): valida el destino (rechaza Docker y el nombre productivo contra localhost), exige `CONFIRM_PROD_MIGRATION=1` como confirmación explícita de que el backup ya está hecho, imprime el destino **con la password enmascarada** y corre `prisma migrate deploy`. El destino sale del `.env` del proyecto (el mismo que lee Prisma), así que no hay que pegar credenciales en la terminal; `$env:DATABASE_URL` sigue teniendo prioridad si hace falta apuntar a otra base.
+- La guarda ganó una única excepción local, deliberadamente incómoda: `PRISMA_ALLOW_PRODUCTION_MIGRATION` tiene que **nombrar** la base productiva (un `1` o un `true` no sirven, y nombrar otra base tampoco), así nadie la deja prendida de paso. El bypass histórico `ALLOW_PRODUCTION_DATABASE_OUTSIDE_PRODUCTION` sigue bloqueado, con su test. `dev`, `studio` y `migrate dev` siguen bloqueados contra producción.
+- 12 tests nuevos (validación del plan, enmascarado de la password y las cuatro puertas de la guarda). Se actualizaron `CHECKLIST_PRE_MERGE_PRODUCCION.md` y `FLUJO_SEGURO_DEPLOY.md`, incluido el recordatorio de cerrar la terminal habilitada.
+- Orden que queda vigente para este pase: backup de Hostinger con restauración probada → `npm run db:prod:migrate` (3 migraciones: IDCB, sociedades, TISH) → merge de la PR #31 a `main` → smoke test.
+- Corrección del 2026-07-25, encontrada en el primer uso real: si en la terminal quedó pegada la plantilla de la documentación (`DATABASE_URL` con el literal `USUARIO:PASSWORD`), tiene prioridad sobre el `.env` y Prisma respondía un `P1000` de credenciales que no explicaba de dónde salía la URL. El script ahora detecta credenciales de ejemplo (incluidos `<usuario>`, `clave`, etc.) y aborta indicando exactamente qué hacer: `Remove-Item Env:\DATABASE_URL` si vino de la terminal, o completar el `.env` si vino del archivo. 4 tests nuevos, uno de ellos con credenciales de forma realista para que el control no dé falsos positivos.
+
+### 2026-07-24 - Punto 2: módulo TISH (Tasa de Seguridad e Higiene)
+
+- Alcance acordado: **solo Régimen General (responsable inscripto)**. El régimen simplificado (cuota fija por categoría de monotributo) y el de Convenio Multilateral (art. 208 de la Ordenanza Fiscal) quedan fuera de este corte; si el perfil no es responsable inscripto, la pantalla lo avisa en vez de calcular algo que no corresponde.
+- Base: base imponible de IIBB de las líneas de actividad con el tilde **"computa TISH"**, acumulada **por bimestre** (6 cuotas). Campo nuevo `ClientTaxJurisdiction.computesTish` con una columna de tilde en la tabla de jurisdicciones. **Nunca** se identifica la actividad por coincidencia de texto: decisión explícita del usuario. Los tres endpoints que leen o versionan las jurisdicciones arrastran el tilde.
+- Alícuota del art. 23 y categoría **L/M/N: manuales por cliente y por año** (la ordenanza 2026 está escaneada sin capa de texto y el art. 23 no es legible). Modelo nuevo `TishSetting` con unique [clientId, year] (migración `20260724235000_add_tish`), que además guarda los importes de la ordenanza como parámetros editables, por cliente: cada contribuyente puede estar en otro municipio.
+- Estructura del cálculo, calcada del formulario "DDJJ MONTOS IMPONIBLES (RÉGIMEN GENERAL)": una fila por actividad (monto imponible × alícuota = tasa) → Subtotal → Contribución para la Salud → Bomberos Voluntarios → Residuos no Domiciliarios → TOTAL A ABONAR.
+- Reglas de la ordenanza 2026 (leídas del instructivo con `pdf-parse`), todas parametrizadas: **el subtotal nunca puede ser inferior a la cuota bimestral de la categoría K ($40.000)**; Salud = 12% del subtotal; Bomberos = 10% de la cuota de la categoría A ($8.000 → $800 fijos); Residuos = 25% / 40% / 60% del importe de la categoría K según L / M / N. Vencimientos de presentación 2026: 26/03, 28/05, 23/07, 24/09, 26/11 y 19/01/2027, editables.
+- Dominio puro nuevo: `src/domain/ganancias/fiscalLedger/tish.ts` (bimestre de cada mes, acumulación de bases, liquidación del bimestre y del año, vencimientos). Avisa cuando falta la alícuota, cuando ninguna actividad tiene el tilde y cuando el mínimo desplaza a la tasa calculada. 17 tests nuevos.
+- API nueva `GET/PUT /api/clientes/[id]/tish?year=`: devuelve configuración, actividades tildadas y los 6 bimestres liquidados; el PUT guarda con auditoría. Las bases salen de la última versión de la liquidación de IIBB de cada mes, y si algún mes todavía no está cerrado se avisa que los importes pueden cambiar.
+- UI: bloque propio **"Tasa de Seguridad e Higiene (TISH)"** en `/clientes/[id]/iibb-config`, al lado de la configuración de IIBB (pedido expreso: que no haya que buscarlo), con la configuración manual, los parámetros del año, los vencimientos y la tabla de las 6 cuotas. El selector de año de esa pantalla ahora manda para coeficientes CM y para TISH; el botón del libro mensual dice "Config. IIBB y TISH".
+- Decisión documentada: **no** se calcula el encuadre L/M/N a partir de la facturación de los últimos 12 meses (la columna existe en el formulario). La categoría es del contador; automatizarla exigiría acumular ingresos gravados, no gravados y exentos de todos los puntos de facturación, que hoy la app no consolida con esa definición.
+- Verificado: 479 tests unitarios, typecheck, lint, build y migración aplicada en Docker.
+
+### 2026-07-24 - Punto 3: participación en sociedades atribuida al contribuyente
+
+- Criterio del usuario: **"ambos con verificación cruzada"**. Se cargan el **% de participación** y el **resultado total de la sociedad**; la app calcula el resultado atribuido y lo deja **editable**. Si el importe editado difiere del calculado, se computa el del contador y la diferencia se avisa (nunca se corrige ni se descarta en silencio).
+- Dominio puro nuevo: `src/domain/ganancias/calculations/participacionSociedades.ts`. Además del cálculo, avisa: porcentaje en 0 (atribuido 0), porcentaje mayor a 100 (se computa igual, se advierte), override con diferencia, y CUIT repetido (misma sociedad cargada dos veces = resultado atribuido dos veces).
+- Motor: el resultado atribuido se suma al **resultado neto de todas las categorías** (antes era igual al comercial de tercera). Un quebranto de la sociedad resta. Los avisos se propagan a las advertencias de la determinación. Campo nuevo de salida `resultadoParticipacionSociedades`.
+- Persistencia: modelo nuevo `SocietyParticipation` (migración `20260724233000_add_society_participations`). Se guardan los dos datos que carga el usuario más `attributedResultOverride`, que queda **NULL cuando no se editó**: al reabrir, la app vuelve a mostrar el calculado en vez de fijar el importe viejo. Un override en 0 sí es un override real y se distingue del vacío.
+- Wizard: grilla en el **Paso 2** (ingresos), con CUIT, denominación, tipo societario, %, resultado de la sociedad, atribuido calculado (solo lectura) y atribuido editable, más el panel de avisos. La columna editable se marca en ámbar cuando reemplaza al cálculo. Referencia de presentación: bloque "Participación en empresas" de la DDJJ simplificada de ARCA.
+- El Paso 6 muestra la línea "(+/-) Resultado Atribuido de Sociedades" y el subtotal "Resultado Neto de Todas las Categorías" solo cuando hay participaciones cargadas, para no ensuciar el caso simple. El legajo de carga suma la fila con cantidad y resultado atribuido.
+- Round-trip completo: payload del wizard → validación → persistencia → snapshot → reapertura, con la misma tolerancia de importes en formato argentino que el resto de las grillas.
+- Verificado: 462 tests unitarios (15 nuevos entre dominio puro y motor), typecheck, lint, build y migración aplicada en Docker. Integración: pasan `excelCaptureCase` y `fixedAssetIdentity`; `fiscalLedgerSeedDocker` sigue fallando solo en local por seeds acumulados.
+- Nota de entorno: mientras exista un worktree de Claude en `.claude/worktrees/`, `npm run test` levanta también los tests de ese árbol (vitest no tiene config propia en el repo). Para ver solo este árbol: `npx vitest run --dir src --exclude "**/.claude/**"`.
+
+### 2026-07-24 - Punto 5: impuesto al cheque (IDCB) como pago a cuenta de Ganancias
+
+- El motor anual ya sabía computar el IDCB (IG 25!F65, limitado al impuesto determinado, excedente a F70 desde P29). Lo que faltaba era la carga y el cómputo: hasta ahora había que escribir la fila a mano en la grilla de retenciones del wizard.
+- Configuración por contribuyente: `ClientTaxProfileVersion.idcbComputablePercent` (migración aditiva `20260724230000_add_idcb_computable_percent`, default 33). Solo admite **33** (régimen general, art. 13 dec. 380/2001) o **100** (micro y pequeña empresa); el dominio normaliza cualquier otro valor a 33 para que un dato viejo o corrupto nunca habilite un cómputo mayor al general. Selector en el bloque "Perfil fiscal" de la pantalla de configuración de IIBB.
+- Los DOS endpoints que versionan el perfil (`tax-profile` PUT y `iibb-config` PUT) arrastran el porcentaje a la versión nueva; si no, guardar IIBB lo reseteaba a 33 en silencio.
+- Carga mensual: bloque "2d — Impuesto al cheque" en la liquidación mensual, con el importe TOTAL del mes. Se guarda como un único `TaxCreditRecord` por período (`tax=GANANCIAS`, `kind=PAYMENT_ON_ACCOUNT`, `creditKey='IDCB-MENSUAL'`), sin modelo nuevo. Nueva ruta `PUT/GET /api/clientes/[id]/fiscal-periods/[periodId]/idcb`, con auditoría de cada cambio; vacío o 0 borra el registro en vez de dejar un cero que parece cargado.
+- Decisión de diseño: el porcentaje **no** se persiste junto al importe mensual. Se guarda el total y el cómputo se deriva del perfil del período, así que corregir el porcentaje recalcula todos los meses sin reeditarlos.
+- Decisión de diseño: el bloque queda visible y editable **aunque el mes esté cerrado en IVA/IIBB**, y la importación anual toma **todos** los meses con importe cargado, no solo los cotejados en IVA. Cerrar IVA no es evidencia del impuesto al cheque, y dejar afuera un mes cargado computaría de menos un pago a cuenta real. Es una desviación intencional de la regla "solo meses CLOSED alimentan la anual".
+- Imputación anual: `importar-mensual` crea una fila por mes en `TaxWithholding` con `taxCode='IDCB'`, fechada el último día del mes y con certificado `IDCB-AAAA-MM`. Ese certificado hace la reimportación idempotente (se borran y recrean solo esas filas; las retenciones manuales no se tocan). Cada mes usa el porcentaje de **su propio** período, por el versionado del perfil.
+- Dominio puro nuevo: `src/domain/ganancias/fiscalLedger/bankTaxCredit.ts` (normalización del porcentaje, cómputo con redondeo a 2 decimales medio hacia arriba, armado de las filas anuales y aviso de importación). 13 tests nuevos.
+- Verificado: 447 tests unitarios, typecheck, lint y build Next en verde; migración aplicada en Docker. Los otros 2 tests de integración pasan; `fiscalLedgerSeedDocker` falla solo en local por seeds acumulados (espera 2 perfiles y hay 3), no es regresión.
+- Pendiente detectado (no de este punto, quedó anotado como tarea aparte): al crear una versión nueva del perfil fiscal se copian las jurisdicciones pero **no** las `ClientTaxActivity`, que se pierden en silencio.
+
+### 2026-07-22 - Wizard Paso 3: totales por tipo de gasto en la cabecera
+
+- Pedido del usuario: en el recuadro "Total Compras" del Paso 3 (junto a Deducible y Exento/No Ded), mostrar tambien los totales de Materia Prima y Gastos Generales, como ya se ven abajo en "Ver todos los meses".
+- Se agrego una columna al recuadro con `listExpenseBreakdown(totalByExpenseType)`: muestra las categorias CON movimiento (Mat. Prima, G. Grales., Servicios, Alquileres, Sin clasif.), solo importes deducibles, mismo criterio que el resto del resumen. Sin calculo nuevo: reusa el summary existente.
 
 ### 2026-07-21 - Cierre guiado de IVA/IIBB (no era un bug: faltaban pasos que la UI no señalaba)
 

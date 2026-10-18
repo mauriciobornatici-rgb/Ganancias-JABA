@@ -19,6 +19,13 @@ const CARD_LINES = [
   '30-60499477-920260612/06/20260000000000000201376000000000000006944,93',
 ].join('\n');
 
+// Formato oficial de "Descarga para importar": jurisdiccion 902 + CUIT agente + fecha
+// + punto de venta + numero + tipo/letra de comprobante + importe percibido.
+const PERCEPTION_LINES = [
+  '90230-11111111-301/12/2022000300066373FA00000033,68',
+  '90230-22222222-527/12/2022002800045649FA00002057,38',
+].join('\r\n');
+
 const PERIOD = { periodYear: 2026, periodMonth: 6 };
 const file = (fileName: string, content: string) => ({ fileName, fileBuffer: Buffer.from(content, 'latin1') });
 
@@ -56,6 +63,41 @@ describe('parseArbaDeducciones', () => {
     expect(r.credits[3].issueDate.toISOString().slice(0, 10)).toBe('2026-06-12');
   });
 
+  it('archivo -P (percepciones): toma el formato descargado de Mis Deducciones de ARBA', () => {
+    const r = parseArbaDeducciones(
+      [file('27111111118-202212M-P.txt', PERCEPTION_LINES)],
+      { periodYear: 2022, periodMonth: 12 },
+    );
+
+    expect(r.errors).toEqual([]);
+    expect(r.unsupportedFiles).toEqual([]);
+    expect(r.credits).toHaveLength(2);
+    expect(r.totals.perceptions).toBe('2091.06');
+    expect(r.totals.net).toBe('2091.06');
+
+    const first = r.credits[0];
+    expect(first.tax).toBe('GROSS_INCOME');
+    expect(first.kind).toBe('PERCEPTION');
+    expect(first.jurisdictionCode).toBe('902');
+    expect(first.agentCuit).toBe('30-11111111-3');
+    expect(first.certificateNumber).toBe('0003-00066373');
+    expect(first.issueDate.toISOString().slice(0, 10)).toBe('2022-12-01');
+    expect(first.originalAmount.toFixed(2)).toBe('33.68');
+    expect(first.regime).toBe('PERCEPCIONES');
+  });
+
+  it('una nota de crédito en percepciones conserva el importe negativo', () => {
+    const r = parseArbaDeducciones(
+      [file('percepciones-P.txt', '90230-11111111-303/12/2022000300066374CA-0000033,68')],
+      { periodYear: 2022, periodMonth: 12 },
+    );
+
+    expect(r.errors).toEqual([]);
+    expect(r.credits).toHaveLength(1);
+    expect(r.credits[0].originalAmount.toFixed(2)).toBe('-33.68');
+    expect(r.totals.perceptions).toBe('-33.68');
+  });
+
   it('las fechas de otro mes quedan fuera del período y no generan créditos', () => {
     const r = parseArbaDeducciones([file('x-B.txt', BANK_LINES)], { periodYear: 2026, periodMonth: 5 });
     expect(r.credits).toHaveLength(0);
@@ -69,10 +111,10 @@ describe('parseArbaDeducciones', () => {
     expect(r.totals.cards).toBe('9481.23');
   });
 
-  it('un régimen desconocido (-P) se informa sin inventar importes', () => {
-    const r = parseArbaDeducciones([file('20287592443-202606M-P.txt', '30-11111111-1percepcion-desconocida')], PERIOD);
+  it('un régimen desconocido (-R) se informa sin inventar importes', () => {
+    const r = parseArbaDeducciones([file('20287592443-202606M-R.txt', '30-11111111-1retencion-desconocida')], PERIOD);
     expect(r.credits).toHaveLength(0);
-    expect(r.unsupportedFiles).toEqual(['20287592443-202606M-P.txt']);
+    expect(r.unsupportedFiles).toEqual(['20287592443-202606M-R.txt']);
   });
 
   it('una línea corrupta se reporta con archivo y número de línea sin frenar el resto', () => {

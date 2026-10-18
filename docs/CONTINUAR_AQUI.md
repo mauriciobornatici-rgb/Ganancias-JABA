@@ -1,12 +1,24 @@
 # Continuar Aqui - Ganancias JABA
 
-Ultima actualizacion: 2026-06-21
+Ultima actualizacion: 2026-07-24
 
 Este es el primer archivo a leer cuando se retoma el proyecto. La bitacora larga sigue en `docs/REGISTRO_PROYECTO.md`, pero no deberia ser necesario recorrerla completa para saber por donde seguir.
 
+## Tramo activo al 2026-07-24 - PDF de correcciones del usuario (6 puntos)
+
+- Rama de trabajo activa: `fix/fiabilidad-carga-y-retenciones`, PR #31 abierta y mergeable.
+- Contenido de la PR: puntos 1, 4 y 6 del PDF (commit `d9a985b`) + Next 16.2.6 -> 16.2.11 y gate de audit acotado a produccion (commit `b0686bb`).
+- CI: el **gate de audit** quedo resuelto con `overrides` de `find-my-way` 9.7.0 y `valibot` 1.4.2 (sin tocar Prisma ni usar prereleases). 434 tests, typecheck, lint, build e integracion ya pasaban.
+- Estado de los 6 puntos: **los 6 resueltos** (1, 4 y 6 en el commit `d9a985b`; 5 IDCB, 3 sociedades y 2 TISH en commits posteriores de la misma rama).
+- Pendiente antes del merge: validacion funcional en la app (carga real de un caso) y revision visual de los tres modulos nuevos.
+- Alcance NO cubierto de TISH: regimen simplificado, Convenio Multilateral y encuadre automatico L/M/N por facturacion de 12 meses.
+- Las decisiones fiscales de los tres puntos pendientes estan escritas completas en la entrada `2026-07-24` de `docs/REGISTRO_PROYECTO.md`. **No volver a preguntarlas**: leer esa entrada antes de codear.
+- Fuente del pedido: `tmp/pdfs/correcciones-app/` (no versionado). PDFs de TISH en `C:\Users\mauri\Downloads` (tampoco versionados).
+- Entorno: no hay `pdftoppm` en esta maquina; para leer PDFs extraer texto con `pdf-parse` desde el scratchpad. `fiscalLedgerSeedDocker` falla en local por seeds acumulados (no es regresion). No correr `db:test:reset` sin revisar `docker-compose.yml` (hace `down -v`).
+
 ## Estado actual
 
-- Rama de trabajo activa: `feature/iva-iibb-mensual-core` en `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual`.
+- Rama historica del modulo mensual: `feature/iva-iibb-mensual-core` en `C:\Dev\Ganancia\_worktrees\ganancias-jaba-iva-iibb-mensual` (ya integrada; el trabajo actual va en la rama del tramo activo).
 - Rama productiva publicada: `main`.
 - Rama de pruebas publicada: `staging`.
 - MODULO IVA + IIBB (P32): diseno registrado en `docs/superpowers/specs/2026-06-20-iva-iibb-mensual-design.md`. Alcance inicial: IVA Simple, IIBB local ARBA y Convenio Multilateral regimen general; desarrollo y pruebas solo contra Docker. No se tocaron Hostinger, Vercel, `main` ni las DDJJ existentes.

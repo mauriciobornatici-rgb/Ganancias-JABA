@@ -42,6 +42,7 @@ export type ClientTaxJurisdictionMinAggregateOutputType = {
   activityLabel: string | null
   registrationNumber: string | null
   taxRate: runtime.Decimal | null
+  computesTish: boolean | null
   isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,6 +56,7 @@ export type ClientTaxJurisdictionMaxAggregateOutputType = {
   activityLabel: string | null
   registrationNumber: string | null
   taxRate: runtime.Decimal | null
+  computesTish: boolean | null
   isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -68,6 +70,7 @@ export type ClientTaxJurisdictionCountAggregateOutputType = {
   activityLabel: number
   registrationNumber: number
   taxRate: number
+  computesTish: number
   isActive: number
   createdAt: number
   updatedAt: number
@@ -91,6 +94,7 @@ export type ClientTaxJurisdictionMinAggregateInputType = {
   activityLabel?: true
   registrationNumber?: true
   taxRate?: true
+  computesTish?: true
   isActive?: true
   createdAt?: true
   updatedAt?: true
@@ -104,6 +108,7 @@ export type ClientTaxJurisdictionMaxAggregateInputType = {
   activityLabel?: true
   registrationNumber?: true
   taxRate?: true
+  computesTish?: true
   isActive?: true
   createdAt?: true
   updatedAt?: true
@@ -117,6 +122,7 @@ export type ClientTaxJurisdictionCountAggregateInputType = {
   activityLabel?: true
   registrationNumber?: true
   taxRate?: true
+  computesTish?: true
   isActive?: true
   createdAt?: true
   updatedAt?: true
@@ -217,6 +223,7 @@ export type ClientTaxJurisdictionGroupByOutputType = {
   activityLabel: string | null
   registrationNumber: string | null
   taxRate: runtime.Decimal | null
+  computesTish: boolean
   isActive: boolean
   createdAt: Date
   updatedAt: Date
@@ -253,6 +260,7 @@ export type ClientTaxJurisdictionWhereInput = {
   activityLabel?: Prisma.StringNullableFilter<"ClientTaxJurisdiction"> | string | null
   registrationNumber?: Prisma.StringNullableFilter<"ClientTaxJurisdiction"> | string | null
   taxRate?: Prisma.DecimalNullableFilter<"ClientTaxJurisdiction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFilter<"ClientTaxJurisdiction"> | boolean
   isActive?: Prisma.BoolFilter<"ClientTaxJurisdiction"> | boolean
   createdAt?: Prisma.DateTimeFilter<"ClientTaxJurisdiction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ClientTaxJurisdiction"> | Date | string
@@ -267,6 +275,7 @@ export type ClientTaxJurisdictionOrderByWithRelationInput = {
   activityLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   registrationNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   taxRate?: Prisma.SortOrderInput | Prisma.SortOrder
+  computesTish?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -286,6 +295,7 @@ export type ClientTaxJurisdictionWhereUniqueInput = Prisma.AtLeast<{
   activityLabel?: Prisma.StringNullableFilter<"ClientTaxJurisdiction"> | string | null
   registrationNumber?: Prisma.StringNullableFilter<"ClientTaxJurisdiction"> | string | null
   taxRate?: Prisma.DecimalNullableFilter<"ClientTaxJurisdiction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFilter<"ClientTaxJurisdiction"> | boolean
   isActive?: Prisma.BoolFilter<"ClientTaxJurisdiction"> | boolean
   createdAt?: Prisma.DateTimeFilter<"ClientTaxJurisdiction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ClientTaxJurisdiction"> | Date | string
@@ -300,6 +310,7 @@ export type ClientTaxJurisdictionOrderByWithAggregationInput = {
   activityLabel?: Prisma.SortOrderInput | Prisma.SortOrder
   registrationNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   taxRate?: Prisma.SortOrderInput | Prisma.SortOrder
+  computesTish?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -321,6 +332,7 @@ export type ClientTaxJurisdictionScalarWhereWithAggregatesInput = {
   activityLabel?: Prisma.StringNullableWithAggregatesFilter<"ClientTaxJurisdiction"> | string | null
   registrationNumber?: Prisma.StringNullableWithAggregatesFilter<"ClientTaxJurisdiction"> | string | null
   taxRate?: Prisma.DecimalNullableWithAggregatesFilter<"ClientTaxJurisdiction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolWithAggregatesFilter<"ClientTaxJurisdiction"> | boolean
   isActive?: Prisma.BoolWithAggregatesFilter<"ClientTaxJurisdiction"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"ClientTaxJurisdiction"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"ClientTaxJurisdiction"> | Date | string
@@ -333,6 +345,7 @@ export type ClientTaxJurisdictionCreateInput = {
   activityLabel?: string | null
   registrationNumber?: string | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -347,6 +360,7 @@ export type ClientTaxJurisdictionUncheckedCreateInput = {
   activityLabel?: string | null
   registrationNumber?: string | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -359,6 +373,7 @@ export type ClientTaxJurisdictionUpdateInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -373,6 +388,7 @@ export type ClientTaxJurisdictionUncheckedUpdateInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -386,6 +402,7 @@ export type ClientTaxJurisdictionCreateManyInput = {
   activityLabel?: string | null
   registrationNumber?: string | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -398,6 +415,7 @@ export type ClientTaxJurisdictionUpdateManyMutationInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -411,6 +429,7 @@ export type ClientTaxJurisdictionUncheckedUpdateManyInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -446,6 +465,7 @@ export type ClientTaxJurisdictionCountOrderByAggregateInput = {
   activityLabel?: Prisma.SortOrder
   registrationNumber?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
+  computesTish?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -463,6 +483,7 @@ export type ClientTaxJurisdictionMaxOrderByAggregateInput = {
   activityLabel?: Prisma.SortOrder
   registrationNumber?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
+  computesTish?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -476,6 +497,7 @@ export type ClientTaxJurisdictionMinOrderByAggregateInput = {
   activityLabel?: Prisma.SortOrder
   registrationNumber?: Prisma.SortOrder
   taxRate?: Prisma.SortOrder
+  computesTish?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -534,6 +556,7 @@ export type ClientTaxJurisdictionCreateWithoutTaxProfileInput = {
   activityLabel?: string | null
   registrationNumber?: string | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -546,6 +569,7 @@ export type ClientTaxJurisdictionUncheckedCreateWithoutTaxProfileInput = {
   activityLabel?: string | null
   registrationNumber?: string | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -588,6 +612,7 @@ export type ClientTaxJurisdictionScalarWhereInput = {
   activityLabel?: Prisma.StringNullableFilter<"ClientTaxJurisdiction"> | string | null
   registrationNumber?: Prisma.StringNullableFilter<"ClientTaxJurisdiction"> | string | null
   taxRate?: Prisma.DecimalNullableFilter<"ClientTaxJurisdiction"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFilter<"ClientTaxJurisdiction"> | boolean
   isActive?: Prisma.BoolFilter<"ClientTaxJurisdiction"> | boolean
   createdAt?: Prisma.DateTimeFilter<"ClientTaxJurisdiction"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"ClientTaxJurisdiction"> | Date | string
@@ -600,6 +625,7 @@ export type ClientTaxJurisdictionCreateManyTaxProfileInput = {
   activityLabel?: string | null
   registrationNumber?: string | null
   taxRate?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -612,6 +638,7 @@ export type ClientTaxJurisdictionUpdateWithoutTaxProfileInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -624,6 +651,7 @@ export type ClientTaxJurisdictionUncheckedUpdateWithoutTaxProfileInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -636,6 +664,7 @@ export type ClientTaxJurisdictionUncheckedUpdateManyWithoutTaxProfileInput = {
   activityLabel?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   registrationNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   taxRate?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  computesTish?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -651,6 +680,7 @@ export type ClientTaxJurisdictionSelect<ExtArgs extends runtime.Types.Extensions
   activityLabel?: boolean
   registrationNumber?: boolean
   taxRate?: boolean
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -667,12 +697,13 @@ export type ClientTaxJurisdictionSelectScalar = {
   activityLabel?: boolean
   registrationNumber?: boolean
   taxRate?: boolean
+  computesTish?: boolean
   isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ClientTaxJurisdictionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxProfileId" | "jurisdictionCode" | "activityCode" | "activityLabel" | "registrationNumber" | "taxRate" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["clientTaxJurisdiction"]>
+export type ClientTaxJurisdictionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taxProfileId" | "jurisdictionCode" | "activityCode" | "activityLabel" | "registrationNumber" | "taxRate" | "computesTish" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["clientTaxJurisdiction"]>
 export type ClientTaxJurisdictionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taxProfile?: boolean | Prisma.ClientTaxProfileVersionDefaultArgs<ExtArgs>
 }
@@ -690,6 +721,7 @@ export type $ClientTaxJurisdictionPayload<ExtArgs extends runtime.Types.Extensio
     activityLabel: string | null
     registrationNumber: string | null
     taxRate: runtime.Decimal | null
+    computesTish: boolean
     isActive: boolean
     createdAt: Date
     updatedAt: Date
@@ -1070,6 +1102,7 @@ export interface ClientTaxJurisdictionFieldRefs {
   readonly activityLabel: Prisma.FieldRef<"ClientTaxJurisdiction", 'String'>
   readonly registrationNumber: Prisma.FieldRef<"ClientTaxJurisdiction", 'String'>
   readonly taxRate: Prisma.FieldRef<"ClientTaxJurisdiction", 'Decimal'>
+  readonly computesTish: Prisma.FieldRef<"ClientTaxJurisdiction", 'Boolean'>
   readonly isActive: Prisma.FieldRef<"ClientTaxJurisdiction", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"ClientTaxJurisdiction", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"ClientTaxJurisdiction", 'DateTime'>

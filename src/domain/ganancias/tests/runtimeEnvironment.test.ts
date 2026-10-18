@@ -6,8 +6,15 @@ describe('getRuntimeEnvironmentNotice', () => {
     expect(getRuntimeEnvironmentNotice({ APP_ENV: 'test-db', NODE_ENV: 'development' }))
       .toEqual({
         label: 'ENTORNO DE PRUEBA',
-        detail: 'Base Docker aislada: los datos no afectan producciÃ³n.',
+        detail: 'Base Docker aislada: los datos no afectan producción.',
       });
+  });
+
+  it('los textos del cartel no tienen acentos mal codificados (mojibake)', () => {
+    for (const env of [{ APP_ENV: 'test-db' }, { VERCEL_ENV: 'preview' }, { NODE_ENV: 'development' }]) {
+      const notice = getRuntimeEnvironmentNotice(env);
+      expect(`${notice?.label} ${notice?.detail}`).not.toMatch(/Ã|â€/);
+    }
   });
 
   it('identifica un Preview como entorno no productivo', () => {

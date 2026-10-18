@@ -6,6 +6,7 @@ import { prisma } from '@/domain/ganancias/prisma';
 import {
   buildVatSettlement,
   buildGrossIncomeSettlement,
+  calculateGrossIncomeTaxableBase,
   type SettlementDocument,
 } from '@/domain/ganancias/fiscalLedger/settlementBuilders';
 import {
@@ -184,11 +185,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     // Reparto por monto: cuando una jurisdicción tiene varias actividades, se sugiere en el preview
     // un reparto equitativo de la base gravada como punto de partida editable (el usuario ajusta y guarda).
-    const grossTaxableBase = documents
-      .filter(d => d.direction === 'SALE')
-      .flatMap(d => d.vatLines)
-      .filter(l => String(l.kind) === 'TAXED')
-      .reduce((sum, l) => sum.add(l.taxableBase), new Decimal(0));
+    const grossTaxableBase = calculateGrossIncomeTaxableBase(documents);
     const suggestedBases = suggestActivityBases({
       regime,
       taxableBase: grossTaxableBase,

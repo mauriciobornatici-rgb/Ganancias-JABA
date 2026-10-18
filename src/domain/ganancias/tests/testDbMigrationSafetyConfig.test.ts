@@ -36,8 +36,10 @@ describe('Docker migration shadow database configuration', () => {
     expect(packageJson.scripts['dev:testdb']).toBe(packageJson.scripts.dev);
     expect(packageJson.scripts['dev:turbopack']).toContain('run-test-db-command.mjs');
     expect(packageJson.scripts.start).toContain('run-test-db-command.mjs');
+    expect(packageJson.scripts.test).toContain('--exclude ".claude/**"');
     expect(runner).toContain("APP_ENV: 'test-db'");
     expect(runner).toContain('DATABASE_URL: TEST_DATABASE_URL');
+    expect(runner).toContain("'--exclude', '.claude/**'");
   });
 
   it('loads the isolated seed after migrations and before integration tests in CI', () => {

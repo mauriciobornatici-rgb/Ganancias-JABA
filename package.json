@@ -34,8 +34,8 @@
     "decimal.js": "^10.6.0",
     "jszip": "^3.10.1",
     "lucide-react": "^1.16.0",
-    "mariadb": "^3.5.2",
-    "next": "16.3.1",
+    "mariadb": "^3.5.4",
+    "next": "16.3.8",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
@@ -47,7 +47,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.8",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^5",
@@ -57,12 +57,18 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "overrides": {
-    "sharp": "^0.35.0",
+    "sharp": "^0.35.5",
     "postcss": "^8.5.23",
-    "fast-uri": "3.1.5",
+    "fast-uri": "3.1.8",
     "nanoid": "3.3.18",
     "deepmerge-ts": "8.0.1",
     "find-my-way": "9.7.0",
-    "valibot": "1.4.2"
+    "valibot": "1.4.2",
+    "mysql2": "3.24.4",
+    "source-map-js": "1.2.2",
+    "baseline-browser-mapping": "^2.11.0",
+    "@prisma/adapter-mariadb": {
+      "mariadb": "3.4.7"
+    }
   }
 }

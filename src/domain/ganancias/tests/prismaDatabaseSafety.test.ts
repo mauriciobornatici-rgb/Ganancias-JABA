@@ -5,7 +5,7 @@ describe('assertPrismaDatabaseSafety', () => {
   const productionUrl = 'mysql://user:pass@srv1199.hstgr.io:3306/u669600172_ganancias_jaba';
   const testUrl = 'mysql://jaba_test:jaba_test_pass@127.0.0.1:3317/ganancias_jaba_test';
 
-  it('bloquea comandos Prisma locales contra producciÃ³n', () => {
+  it('bloquea comandos Prisma locales contra producción', () => {
     expect(() => assertPrismaDatabaseSafety({ DATABASE_URL: productionUrl }))
       .toThrow('PRISMA BLOQUEADO');
   });
@@ -17,7 +17,7 @@ describe('assertPrismaDatabaseSafety', () => {
     })).toThrow('PRISMA BLOQUEADO');
   });
 
-  it('permite Prisma productivo Ãºnicamente en Vercel Production/main', () => {
+  it('permite Prisma productivo únicamente en Vercel Production/main', () => {
     expect(() => assertPrismaDatabaseSafety({
       DATABASE_URL: productionUrl,
       VERCEL: '1',

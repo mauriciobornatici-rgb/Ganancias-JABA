@@ -9,6 +9,7 @@ import {
 import { buildFiscalDocumentImportFeedback } from '@/domain/ganancias/presentation/fiscalImportFeedback';
 import { calculateGrossIncomeLivePreview } from '@/domain/ganancias/presentation/grossIncomeLivePreview';
 import { parseMoneyToPlain } from '@/domain/ganancias/presentation/parseMoney';
+import { buildVatCreditsDisplay } from '@/domain/ganancias/presentation/vatCreditsDisplay';
 
 const MONTHS = ['', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -378,11 +379,13 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       const payload = await res.json();
       if (!res.ok || !payload.success) throw new Error(payload.error || 'No se pudo importar el archivo de retenciones/percepciones.');
       const d = payload.data;
-      let msg = `Importadas ${d.inserted} ret./perc. (${d.duplicates} duplicadas).`;
+      let msg = `Importadas ${d.inserted} ret./perc. de IVA (${d.duplicates} duplicadas).`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.ignoredOtherTax) msg += ` ${d.ignoredOtherTax} de otros impuestos ignoradas.`;
+      // Filas con error: antes se descartaban sin aviso y el mensaje salía en verde.
+      if (d.errors?.length) msg += ` ${d.errors.length} fila(s) con error no se cargaron: ${d.errors[0]}`;
       setNotice({
-        tone: d.outOfPeriod?.length || d.ignoredOtherTax ? 'warning' : 'success',
+        tone: d.outOfPeriod?.length || d.ignoredOtherTax || d.errors?.length ? 'warning' : 'success',
         message: msg,
       });
       await loadTaxCredits();
@@ -928,8 +931,11 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
                   </>
                 ) : <Row label="Saldo técnico del período" value={settlement.technicalDue} />}
                 {Number(settlement.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={settlement.technicalCarryForward} muted /> : null}
-                {Number(openingBalances?.vat.previousFree ?? 0) > 0 ? <Row label="Libre disponibilidad anterior aplicada" value={openingBalances?.vat.previousFree ?? '0'} muted /> : null}
-                {Number(settlement.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={settlement.creditsApplied} muted /> : null}
+                <VatCreditRows
+                  previousFreeAvailability={openingBalances?.vat.previousFree ?? '0'}
+                  creditsApplied={settlement.creditsApplied}
+                  freeAvailabilityBalance={settlement.freeAvailabilityBalance}
+                />
                 <div className="my-2 border-t border-zinc-800" />
                 <Row label="Saldo a pagar" value={settlement.amountDue} highlight />
                 {Number(settlement.freeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad (arrastra)" value={settlement.freeAvailabilityBalance} muted /> : null}
@@ -1228,8 +1234,11 @@ function SavedSettlementPanel({ saved, onReliquidar }: { saved: SavedSettlement;
               <Row label={`Reducción beneficio (${(Number(saved.smallTaxpayerBenefitRate) * 100).toFixed(0)}%)`} value={saved.smallTaxpayerBenefitReduction} muted />
             </>
           ) : null}
-          {Number(saved.previousFreeAvailabilityBalance) > 0 ? <Row label="Libre disponibilidad anterior aplicada" value={saved.previousFreeAvailabilityBalance} muted /> : null}
-          {Number(saved.creditsApplied) > 0 ? <Row label="Percep./retenc. aplicadas" value={saved.creditsApplied} muted /> : null}
+          <VatCreditRows
+            previousFreeAvailability={saved.previousFreeAvailabilityBalance}
+            creditsApplied={saved.creditsApplied}
+            freeAvailabilityBalance={saved.freeAvailabilityBalance}
+          />
           {Number(saved.technicalCarryForward) > 0 ? <Row label="Saldo técnico a favor (arrastra)" value={saved.technicalCarryForward} muted /> : null}
           <div className="my-2 border-t border-zinc-800" />
           <Row label="Saldo a pagar" value={saved.amountDue} highlight />
@@ -1376,6 +1385,36 @@ function Row({ label, value, strong, highlight, muted }: { label: string; value:
       <span>{label}</span>
       <strong className={`font-mono ${highlight ? 'text-lg text-teal-300' : strong ? 'text-zinc-100' : 'text-zinc-300'}`}>{fmt(value)}</strong>
     </p>
+  );
+}
+
+/**
+ * Créditos de la posición mensual con cada fuente rotulada por separado: la libre disponibilidad
+ * anterior DISPONIBLE, las percepciones/retenciones DEL PERÍODO y el total APLICADO. Antes el total
+ * aplicado se rotulaba "Percep./retenc. aplicadas" aunque viniera entero de la libre disponibilidad.
+ */
+function VatCreditRows({ previousFreeAvailability, creditsApplied, freeAvailabilityBalance }: {
+  previousFreeAvailability: string;
+  creditsApplied: string;
+  freeAvailabilityBalance: string;
+}) {
+  const display = buildVatCreditsDisplay({ previousFreeAvailability, creditsApplied, freeAvailabilityBalance });
+  const hasPrevious = display.previousFreeAvailable.greaterThan(0);
+  const hasPeriod = !display.periodCredits.isZero();
+  return (
+    <>
+      {hasPrevious ? <Row label="Libre disponibilidad anterior (disponible)" value={display.previousFreeAvailable.toFixed(2)} muted /> : null}
+      {hasPeriod ? <Row label="Percep./retenc. del período" value={display.periodCredits.toFixed(2)} muted /> : null}
+      {display.totalApplied.greaterThan(0) ? (
+        <Row
+          label={hasPrevious && hasPeriod
+            ? 'Aplicado contra el saldo (libre disp. + percep./retenc.)'
+            : hasPrevious ? 'Aplicado contra el saldo (de la libre disponibilidad)' : 'Aplicado contra el saldo (percep./retenc.)'}
+          value={display.totalApplied.toFixed(2)}
+          muted
+        />
+      ) : null}
+    </>
   );
 }
 

@@ -98,6 +98,79 @@ describe('parseArbaDeducciones', () => {
     expect(r.totals.perceptions).toBe('-33.68');
   });
 
+  // Formato REAL del ZIP de "Mis Deducciones" (confirmado con un archivo del usuario, 09/2026):
+  // CUIT(13) + fecha(10) + tipo(1) + letra(1) + punto de venta(5) + número(8) + importe(14). Sin "902".
+  // Antes este archivo quedaba con TODAS sus percepciones rechazadas por formato.
+  const perception52 = (cuit: string, date: string, typeLetter: string, pos: string, number: string, amount: string) => {
+    const line = `${cuit}${date}${typeLetter}${pos}${number}${amount}`;
+    expect(line).toHaveLength(52);
+    return line;
+  };
+  const SEPT = { periodYear: 2026, periodMonth: 9 };
+
+  it('archivo -P del ZIP de Mis Deducciones (52 caracteres, sin 902): factura, tipo sin letra y sin comprobante', () => {
+    const lines = [
+      perception52('30-11111111-3', '23/09/2026', 'FA', '00007', '00037380', '00000004298,00'),
+      perception52('30-22222222-5', '29/09/2026', 'F ', '02609', '29447321', '00000000459,00'),
+      perception52('33-33333333-9', '29/09/2026', '  ', '00000', '00000000', '00000002760,00'),
+    ].join('\r\n');
+    const r = parseArbaDeducciones([file('30700000000-202609M-P.txt', lines)], SEPT);
+
+    expect(r.errors).toEqual([]);
+    expect(r.credits).toHaveLength(3);
+    expect(r.totals.perceptions).toBe('7517.00'); // 4.298 + 459 + 2.760
+
+    const [factura, sinLetra, sinComprobante] = r.credits;
+    expect(factura.kind).toBe('PERCEPTION');
+    expect(factura.jurisdictionCode).toBe('902');
+    expect(factura.agentCuit).toBe('30-11111111-3');
+    expect(factura.certificateNumber).toBe('00007-00037380');
+    expect(factura.originalAmount.toFixed(2)).toBe('4298.00');
+    expect(factura.issueDate.toISOString().slice(0, 10)).toBe('2026-09-23');
+    expect(sinLetra.notes).toContain('comprobante F');
+    expect(sinComprobante.certificateNumber).toBe('S/C');
+    expect(sinComprobante.notes).toContain('sin comprobante');
+  });
+
+  it('formato de 52: una nota de crédito conserva el signo negativo', () => {
+    const line = perception52('30-11111111-3', '24/09/2026', 'CA', '00007', '00000123', '-0000004298,00');
+    const r = parseArbaDeducciones([file('x-P.txt', line)], SEPT);
+    expect(r.errors).toEqual([]);
+    expect(r.credits[0].originalAmount.toFixed(2)).toBe('-4298.00');
+  });
+
+  it('dos percepciones idénticas sin comprobante son dos créditos, no un duplicado', () => {
+    const same = perception52('33-33333333-9', '29/09/2026', '  ', '00000', '00000000', '00000002760,00');
+    const content = [same, same].join('\n');
+    const a = parseArbaDeducciones([file('x-P.txt', content)], SEPT);
+    expect(a.credits).toHaveLength(2);
+    expect(a.totals.perceptions).toBe('5520.00');
+    expect(new Set(a.credits.map(c => c.creditKey)).size).toBe(2);
+    expect(a.credits[1].creditKey.endsWith('#2')).toBe(true);
+    // Reimportar el mismo archivo genera las mismas claves: no duplica.
+    const b = parseArbaDeducciones([file('x-P.txt', content)], SEPT);
+    expect(b.credits.map(c => c.creditKey)).toEqual(a.credits.map(c => c.creditKey));
+  });
+
+  it('la primera ocurrencia conserva la clave de siempre: lo ya importado sigue siendo idempotente', () => {
+    const r = parseArbaDeducciones([file('x-B.txt', BANK_LINES)], PERIOD);
+    expect(r.credits.every(c => !c.creditKey.includes('#'))).toBe(true);
+  });
+
+  it('formato de 52 renombrado se reconoce por la estructura', () => {
+    const line = perception52('30-11111111-3', '23/09/2026', 'FA', '00007', '00037380', '00000004298,00');
+    const r = parseArbaDeducciones([file('percepciones-septiembre.txt', line)], SEPT);
+    expect(r.unsupportedFiles).toEqual([]);
+    expect(r.totals.perceptions).toBe('4298.00');
+  });
+
+  it('una línea de percepciones ilegible dice el largo y el contenido para diagnosticarla', () => {
+    const r = parseArbaDeducciones([file('x-P.txt', 'BASURA-DE-PERCEPCION')], SEPT);
+    expect(r.credits).toHaveLength(0);
+    expect(r.errors[0]).toContain('de percepciones (-P)');
+    expect(r.errors[0]).toContain('20 caracteres');
+  });
+
   it('las fechas de otro mes quedan fuera del período y no generan créditos', () => {
     const r = parseArbaDeducciones([file('x-B.txt', BANK_LINES)], { periodYear: 2026, periodMonth: 5 });
     expect(r.credits).toHaveLength(0);

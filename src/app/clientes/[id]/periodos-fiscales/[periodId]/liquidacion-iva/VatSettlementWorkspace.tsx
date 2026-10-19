@@ -451,7 +451,9 @@ export default function VatSettlementWorkspace({ clientId, periodId }: { clientI
       let msg = `Importadas ${d.inserted} deducciones de ARBA (${d.duplicates} duplicadas). Bancarias ${fmt(d.totals.bank)} · Tarjetas ${fmt(d.totals.cards)} · Percepciones ${fmt(d.totals.perceptions)}.`;
       if (d.outOfPeriod?.length) msg += ` ${d.outOfPeriod.length} quedaron fuera del mes y no se cargaron.`;
       if (d.unsupportedFiles?.length) msg += ` Régimen aún sin soporte: ${d.unsupportedFiles.join(', ')}.`;
-      if (d.errors?.length) msg += ` ${d.errors.length} líneas o archivos tuvieron errores de formato y no se importaron.`;
+      // El primer error dice qué archivo y qué línea: con solo la cantidad, un archivo entero
+      // rechazado (p. ej. todas las percepciones) pasaba inadvertido.
+      if (d.errors?.length) msg += ` ${d.errors.length} líneas o archivos tuvieron errores de formato y no se importaron. Primero: ${d.errors[0]}`;
       setNotice({
         tone: d.outOfPeriod?.length || d.unsupportedFiles?.length || d.errors?.length ? 'warning' : 'success',
         message: msg,

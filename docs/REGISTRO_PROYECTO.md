@@ -4,6 +4,17 @@ Ultima actualizacion: 2026-10-18
 
 ## Entrada reciente
 
+### 2026-10-19 - IIBB 2c: las percepciones del ZIP de ARBA no se cargaban
+
+- Reporte del usuario: al subir `IB-<CUIT>-202609M.zip` en el bloque 2c, bancarias y tarjetas entraban pero "Percepciones: 0,00".
+- Causa, confirmada con el ZIP real: el `-P.txt` de "Mis Deducciones" tiene **52 caracteres y no lleva la jurisdicción "902"**: `CUIT agente(13) + fecha(10) + tipo(1) + letra(1) + punto de venta(5) + número(8) + importe(11 enteros, coma, 2)`. El importador solo conocía la variante de 51 caracteres de la "Descarga para importar" documentada por ARBA (empieza con 902, sucursal de 4). Las 32 líneas se rechazaban por formato y la pantalla solo decía "32 líneas tuvieron errores de formato", sin el detalle.
+- Los anchos se fijaron con las 32 líneas reales: es la única partición en la que todos los importes dan razonables (la alternativa con punto de venta de 4 daba importes de 200 mil millones).
+- Arreglo en `arbaDeduccionesImporter`: se aceptan las dos variantes de `-P` (también para TXT renombrados). Las percepciones sin comprobante (tipo en blanco y número en ceros, p. ej. las de bancos) se rotulan "S/C" / "Sin comprobante". El error de formato informa ahora el largo y el contenido de la línea, y la pantalla muestra el primer error en vez de solo la cantidad.
+- Robustez: dos líneas idénticas (mismo agente, día, comprobante e importe), algo posible en percepciones sin comprobante, eran dos deducciones pero la segunda se descartaba como "duplicada" por la clave idempotente. Ahora, desde la segunda ocurrencia dentro de la misma importación, la clave lleva `#2`, `#3`... La primera ocurrencia conserva su clave de siempre, así lo ya importado sigue siendo idempotente: reimportar el mismo ZIP solo agrega lo que faltaba.
+- Resultado con el ZIP real (09/2026): 0 errores. Bancarias 1.334.114,91 y tarjetas 222.644,25, **iguales a las ya cargadas**. **Percepciones 269.961,01** (32 líneas, 7 sin comprobante), antes en 0. Total de deducciones 1.826.720,17; 170 claves únicas.
+- Para producción: volver a subir el mismo ZIP en el bloque 2c de 09/2026. Las 138 bancarias y de tarjetas ya cargadas van a salir como duplicadas y entran las 32 percepciones. Si la IIBB de septiembre estaba guardada o cerrada, reliquidarla.
+- Verificado: 555 tests (8 nuevos), integración contra Docker, typecheck, lint, build y auditoría en verde.
+
 ### 2026-10-18 - Prisma 7.8.0/7.9.0 → 7.10.1, con control de datos antes/después
 
 - Motivo: cerrar las 2 moderadas de `mariadb` que dejó el PR #32 (crash con autenticación ed25519 y TLS sin configuración). Solo se cierran con `mariadb` 3.5.4, que es la que trae `@prisma/adapter-mariadb` 7.10.1. No se usó la 8.0.0-rc, que figura como `latest` en npm pero es prerelease.
